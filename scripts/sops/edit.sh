@@ -11,11 +11,11 @@
 #   ./scripts/sops/edit.sh <environment>
 #
 # Arguments:
-#   environment - development, test, or production
+#   environment - development or test
 #
 # Examples:
 #   ./scripts/sops/edit.sh development
-#   ./scripts/sops/edit.sh production
+#   ./scripts/sops/edit.sh test
 # ========================================
 
 set -euo pipefail
@@ -68,7 +68,7 @@ main() {
     if [ -z "$environment" ]; then
         error "Environment argument required"
         echo "Usage: $0 <environment>"
-        echo "  environment: development, test, or production"
+        echo "  environment: development or test"
         exit 1
     fi
 
@@ -80,12 +80,9 @@ main() {
         test)
             env_name="test"
             ;;
-        production|prod)
-            env_name="production"
-            ;;
         *)
             error "Invalid environment: $environment"
-            echo "Valid options: development, test, production"
+            echo "Valid options: development, test"
             exit 1
             ;;
     esac

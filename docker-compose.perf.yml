@@ -1,10 +1,67 @@
-version: '3.9'
-
+# ========================================
+# Docker Compose - Performance Test Environment
+# Birthday Message Scheduler
+# ========================================
 # Performance Test Environment (24 containers, for weekly perf tests)
 # Simulates production-scale infrastructure
+# Usage: docker-compose -f docker-compose.perf.yml up -d
+
+version: '3.9'
+
+# ========================================
+# Shared Anchors for DRY Configuration
+# ========================================
+
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+x-perf-env: &perf-env
+  NODE_ENV: production
+  DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
+  RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
+  REDIS_URL: redis://redis:6379
+
+# API service template
+x-api-service: &api-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    <<: *perf-env
+    PORT: 3000
+  depends_on:
+    - postgres-primary
+    - rabbitmq
+    - redis
+  logging:
+    <<: *logging
+  networks:
+    - perf-network
+
+# Worker service template
+x-worker-service: &worker-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    <<: *perf-env
+  command: npm run worker
+  depends_on:
+    - postgres-primary
+    - rabbitmq
+    - redis
+  logging:
+    <<: *logging
+  networks:
+    - perf-network
 
 services:
+  # ----------------------------------------
   # Nginx load balancer
+  # ----------------------------------------
   nginx:
     image: nginx:alpine
     container_name: perf-nginx
@@ -18,297 +75,130 @@ services:
       - api-3
       - api-4
       - api-5
+    logging:
+      <<: *logging
     networks:
       - perf-network
 
+  # ----------------------------------------
   # API instances (5 replicas)
+  # ----------------------------------------
   api-1:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *api-service
     container_name: perf-api-1
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-1
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   api-2:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *api-service
     container_name: perf-api-2
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-2
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   api-3:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *api-service
     container_name: perf-api-3
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-3
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   api-4:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *api-service
     container_name: perf-api-4
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-4
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   api-5:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *api-service
     container_name: perf-api-5
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-5
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
-  # Worker instances (10 replicas for message processing)
+  # ----------------------------------------
+  # Worker instances (10 replicas)
+  # ----------------------------------------
   worker-1:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-1
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-1
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-2:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-2
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-2
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-3:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-3
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-3
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-4:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-4
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-4
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-5:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-5
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-5
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-6:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-6
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-6
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-7:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-7
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-7
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-8:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-8
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-8
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-9:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-9
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-9
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
   worker-10:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *worker-service
     container_name: perf-worker-10
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
-      RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *perf-env
       WORKER_ID: worker-10
-    command: npm run worker
-    depends_on:
-      - postgres-primary
-      - rabbitmq
-      - redis
-    networks:
-      - perf-network
 
+  # ----------------------------------------
   # PostgreSQL primary (write)
+  # ----------------------------------------
   postgres-primary:
     image: postgres:15
     container_name: perf-postgres-primary
@@ -321,6 +211,8 @@ services:
       - '5432:5432'
     volumes:
       - postgres_primary_data:/var/lib/postgresql/data
+    logging:
+      <<: *logging
     networks:
       - perf-network
     command:
@@ -344,10 +236,14 @@ services:
       - '5433:5432'
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
+    logging:
+      <<: *logging
     networks:
       - perf-network
 
+  # ----------------------------------------
   # RabbitMQ
+  # ----------------------------------------
   rabbitmq:
     image: rabbitmq:3.12-management
     container_name: perf-rabbitmq
@@ -360,10 +256,14 @@ services:
       - '15672:15672'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    logging:
+      <<: *logging
     networks:
       - perf-network
 
+  # ----------------------------------------
   # Redis
+  # ----------------------------------------
   redis:
     image: redis:7
     container_name: perf-redis
@@ -371,11 +271,15 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
+    logging:
+      <<: *logging
     networks:
       - perf-network
     command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
 
+  # ----------------------------------------
   # Prometheus (metrics collection)
+  # ----------------------------------------
   prometheus:
     image: prom/prometheus:latest
     container_name: perf-prometheus
@@ -384,13 +288,17 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    logging:
+      <<: *logging
     networks:
       - perf-network
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
 
+  # ----------------------------------------
   # Grafana (metrics visualization)
+  # ----------------------------------------
   grafana:
     image: grafana/grafana:latest
     container_name: perf-grafana
@@ -400,16 +308,22 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
     volumes:
       - grafana_data:/var/lib/grafana
+    logging:
+      <<: *logging
     networks:
       - perf-network
 
+  # ----------------------------------------
   # k6 (load testing)
+  # ----------------------------------------
   k6:
     image: grafana/k6:latest
     container_name: perf-k6
     volumes:
       - ./tests/performance:/scripts
       - ./perf-results:/perf-results
+    logging:
+      <<: *logging
     networks:
       - perf-network
     environment:

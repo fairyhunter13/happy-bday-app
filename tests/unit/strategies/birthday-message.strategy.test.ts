@@ -51,7 +51,9 @@ describe('BirthdayMessageStrategy', () => {
     it('should handle leap year birthdays (Feb 29) correctly', async () => {
       // Skip this test if today is not Feb 28 in a non-leap year
       const now = new Date();
-      const isLeapYear = (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) || (now.getFullYear() % 400 === 0);
+      const isLeapYear =
+        (now.getFullYear() % 4 === 0 && now.getFullYear() % 100 !== 0) ||
+        now.getFullYear() % 400 === 0;
 
       if (isLeapYear || now.getMonth() !== 1 || now.getDate() !== 28) {
         // Test with mock date

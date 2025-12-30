@@ -338,9 +338,7 @@ describe('TimezoneService', () => {
     it('should throw ValidationError for invalid timezone', () => {
       const birthdayDate = new Date('1990-12-30');
 
-      expect(() => service.isBirthdayToday(birthdayDate, 'Invalid/Zone')).toThrow(
-        ValidationError
-      );
+      expect(() => service.isBirthdayToday(birthdayDate, 'Invalid/Zone')).toThrow(ValidationError);
     });
   });
 
@@ -399,17 +397,13 @@ describe('TimezoneService', () => {
     it('should throw ValidationError for invalid source timezone', () => {
       const date = new Date();
 
-      expect(() => service.convertTimezone(date, 'Invalid/Zone', 'UTC')).toThrow(
-        ValidationError
-      );
+      expect(() => service.convertTimezone(date, 'Invalid/Zone', 'UTC')).toThrow(ValidationError);
     });
 
     it('should throw ValidationError for invalid target timezone', () => {
       const date = new Date();
 
-      expect(() => service.convertTimezone(date, 'UTC', 'Invalid/Zone')).toThrow(
-        ValidationError
-      );
+      expect(() => service.convertTimezone(date, 'UTC', 'Invalid/Zone')).toThrow(ValidationError);
     });
   });
 

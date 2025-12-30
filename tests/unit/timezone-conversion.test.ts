@@ -145,10 +145,7 @@ describe('Timezone Conversion', () => {
   describe('birthday detection across timezones', () => {
     it('should detect birthday on correct date in user timezone', () => {
       const birthdayDate = new Date('1990-12-30');
-      const checkDate = DateTime.fromObject(
-        { year: 2025, month: 12, day: 30 },
-        { zone: 'UTC' }
-      );
+      const checkDate = DateTime.fromObject({ year: 2025, month: 12, day: 30 }, { zone: 'UTC' });
 
       const isBirthday = isBirthdayToday(birthdayDate, checkDate.toJSDate(), 'UTC');
 
@@ -157,10 +154,7 @@ describe('Timezone Conversion', () => {
 
     it('should not detect birthday on wrong date', () => {
       const birthdayDate = new Date('1990-12-30');
-      const checkDate = DateTime.fromObject(
-        { year: 2025, month: 12, day: 29 },
-        { zone: 'UTC' }
-      );
+      const checkDate = DateTime.fromObject({ year: 2025, month: 12, day: 29 }, { zone: 'UTC' });
 
       const isBirthday = isBirthdayToday(birthdayDate, checkDate.toJSDate(), 'UTC');
 
@@ -169,25 +163,14 @@ describe('Timezone Conversion', () => {
 
     it('should handle leap year birthdays', () => {
       const birthdayDate = new Date('1992-02-29'); // Leap year birthday
-      const leapYearCheck = DateTime.fromObject(
-        { year: 2024, month: 2, day: 29 },
-        { zone: 'UTC' }
-      );
+      const leapYearCheck = DateTime.fromObject({ year: 2024, month: 2, day: 29 }, { zone: 'UTC' });
       const nonLeapYearCheck = DateTime.fromObject(
         { year: 2025, month: 2, day: 28 },
         { zone: 'UTC' }
       );
 
-      const isLeapBirthday = isBirthdayToday(
-        birthdayDate,
-        leapYearCheck.toJSDate(),
-        'UTC'
-      );
-      const isNonLeapBirthday = isBirthdayToday(
-        birthdayDate,
-        nonLeapYearCheck.toJSDate(),
-        'UTC'
-      );
+      const isLeapBirthday = isBirthdayToday(birthdayDate, leapYearCheck.toJSDate(), 'UTC');
+      const isNonLeapBirthday = isBirthdayToday(birthdayDate, nonLeapYearCheck.toJSDate(), 'UTC');
 
       expect(isLeapBirthday).toBe(true);
       // In non-leap years, Feb 29 birthdays can be celebrated on Feb 28 or Mar 1

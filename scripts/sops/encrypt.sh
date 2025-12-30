@@ -11,7 +11,7 @@
 #   ./scripts/sops/encrypt.sh [environment]
 #
 # Arguments:
-#   environment - (optional) development, test, or production
+#   environment - (optional) development or test
 #                 If not provided, encrypts all environments
 #
 # Examples:
@@ -108,12 +108,9 @@ main() {
             test)
                 encrypt_file "test"
                 ;;
-            production|prod)
-                encrypt_file "production"
-                ;;
             *)
                 error "Invalid environment: $environment"
-                echo "Valid options: development, test, production"
+                echo "Valid options: development, test"
                 exit 1
                 ;;
         esac
@@ -124,7 +121,6 @@ main() {
 
         encrypt_file "development"
         encrypt_file "test"
-        encrypt_file "production"
     fi
 
     echo ""

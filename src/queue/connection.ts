@@ -14,7 +14,7 @@
  */
 
 import amqp, { type AmqpConnectionManager, type ChannelWrapper } from 'amqp-connection-manager';
-import type { Channel, Options } from 'amqplib';
+import type { Channel } from 'amqplib';
 import { logger } from '../utils/logger.js';
 
 export interface RabbitMQConfig {
@@ -61,7 +61,8 @@ export class RabbitMQConnection {
       return;
     }
 
-    logger.info('Connecting to RabbitMQ...', {
+    logger.info({
+      msg: 'Connecting to RabbitMQ...',
       url: this.config.url.replace(/:[^:@]*@/, ':****@'),
     });
 
@@ -73,33 +74,36 @@ export class RabbitMQConnection {
 
     // Connection event handlers
     this.connection.on('connect', ({ url }) => {
-      logger.info('Connected to RabbitMQ', { url: url.replace(/:[^:@]*@/, ':****@') });
+      const sanitizedUrl =
+        typeof url === 'string' ? url.replace(/:[^:@]*@/, ':****@') : String(url);
+      logger.info({ msg: 'Connected to RabbitMQ', url: sanitizedUrl });
       this.isConnected = true;
     });
 
     this.connection.on('disconnect', ({ err }) => {
-      logger.warn('Disconnected from RabbitMQ', { error: err?.message });
+      logger.warn({ msg: 'Disconnected from RabbitMQ', error: err?.message });
       this.isConnected = false;
     });
 
     this.connection.on('connectFailed', ({ err }) => {
-      logger.error('Failed to connect to RabbitMQ', { error: err?.message });
+      logger.error({ msg: 'Failed to connect to RabbitMQ', error: err?.message });
       this.isConnected = false;
     });
 
     // Create publisher channel with confirms
     this.publisherChannel = this.connection.createChannel({
       json: false,
-      setup: async (channel: Channel) => {
+      setup: async (_channel: Channel) => {
         // Enable publisher confirms for reliability
-        await channel.confirmSelect();
+        // Note: confirmSelect is not available in ChannelWrapper, but publisher confirms
+        // are handled by amqp-connection-manager automatically when using channel.publish
         logger.info('Publisher channel configured with confirms');
       },
     });
 
     // Publisher channel event handlers
     this.publisherChannel.on('error', (err) => {
-      logger.error('Publisher channel error', { error: err.message });
+      logger.error({ msg: 'Publisher channel error', error: err.message });
     });
 
     this.publisherChannel.on('close', () => {
@@ -109,14 +113,14 @@ export class RabbitMQConnection {
     // Create consumer channel
     this.consumerChannel = this.connection.createChannel({
       json: false,
-      setup: async (channel: Channel) => {
+      setup: async (_channel: Channel) => {
         logger.info('Consumer channel configured');
       },
     });
 
     // Consumer channel event handlers
     this.consumerChannel.on('error', (err) => {
-      logger.error('Consumer channel error', { error: err.message });
+      logger.error({ msg: 'Consumer channel error', error: err.message });
     });
 
     this.consumerChannel.on('close', () => {
@@ -192,7 +196,7 @@ export class RabbitMQConnection {
       return { status: 'healthy' };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('RabbitMQ health check failed', { error: errorMessage });
+      logger.error({ msg: 'RabbitMQ health check failed', error: errorMessage });
       return { status: 'unhealthy', error: errorMessage };
     }
   }
@@ -225,7 +229,7 @@ export class RabbitMQConnection {
       logger.info('RabbitMQ connection closed gracefully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Error closing RabbitMQ connection', { error: errorMessage });
+      logger.error({ msg: 'Error closing RabbitMQ connection', error: errorMessage });
       throw error;
     }
   }

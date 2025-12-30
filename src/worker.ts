@@ -45,7 +45,8 @@ async function main() {
       process.exit(0);
     });
   } catch (error) {
-    logger.error('Failed to start worker', {
+    logger.error({
+      msg: 'Failed to start worker',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     process.exit(1);
@@ -54,7 +55,8 @@ async function main() {
 
 // Start worker
 main().catch((error) => {
-  logger.error('Unhandled error in worker', {
+  logger.error({
+    msg: 'Unhandled error in worker',
     error: error instanceof Error ? error.message : 'Unknown error',
   });
   process.exit(1);

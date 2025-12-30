@@ -119,10 +119,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
       expect(sendTime.minute).toBe(0);
 
       // Step 4: Update scheduled_send_time to NOW to trigger immediate processing
-      await pool.query(
-        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1',
-        [message.id]
-      );
+      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1', [
+        message.id,
+      ]);
 
       // Step 5: Trigger minute scheduler to enqueue message
       const enqueuedCount = await scheduler.enqueueUpcomingMessages();
@@ -249,12 +248,7 @@ describe('E2E: Complete Birthday Message Flow', () => {
 
   describe('Message timing accuracy', () => {
     it('should schedule message at exactly 9am in user timezone', async () => {
-      const timezones = [
-        'America/New_York',
-        'Europe/London',
-        'Asia/Tokyo',
-        'Australia/Sydney',
-      ];
+      const timezones = ['America/New_York', 'Europe/London', 'Asia/Tokyo', 'Australia/Sydney'];
 
       for (const timezone of timezones) {
         const today = DateTime.now().setZone(timezone);
@@ -383,10 +377,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const scheduledTime = messages[0].scheduledSendTime;
 
       // Update to trigger immediate processing
-      await pool.query(
-        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1',
-        [messages[0].id]
-      );
+      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1', [
+        messages[0].id,
+      ]);
 
       await scheduler.enqueueUpcomingMessages();
       await publisher.publishMessage({
@@ -435,7 +428,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
           lastName: 'Test',
           email: `user${i}@test.com`,
           timezone: 'UTC',
-          birthdayDate: DateTime.now().set({ year: 1990 - i }).toJSDate(),
+          birthdayDate: DateTime.now()
+            .set({ year: 1990 - i })
+            .toJSDate(),
           anniversaryDate: null,
         });
       }

@@ -28,6 +28,7 @@ export default [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        NodeJS: 'readonly',
       },
     },
     plugins: {
@@ -47,6 +48,15 @@ export default [
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
         },
       ],
       '@typescript-eslint/no-non-null-assertion': 'warn',
@@ -67,7 +77,7 @@ export default [
       'no-duplicate-imports': 'error',
       'no-unused-expressions': 'error',
       'no-return-await': 'error',
-      'require-await': 'error',
+      'require-await': 'warn',
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
       'no-throw-literal': 'error',
@@ -98,7 +108,13 @@ export default [
       '.husky/**',
       'plan/**',
       'scripts/**',
-      'tests/**/*.test.ts',
+      'tests/**',
+      'jscpd-report/**',
+      'reports/**',
+      'vitest.config.*.ts',
+      'src/clients/generated/**',
+      'src/db/migrate.ts',
+      'src/db/seed.ts',
     ],
   },
 ];

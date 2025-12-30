@@ -180,9 +180,9 @@ describe('MessageSenderService', () => {
     });
 
     it('should throw ValidationError for undefined user', async () => {
-      await expect(
-        service.sendBirthdayMessage(undefined as unknown as User)
-      ).rejects.toThrow(ValidationError);
+      await expect(service.sendBirthdayMessage(undefined as unknown as User)).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('should throw ValidationError for user without ID', async () => {

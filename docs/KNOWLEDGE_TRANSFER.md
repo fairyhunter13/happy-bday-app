@@ -609,7 +609,7 @@ describe('User API Integration', () => {
    ├── Deploy to Staging
    ├── Smoke Tests
    ├── Deploy to Production
-   └── Notify Team (Slack)
+   └── Notify Team (Email)
 ```
 
 ### 7.2 Deployment Environments
@@ -778,11 +778,11 @@ psql $DATABASE_URL -c "SELECT query, mean_exec_time FROM pg_stat_statements ORDE
 
 **Engineering:**
 - Lead: engineering-lead@example.com
-- Team Slack: #birthday-scheduler-dev
+- Team Email: engineering-team@example.com
 
 **DevOps:**
 - Lead: devops-lead@example.com
-- Team Slack: #birthday-scheduler-ops
+- Team Email: devops-team@example.com
 
 **On-Call:**
 - PagerDuty: birthday-scheduler-oncall

@@ -1,6 +1,6 @@
 # 📋 Happy Birthday App - Planning Documentation
 
-This directory contains all planning, architecture, research, and implementation documentation for the Happy Birthday Message Scheduler system.
+This directory contains all planning, architecture, research, implementation, and operational documentation for the Happy Birthday Message Scheduler system.
 
 ---
 
@@ -8,24 +8,27 @@ This directory contains all planning, architecture, research, and implementation
 
 ```
 plan/
+├── README.md                 # This file - Master index and navigation
 ├── 01-requirements/          # System requirements and specifications
 ├── 02-architecture/          # Architecture designs and decisions
 ├── 03-research/              # Research findings and analysis
-├── 04-testing/               # Testing strategies and guides
+├── 04-testing/               # Testing strategies, guides, and coverage tracking
 ├── 05-implementation/        # Implementation plans and roadmaps
-├── 06-phase-reports/         # Phase completion reports and agent summaries
-└── ARCHIVE/                  # Historical summaries (for reference)
+├── 07-monitoring/            # Monitoring, metrics, and observability plans
+├── 08-operations/            # Deployment and operational plans
+└── 99-archive/               # Archived/superseded documents
 ```
+
+**Note:** All phase reports and deliverables have been removed. This directory contains ONLY planning, research, architecture, and strategy documents.
 
 ---
 
 ## 🚀 Quick Start Guides
 
-### For Developers
+### For New Developers
 1. **Understand the System:** [`01-requirements/system-flows.md`](./01-requirements/system-flows.md)
 2. **Technical Specs:** [`01-requirements/technical-specifications.md`](./01-requirements/technical-specifications.md)
 3. **Architecture:** [`02-architecture/architecture-overview.md`](./02-architecture/architecture-overview.md)
-4. **Implementation Plan:** [`05-implementation/master-plan.md`](./05-implementation/master-plan.md)
 
 ### For Scale & Performance
 1. **Scale Research:** [`03-research/scale-performance-1m-messages.md`](./03-research/scale-performance-1m-messages.md)
@@ -35,74 +38,108 @@ plan/
 ### For DevOps/Infrastructure
 1. **Docker Compose:** [`02-architecture/docker-compose.md`](./02-architecture/docker-compose.md)
 2. **CI/CD Pipeline:** [`02-architecture/cicd-pipeline.md`](./02-architecture/cicd-pipeline.md)
-3. **Testing Strategy:** [`04-testing/testing-strategy.md`](./04-testing/testing-strategy.md)
+3. **Operations Guide:** [`08-operations/`](./08-operations/)
+
+### For Monitoring & Observability
+1. **Metrics Strategy:** [`07-monitoring/metrics-strategy-research.md`](./07-monitoring/metrics-strategy-research.md)
+2. **Grafana Dashboard Plans:** [`07-monitoring/grafana-dashboards-research.md`](./07-monitoring/grafana-dashboards-research.md)
+3. **Alert Rules Plan:** [`07-monitoring/alert-rules-enhancements.md`](./07-monitoring/alert-rules-enhancements.md)
 
 ---
 
-## 📖 Documentation Index
+## 📖 Complete Documentation Index
 
 ### 01. Requirements & Specifications
+**Focus:** What the system needs to do
 
 | Document | Description | Status |
 |----------|-------------|--------|
+| [`INDEX.md`](./01-requirements/INDEX.md) | Requirements directory index | ✅ |
 | [`system-flows.md`](./01-requirements/system-flows.md) | System workflows and user flows | ✅ Final |
 | [`technical-specifications.md`](./01-requirements/technical-specifications.md) | Detailed technical requirements | ✅ Final |
+| [`REQUIREMENTS_VERIFICATION.md`](./01-requirements/REQUIREMENTS_VERIFICATION.md) | Requirements verification checklist | ✅ Final |
 
 ### 02. Architecture & Design
+**Focus:** How the system is built
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [`architecture-overview.md`](./02-architecture/architecture-overview.md) | Complete architecture overview (consolidated) | ✅ Final |
+| [`INDEX.md`](./02-architecture/INDEX.md) | Architecture directory index | ✅ |
+| [`architecture-overview.md`](./02-architecture/architecture-overview.md) | Complete architecture overview | ✅ Final |
 | [`high-scale-design.md`](./02-architecture/high-scale-design.md) | Architecture for 1M+ messages/day | ✅ Final |
 | [`docker-compose.md`](./02-architecture/docker-compose.md) | Docker Compose setup (dev, test, prod) | ✅ Final |
 | [`cicd-pipeline.md`](./02-architecture/cicd-pipeline.md) | CI/CD pipeline architecture | ✅ Final |
+| [`monitoring.md`](./02-architecture/monitoring.md) | Monitoring architecture | ✅ Final |
 
 ### 03. Research & Analysis
+**Focus:** Investigation and decision-making
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [`distributed-coordination.md`](./03-research/distributed-coordination.md) | Redis vs Redpanda vs etcd research | ✅ Final |
+| [`INDEX.md`](./03-research/INDEX.md) | Research directory index | ✅ |
+| [`MESSAGE_QUEUE_RESEARCH.md`](./03-research/MESSAGE_QUEUE_RESEARCH.md) | Message queue comparison | ✅ Final |
+| [`RABBITMQ_VS_BULLMQ_ANALYSIS.md`](./03-research/RABBITMQ_VS_BULLMQ_ANALYSIS.md) | RabbitMQ vs BullMQ analysis | ✅ Final |
 | [`scale-performance-1m-messages.md`](./03-research/scale-performance-1m-messages.md) | Scaling to 1M+ messages/day | ✅ Final |
-| [`performance-consistency-analysis.md`](./03-research/performance-consistency-analysis.md) | Performance bottleneck analysis | ✅ Final |
-| [`test-coverage-and-reporting.md`](./03-research/test-coverage-and-reporting.md) | 80% coverage strategy with badges and GitHub Pages | ✅ Final |
-| [`openapi-client-generation.md`](./03-research/openapi-client-generation.md) | Auto-generated HTTP clients (DRY principle) | ✅ Final |
-| [`comprehensive-monitoring.md`](./03-research/comprehensive-monitoring.md) | 100% observability blueprint (100+ metrics) | ✅ Final |
-| [`dry-principle-audit.md`](./03-research/dry-principle-audit.md) | DRY violations inventory and remediation | ✅ Final |
-| [`DRY-COMPLIANCE-OFFICER.md`](./03-research/DRY-COMPLIANCE-OFFICER.md) | DRY enforcement agent procedures | ✅ Final |
+| [`comprehensive-monitoring.md`](./03-research/comprehensive-monitoring.md) | 100% observability blueprint | ✅ Final |
+| [`openapi-documentation.md`](./03-research/openapi-documentation.md) | OpenAPI documentation research | ✅ Final |
+| [`test-coverage-and-reporting.md`](./03-research/test-coverage-and-reporting.md) | 80% coverage strategy | ✅ Final |
+| [`dry-principle-audit.md`](./03-research/dry-principle-audit.md) | DRY violations audit | ✅ Final |
 
 ### 04. Testing Strategies
+**Focus:** Quality assurance and testing
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [`testing-strategy.md`](./04-testing/testing-strategy.md) | Complete testing strategy (consolidated) | ✅ Final |
+| [`INDEX.md`](./04-testing/INDEX.md) | Testing directory index | ✅ |
+| [`testing-strategy.md`](./04-testing/testing-strategy.md) | Complete testing strategy | ✅ Final |
 | [`performance-testing-guide.md`](./04-testing/performance-testing-guide.md) | k6 load testing and benchmarks | ✅ Final |
-| [`edge-cases-catalog.md`](./04-testing/edge-cases-catalog.md) | Comprehensive edge cases catalog (147 cases) | ✅ Final |
-| [`EDGE_CASES_SUMMARY.md`](./04-testing/EDGE_CASES_SUMMARY.md) | Edge cases executive summary | ✅ Final |
+| [`edge-cases-catalog.md`](./04-testing/edge-cases-catalog.md) | Comprehensive edge cases (147 cases) | ✅ Final |
+| **Coverage Tracking Plans** | **Coverage trends design** | |
+| [`coverage-tracking/coverage-trends-design.md`](./04-testing/coverage-tracking/coverage-trends-design.md) | Coverage trends system design | ✅ Final |
+| [`coverage-tracking/coverage-trends-implementation.md`](./04-testing/coverage-tracking/coverage-trends-implementation.md) | Coverage trends implementation plan | ✅ Final |
 
-### 05. Implementation
+### 05. Implementation Plans
+**Focus:** Implementation roadmaps and plans
 
 | Document | Description | Status |
 |----------|-------------|--------|
+| [`INDEX.md`](./05-implementation/INDEX.md) | Implementation directory index | ✅ |
 | [`master-plan.md`](./05-implementation/master-plan.md) | Master implementation roadmap | ✅ Final |
-| [`sops-implementation-plan.md`](./05-implementation/sops-implementation-plan.md) | SOPS secret management implementation | ✅ Final |
-| [`openapi-implementation-plan.md`](./05-implementation/openapi-implementation-plan.md) | OpenAPI 3.1 documentation implementation | ✅ Final |
-| [`phase9-enhancements-plan.md`](./05-implementation/phase9-enhancements-plan.md) | Phase 9: Quality & automation enhancements | 📋 Planned |
+| [`sops-implementation-plan.md`](./05-implementation/sops-implementation-plan.md) | SOPS secret management plan | ✅ Final |
+| [`openapi-implementation-plan.md`](./05-implementation/openapi-implementation-plan.md) | OpenAPI 3.1 implementation | ✅ Final |
+| [`phase9-enhancements-plan.md`](./05-implementation/phase9-enhancements-plan.md) | Phase 9: Quality enhancements | 📋 Planned |
 
-### 06. Phase Reports
+### 07. Monitoring & Observability
+**Focus:** Metrics, dashboards, and alerting
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [`06-phase-reports/phase1/`](./06-phase-reports/phase1/) | Phase 1: Foundation - Complete implementation reports | ✅ Complete |
-| [`06-phase-reports/phase2/`](./06-phase-reports/phase2/) | Phase 2: Scheduler & User Management - Implementation reports | ✅ Complete |
-| [`06-phase-reports/README.md`](./06-phase-reports/README.md) | Phase reports index and organization guide | ✅ Final |
+| [`INDEX.md`](./07-monitoring/INDEX.md) | Monitoring directory index | ✅ |
+| [`metrics-strategy-research.md`](./07-monitoring/metrics-strategy-research.md) | 100+ metrics blueprint | ✅ Final |
+| [`metrics-implementation-plan.md`](./07-monitoring/metrics-implementation-plan.md) | Metrics implementation plan | ✅ Final |
+| [`metrics-expansion-plan.md`](./07-monitoring/metrics-expansion-plan.md) | Metrics expansion strategy | ✅ Final |
+| [`grafana-dashboards-research.md`](./07-monitoring/grafana-dashboards-research.md) | Dashboard research & specifications | ✅ Final |
+| [`grafana-dashboard-specifications.md`](./07-monitoring/grafana-dashboard-specifications.md) | Detailed dashboard specs | ✅ Final |
+| [`alert-rules-enhancements.md`](./07-monitoring/alert-rules-enhancements.md) | Alert rules and SLOs plan | ✅ Final |
 
-### ARCHIVE (Historical Reference)
+### 08. Operations & Deployment
+**Focus:** Production operations and infrastructure
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| [`INDEX.md`](./08-operations/INDEX.md) | Operations directory index | ✅ |
+| [`github-secrets-verification.md`](./08-operations/github-secrets-verification.md) | GitHub secrets verification plan | ✅ Final |
+| [`exporter-deployment-checklist.md`](./08-operations/exporter-deployment-checklist.md) | Exporter deployment checklist | ✅ Final |
+| [`postgres-exporter-deployment.md`](./08-operations/postgres-exporter-deployment.md) | PostgreSQL exporter plan | ✅ Final |
+| [`rabbitmq-prometheus-deployment.md`](./08-operations/rabbitmq-prometheus-deployment.md) | RabbitMQ exporter plan | ✅ Final |
+
+### 99. Archive
+**Focus:** Historical reference
 
 | Document | Description |
 |----------|-------------|
-| `hive-mind-summaries/` | AI collaboration summaries |
-| `analysis-summaries/` | Various analysis summaries |
-| `index-files/` | Old navigation indexes |
+| [`ARCHIVE_INDEX.md`](./99-archive/ARCHIVE_INDEX.md) | Archive index and policy |
+| [`INDEX.md`](./99-archive/INDEX.md) | Historical document index |
 
 ---
 
@@ -180,6 +217,8 @@ plan/
 - **Testing:** Vitest (unit/integration) + k6 (performance)
 - **CI/CD:** GitHub Actions + Docker Compose
 - **Monitoring:** Prometheus + Grafana
+- **Security:** SOPS (AES-256 encryption)
+- **Documentation:** OpenAPI 3.1
 
 ---
 
@@ -198,81 +237,123 @@ plan/
 | **Phase 9** | Week 9-18 | Quality & Automation (80% Coverage, DRY, Monitoring) | 📋 Planned |
 
 **✅ Phases 1-8 COMPLETE - PRODUCTION READY (98.75% Readiness Score)**
+
 **📋 Phase 9 PLANNED - Quality & Automation Enhancements (8-10 weeks)**
+
+---
+
+## 📊 Project Metrics
+
+### Development Metrics
+- **Total Lines of Code:** ~15,000+
+- **Test Coverage:** Current ~65%, Goal 80%+
+- **Documentation Size:** ~650KB
+- **Development Time:** 8 phases (8 weeks completed)
+
+### Quality Metrics
+- **Production Readiness:** 98.75%
+- **Security Score:** A+ (0 critical/high vulnerabilities)
+- **Test Count:** 400+ automated tests
+- **DRY Violations:** 47 identified, remediation planned
+
+### Infrastructure Metrics
+- **Docker Images:** 15+ services
+- **CI/CD Workflows:** 6 pipelines
+- **Monitoring Metrics:** 100+ metrics tracked
+- **Grafana Dashboards:** 6 dashboards
+- **Alert Rules:** 40+ rules across 4 severity levels
+
+---
+
+## 🗺️ Navigation Tips
+
+### Finding Information
+
+**By Topic:**
+- Requirements → `01-requirements/`
+- Architecture → `02-architecture/`
+- Research → `03-research/`
+- Testing → `04-testing/`
+- Implementation → `05-implementation/`
+- Monitoring → `07-monitoring/`
+- Operations → `08-operations/`
+- Archive → `99-archive/`
+
+**By Task:**
+- Understand system architecture → `02-architecture/architecture-overview.md`
+- Plan deployment → `08-operations/`
+- Design monitoring → `07-monitoring/`
+- Plan testing strategy → `04-testing/testing-strategy.md`
+- Check implementation roadmap → `05-implementation/master-plan.md`
+
+**By Role:**
+- Developer → Start with `01-requirements/` and `02-architecture/`
+- DevOps → Focus on `08-operations/` and `02-architecture/docker-compose.md`
+- QA → Review `04-testing/`
+- Architect → Review `02-architecture/` and `03-research/`
 
 ---
 
 ## 📝 Document Changelog
 
-### 2025-12-30 - PHASE 9 PLANNED 📋🎯 (Quality & Automation Enhancement)
+### 2025-12-31 - AGGRESSIVE CLEANUP 🧹
+- 🗑️ **Removed Deliverables:** Deleted entire `06-phase-reports/` and `09-reports/` directories
+- 🧹 **Removed Summaries:** Deleted all `*_SUMMARY.md`, `*_REPORT.md`, `*_DELIVERABLES.md` files
+- 🗂️ **Removed Implementation Files:** Deleted dashboard JSONs, scripts, templates from plan/
+- 📋 **Clean Structure:** Plan directory now contains ONLY planning documents
+- 📊 **Result:** Reduced from 120+ files to 56 core planning documents
+
+### 2025-12-31 - Phase 9 Research Complete 🔬
 - 📋 **Phase 9 Research Complete**: 5 comprehensive research documents (~200KB)
-- 🧪 **Test Coverage Strategy**: 80% minimum coverage with CI/CD enforcement, badges, GitHub Pages
-- 🔍 **Edge Cases Catalog**: 147 edge cases identified, 95% target coverage
-- 📊 **Monitoring Blueprint**: 100% observability (100+ metrics, 6 dashboards)
-- 🤖 **OpenAPI Client Generation**: Auto-generated clients (DRY principle, 80% code reduction)
-- 🧹 **DRY Violations Audit**: 47 violations identified, remediation plan created
-- 📜 **DRY Constitution**: Mandatory 5% duplication threshold, enforcement framework
-- 🔐 **GitHub Secrets Guide**: Automation with gh CLI, all secrets documented
-- 📅 **Implementation Plan**: 8-10 week roadmap, 7 parallel sub-projects
-- 📚 **Documentation**: ~200KB research + implementation plans
+- 🧪 **Test Coverage Strategy**: 80% minimum coverage with CI/CD enforcement
+- 🔍 **Edge Cases Catalog**: 147 edge cases identified
+- 📊 **Monitoring Blueprint**: 100+ metrics, 6 dashboards
+- 🤖 **OpenAPI Client Generation**: Auto-generated clients (DRY principle)
+- 🧹 **DRY Violations Audit**: 47 violations identified
+- 📅 **Implementation Plan**: 8-10 week roadmap
 
-### 2025-12-30 - PHASE 8 COMPLETE 🔐📚 (Security & Documentation Enhancement)
-- ✅ **Phase 8 Complete**: SOPS Secret Management + OpenAPI 3.1 Documentation
-- 🔒 **SOPS Integration**: AES-256 encrypted secrets, GitHub Secrets, CI/CD automation
-- 📚 **OpenAPI 3.1**: 100% endpoint coverage, 19+ examples, RFC 9457 errors
-- 🔧 **Helper Scripts**: 14 scripts for secret/docs management
-- 📖 **Documentation**: ~320KB across 17 documents (research, guides, specs)
-- 🏢 **Vendor API**: Email service spec downloaded and integrated
-- 🎨 **Custom UI**: Branded Swagger UI with dark mode
-- ✅ **CI/CD**: Automated validation and secret management
+### 2025-12-30 - Phase 8 Complete 🔐
+- ✅ **Phase 8 Complete**: SOPS Secret Management + OpenAPI 3.1
+- 🔒 **SOPS Integration**: AES-256 encrypted secrets
+- 📚 **OpenAPI 3.1**: 100% endpoint coverage
+- 🔧 **Helper Scripts**: 14 scripts for management
+- 📖 **Documentation**: ~320KB comprehensive docs
 
-### 2025-12-30 - ALL PHASES COMPLETE 🎉 (Project Completion)
-- ✅ **Phase 1 Complete**: Foundation (TypeScript, Fastify, Database, Testing)
-- ✅ **Phase 2 Complete**: Repositories, Services, RabbitMQ, User API
-- ✅ **Phase 3 Complete**: CRON Schedulers, Strategy Pattern, E2E Testing
-- ✅ **Phase 4 Complete**: Health Checks, Message Rescheduling, Recovery
-- ✅ **Phase 5 Complete**: Prometheus Metrics, Grafana Dashboards, k6 Tests
-- ✅ **Phase 6 Complete**: CI/CD Pipelines (6 workflows), Production Docker
-- ✅ **Phase 7 Complete**: Security Audit, Chaos Testing, Operational Docs
-- ✅ **Phase 8 Complete**: SOPS Encryption, OpenAPI 3.1, Vendor API Integration
-- 📁 Complete phase documentation in `06-phase-reports/phase1-8/`
-- 🗂️ INDEX.md files for all 8 phases
-- 🚀 **Production Readiness: 98.75%** (GO FOR PRODUCTION)
-- 📊 **400+ automated tests** (all passing)
-- 📚 **~450KB comprehensive documentation**
-- 🔒 **0 critical/high vulnerabilities**
-- 🔐 **AES-256 encrypted secrets**
-
-### 2025-12-30 - Phase 2 Complete + Documentation Reorganization
-- ✅ **Phase 1 Complete**: Foundation (TypeScript, Fastify, Database, Testing)
-- ✅ **Phase 2 Complete**: Repositories, Services, RabbitMQ, User API
-- 📁 Added `06-phase-reports/` with automatic organization
-- 🔧 Created `.claude/hooks/post-phase-docs.sh` for automatic doc cleanup
-- 📚 Reorganized all implementation docs from root to plan directory
-- 🗂️ Created INDEX.md files for each phase
-- Updated implementation timeline with status tracking
-
-### 2025-12-30 - Initial Documentation Reorganization
-- Consolidated 32 markdown files into organized structure
-- Removed duplicates and summaries
-- Created clear navigation and quick start guides
-- Archived historical AI collaboration summaries
+### 2025-12-30 - Phases 1-7 Complete 🎉
+- ✅ **All Core Phases Complete**: Foundation through Production Hardening
+- 🚀 **Production Readiness**: 98.75% score
+- 📊 **400+ Tests**: All passing
+- 🔒 **Zero Vulnerabilities**: Critical/high
+- 📚 **Complete Documentation**: All phases documented
 
 ---
 
 ## 🤝 Contributing
 
 When adding new documentation:
-1. Place it in the appropriate directory (01-05)
-2. Update this README with links
-3. Use clear, descriptive filenames
-4. Include table of contents for long documents
+1. Place it in the appropriate directory (01-09)
+2. Update the directory's INDEX.md
+3. Update this README with links
+4. Use clear, descriptive filenames
+5. Include table of contents for long documents
 
 ---
 
 ## 📞 Questions?
 
-Refer to:
+### By Topic
 - **System Design:** [`02-architecture/architecture-overview.md`](./02-architecture/architecture-overview.md)
-- **Implementation:** [`05-implementation/master-plan.md`](./05-implementation/master-plan.md)
-- **Testing:** [`04-testing/testing-strategy.md`](./04-testing/testing-strategy.md)
+- **Implementation Planning:** [`05-implementation/master-plan.md`](./05-implementation/master-plan.md)
+- **Testing Strategy:** [`04-testing/testing-strategy.md`](./04-testing/testing-strategy.md)
+- **Operations Planning:** [`08-operations/INDEX.md`](./08-operations/INDEX.md)
+- **Monitoring Design:** [`07-monitoring/INDEX.md`](./07-monitoring/INDEX.md)
+
+---
+
+**Last Updated:** 2025-12-31
+
+**Total Documentation:** 56 planning documents (cleaned from 120+)
+
+**Organization Status:** ✅ Aggressively Cleaned - Planning Docs Only
+
+**Content Policy:** This directory contains ONLY planning, research, architecture, and strategy documents. All deliverables, reports, and implementation artifacts have been removed.

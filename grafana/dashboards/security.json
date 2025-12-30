@@ -1,0 +1,1033 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - Security Monitoring",
+    "tags": [
+      "birthday-scheduler",
+      "security",
+      "authentication",
+      "production"
+    ],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Authentication Failures",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_auth_failures_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (failure_type)",
+            "legendFormat": "{{failure_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Failures/sec",
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0.5
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "sum"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Auth Failure Rate",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 1: Authentication Failures"
+      },
+      {
+        "id": 2,
+        "title": "Auth Failures (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_auth_failures_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Total Failures",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 100,
+                  "color": "yellow"
+                },
+                {
+                  "value": 500,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 2: Auth Failures (24h)"
+      },
+      {
+        "id": 3,
+        "title": "Auth Failure Rate",
+        "type": "gauge",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_auth_failures_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Failure Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 10,
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 5,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 3: Auth Failure Rate"
+      },
+      {
+        "id": 4,
+        "title": "Auth Failures by Endpoint",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 12,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_auth_failures_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (endpoint)",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Failures/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 4: Auth Failures by Endpoint"
+      },
+      {
+        "id": 5,
+        "title": "Rate Limit Hits",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_rate_limit_hits_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (endpoint)",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Hits/sec",
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  1
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "sum"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Rate Limit Hits",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 5: Rate Limit Hits"
+      },
+      {
+        "id": 6,
+        "title": "Rate Limit Hits by Type",
+        "type": "piechart",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_rate_limit_hits_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h])) by (limit_type)",
+            "legendFormat": "{{limit_type}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "description": "Panel 6: Rate Limit Hits by Type"
+      },
+      {
+        "id": 7,
+        "title": "Security Events by Severity",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"critical\"}[$interval]))",
+            "legendFormat": "Critical",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"high\"}[$interval]))",
+            "legendFormat": "High",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"medium\"}[$interval]))",
+            "legendFormat": "Medium",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"low\"}[$interval]))",
+            "legendFormat": "Low",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Critical",
+            "color": "#F2495C",
+            "zindex": 4
+          },
+          {
+            "alias": "High",
+            "color": "#FF9830",
+            "zindex": 3
+          },
+          {
+            "alias": "Medium",
+            "color": "#FADE2A",
+            "zindex": 2
+          },
+          {
+            "alias": "Low",
+            "color": "#73BF69",
+            "zindex": 1
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "sum"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "Critical Security Event",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 7: Security Events by Severity"
+      },
+      {
+        "id": 8,
+        "title": "Security Events by Type",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (event_type)",
+            "legendFormat": "{{event_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 8: Security Events by Type"
+      },
+      {
+        "id": 9,
+        "title": "Critical Events (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"critical\"}[24h]))",
+            "legendFormat": "Critical",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 9: Critical Events (24h)"
+      },
+      {
+        "id": 10,
+        "title": "High Severity Events (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 24,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"high\"}[24h]))",
+            "legendFormat": "High",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 10: High Severity Events (24h)"
+      },
+      {
+        "id": 11,
+        "title": "Medium Severity Events (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"medium\"}[24h]))",
+            "legendFormat": "Medium",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 200,
+                  "color": "orange"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 11: Medium Severity Events (24h)"
+      },
+      {
+        "id": 12,
+        "title": "Low Severity Events (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 24,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=\"low\"}[24h]))",
+            "legendFormat": "Low",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 12: Low Severity Events (24h)"
+      },
+      {
+        "id": 13,
+        "title": "Suspicious Activity Patterns",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\"}[1h])) by (event_type, severity))",
+            "legendFormat": "",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "event_type": "Event Type",
+                "severity": "Severity",
+                "Value": "Count (1h)"
+              }
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "Count (1h)",
+              "desc": true
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "color-background-solid"
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Severity"
+              },
+              "properties": [
+                {
+                  "id": "mappings",
+                  "value": [
+                    {
+                      "type": "value",
+                      "value": "critical",
+                      "text": "CRITICAL",
+                      "color": "#F2495C"
+                    },
+                    {
+                      "type": "value",
+                      "value": "high",
+                      "text": "HIGH",
+                      "color": "#FF9830"
+                    },
+                    {
+                      "type": "value",
+                      "value": "medium",
+                      "text": "MEDIUM",
+                      "color": "#FADE2A"
+                    },
+                    {
+                      "type": "value",
+                      "value": "low",
+                      "text": "LOW",
+                      "color": "#73BF69"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "description": "Panel 13: Suspicious Activity Patterns"
+      },
+      {
+        "id": 14,
+        "title": "Circuit Breaker Status",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_circuit_breaker_open{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{service_name}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name",
+          "reduceOptions": {
+            "calcs": [
+              "last"
+            ],
+            "fields": "",
+            "values": false
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "value": "0",
+                "text": "CLOSED",
+                "color": "green"
+              },
+              {
+                "type": "value",
+                "value": "1",
+                "text": "OPEN",
+                "color": "red"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0.5
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "1m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "max"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "30s",
+          "handler": 1,
+          "name": "Circuit Breaker Open",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 14: Circuit Breaker Status"
+      },
+      {
+        "id": 15,
+        "title": "API Error Rate (4xx/5xx) by Endpoint",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "(sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", status=~\"4..\"}[$interval])) by (path) / sum(rate(birthday_scheduler_api_requests_total[$interval])) by (path)) * 100",
+            "legendFormat": "4xx {{path}}",
+            "refId": "A"
+          },
+          {
+            "expr": "(sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", status=~\"5..\"}[$interval])) by (path) / sum(rate(birthday_scheduler_api_requests_total[$interval])) by (path)) * 100",
+            "legendFormat": "5xx {{path}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Error Rate %",
+            "format": "percent"
+          }
+        ],
+        "description": "Panel 15: API Error Rate (4xx/5xx) by Endpoint"
+      },
+      {
+        "id": 16,
+        "title": "Rate Limit Hits (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 36,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_rate_limit_hits_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Rate Limit Hits",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 100,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1000,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 16: Rate Limit Hits (24h)"
+      },
+      {
+        "id": 17,
+        "title": "Security Score",
+        "type": "gauge",
+        "gridPos": {
+          "x": 18,
+          "y": 36,
+          "w": 6,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "100 - (sum(increase(birthday_scheduler_security_events_total{namespace=\"$namespace\", instance=~\"$instance\", severity=~\"critical|high\"}[24h])) / 10)",
+            "legendFormat": "Security Score",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 17: Security Score"
+      },
+      {
+        "id": 18,
+        "title": "External API Security Events",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 44,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_external_api_calls_total{namespace=\"$namespace\", instance=~\"$instance\", status=~\"4..\"}[$interval])) by (api_name)",
+            "legendFormat": "4xx {{api_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_external_api_calls_total{namespace=\"$namespace\", instance=~\"$instance\", status=~\"5..\"}[$interval])) by (api_name)",
+            "legendFormat": "5xx {{api_name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 18: External API Security Events"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {
+              "text": "1m",
+              "value": "1m",
+              "selected": false
+            },
+            {
+              "text": "5m",
+              "value": "5m",
+              "selected": true
+            },
+            {
+              "text": "10m",
+              "value": "10m",
+              "selected": false
+            },
+            {
+              "text": "30m",
+              "value": "30m",
+              "selected": false
+            },
+            {
+              "text": "1h",
+              "value": "1h",
+              "selected": false
+            }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Overview Dashboard",
+        "url": "/d/overview?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "Return to overview dashboard",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "API Performance",
+        "url": "/d/api-performance?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View API security details",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"SecurityBreach|UnauthorizedAccess|HighFailedLogins|RateLimitExceeded\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

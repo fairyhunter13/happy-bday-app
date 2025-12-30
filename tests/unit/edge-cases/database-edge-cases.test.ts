@@ -121,7 +121,10 @@ describe('Database Edge Cases', () => {
       // PostgreSQL unique constraint error code
       const UNIQUE_VIOLATION_CODE = '23505';
 
-      const handleDuplicateKey = (error: { code?: string; constraint?: string }): {
+      const handleDuplicateKey = (error: {
+        code?: string;
+        constraint?: string;
+      }): {
         action: string;
         shouldRetry: boolean;
       } => {
@@ -142,7 +145,9 @@ describe('Database Edge Cases', () => {
         })
       ).toEqual({ action: 'RETURN_EXISTING', shouldRetry: false });
 
-      expect(handleDuplicateKey({ code: UNIQUE_VIOLATION_CODE, constraint: 'users_email_key' })).toEqual({
+      expect(
+        handleDuplicateKey({ code: UNIQUE_VIOLATION_CODE, constraint: 'users_email_key' })
+      ).toEqual({
         action: 'ERROR',
         shouldRetry: false,
       });

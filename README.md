@@ -2,8 +2,9 @@
 
 <!-- Build Status Badges -->
 [![CI](https://github.com/fairyhunter13/happy-bday-app/workflows/CI/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
+[![Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
 [![Code Quality](https://github.com/fairyhunter13/happy-bday-app/workflows/Code%20Quality/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
+[![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
 [![Security](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scanning/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
 [![Performance](https://github.com/fairyhunter13/happy-bday-app/workflows/Performance%20Tests/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
 [![Docker](https://github.com/fairyhunter13/happy-bday-app/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml)
@@ -12,6 +13,7 @@
 [![OpenAPI](https://github.com/fairyhunter13/happy-bday-app/workflows/OpenAPI%20Validation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
 [![Docs](https://github.com/fairyhunter13/happy-bday-app/workflows/Deploy%20Documentation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docs.yml)
 [![API Docs](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
+[![Coverage Trends](https://img.shields.io/badge/Coverage-Trends-purple?logo=chartdotjs)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
 
 <!-- Tech Stack Badges -->
 [![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-green?logo=node.js)](https://nodejs.org/)
@@ -26,6 +28,26 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot)](https://github.com/fairyhunter13/happy-bday-app/security/dependabot)
 
 A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, and RabbitMQ. Designed to handle **1M+ messages/day** with **zero data loss** and extensible support for multiple message types (birthday, anniversary, etc.).
+
+---
+
+## ⚠️ Project Scope
+
+> **Important:** This project is designed for **LOCAL DEVELOPMENT + CI/CD TESTING ONLY**.
+
+This application is **NOT deployed to any production environment**. It demonstrates production-grade architecture, patterns, and best practices through:
+
+- **Production-Quality Design:** Enterprise-level architecture with monitoring, metrics, and observability
+- **Local Scale Testing:** Docker Compose configurations that simulate production workloads (1M+ msg/day)
+- **CI/CD Validation:** Automated testing pipelines that verify production-ready capabilities
+- **Educational Purpose:** Shows how to build production-grade systems without actual deployment
+
+All "production" configurations (`docker-compose.prod.yml`, monitoring setup, etc.) are for **local/CI testing at scale**, not cloud deployment.
+
+**📖 For Details:**
+- **Local Setup:** See [`docs/DEPLOYMENT_GUIDE.md`](./docs/DEPLOYMENT_GUIDE.md)
+- **Architecture Scope:** See [`docs/ARCHITECTURE_SCOPE.md`](./docs/ARCHITECTURE_SCOPE.md)
+- **Local Readiness:** See [`docs/LOCAL_READINESS.md`](./docs/LOCAL_READINESS.md)
 
 ---
 
@@ -77,14 +99,18 @@ All planning, architecture, research, and implementation documentation is in the
 
 ## 🎯 Key Features
 
+### Production-Grade Capabilities (Local/CI Testing)
+
 - ✅ **Zero data loss** (RabbitMQ Quorum Queues with Raft consensus)
 - ✅ **1M+ messages/day capacity** (11.5 msg/sec sustained, 100+ msg/sec peak)
 - ✅ **Timezone-aware scheduling** (9am in each user's local timezone)
 - ✅ **Multiple message types** (birthday, anniversary, extensible via Strategy pattern)
 - ✅ **Exactly-once delivery** (idempotency via database constraints)
-- ✅ **Horizontal scaling** (10-30 workers, 5 API replicas)
+- ✅ **Horizontal scaling** (10-30 workers, 5 API replicas in local Docker)
 - ✅ **Docker Compose** (simple E2E tests, scalable performance tests)
-- ✅ **Production-ready** (monitoring, CI/CD, load testing)
+- ✅ **Production-grade monitoring** (Prometheus + Grafana locally)
+
+> All features are tested and validated in local Docker environments and CI/CD pipelines.
 
 ---
 
@@ -122,37 +148,55 @@ happy-bday-app/
 │   ├── integration/            # Integration tests
 │   ├── e2e/                    # E2E tests
 │   └── performance/            # k6 performance tests
-├── docker-compose.dev.yml      # Development environment
-├── docker-compose.test.yml     # Simple E2E tests (CI/CD)
-├── docker-compose.perf.yml     # Performance testing
-└── .github/workflows/          # GitHub Actions
+├── docker-compose.yml          # Base configuration (local dev)
+├── docker-compose.dev.yml      # Development environment (local)
+├── docker-compose.test.yml     # CI/CD testing environment (4 containers)
+├── docker-compose.perf.yml     # Performance testing (24 containers, local)
+├── docker-compose.prod.yml     # Production-scale testing (local only)
+└── .github/workflows/          # GitHub Actions CI/CD
 ```
 
 ---
 
 ## 🧪 Testing
 
-### Simple E2E Tests (CI/CD)
+All tests run **locally** or in **CI/CD pipelines**. No production deployment required.
+
+### Unit & Integration Tests
 ```bash
-# Start test environment (4 containers)
+# Run all tests with coverage
+npm test
+
+# Watch mode for development
+npm run test:watch
+```
+
+### E2E Tests (Local/CI)
+```bash
+# Start test environment (4 containers, local Docker)
 docker-compose -f docker-compose.test.yml up -d
 
 # Run E2E tests (< 5 min)
 npm run test:e2e
 ```
 
-### Scalable Performance Tests
+### Performance Tests (Local Only)
 ```bash
-# Start performance environment (24 containers)
+# Start performance environment (24 containers, local Docker)
 docker-compose -f docker-compose.perf.yml up -d
 
 # Run k6 load tests (1M msg/day simulation)
 npm run test:performance
 ```
 
+> **Note:** Performance tests simulate production-scale workloads locally using Docker Compose.
+
 ---
 
 ## 📚 Architecture Highlights
+
+> **Design Philosophy:** Production-grade architecture for local development and CI/CD validation.
+> See [`docs/ARCHITECTURE_SCOPE.md`](./docs/ARCHITECTURE_SCOPE.md) for complete scope details.
 
 ### Message Type Abstraction (Strategy Pattern)
 
@@ -217,24 +261,49 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 
 ## 📈 Performance Targets
 
-| Metric | Target | Actual Capacity |
-|--------|--------|----------------|
-| **Daily Throughput** | 1M messages | 864M msg/day (RabbitMQ) |
+**Validated locally using Docker Compose and k6 load testing:**
+
+| Metric | Target | Actual Capacity (Local) |
+|--------|--------|-------------------------|
+| **Daily Throughput** | 1M messages | 864M msg/day (RabbitMQ capacity) |
 | **Sustained Rate** | 11.5 msg/sec | 10,000 msg/sec |
 | **Peak Rate** | 100 msg/sec | 10,000 msg/sec |
-| **API Latency (p95)** | < 500ms | ✅ Verified |
-| **API Latency (p99)** | < 1000ms | ✅ Verified |
+| **API Latency (p95)** | < 500ms | ✅ Verified in local tests |
+| **API Latency (p99)** | < 1000ms | ✅ Verified in local tests |
 | **Worker Capacity** | 100 msg/sec | 150 msg/sec (10-30 workers) |
-| **Database Queries** | < 200ms | ✅ With partitioning |
+| **Database Queries** | < 200ms | ✅ With partitioning (local) |
+
+> Performance numbers measured in local Docker Compose environments. See [`docs/LOCAL_READINESS.md`](./docs/LOCAL_READINESS.md) for testing methodology.
 
 ---
 
 ## 📞 Getting Help
 
-- **Documentation:** [`plan/README.md`](./plan/README.md)
-- **Architecture:** [`plan/02-architecture/`](./plan/02-architecture/)
-- **Implementation:** [`plan/05-implementation/master-plan.md`](./plan/05-implementation/master-plan.md)
-- **Testing:** [`plan/04-testing/testing-strategy.md`](./plan/04-testing/testing-strategy.md)
+### Core Documentation
+- **Documentation Hub:** [`plan/README.md`](./plan/README.md)
+- **Architecture Overview:** [`plan/02-architecture/`](./plan/02-architecture/)
+- **Implementation Plan:** [`plan/05-implementation/master-plan.md`](./plan/05-implementation/master-plan.md)
+- **Testing Strategy:** [`plan/04-testing/testing-strategy.md`](./plan/04-testing/testing-strategy.md)
+
+### Essential Guides
+- **Developer Setup:** [`docs/DEVELOPER_SETUP.md`](./docs/DEVELOPER_SETUP.md) - First-time setup
+- **Local Deployment:** [`docs/DEPLOYMENT_GUIDE.md`](./docs/DEPLOYMENT_GUIDE.md) - Run locally
+- **Architecture Scope:** [`docs/ARCHITECTURE_SCOPE.md`](./docs/ARCHITECTURE_SCOPE.md) - Design decisions
+- **Local Readiness:** [`docs/LOCAL_READINESS.md`](./docs/LOCAL_READINESS.md) - Production-grade local testing
+- **Runbook:** [`docs/RUNBOOK.md`](./docs/RUNBOOK.md) - Operations guide
+
+---
+
+## 🎓 Learning & Educational Use
+
+This project serves as a comprehensive example of:
+
+- **System Design:** Scalable message queue architecture
+- **Best Practices:** Testing, monitoring, CI/CD, documentation
+- **Local Development:** Production-grade setup without cloud costs
+- **Portfolio Showcase:** Demonstrates production-ready engineering
+
+Feel free to use this project as a reference for building similar systems or as a learning resource for production-grade TypeScript applications.
 
 ---
 

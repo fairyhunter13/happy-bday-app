@@ -1,0 +1,828 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - Message Processing",
+    "tags": [
+      "birthday-scheduler",
+      "messages",
+      "queue",
+      "production"
+    ],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Message Rates Overview",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 16,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_scheduled_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Scheduled",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Sent",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_failed_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Failed",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Scheduled",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "Sent",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "Failed",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "Panel 1: Message Rates Overview"
+      },
+      {
+        "id": 2,
+        "title": "Message Success Rate",
+        "type": "gauge",
+        "gridPos": {
+          "x": 16,
+          "y": 0,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "(sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) / (sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) + sum(rate(birthday_scheduler_messages_failed_total[$interval])))) * 100",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 95,
+                  "color": "yellow"
+                },
+                {
+                  "value": 99,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  95
+                ],
+                "type": "lt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "Low Message Success Rate",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 2: Message Success Rate"
+      },
+      {
+        "id": 3,
+        "title": "Queue Depth",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_queue_depth{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{queue_name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages",
+            "format": "short"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  1000
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Queue Depth",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 3: Queue Depth"
+      },
+      {
+        "id": 4,
+        "title": "Dead Letter Queue Depth",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_dlq_depth{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "DLQ: {{queue_name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages",
+            "format": "short"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  10
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "DLQ Messages Detected",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 4: Dead Letter Queue Depth"
+      },
+      {
+        "id": 5,
+        "title": "Message Delivery Duration (Histogram)",
+        "type": "heatmap",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_message_delivery_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[1m])) by (le)",
+            "legendFormat": "{{le}}",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "calculate": false,
+          "yAxis": {
+            "axisPlacement": "left",
+            "unit": "s"
+          },
+          "color": {
+            "scheme": "Spectral",
+            "mode": "scheme"
+          },
+          "cellGap": 1,
+          "showValue": "never"
+        },
+        "description": "Panel 5: Message Delivery Duration (Histogram)"
+      },
+      {
+        "id": 6,
+        "title": "Message Delivery Percentiles",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(birthday_scheduler_message_delivery_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, message_type))",
+            "legendFormat": "p50 {{message_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_message_delivery_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, message_type))",
+            "legendFormat": "p95 {{message_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_message_delivery_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, message_type))",
+            "legendFormat": "p99 {{message_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 6: Message Delivery Percentiles"
+      },
+      {
+        "id": 7,
+        "title": "Retry Rates by Reason",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_message_retries_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (retry_reason)",
+            "legendFormat": "{{retry_reason}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Retries/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 7: Retry Rates by Reason"
+      },
+      {
+        "id": 8,
+        "title": "Time-to-Delivery Tracking",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(birthday_scheduler_message_time_to_delivery_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_message_time_to_delivery_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_message_time_to_delivery_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p99",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Time to Delivery",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 8: Time-to-Delivery Tracking"
+      },
+      {
+        "id": 9,
+        "title": "Messages Scheduled Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_messages_scheduled_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Scheduled",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "blue"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 9: Messages Scheduled Today"
+      },
+      {
+        "id": 10,
+        "title": "Messages Sent Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Sent",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 10: Messages Sent Today"
+      },
+      {
+        "id": 11,
+        "title": "Messages Failed Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_messages_failed_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Failed",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                },
+                {
+                  "value": 100,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 11: Messages Failed Today"
+      },
+      {
+        "id": 12,
+        "title": "Total Retries Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 32,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_message_retries_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Retries",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 200,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 12: Total Retries Today"
+      },
+      {
+        "id": 13,
+        "title": "Messages by Type",
+        "type": "piechart",
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h])) by (message_type)",
+            "legendFormat": "{{message_type}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "description": "Panel 13: Messages by Type"
+      },
+      {
+        "id": 14,
+        "title": "Failed Messages by Error Type",
+        "type": "piechart",
+        "gridPos": {
+          "x": 8,
+          "y": 36,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_messages_failed_total{namespace=\"$namespace\", instance=~\"$instance\"}[24h])) by (error_type)",
+            "legendFormat": "{{error_type}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "values": [
+              "value",
+              "percent"
+            ]
+          },
+          "pieType": "pie",
+          "tooltip": {
+            "mode": "single"
+          }
+        },
+        "description": "Panel 14: Failed Messages by Error Type"
+      },
+      {
+        "id": 15,
+        "title": "Pending Messages",
+        "type": "graph",
+        "gridPos": {
+          "x": 16,
+          "y": 36,
+          "w": 8,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_pending_messages{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{message_type}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 15: Pending Messages"
+      },
+      {
+        "id": 16,
+        "title": "Message Processing Quantiles",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 44,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_message_processing_quantiles{namespace=\"$namespace\", instance=~\"$instance\", quantile=\"0.5\"}",
+            "legendFormat": "p50 {{message_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_message_processing_quantiles{namespace=\"$namespace\", instance=~\"$instance\", quantile=\"0.9\"}",
+            "legendFormat": "p90 {{message_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_message_processing_quantiles{namespace=\"$namespace\", instance=~\"$instance\", quantile=\"0.99\"}",
+            "legendFormat": "p99 {{message_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Processing Time",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 16: Message Processing Quantiles"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {
+              "text": "1m",
+              "value": "1m",
+              "selected": false
+            },
+            {
+              "text": "5m",
+              "value": "5m",
+              "selected": true
+            },
+            {
+              "text": "10m",
+              "value": "10m",
+              "selected": false
+            },
+            {
+              "text": "30m",
+              "value": "30m",
+              "selected": false
+            },
+            {
+              "text": "1h",
+              "value": "1h",
+              "selected": false
+            }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        },
+        {
+          "name": "queue",
+          "type": "query",
+          "query": "label_values(birthday_scheduler_queue_depth{namespace=\"$namespace\", instance=~\"$instance\"}, queue_name)",
+          "label": "Queue",
+          "description": "Filter by queue name",
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Database Dashboard",
+        "url": "/d/database?var-namespace=$namespace&var-instance=$instance&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View database metrics for queue persistence",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Overview Dashboard",
+        "url": "/d/overview?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "Return to overview dashboard",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"QueueDepthCritical|DLQMessagesPresent|HighMessageRetryRate|MessageProcessingSlow|MessageDeliveryRate|MessageSuccessRate\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

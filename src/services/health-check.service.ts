@@ -84,7 +84,7 @@ export class HealthCheckService {
 
     try {
       // Simple query to test connection
-      const result = await db.execute(sql`SELECT 1 as health_check`);
+      await db.execute(sql`SELECT 1 as health_check`);
 
       const latency = Date.now() - startTime;
 

@@ -169,7 +169,9 @@ describe('Concurrency Edge Cases', () => {
       );
 
       // Whitespace-only should also throw
-      expect(() => idempotencyService.generateKey('   ', 'birthday', new Date('2025-12-30'))).toThrow();
+      expect(() =>
+        idempotencyService.generateKey('   ', 'birthday', new Date('2025-12-30'))
+      ).toThrow();
     });
 
     it('should handle date at epoch start (1970-01-01)', () => {
@@ -198,7 +200,8 @@ describe('Concurrency Edge Cases', () => {
       const messageTypes = ['birthday', 'anniversary', 'reminder', 'custom'];
       const date = new Date('2025-12-30');
 
-      const keys = messageTypes.map((type) => idempotencyService.generateKey('user-123', type, date)
+      const keys = messageTypes.map((type) =>
+        idempotencyService.generateKey('user-123', type, date)
       );
 
       // All should be unique

@@ -1,0 +1,821 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - Infrastructure Health",
+    "tags": [
+      "birthday-scheduler",
+      "infrastructure",
+      "nodejs",
+      "production"
+    ],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(birthday_scheduler_process_cpu_seconds_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]) * 100",
+            "legendFormat": "CPU Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(birthday_scheduler_process_cpu_user_seconds_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]) * 100",
+            "legendFormat": "User CPU %",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(birthday_scheduler_process_cpu_system_seconds_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]) * 100",
+            "legendFormat": "System CPU %",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "CPU %",
+            "format": "percent",
+            "max": 100
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  80
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High CPU Usage",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 1: CPU Usage"
+      },
+      {
+        "id": 2,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_process_resident_memory_bytes{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Resident Memory (RSS)",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_heap_size_used_bytes{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Heap Used",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_heap_size_total_bytes{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Heap Total",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_external_memory_bytes{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "External Memory",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Memory",
+            "format": "bytes"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  1073741824
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Memory Usage (>1GB)",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 2: Memory Usage"
+      },
+      {
+        "id": 3,
+        "title": "Current CPU %",
+        "type": "gauge",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 6,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "rate(birthday_scheduler_process_cpu_seconds_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]) * 100",
+            "legendFormat": "CPU",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 60,
+                  "color": "yellow"
+                },
+                {
+                  "value": 80,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 3: Current CPU %"
+      },
+      {
+        "id": 4,
+        "title": "Heap Usage %",
+        "type": "gauge",
+        "gridPos": {
+          "x": 6,
+          "y": 8,
+          "w": 6,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "(birthday_scheduler_nodejs_heap_size_used_bytes / birthday_scheduler_nodejs_heap_size_total_bytes) * 100{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Heap Usage",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 4: Heap Usage %"
+      },
+      {
+        "id": 5,
+        "title": "Event Loop Lag",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_nodejs_eventloop_lag_seconds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Event Loop Lag",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_eventloop_lag_p50_seconds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_eventloop_lag_p99_seconds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "p99",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Lag",
+            "format": "s"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  0.1
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Event Loop Lag",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 5: Event Loop Lag"
+      },
+      {
+        "id": 6,
+        "title": "GC Duration",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 14,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(birthday_scheduler_nodejs_gc_duration_seconds_sum{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])",
+            "legendFormat": "GC Duration/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_nodejs_gc_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, kind))",
+            "legendFormat": "p99 GC {{kind}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 6: GC Duration"
+      },
+      {
+        "id": 7,
+        "title": "GC Runs",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 14,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(birthday_scheduler_nodejs_gc_duration_seconds_count{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])",
+            "legendFormat": "GC Runs/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(birthday_scheduler_nodejs_gc_duration_seconds_count{namespace=\"$namespace\", instance=~\"$instance\", kind=\"major\"}[$interval])",
+            "legendFormat": "Major GC/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(birthday_scheduler_nodejs_gc_duration_seconds_count{namespace=\"$namespace\", instance=~\"$instance\", kind=\"minor\"}[$interval])",
+            "legendFormat": "Minor GC/sec",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "GC Runs/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 7: GC Runs"
+      },
+      {
+        "id": 8,
+        "title": "Worker Health Status",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 22,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_active_workers{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{worker_type}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name",
+          "reduceOptions": {
+            "calcs": [
+              "last"
+            ],
+            "fields": "",
+            "values": false
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 1,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  1
+                ],
+                "type": "lt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "min"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "No Active Workers",
+          "noDataState": "alerting"
+        },
+        "description": "Panel 8: Worker Health Status"
+      },
+      {
+        "id": 9,
+        "title": "Active Workers Trend",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 22,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_active_workers{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{worker_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Workers",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 9: Active Workers Trend"
+      },
+      {
+        "id": 10,
+        "title": "Process File Descriptors",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_process_open_fds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Open FDs",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_process_max_fds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Max FDs",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "File Descriptors",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 10: Process File Descriptors"
+      },
+      {
+        "id": 11,
+        "title": "Active Handles & Requests",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 28,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_nodejs_active_handles_total{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Active Handles",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_nodejs_active_requests_total{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Active Requests",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Count",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 11: Active Handles & Requests"
+      },
+      {
+        "id": 12,
+        "title": "Heap Space Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 36,
+          "w": 24,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_nodejs_heap_space_size_used_bytes{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{space}} used",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Size",
+            "format": "bytes"
+          }
+        ],
+        "description": "Panel 12: Heap Space Usage"
+      },
+      {
+        "id": 13,
+        "title": "Process Uptime",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 44,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_process_start_time_seconds{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Start Time",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "textMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "dateTimeFromNow"
+          }
+        },
+        "description": "Panel 13: Process Uptime"
+      },
+      {
+        "id": 14,
+        "title": "Node.js Version",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 44,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_nodejs_version_info{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{version}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "textMode": "name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "fixed",
+              "fixedColor": "blue"
+            }
+          }
+        },
+        "description": "Panel 14: Node.js Version"
+      },
+      {
+        "id": 15,
+        "title": "Container Resource Usage",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 44,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "container_cpu_usage_seconds_total{container=\"birthday-scheduler\"}",
+            "legendFormat": "Container CPU",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_usage_bytes{container=\"birthday-scheduler\"}",
+            "legendFormat": "Container Memory",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Usage",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 15: Container Resource Usage"
+      },
+      {
+        "id": 16,
+        "title": "Scheduler Execution Duration",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 48,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_execution_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, job_type))",
+            "legendFormat": "p95 {{job_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_execution_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, job_type))",
+            "legendFormat": "p99 {{job_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 16: Scheduler Execution Duration"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {
+              "text": "1m",
+              "value": "1m",
+              "selected": false
+            },
+            {
+              "text": "5m",
+              "value": "5m",
+              "selected": true
+            },
+            {
+              "text": "10m",
+              "value": "10m",
+              "selected": false
+            },
+            {
+              "text": "30m",
+              "value": "30m",
+              "selected": false
+            },
+            {
+              "text": "1h",
+              "value": "1h",
+              "selected": false
+            }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        },
+        {
+          "name": "node",
+          "type": "query",
+          "query": "label_values(birthday_scheduler_process_cpu_seconds_total{namespace=\"$namespace\"}, instance)",
+          "label": "Node",
+          "description": "Filter by node/server",
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Overview Dashboard",
+        "url": "/d/overview?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "Return to overview dashboard",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"ServiceDown|MemoryExhausted|CPUUsageHigh|MemoryUsageHigh|EventLoopLagHigh|HighGCPauseTime\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

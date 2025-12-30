@@ -21,7 +21,7 @@ interface CronJobConfig {
   name: string;
   schedule: string;
   enabled: boolean;
-  job: cron.ScheduledTask | null;
+  job: ReturnType<typeof cron.schedule> | null;
 }
 
 /**
@@ -164,9 +164,8 @@ export class CronScheduler {
         }
       },
       {
-        scheduled: true,
         timezone: 'UTC',
-      }
+      } as any
     );
 
     logger.info({ job: key, schedule: config.schedule }, 'CRON job started');
@@ -257,7 +256,7 @@ export class CronScheduler {
       running: boolean;
     }> = [];
 
-    for (const [key, config] of this.jobs) {
+    for (const [, config] of this.jobs) {
       status.push({
         name: config.name,
         schedule: config.schedule,

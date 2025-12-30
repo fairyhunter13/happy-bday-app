@@ -1,13 +1,11 @@
 import { DateTime } from 'luxon';
-import { timezoneService, type TimezoneService } from './timezone.service.js';
 import { idempotencyService, type IdempotencyService } from './idempotency.service.js';
 import { userRepository, type UserRepository } from '../repositories/user.repository.js';
 import {
   messageLogRepository,
   type MessageLogRepository,
 } from '../repositories/message-log.repository.js';
-import { MessageStatus, MessageType } from '../db/schema/message-logs.js';
-import type { User } from '../db/schema/users.js';
+import { MessageStatus } from '../db/schema/message-logs.js';
 import type { CreateMessageLogDto } from '../types/dto.js';
 import { logger } from '../config/logger.js';
 import { DatabaseError } from '../utils/errors.js';
@@ -72,8 +70,7 @@ export interface PrecalculationStats {
  */
 export class SchedulerService {
   constructor(
-    private readonly timezoneService: TimezoneService = timezoneService,
-    private readonly idempotencyService: IdempotencyService = idempotencyService,
+    private readonly _idempotencyService: IdempotencyService = idempotencyService,
     private readonly userRepo: UserRepository = userRepository,
     private readonly messageLogRepo: MessageLogRepository = messageLogRepository,
     private readonly strategyFactory = messageStrategyFactory
@@ -231,7 +228,7 @@ export class SchedulerService {
         const sendTime = strategy.calculateSendTime(user, now);
 
         // Generate idempotency key
-        const idempotencyKey = this.idempotencyService.generateKey(
+        const idempotencyKey = this._idempotencyService.generateKey(
           user.id,
           messageType,
           sendTime,
@@ -262,7 +259,7 @@ export class SchedulerService {
         // Create message log entry
         const messageData: CreateMessageLogDto = {
           userId: user.id,
-          messageType,
+          messageType: messageType as 'BIRTHDAY' | 'ANNIVERSARY',
           messageContent,
           scheduledSendTime: sendTime,
           idempotencyKey,
@@ -517,22 +514,30 @@ export class SchedulerService {
 
       // Count by status
       const scheduled = await this.messageLogRepo.findAll({
+        limit: 10000,
+        offset: 0,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
         scheduledBefore: endOfDay,
       });
 
       const queued = await this.messageLogRepo.findAll({
+        limit: 10000,
+        offset: 0,
         status: MessageStatus.QUEUED,
       });
 
       const sent = await this.messageLogRepo.findAll({
+        limit: 10000,
+        offset: 0,
         status: MessageStatus.SENT,
         scheduledAfter: DateTime.now().startOf('day').toJSDate(),
         scheduledBefore: endOfDay,
       });
 
       const failed = await this.messageLogRepo.findAll({
+        limit: 10000,
+        offset: 0,
         status: MessageStatus.FAILED,
         scheduledAfter: DateTime.now().startOf('day').toJSDate(),
         scheduledBefore: endOfDay,
@@ -601,7 +606,7 @@ export class SchedulerService {
       const sendTime = strategy.calculateSendTime(user, now);
 
       // Generate idempotency key
-      const idempotencyKey = this.idempotencyService.generateKey(
+      const idempotencyKey = this._idempotencyService.generateKey(
         user.id,
         'BIRTHDAY',
         sendTime,

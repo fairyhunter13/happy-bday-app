@@ -245,10 +245,7 @@ function scheduleMessagesWithIdempotency(
   return scheduled;
 }
 
-async function attemptSchedule(
-  key: string,
-  store: Map<string, boolean>
-): Promise<boolean> {
+async function attemptSchedule(key: string, store: Map<string, boolean>): Promise<boolean> {
   // Simulate async operation
   await new Promise((resolve) => setTimeout(resolve, 10));
 

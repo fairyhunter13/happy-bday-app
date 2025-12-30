@@ -17,8 +17,8 @@ import {
   messageLogRepository,
   type MessageLogRepository,
 } from '../repositories/message-log.repository.js';
-import { timezoneService, type TimezoneService } from './timezone.service.js';
-import { idempotencyService, type IdempotencyService } from './idempotency.service.js';
+import type { TimezoneService } from './timezone.service.js';
+import type { IdempotencyService } from './idempotency.service.js';
 import { MessageStatus } from '../db/schema/message-logs.js';
 import type { CreateMessageLogDto } from '../types/dto.js';
 import { DatabaseError, NotFoundError } from '../utils/errors.js';
@@ -110,6 +110,8 @@ export class MessageRescheduleService {
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
+        limit: 100,
+        offset: 0,
       });
 
       logger.info(
@@ -126,7 +128,8 @@ export class MessageRescheduleService {
       // 3. Delete old scheduled messages
       for (const message of futureMessages) {
         try {
-          await this.messageLogRepo.delete(message.id);
+          // Update status to FAILED instead of deleting (soft delete)
+          await this.messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
           result.deletedMessages++;
 
           logger.debug(
@@ -346,13 +349,16 @@ export class MessageRescheduleService {
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
+        limit: 100,
+        offset: 0,
       });
 
       let deleted = 0;
 
       for (const message of futureMessages) {
         try {
-          await this.messageLogRepo.delete(message.id);
+          // Update status to FAILED instead of deleting (soft delete)
+          await this.messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
           deleted++;
         } catch (error) {
           logger.error(
@@ -399,6 +405,8 @@ export class MessageRescheduleService {
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
+        limit: 100,
+        offset: 0,
       });
 
       const birthdayMessages = futureMessages.filter((m) => m.messageType === 'BIRTHDAY').length;

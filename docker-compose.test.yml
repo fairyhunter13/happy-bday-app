@@ -1,7 +1,43 @@
-version: '3.9'
-
+# ========================================
+# Docker Compose - Test Environment
+# Birthday Message Scheduler
+# ========================================
 # Simple E2E Test Environment (4 containers, < 5 min)
 # Used for CI/CD GitHub Actions
+# Usage: docker-compose -f docker-compose.test.yml up -d
+
+version: '3.9'
+
+# Shared anchors for DRY configuration
+x-healthcheck-postgres: &healthcheck-postgres
+  test: ['CMD-SHELL', 'pg_isready -U test -d test_db']
+  interval: 5s
+  timeout: 5s
+  retries: 5
+
+x-healthcheck-rabbitmq: &healthcheck-rabbitmq
+  test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+  interval: 10s
+  timeout: 10s
+  retries: 5
+
+x-healthcheck-redis: &healthcheck-redis
+  test: ['CMD', 'redis-cli', 'ping']
+  interval: 5s
+  timeout: 3s
+  retries: 5
+
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+
+x-test-env: &test-env
+  NODE_ENV: test
+  DATABASE_URL: postgres://test:test@postgres:5432/test_db
+  RABBITMQ_URL: amqp://test:test@rabbitmq:5672
+  REDIS_URL: redis://redis:6379
 
 services:
   postgres:
@@ -14,12 +50,11 @@ services:
     ports:
       - '5432:5432'
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U test -d test_db']
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-postgres
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
+    logging:
+      <<: *logging
     networks:
       - test-network
 
@@ -34,12 +69,11 @@ services:
       - '5672:5672'
       - '15672:15672'
     healthcheck:
-      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      <<: *healthcheck-rabbitmq
     volumes:
       - rabbitmq_test_data:/var/lib/rabbitmq
+    logging:
+      <<: *logging
     networks:
       - test-network
 
@@ -49,12 +83,11 @@ services:
     ports:
       - '6379:6379'
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      <<: *healthcheck-redis
     volumes:
       - redis_test_data:/data
+    logging:
+      <<: *logging
     networks:
       - test-network
 
@@ -64,10 +97,7 @@ services:
       dockerfile: Dockerfile
     container_name: test-api
     environment:
-      NODE_ENV: test
-      DATABASE_URL: postgres://test:test@postgres:5432/test_db
-      RABBITMQ_URL: amqp://test:test@rabbitmq:5672
-      REDIS_URL: redis://redis:6379
+      <<: *test-env
       PORT: 3000
       LOG_LEVEL: debug
     ports:
@@ -79,6 +109,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging:
+      <<: *logging
     networks:
       - test-network
     command: npm run dev

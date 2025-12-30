@@ -1,7 +1,11 @@
 {
   "dashboard": {
     "title": "Birthday Scheduler - System Overview",
-    "tags": ["birthday-scheduler", "overview", "production"],
+    "tags": [
+      "birthday-scheduler",
+      "overview",
+      "production"
+    ],
     "timezone": "browser",
     "refresh": "30s",
     "time": {
@@ -13,11 +17,17 @@
         "id": 1,
         "title": "System Health Status",
         "type": "stat",
-        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
             "expr": "up{job=\"birthday-scheduler\"}",
-            "legendFormat": "Service Status"
+            "legendFormat": "Service Status",
+            "refId": "A"
           }
         ],
         "options": {
@@ -28,48 +38,91 @@
         "fieldConfig": {
           "defaults": {
             "mappings": [
-              { "type": "value", "value": "1", "text": "Healthy" },
-              { "type": "value", "value": "0", "text": "Down" }
+              {
+                "type": "value",
+                "value": "1",
+                "text": "Healthy"
+              },
+              {
+                "type": "value",
+                "value": "0",
+                "text": "Down"
+              }
             ],
             "thresholds": {
               "steps": [
-                { "value": 0, "color": "red" },
-                { "value": 1, "color": "green" }
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 1,
+                  "color": "green"
+                }
               ]
             }
           }
-        }
+        },
+        "description": "Panel 1: System Health Status"
       },
       {
         "id": 2,
         "title": "Request Rate (req/s)",
         "type": "graph",
-        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
-            "expr": "rate(http_requests_total{job=\"birthday-scheduler\"}[5m])",
-            "legendFormat": "{{method}} {{route}}"
+            "expr": "rate(http_requests_total{job=\"birthday-scheduler\"}[$interval])",
+            "legendFormat": "{{method}} {{route}}",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 2: Request Rate (req/s)"
       },
       {
         "id": 3,
         "title": "Error Rate (%)",
         "type": "graph",
-        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
-            "expr": "(rate(http_requests_total{job=\"birthday-scheduler\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"birthday-scheduler\"}[5m])) * 100",
-            "legendFormat": "Error Rate"
+            "expr": "(rate(http_requests_total{job=\"birthday-scheduler\",status=~\"5..\"}[$interval]) / rate(http_requests_total{job=\"birthday-scheduler\"}[$interval])) * 100",
+            "legendFormat": "Error Rate",
+            "refId": "A"
           }
         ],
         "alert": {
           "conditions": [
             {
-              "evaluator": { "params": [5], "type": "gt" },
-              "operator": { "type": "and" },
-              "query": { "params": ["A", "5m", "now"] },
-              "reducer": { "type": "avg" },
+              "evaluator": {
+                "params": [
+                  5
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
               "type": "query"
             }
           ],
@@ -78,54 +131,87 @@
           "name": "High Error Rate",
           "noDataState": "no_data",
           "notifications": []
-        }
+        },
+        "description": "Panel 3: Error Rate (%)"
       },
       {
         "id": 4,
         "title": "Response Time (p50, p95, p99)",
         "type": "graph",
-        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
-            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
-            "legendFormat": "p50"
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[$interval]))",
+            "legendFormat": "p50",
+            "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
-            "legendFormat": "p95"
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[$interval]))",
+            "legendFormat": "p95",
+            "refId": "A"
           },
           {
-            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
-            "legendFormat": "p99"
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[$interval]))",
+            "legendFormat": "p99",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 4: Response Time (p50, p95, p99)"
       },
       {
         "id": 5,
         "title": "Queue Depth",
         "type": "graph",
-        "gridPos": { "x": 0, "y": 4, "w": 8, "h": 6 },
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 8,
+          "h": 6
+        },
         "targets": [
           {
             "expr": "rabbitmq_queue_messages{queue=\"birthday_messages\"}",
-            "legendFormat": "Messages in Queue"
+            "legendFormat": "Messages in Queue",
+            "refId": "A"
           },
           {
             "expr": "rabbitmq_queue_messages_ready{queue=\"birthday_messages\"}",
-            "legendFormat": "Ready"
+            "legendFormat": "Ready",
+            "refId": "A"
           },
           {
             "expr": "rabbitmq_queue_messages_unacknowledged{queue=\"birthday_messages\"}",
-            "legendFormat": "Unacked"
+            "legendFormat": "Unacked",
+            "refId": "A"
           }
         ],
         "alert": {
           "conditions": [
             {
-              "evaluator": { "params": [1000], "type": "gt" },
-              "operator": { "type": "and" },
-              "query": { "params": ["A", "5m", "now"] },
-              "reducer": { "type": "avg" },
+              "evaluator": {
+                "params": [
+                  1000
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
               "type": "query"
             }
           ],
@@ -133,33 +219,48 @@
           "handler": 1,
           "name": "High Queue Depth",
           "noDataState": "no_data"
-        }
+        },
+        "description": "Panel 5: Queue Depth"
       },
       {
         "id": 6,
         "title": "Database Connections",
         "type": "graph",
-        "gridPos": { "x": 8, "y": 4, "w": 8, "h": 6 },
+        "gridPos": {
+          "x": 8,
+          "y": 4,
+          "w": 8,
+          "h": 6
+        },
         "targets": [
           {
             "expr": "pg_stat_database_numbackends{datname=\"birthday_scheduler\"}",
-            "legendFormat": "Active Connections"
+            "legendFormat": "Active Connections",
+            "refId": "A"
           },
           {
             "expr": "pg_settings_max_connections",
-            "legendFormat": "Max Connections"
+            "legendFormat": "Max Connections",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 6: Database Connections"
       },
       {
         "id": 7,
         "title": "Circuit Breaker State",
         "type": "stat",
-        "gridPos": { "x": 16, "y": 4, "w": 8, "h": 6 },
+        "gridPos": {
+          "x": 16,
+          "y": 4,
+          "w": 8,
+          "h": 6
+        },
         "targets": [
           {
             "expr": "circuit_breaker_state{job=\"birthday-scheduler\"}",
-            "legendFormat": "{{service}}"
+            "legendFormat": "{{service}}",
+            "refId": "A"
           }
         ],
         "options": {
@@ -169,71 +270,116 @@
         "fieldConfig": {
           "defaults": {
             "mappings": [
-              { "type": "value", "value": "0", "text": "Closed", "color": "green" },
-              { "type": "value", "value": "1", "text": "Open", "color": "red" },
-              { "type": "value", "value": "2", "text": "Half-Open", "color": "yellow" }
+              {
+                "type": "value",
+                "value": "0",
+                "text": "Closed",
+                "color": "green"
+              },
+              {
+                "type": "value",
+                "value": "1",
+                "text": "Open",
+                "color": "red"
+              },
+              {
+                "type": "value",
+                "value": "2",
+                "text": "Half-Open",
+                "color": "yellow"
+              }
             ]
           }
-        }
+        },
+        "description": "Panel 7: Circuit Breaker State"
       },
       {
         "id": 8,
         "title": "Memory Usage",
         "type": "graph",
-        "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 },
+        "gridPos": {
+          "x": 0,
+          "y": 10,
+          "w": 12,
+          "h": 6
+        },
         "targets": [
           {
             "expr": "process_resident_memory_bytes{job=\"birthday-scheduler\"}",
-            "legendFormat": "RSS Memory"
+            "legendFormat": "RSS Memory",
+            "refId": "A"
           },
           {
             "expr": "nodejs_heap_size_used_bytes{job=\"birthday-scheduler\"}",
-            "legendFormat": "Heap Used"
+            "legendFormat": "Heap Used",
+            "refId": "A"
           },
           {
             "expr": "nodejs_heap_size_total_bytes{job=\"birthday-scheduler\"}",
-            "legendFormat": "Heap Total"
+            "legendFormat": "Heap Total",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 8: Memory Usage"
       },
       {
         "id": 9,
         "title": "CPU Usage",
         "type": "graph",
-        "gridPos": { "x": 12, "y": 10, "w": 12, "h": 6 },
+        "gridPos": {
+          "x": 12,
+          "y": 10,
+          "w": 12,
+          "h": 6
+        },
         "targets": [
           {
-            "expr": "rate(process_cpu_seconds_total{job=\"birthday-scheduler\"}[5m]) * 100",
-            "legendFormat": "CPU %"
+            "expr": "rate(process_cpu_seconds_total{job=\"birthday-scheduler\"}[$interval]) * 100",
+            "legendFormat": "CPU %",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 9: CPU Usage"
       },
       {
         "id": 10,
         "title": "Messages Sent Today",
         "type": "stat",
-        "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
             "expr": "increase(birthday_messages_sent_total[24h])",
-            "legendFormat": "Messages Sent"
+            "legendFormat": "Messages Sent",
+            "refId": "A"
           }
         ],
         "options": {
           "colorMode": "value",
           "graphMode": "area",
           "textMode": "value_and_name"
-        }
+        },
+        "description": "Panel 10: Messages Sent Today"
       },
       {
         "id": 11,
         "title": "Message Success Rate (%)",
         "type": "gauge",
-        "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
+        "gridPos": {
+          "x": 6,
+          "y": 16,
+          "w": 6,
+          "h": 4
+        },
         "targets": [
           {
-            "expr": "(sum(rate(birthday_messages_sent_success[5m])) / sum(rate(birthday_messages_sent_total[5m]))) * 100",
-            "legendFormat": "Success Rate"
+            "expr": "(sum(rate(birthday_messages_sent_success[$interval])) / sum(rate(birthday_messages_sent_total[$interval]))) * 100",
+            "legendFormat": "Success Rate",
+            "refId": "A"
           }
         ],
         "options": {
@@ -246,26 +392,201 @@
             "max": 100,
             "thresholds": {
               "steps": [
-                { "value": 0, "color": "red" },
-                { "value": 95, "color": "yellow" },
-                { "value": 99, "color": "green" }
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 95,
+                  "color": "yellow"
+                },
+                {
+                  "value": 99,
+                  "color": "green"
+                }
               ]
             }
           }
-        }
+        },
+        "description": "Panel 11: Message Success Rate (%)"
       },
       {
         "id": 12,
         "title": "Scheduler Executions",
         "type": "graph",
-        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 4 },
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 4
+        },
         "targets": [
           {
-            "expr": "rate(scheduler_executions_total{job=\"birthday-scheduler\"}[5m])",
-            "legendFormat": "{{scheduler}}"
+            "expr": "rate(scheduler_executions_total{job=\"birthday-scheduler\"}[$interval])",
+            "legendFormat": "{{scheduler}}",
+            "refId": "A"
           }
-        ]
+        ],
+        "description": "Panel 12: Scheduler Executions"
       }
-    ]
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {
+              "text": "1m",
+              "value": "1m",
+              "selected": false
+            },
+            {
+              "text": "5m",
+              "value": "5m",
+              "selected": true
+            },
+            {
+              "text": "10m",
+              "value": "10m",
+              "selected": false
+            },
+            {
+              "text": "30m",
+              "value": "30m",
+              "selected": false
+            },
+            {
+              "text": "1h",
+              "value": "1h",
+              "selected": false
+            }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "API Performance",
+        "url": "/d/api-performance?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View detailed API metrics",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Message Processing",
+        "url": "/d/message-processing?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View message queue metrics",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Database",
+        "url": "/d/database?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View database performance",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Infrastructure",
+        "url": "/d/infrastructure?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View infrastructure health",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Security",
+        "url": "/d/security?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View security metrics",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\".*\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
   }
 }

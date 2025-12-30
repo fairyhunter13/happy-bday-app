@@ -98,7 +98,7 @@ describe('Database Chaos Tests', () => {
           .catch((err) => {
             logger.error(`Query ${i + 1} failed`, { error: err.message });
             throw err;
-          }),
+          })
       );
 
       // Should queue and complete all queries without crashing

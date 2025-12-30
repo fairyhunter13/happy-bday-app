@@ -20,9 +20,7 @@ src/clients/generated/
 .env.*.local
 .env.development
 .env.test
-.env.production
 !.env.example
-!.env.prod.example
 
 # SOPS decrypted files (keep encrypted versions)
 .env.*.dec
@@ -38,6 +36,11 @@ coverage/
 perf-results/
 test-results/
 .vitest/
+jscpd-report/
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/
 
 # Logs
 logs/

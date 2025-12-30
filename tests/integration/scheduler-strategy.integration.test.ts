@@ -3,7 +3,10 @@ import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageStrategyFactory } from '../../src/strategies/strategy-factory.js';
 import { BirthdayMessageStrategy } from '../../src/strategies/birthday-message.strategy.js';
 import { AnniversaryMessageStrategy } from '../../src/strategies/anniversary-message.strategy.js';
-import type { MessageStrategy, MessageContext } from '../../src/strategies/message-strategy.interface.js';
+import type {
+  MessageStrategy,
+  MessageContext,
+} from '../../src/strategies/message-strategy.interface.js';
 import type { User } from '../../src/db/schema/users.js';
 
 /**
@@ -206,12 +209,18 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
       // Create a simple custom strategy
       const customStrategy: MessageStrategy = {
         messageType: 'CUSTOM',
-        async shouldSend() { return true; },
-        calculateSendTime() { return new Date('2025-12-30T14:00:00Z'); },
+        async shouldSend() {
+          return true;
+        },
+        calculateSendTime() {
+          return new Date('2025-12-30T14:00:00Z');
+        },
         async composeMessage(user: User) {
           return `Custom message for ${user.firstName}`;
         },
-        getSchedule() { return { cadence: 'YEARLY', triggerField: 'customDate' }; },
+        getSchedule() {
+          return { cadence: 'YEARLY', triggerField: 'customDate' };
+        },
         validate(user: User) {
           return { valid: !!user.firstName, errors: user.firstName ? [] : ['First name required'] };
         },
@@ -323,7 +332,7 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
       const invalidUser: Partial<User> = {
         id: 'user-1',
         firstName: null, // Invalid
-        lastName: null,  // Invalid
+        lastName: null, // Invalid
         birthdayDate: new Date('1990-12-30'),
         timezone: 'America/New_York',
         email: 'john@example.com',

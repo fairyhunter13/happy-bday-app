@@ -236,12 +236,6 @@ groups:
 
 alerting:
   contactpoints:
-    - name: slack-critical
-      type: slack
-      settings:
-        url: "${SLACK_WEBHOOK_URL}"
-        title: "🚨 CRITICAL: {{ .CommonAnnotations.summary }}"
-
     - name: pagerduty-critical
       type: pagerduty
       settings:
@@ -260,13 +254,8 @@ alerting:
       continue: true
 
     - match:
-        severity: critical
-      receiver: slack-critical
-      continue: true
-
-    - match:
         severity: warning
-      receiver: slack-critical
+      receiver: email-team
 
     - match:
         severity: info

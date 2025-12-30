@@ -219,8 +219,8 @@ describe('MessageStrategyFactory', () => {
       const strategies = factory.getAllStrategies();
 
       expect(strategies.length).toBe(2);
-      expect(strategies.some(s => s.messageType === 'BIRTHDAY')).toBe(true);
-      expect(strategies.some(s => s.messageType === 'ANNIVERSARY')).toBe(true);
+      expect(strategies.some((s) => s.messageType === 'BIRTHDAY')).toBe(true);
+      expect(strategies.some((s) => s.messageType === 'ANNIVERSARY')).toBe(true);
     });
 
     it('should return empty array when no strategies registered', () => {
@@ -335,11 +335,21 @@ describe('MessageStrategyFactory', () => {
       // Create a mock custom strategy
       const customStrategy: MessageStrategy = {
         messageType: 'CUSTOM',
-        async shouldSend() { return true; },
-        calculateSendTime() { return new Date(); },
-        async composeMessage() { return 'Custom message'; },
-        getSchedule() { return { cadence: 'YEARLY', triggerField: 'customDate' }; },
-        validate() { return { valid: true, errors: [] }; },
+        async shouldSend() {
+          return true;
+        },
+        calculateSendTime() {
+          return new Date();
+        },
+        async composeMessage() {
+          return 'Custom message';
+        },
+        getSchedule() {
+          return { cadence: 'YEARLY', triggerField: 'customDate' };
+        },
+        validate() {
+          return { valid: true, errors: [] };
+        },
       };
 
       // Register custom strategy
@@ -357,17 +367,27 @@ describe('MessageStrategyFactory', () => {
     it('should iterate through all strategies including custom ones', () => {
       const customStrategy: MessageStrategy = {
         messageType: 'CUSTOM',
-        async shouldSend() { return true; },
-        calculateSendTime() { return new Date(); },
-        async composeMessage() { return 'Custom message'; },
-        getSchedule() { return { cadence: 'YEARLY', triggerField: 'customDate' }; },
-        validate() { return { valid: true, errors: [] }; },
+        async shouldSend() {
+          return true;
+        },
+        calculateSendTime() {
+          return new Date();
+        },
+        async composeMessage() {
+          return 'Custom message';
+        },
+        getSchedule() {
+          return { cadence: 'YEARLY', triggerField: 'customDate' };
+        },
+        validate() {
+          return { valid: true, errors: [] };
+        },
       };
 
       factory.register(customStrategy);
 
       const strategies = factory.getAllStrategies();
-      const types = strategies.map(s => s.messageType);
+      const types = strategies.map((s) => s.messageType);
 
       expect(types).toContain('BIRTHDAY');
       expect(types).toContain('ANNIVERSARY');

@@ -53,8 +53,8 @@ export async function metricsMiddleware(
   // Track request start
   logger.debug({ method: request.method, path: request.url }, 'HTTP request started');
 
-  // Hook into the response to record metrics after completion
-  reply.addHook('onSend', async (request, reply, payload) => {
+  // Use reply.raw.on to track when response is sent
+  const trackMetrics = () => {
     try {
       const duration = (Date.now() - startTime) / 1000; // Convert to seconds
       const method = request.method;
@@ -83,7 +83,7 @@ export async function metricsMiddleware(
         'Failed to record request metrics'
       );
     }
+  };
 
-    return payload;
-  });
+  reply.raw.on('finish', trackMetrics);
 }

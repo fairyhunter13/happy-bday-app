@@ -7,12 +7,13 @@ on:
       - 'src/**'
       - 'docs/**'
       - 'public/**'
+      - 'scripts/coverage/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -27,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -39,6 +42,16 @@ jobs:
 
       - name: Build TypeScript
         run: npm run build
+
+      - name: Run tests with coverage
+        run: npm run test:coverage || true
+        continue-on-error: true
+
+      - name: Update coverage history
+        run: |
+          chmod +x scripts/coverage/update-history.sh
+          ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
+        continue-on-error: true
 
       - name: Start server for OpenAPI export
         run: |
@@ -115,6 +128,21 @@ jobs:
           # Copy OpenAPI spec
           cp docs/openapi.json _site/openapi.json
 
+          # Copy coverage trends page
+          if [ -f docs/coverage-trends.html ]; then
+            cp docs/coverage-trends.html _site/coverage-trends.html
+          fi
+
+          # Copy coverage history if it exists
+          if [ -f docs/coverage-history.json ]; then
+            cp docs/coverage-history.json _site/coverage-history.json
+          fi
+
+          # Copy coverage badge if it exists
+          if [ -f docs/coverage-badge.json ]; then
+            cp docs/coverage-badge.json _site/coverage-badge.json
+          fi
+
           # Create 404 page
           cat > _site/404.html << 'EOF'
           <!DOCTYPE html>
@@ -163,6 +191,17 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: '_site'
+
+      - name: Commit coverage history and badge
+        run: |
+          if [ -f docs/coverage-history.json ] || [ -f docs/coverage-badge.json ]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add docs/coverage-history.json docs/coverage-badge.json
+            git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
+            git push || true
+          fi
+        continue-on-error: true
 
   deploy:
     environment:

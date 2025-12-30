@@ -69,8 +69,9 @@ describe('RecoveryScheduler', () => {
         errors: [],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue(
+        mockStats
+      );
 
       await scheduler.triggerManually();
 
@@ -94,8 +95,9 @@ describe('RecoveryScheduler', () => {
         errors: [],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue(
+        mockStats
+      );
 
       await scheduler.triggerManually();
 
@@ -107,8 +109,9 @@ describe('RecoveryScheduler', () => {
     });
 
     it('should handle errors during job execution', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockRejectedValue(new Error('Database connection failed'));
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockRejectedValue(
+        new Error('Database connection failed')
+      );
 
       await scheduler.triggerManually();
 
@@ -128,8 +131,9 @@ describe('RecoveryScheduler', () => {
         ],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue(
+        mockStats
+      );
 
       await scheduler.triggerManually();
 
@@ -167,8 +171,8 @@ describe('RecoveryScheduler', () => {
         resolveJob = resolve;
       });
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockImplementation(async () => {
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockImplementation(
+        async () => {
           await jobPromise;
           return {
             totalMissed: 0,
@@ -176,7 +180,8 @@ describe('RecoveryScheduler', () => {
             failed: 0,
             errors: [],
           };
-        });
+        }
+      );
 
       // Start first job
       const job1 = scheduler.triggerManually();
@@ -189,7 +194,9 @@ describe('RecoveryScheduler', () => {
       await job1;
 
       // Should only have been called once
-      expect(schedulerServiceModule.schedulerService.recoverMissedMessages).toHaveBeenCalledTimes(1);
+      expect(schedulerServiceModule.schedulerService.recoverMissedMessages).toHaveBeenCalledTimes(
+        1
+      );
     });
 
     it('should warn on high number of failures', async () => {
@@ -200,8 +207,9 @@ describe('RecoveryScheduler', () => {
         errors: [],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue(
+        mockStats
+      );
 
       await scheduler.triggerManually();
 
@@ -270,13 +278,12 @@ describe('RecoveryScheduler', () => {
     });
 
     it('should return true after successful run', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue({
-          totalMissed: 5,
-          recovered: 5,
-          failed: 0,
-          errors: [],
-        });
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue({
+        totalMissed: 5,
+        recovered: 5,
+        failed: 0,
+        errors: [],
+      });
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -285,13 +292,12 @@ describe('RecoveryScheduler', () => {
     });
 
     it('should return true even with failed recoveries', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue({
-          totalMissed: 10,
-          recovered: 5,
-          failed: 5,
-          errors: [],
-        });
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue({
+        totalMissed: 10,
+        recovered: 5,
+        failed: 5,
+        errors: [],
+      });
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -302,8 +308,9 @@ describe('RecoveryScheduler', () => {
     });
 
     it('should return false after job execution failure', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockRejectedValue(new Error('Database error'));
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockRejectedValue(
+        new Error('Database error')
+      );
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -313,13 +320,12 @@ describe('RecoveryScheduler', () => {
     });
 
     it('should return false if last run was too long ago', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue({
-          totalMissed: 0,
-          recovered: 0,
-          failed: 0,
-          errors: [],
-        });
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue({
+        totalMissed: 0,
+        recovered: 0,
+        failed: 0,
+        errors: [],
+      });
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -334,13 +340,12 @@ describe('RecoveryScheduler', () => {
 
   describe('resetStats', () => {
     it('should reset all statistics', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages')
-        .mockResolvedValue({
-          totalMissed: 10,
-          recovered: 8,
-          failed: 2,
-          errors: [],
-        });
+      vi.spyOn(schedulerServiceModule.schedulerService, 'recoverMissedMessages').mockResolvedValue({
+        totalMissed: 10,
+        recovered: 8,
+        failed: 2,
+        errors: [],
+      });
 
       await scheduler.triggerManually();
 

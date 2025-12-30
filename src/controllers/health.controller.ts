@@ -1,5 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { healthCheckService, type HealthCheckService } from '../services/health-check.service.js';
+import { dailyBirthdayScheduler } from '../schedulers/daily-birthday.scheduler.js';
+import { minuteEnqueueScheduler } from '../schedulers/minute-enqueue.scheduler.js';
+import { recoveryScheduler } from '../schedulers/recovery.scheduler.js';
 import { logger } from '../config/logger.js';
 
 /**
@@ -148,6 +151,54 @@ export class HealthController {
 
       await reply.status(500).send({
         status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Get scheduler health status
+   * Returns status of all cron schedulers
+   *
+   * GET /health/schedulers
+   */
+  async getSchedulerHealth(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const dailyStatus = dailyBirthdayScheduler.getStatus();
+      const minuteStatus = minuteEnqueueScheduler.getStatus();
+      const recoveryStatus = recoveryScheduler.getStatus();
+
+      const response = {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        schedulers: {
+          daily: {
+            healthy: dailyBirthdayScheduler.isHealthy(),
+            ...dailyStatus,
+          },
+          minute: {
+            healthy: minuteEnqueueScheduler.isHealthy(),
+            ...minuteStatus,
+          },
+          recovery: {
+            healthy: recoveryScheduler.isHealthy(),
+            ...recoveryStatus,
+          },
+        },
+      };
+
+      logger.debug({ response }, 'Scheduler health check performed');
+
+      await reply.status(200).send(response);
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Scheduler health check failed'
+      );
+
+      await reply.status(503).send({
+        status: 'down',
         timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : String(error),
       });

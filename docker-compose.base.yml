@@ -1,0 +1,232 @@
+# ========================================
+# Docker Compose Base Configuration
+# Birthday Message Scheduler
+# ========================================
+# This file contains shared configurations that other docker-compose files extend from.
+# Usage: docker-compose -f docker-compose.base.yml -f docker-compose.<env>.yml up
+
+version: '3.9'
+
+# ========================================
+# YAML Anchors for DRY Configuration
+# ========================================
+
+# Common environment variables template
+x-common-env: &common-env
+  TZ: UTC
+
+# Common healthcheck patterns
+x-healthcheck-postgres: &healthcheck-postgres
+  test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-birthday_app}"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+x-healthcheck-rabbitmq: &healthcheck-rabbitmq
+  test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+x-healthcheck-redis: &healthcheck-redis
+  test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 10s
+
+x-healthcheck-api: &healthcheck-api
+  test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 30s
+
+# Common logging configuration
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-logging-verbose: &logging-verbose
+  driver: "json-file"
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+# Common restart policy
+x-restart-policy: &restart-policy
+  restart: unless-stopped
+
+# ========================================
+# Base Service Definitions
+# ========================================
+
+# PostgreSQL base service
+x-postgres-base: &postgres-base
+  image: postgres:15-alpine
+  <<: *restart-policy
+  environment:
+    <<: *common-env
+    POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+  volumes:
+    - type: volume
+      source: postgres_data
+      target: /var/lib/postgresql/data
+  healthcheck:
+    <<: *healthcheck-postgres
+  logging:
+    <<: *logging
+
+# RabbitMQ base service
+x-rabbitmq-base: &rabbitmq-base
+  image: rabbitmq:3.13-management-alpine
+  <<: *restart-policy
+  environment:
+    <<: *common-env
+    RABBITMQ_DEFAULT_VHOST: /
+  volumes:
+    - type: volume
+      source: rabbitmq_data
+      target: /var/lib/rabbitmq
+  healthcheck:
+    <<: *healthcheck-rabbitmq
+  logging:
+    <<: *logging
+
+# Redis base service
+x-redis-base: &redis-base
+  image: redis:7-alpine
+  <<: *restart-policy
+  volumes:
+    - type: volume
+      source: redis_data
+      target: /data
+  healthcheck:
+    <<: *healthcheck-redis
+  logging:
+    <<: *logging
+
+# API base service (for Node.js applications)
+x-api-base: &api-base
+  <<: *restart-policy
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    <<: *common-env
+    PORT: 3000
+  healthcheck:
+    <<: *healthcheck-api
+  logging:
+    <<: *logging
+
+# Worker base service
+x-worker-base: &worker-base
+  <<: *restart-policy
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment:
+    <<: *common-env
+  logging:
+    <<: *logging
+
+# Prometheus base service
+x-prometheus-base: &prometheus-base
+  image: prom/prometheus:latest
+  <<: *restart-policy
+  command:
+    - '--config.file=/etc/prometheus/prometheus.yml'
+    - '--storage.tsdb.path=/prometheus'
+  volumes:
+    - type: volume
+      source: prometheus_data
+      target: /prometheus
+  logging:
+    <<: *logging
+
+# Grafana base service
+x-grafana-base: &grafana-base
+  image: grafana/grafana:latest
+  <<: *restart-policy
+  environment:
+    <<: *common-env
+    GF_USERS_ALLOW_SIGN_UP: 'false'
+  volumes:
+    - type: volume
+      source: grafana_data
+      target: /var/lib/grafana
+  logging:
+    <<: *logging
+
+# Nginx base service
+x-nginx-base: &nginx-base
+  image: nginx:1.25-alpine
+  <<: *restart-policy
+  healthcheck:
+    test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+  logging:
+    <<: *logging-verbose
+
+# ========================================
+# Resource Limits Templates
+# ========================================
+
+x-resources-small: &resources-small
+  deploy:
+    resources:
+      limits:
+        cpus: '0.5'
+        memory: 256M
+      reservations:
+        cpus: '0.25'
+        memory: 128M
+
+x-resources-medium: &resources-medium
+  deploy:
+    resources:
+      limits:
+        cpus: '1.0'
+        memory: 512M
+      reservations:
+        cpus: '0.5'
+        memory: 256M
+
+x-resources-large: &resources-large
+  deploy:
+    resources:
+      limits:
+        cpus: '2.0'
+        memory: 2G
+      reservations:
+        cpus: '1.0'
+        memory: 1G
+
+# ========================================
+# Common Network Definition
+# ========================================
+networks:
+  app-network:
+    driver: bridge
+
+# ========================================
+# Common Volume Definitions
+# ========================================
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

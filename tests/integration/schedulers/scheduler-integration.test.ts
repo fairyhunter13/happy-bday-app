@@ -146,10 +146,13 @@ describe('Scheduler Integration Tests', () => {
       const messages = await db.select().from(messageLogs);
 
       // Group by user
-      const messagesByUser = messages.reduce((acc, msg) => {
-        acc[msg.userId] = (acc[msg.userId] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      const messagesByUser = messages.reduce(
+        (acc, msg) => {
+          acc[msg.userId] = (acc[msg.userId] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       // Each user should have at most 1 message
       Object.values(messagesByUser).forEach((count) => {

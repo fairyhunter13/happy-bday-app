@@ -289,10 +289,7 @@ export async function consumeMessages(
 /**
  * Get message count in a queue
  */
-export async function getQueueMessageCount(
-  connection: Connection,
-  queue: string
-): Promise<number> {
+export async function getQueueMessageCount(connection: Connection, queue: string): Promise<number> {
   const channel = await connection.createChannel();
   try {
     const queueInfo = await channel.checkQueue(queue);

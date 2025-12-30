@@ -274,7 +274,7 @@ describe('Resource Limits Chaos Tests', () => {
             pool.release();
 
             logger.debug(`Query ${i} completed`, pool.getStats());
-          })(),
+          })()
         );
       }
 
@@ -460,7 +460,7 @@ describe('Resource Limits Chaos Tests', () => {
 
       // Generate load
       const requests = Array.from({ length: 100 }, (_, i) =>
-        handleRequest(i).catch(() => 'failed'),
+        handleRequest(i).catch(() => 'failed')
       );
 
       await Promise.allSettled(requests);
@@ -469,7 +469,7 @@ describe('Resource Limits Chaos Tests', () => {
 
       // Verify system degraded gracefully (didn't crash)
       expect(metrics.requestsProcessed + metrics.requestsThrottled + metrics.requestsFailed).toBe(
-        100,
+        100
       );
     }, 30000);
   });
@@ -507,7 +507,7 @@ describe('Resource Limits Chaos Tests', () => {
       logger.info('Resource monitoring completed', {
         samples: metrics.length,
         avgHeapUsedMB: Math.round(
-          metrics.reduce((sum, m) => sum + m.memory.heapUsedMB, 0) / metrics.length,
+          metrics.reduce((sum, m) => sum + m.memory.heapUsedMB, 0) / metrics.length
         ),
       });
 

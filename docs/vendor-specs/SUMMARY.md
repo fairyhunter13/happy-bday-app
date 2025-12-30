@@ -521,7 +521,7 @@ email_circuit_breaker_state
 ### Internal Team
 - **Technical Owner:** Backend Engineering Team
 - **Documentation:** `/docs/vendor-specs/`
-- **Questions:** Create ticket in JIRA or Slack #backend-team
+- **Questions:** Create ticket in JIRA or email backend-team@example.com
 
 ---
 

@@ -14,7 +14,6 @@
 import { db } from './connection';
 import { users, messageLogs, MessageStatus, MessageType } from './schema';
 import { DateTime } from 'luxon';
-import { v4 as uuidv4 } from 'uuid';
 
 const TIMEZONES = [
   'America/New_York',
@@ -137,7 +136,6 @@ async function seed() {
     // Step 3: Create sample message logs
     console.log('📧 Creating sample message logs...');
     const testMessages: any[] = [];
-    const now = new Date();
 
     // Create messages for first 20 users
     for (let i = 0; i < 20; i++) {

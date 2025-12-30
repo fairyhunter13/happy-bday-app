@@ -13,7 +13,12 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { TestEnvironment, waitFor, cleanDatabase, purgeQueues } from '../helpers/testcontainers.js';
 import { createMockEmailServer, MockEmailServer } from '../helpers/mock-email-server.js';
-import { insertUser, findMessageLogsByUserId, insertMessageLog, sleep } from '../helpers/test-helpers.js';
+import {
+  insertUser,
+  findMessageLogsByUserId,
+  insertMessageLog,
+  sleep,
+} from '../helpers/test-helpers.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';
 import { MessagePublisher } from '../../src/queue/publisher.js';
@@ -145,10 +150,9 @@ describe('E2E: Error Handling and Recovery', () => {
       const messageId = messages[0].id!;
 
       // Update to trigger immediate processing
-      await pool.query(
-        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1',
-        [messageId]
-      );
+      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1', [
+        messageId,
+      ]);
 
       await scheduler.enqueueUpcomingMessages();
 
@@ -540,16 +544,15 @@ describe('E2E: Error Handling and Recovery', () => {
 
       // Manually fail one message
       const messages = await findMessageLogsByUserId(pool, users[2].id);
-      await pool.query(
-        'UPDATE message_logs SET status = $1 WHERE id = $2',
-        [MessageStatus.FAILED, messages[0].id]
-      );
+      await pool.query('UPDATE message_logs SET status = $1 WHERE id = $2', [
+        MessageStatus.FAILED,
+        messages[0].id,
+      ]);
 
       // Other messages should still be processable
-      const allMessages = await pool.query(
-        'SELECT * FROM message_logs WHERE user_id = ANY($1)',
-        [users.map((u) => u.id)]
-      );
+      const allMessages = await pool.query('SELECT * FROM message_logs WHERE user_id = ANY($1)', [
+        users.map((u) => u.id),
+      ]);
 
       const scheduled = allMessages.rows.filter((m) => m.status === MessageStatus.SCHEDULED);
       expect(scheduled.length).toBeGreaterThanOrEqual(4);
