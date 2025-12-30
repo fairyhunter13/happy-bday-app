@@ -28,6 +28,9 @@ src/clients/generated/
 .env.*.dec
 !.env.*.enc
 
+# SOPS migration backups (contains unencrypted secrets)
+backups/
+
 # Testing
 coverage/
 .nyc_output/
