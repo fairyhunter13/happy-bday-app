@@ -1,0 +1,264 @@
+name: Performance Tests
+
+on:
+  schedule:
+    - cron: '0 2 * * 0' # Sunday 2am UTC
+  workflow_dispatch: # Allow manual trigger
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - sustained
+          - peak
+          - worker-scaling
+
+jobs:
+  performance-sustained:
+    name: Sustained Load Test (1M/day)
+    runs-on: ubuntu-latest
+    timeout-minutes: 1500 # 25 hours (24h test + 1h buffer)
+    if: github.event.inputs.test_type == 'sustained' || github.event.inputs.test_type == 'all' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start performance environment
+        run: docker-compose -f docker-compose.perf.yml up -d
+
+      - name: Wait for services
+        run: |
+          timeout 300 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+          echo "All services are ready"
+
+      - name: Run database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Seed test data
+        run: npm run db:seed:perf
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run sustained load test (24h)
+        run: k6 run tests/performance/sustained-load.js --out json=perf-results/sustained-load.json
+        env:
+          API_URL: http://localhost
+
+      - name: Generate performance report
+        run: npm run perf:report
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: sustained-load-results
+          path: perf-results/
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.perf.yml down -v
+
+  performance-peak:
+    name: Peak Load Test (100+ msg/sec)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event.inputs.test_type == 'peak' || github.event.inputs.test_type == 'all' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start performance environment
+        run: docker-compose -f docker-compose.perf.yml up -d
+
+      - name: Wait for services
+        run: |
+          timeout 300 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+
+      - name: Run database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run peak load test
+        run: k6 run tests/performance/peak-load.js --out json=perf-results/peak-load.json
+        env:
+          API_URL: http://localhost
+
+      - name: Generate performance report
+        run: npm run perf:report
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: peak-load-results
+          path: perf-results/
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.perf.yml down -v
+
+  performance-worker-scaling:
+    name: Worker Scaling Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: github.event.inputs.test_type == 'worker-scaling' || github.event.inputs.test_type == 'all' || github.event_name == 'schedule'
+
+    strategy:
+      matrix:
+        workers: [1, 5, 10]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start performance environment (${{ matrix.workers }} workers)
+        run: |
+          docker-compose -f docker-compose.perf.yml up -d --scale worker=${{ matrix.workers }}
+
+      - name: Wait for services
+        run: |
+          timeout 300 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+
+      - name: Run database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Run worker scaling test
+        run: k6 run tests/performance/worker-scaling.js --out json=perf-results/worker-scaling-${{ matrix.workers }}.json
+        env:
+          API_URL: http://localhost
+          WORKERS: ${{ matrix.workers }}
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: worker-scaling-results-${{ matrix.workers }}
+          path: perf-results/
+          retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.perf.yml down -v
+
+  performance-report:
+    name: Generate Performance Report
+    needs: [performance-sustained, performance-peak, performance-worker-scaling]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download all performance artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-results*'
+          path: perf-results/
+
+      - name: Generate consolidated report
+        run: npm run perf:report
+
+      - name: Upload final report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report-final
+          path: perf-results/performance-report.html
+          retention-days: 90
+
+      - name: Comment on commit
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('perf-results/summary.json', 'utf8'));
+
+            const comment = `## Performance Test Results
+
+            📊 **Weekly Performance Test Summary**
+
+            | Test | Status | P95 Latency | P99 Latency | Error Rate |
+            |------|--------|-------------|-------------|------------|
+            | Sustained Load (1M/day) | ${summary.tests[0]?.success ? '✅' : '❌'} | - | - | - |
+            | Peak Load (100+ msg/sec) | ${summary.tests[1]?.success ? '✅' : '❌'} | - | - | - |
+            | Worker Scaling | ${summary.tests[2]?.success ? '✅' : '❌'} | - | - | - |
+
+            [Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: comment
+            });
