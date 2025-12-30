@@ -22,7 +22,7 @@ import { logger } from '../config/logger.js';
 import { env } from '../config/environment.js';
 
 export class RecoveryScheduler {
-  private task: cron.ScheduledTask | null = null;
+  private task: ReturnType<typeof cron.schedule> | null = null;
   private isRunning = false;
   private lastRunTime: Date | null = null;
   private totalRecovered = 0;
@@ -54,9 +54,8 @@ export class RecoveryScheduler {
         await this.executeJob();
       },
       {
-        scheduled: true,
         timezone: 'UTC',
-      }
+      } as any
     );
 
     logger.info('RecoveryScheduler started successfully');
@@ -211,7 +210,12 @@ export class RecoveryScheduler {
     isScheduled: boolean;
     schedule: string;
     lastRunTime: Date | null;
-    lastRunStats: typeof this.lastRunStats;
+    lastRunStats: {
+      totalMissed: number;
+      recovered: number;
+      failed: number;
+      errorCount: number;
+    } | null;
     totalRecovered: number;
     totalFailed: number;
     totalRuns: number;

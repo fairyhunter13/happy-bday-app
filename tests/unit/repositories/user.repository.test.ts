@@ -363,9 +363,9 @@ describe('UserRepository', () => {
       await repository.create(user1);
       const created2 = await repository.create(user2);
 
-      await expect(
-        repository.update(created2.id, { email: 'user1@example.com' })
-      ).rejects.toThrow(UniqueConstraintError);
+      await expect(repository.update(created2.id, { email: 'user1@example.com' })).rejects.toThrow(
+        UniqueConstraintError
+      );
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
@@ -397,9 +397,9 @@ describe('UserRepository', () => {
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
-      await expect(
-        repository.delete('00000000-0000-0000-0000-000000000000')
-      ).rejects.toThrow(NotFoundError);
+      await expect(repository.delete('00000000-0000-0000-0000-000000000000')).rejects.toThrow(
+        NotFoundError
+      );
     });
 
     it('should throw NotFoundError when deleting already deleted user', async () => {

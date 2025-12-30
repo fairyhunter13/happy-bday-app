@@ -30,12 +30,7 @@ describe('SchedulerService Integration Tests', () => {
     userRepo = new UserRepository();
     messageLogRepo = new MessageLogRepository();
 
-    service = new SchedulerService(
-      timezoneService,
-      idempotencyService,
-      userRepo,
-      messageLogRepo
-    );
+    service = new SchedulerService(timezoneService, idempotencyService, userRepo, messageLogRepo);
 
     testUsers = [];
 

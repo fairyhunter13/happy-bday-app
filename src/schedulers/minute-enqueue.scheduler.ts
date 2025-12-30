@@ -25,7 +25,7 @@ import { env } from '../config/environment.js';
 import { MessageStatus } from '../db/schema/message-logs.js';
 
 export class MinuteEnqueueScheduler {
-  private task: cron.ScheduledTask | null = null;
+  private task: ReturnType<typeof cron.schedule> | null = null;
   private isRunning = false;
   private lastRunTime: Date | null = null;
   private totalEnqueued = 0;
@@ -67,9 +67,8 @@ export class MinuteEnqueueScheduler {
         await this.executeJob();
       },
       {
-        scheduled: true,
         timezone: 'UTC',
-      }
+      } as any
     );
 
     logger.info('MinuteEnqueueScheduler started successfully');
@@ -120,6 +119,8 @@ export class MinuteEnqueueScheduler {
           status: MessageStatus.QUEUED,
           scheduledAfter: now,
           scheduledBefore: oneHourFromNow,
+          limit: 100,
+          offset: 0,
         });
 
         // Publish to RabbitMQ
@@ -130,9 +131,7 @@ export class MinuteEnqueueScheduler {
               messageId: message.id,
               userId: message.userId,
               messageType: message.messageType as 'BIRTHDAY' | 'ANNIVERSARY',
-              messageContent: message.messageContent,
-              scheduledSendTime: message.scheduledSendTime,
-              idempotencyKey: message.idempotencyKey,
+              scheduledSendTime: message.scheduledSendTime.toISOString(),
               timestamp: Date.now(),
               retryCount: message.retryCount,
             });

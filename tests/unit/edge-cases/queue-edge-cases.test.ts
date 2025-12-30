@@ -20,7 +20,8 @@ describe('Queue Edge Cases', () => {
       };
 
       const calculateBackoff = (attempt: number): number => {
-        const delay = connectionRetryConfig.initialDelay * Math.pow(connectionRetryConfig.factor, attempt);
+        const delay =
+          connectionRetryConfig.initialDelay * Math.pow(connectionRetryConfig.factor, attempt);
         return Math.min(delay, connectionRetryConfig.maxDelay);
       };
 
@@ -324,22 +325,38 @@ describe('Queue Edge Cases', () => {
 
       const shouldAlert = (metrics: DLQMetrics): boolean => {
         return (
-          metrics.messageCount > metrics.alertThreshold ||
-          metrics.oldestMessageAge > 3600 // 1 hour
+          metrics.messageCount > metrics.alertThreshold || metrics.oldestMessageAge > 3600 // 1 hour
         );
       };
 
       // Low DLQ - no alert
-      expect(shouldAlert({ messageCount: 5, oldestMessageAge: 60, averageMessageAge: 30, alertThreshold: 100 })).toBe(false);
+      expect(
+        shouldAlert({
+          messageCount: 5,
+          oldestMessageAge: 60,
+          averageMessageAge: 30,
+          alertThreshold: 100,
+        })
+      ).toBe(false);
 
       // High DLQ count - alert
       expect(
-        shouldAlert({ messageCount: 150, oldestMessageAge: 60, averageMessageAge: 30, alertThreshold: 100 })
+        shouldAlert({
+          messageCount: 150,
+          oldestMessageAge: 60,
+          averageMessageAge: 30,
+          alertThreshold: 100,
+        })
       ).toBe(true);
 
       // Old messages - alert
       expect(
-        shouldAlert({ messageCount: 5, oldestMessageAge: 7200, averageMessageAge: 3600, alertThreshold: 100 })
+        shouldAlert({
+          messageCount: 5,
+          oldestMessageAge: 7200,
+          averageMessageAge: 3600,
+          alertThreshold: 100,
+        })
       ).toBe(true);
     });
 

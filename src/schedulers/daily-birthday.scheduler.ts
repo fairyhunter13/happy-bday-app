@@ -22,7 +22,7 @@ import { logger } from '../config/logger.js';
 import { env } from '../config/environment.js';
 
 export class DailyBirthdayScheduler {
-  private task: cron.ScheduledTask | null = null;
+  private task: ReturnType<typeof cron.schedule> | null = null;
   private isRunning = false;
   private lastRunTime: Date | null = null;
   private lastRunStats: {
@@ -52,9 +52,8 @@ export class DailyBirthdayScheduler {
         await this.executeJob();
       },
       {
-        scheduled: true,
         timezone: 'UTC',
-      }
+      } as any
     );
 
     logger.info('DailyBirthdayScheduler started successfully');
@@ -194,7 +193,13 @@ export class DailyBirthdayScheduler {
     isScheduled: boolean;
     schedule: string;
     lastRunTime: Date | null;
-    lastRunStats: typeof this.lastRunStats;
+    lastRunStats: {
+      totalBirthdays: number;
+      totalAnniversaries: number;
+      messagesScheduled: number;
+      duplicatesSkipped: number;
+      errorCount: number;
+    } | null;
   } {
     return {
       isRunning: this.isRunning,

@@ -85,7 +85,8 @@ export class MessagePublisher {
       routingKey ||
       (validatedJob.messageType === 'BIRTHDAY' ? ROUTING_KEYS.BIRTHDAY : ROUTING_KEYS.ANNIVERSARY);
 
-    logger.debug('Publishing message', {
+    logger.debug({
+      msg: 'Publishing message',
       messageId: validatedJob.messageId,
       userId: validatedJob.userId,
       messageType: validatedJob.messageType,
@@ -111,14 +112,16 @@ export class MessagePublisher {
         },
       });
 
-      logger.info('Message published successfully', {
+      logger.info({
+        msg: 'Message published successfully',
         messageId: validatedJob.messageId,
         exchange: EXCHANGES.BIRTHDAY_MESSAGES,
         routingKey: actualRoutingKey,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to publish message', {
+      logger.error({
+        msg: 'Failed to publish message',
         messageId: validatedJob.messageId,
         error: errorMessage,
       });
@@ -154,7 +157,8 @@ export class MessagePublisher {
     const successCount = results.filter((r) => r.success).length;
     const failureCount = results.filter((r) => !r.success).length;
 
-    logger.info('Batch publish completed', {
+    logger.info({
+      msg: 'Batch publish completed',
       total: jobs.length,
       success: successCount,
       failed: failureCount,
@@ -179,7 +183,8 @@ export class MessagePublisher {
         return; // Success
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        logger.warn('Publish attempt failed', {
+        logger.warn({
+          msg: 'Publish attempt failed',
           messageId: job.messageId,
           attempt: attempt + 1,
           maxRetries: maxRetries + 1,
@@ -226,7 +231,7 @@ export class MessagePublisher {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to get queue stats', { queueName, error: errorMessage });
+      logger.error({ msg: 'Failed to get queue stats', queueName, error: errorMessage });
       throw error;
     }
   }

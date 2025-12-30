@@ -4,8 +4,6 @@
  * OpenAPI 3.1 schemas for Prometheus metrics endpoints.
  */
 
-import { SuccessResponseSchema } from './common.schemas.js';
-
 /**
  * Prometheus metrics text format schema
  */

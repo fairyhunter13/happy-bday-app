@@ -227,10 +227,9 @@ describe('E2E: Concurrent Message Processing', () => {
       await scheduler.enqueueUpcomingMessages();
 
       // Get all messages and publish to queue
-      const messages = await pool.query(
-        'SELECT * FROM message_logs WHERE user_id = ANY($1)',
-        [users.map((u) => u.id)]
-      );
+      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = ANY($1)', [
+        users.map((u) => u.id),
+      ]);
 
       const publishPromises = messages.rows.map((msg) =>
         publisher.publishMessage({
@@ -333,10 +332,7 @@ describe('E2E: Concurrent Message Processing', () => {
 
       await scheduler.preCalculateTodaysBirthdays();
 
-      const messages = await pool.query(
-        'SELECT * FROM message_logs WHERE user_id = $1',
-        [user.id]
-      );
+      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [user.id]);
 
       const messageId = messages.rows[0].id;
 
@@ -369,10 +365,9 @@ describe('E2E: Concurrent Message Processing', () => {
       expect(mockEmailServer.getRequestCount()).toBeLessThanOrEqual(1);
 
       // Message should be SENT only once
-      const finalMessages = await pool.query(
-        'SELECT * FROM message_logs WHERE user_id = $1',
-        [user.id]
-      );
+      const finalMessages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [
+        user.id,
+      ]);
 
       expect(finalMessages.rows).toHaveLength(1);
       expect(finalMessages.rows[0].status).toBe(MessageStatus.SENT);
@@ -534,7 +529,9 @@ describe('E2E: Concurrent Message Processing', () => {
 
         results.push({ size, time: duration, throughput });
 
-        console.log(`Size: ${size}, Time: ${duration}ms, Throughput: ${throughput.toFixed(2)} msg/s`);
+        console.log(
+          `Size: ${size}, Time: ${duration}ms, Throughput: ${throughput.toFixed(2)} msg/s`
+        );
       }
 
       // Verify performance doesn't degrade significantly

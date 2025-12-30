@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "label": "coverage",
+  "message": "85.5%",
+  "color": "brightgreen",
+  "namedLogo": "vitest",
+  "logoColor": "white",
+  "style": "flat-square",
+  "cacheSeconds": 300
+}

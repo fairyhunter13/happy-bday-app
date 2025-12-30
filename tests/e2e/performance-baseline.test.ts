@@ -139,19 +139,16 @@ describe('E2E: Performance Baseline', () => {
       const schedulingTime = Date.now() - scheduleStart;
 
       // Step 2: Enqueue
-      await pool.query(
-        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE user_id = $1',
-        [user.id]
-      );
+      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE user_id = $1', [
+        user.id,
+      ]);
 
       const enqueueStart = Date.now();
       await scheduler.enqueueUpcomingMessages();
       const enqueuingTime = Date.now() - enqueueStart;
 
       // Step 3: Publish to queue
-      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [
-        user.id,
-      ]);
+      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [user.id]);
 
       await publisher.publishMessage({
         messageId: messages.rows[0].id,
@@ -531,9 +528,7 @@ Multi-Timezone Throughput:
       await pool.query('UPDATE message_logs SET scheduled_send_time = NOW()');
       await scheduler.enqueueUpcomingMessages();
 
-      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [
-        user.id,
-      ]);
+      const messages = await pool.query('SELECT * FROM message_logs WHERE user_id = $1', [user.id]);
 
       await publisher.publishMessage({
         messageId: messages.rows[0].id,

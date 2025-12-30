@@ -103,21 +103,21 @@ describe('IdempotencyService', () => {
     });
 
     it('should throw ValidationError for invalid date', () => {
-      expect(() =>
-        service.generateKey('user-123', 'BIRTHDAY', new Date('invalid'))
-      ).toThrow(ValidationError);
+      expect(() => service.generateKey('user-123', 'BIRTHDAY', new Date('invalid'))).toThrow(
+        ValidationError
+      );
     });
 
     it('should throw ValidationError if userId contains separator', () => {
-      expect(() =>
-        service.generateKey('user:123', 'BIRTHDAY', new Date('2025-12-30'))
-      ).toThrow(ValidationError);
+      expect(() => service.generateKey('user:123', 'BIRTHDAY', new Date('2025-12-30'))).toThrow(
+        ValidationError
+      );
     });
 
     it('should throw ValidationError if messageType contains separator', () => {
-      expect(() =>
-        service.generateKey('user-123', 'BIRTH:DAY', new Date('2025-12-30'))
-      ).toThrow(ValidationError);
+      expect(() => service.generateKey('user-123', 'BIRTH:DAY', new Date('2025-12-30'))).toThrow(
+        ValidationError
+      );
     });
   });
 
@@ -345,10 +345,7 @@ describe('IdempotencyService', () => {
     });
 
     it('should handle all valid keys', () => {
-      const keys = [
-        'user-123:BIRTHDAY:2025-12-30',
-        'user-456:ANNIVERSARY:2025-01-15',
-      ];
+      const keys = ['user-123:BIRTHDAY:2025-12-30', 'user-456:ANNIVERSARY:2025-01-15'];
 
       const result = service.validateBulkKeys(keys);
 

@@ -9,11 +9,13 @@
  * - Comprehensive error handling
  */
 
-import { eq, and, isNull, sql, gte, lte, or } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import { db, type DbType } from '../db/connection.js';
 import { users, type User, type NewUser } from '../db/schema/users.js';
+import * as schema from '../db/schema/index.js';
 import type { CreateUserDto, UpdateUserDto, UserFiltersDto } from '../types/dto.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/errors.js';
 
@@ -22,8 +24,8 @@ import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/er
  */
 type TransactionType = PgTransaction<
   PostgresJsQueryResultHKT,
-  Record<string, never>,
-  Record<string, never>
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
 >;
 
 /**

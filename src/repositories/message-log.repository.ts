@@ -13,7 +13,9 @@
 import { eq, and, gte, lte, inArray, sql } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
+import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import { db, type DbType } from '../db/connection.js';
+import * as schema from '../db/schema/index.js';
 import {
   messageLogs,
   type MessageLog,
@@ -23,12 +25,10 @@ import {
 } from '../db/schema/message-logs.js';
 import type {
   CreateMessageLogDto,
-  UpdateMessageLogDto,
   MarkAsSentDto,
   MarkAsFailedDto,
   MessageLogFiltersDto,
 } from '../types/dto.js';
-import type { ApiResponse } from '../types/index.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/errors.js';
 
 /**
@@ -36,8 +36,8 @@ import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/er
  */
 type TransactionType = PgTransaction<
   PostgresJsQueryResultHKT,
-  Record<string, never>,
-  Record<string, never>
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
 >;
 
 /**

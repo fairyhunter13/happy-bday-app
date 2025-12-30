@@ -1,4 +1,36 @@
+# ========================================
+# Docker Compose - Development Environment
+# Birthday Message Scheduler
+# ========================================
+# Usage: docker-compose up -d
+# Extends: docker-compose.base.yml
+
 version: '3.9'
+
+# Import base anchors (for local reference)
+x-healthcheck-postgres: &healthcheck-postgres
+  test: ["CMD-SHELL", "pg_isready -U postgres -d birthday_app"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+x-healthcheck-rabbitmq: &healthcheck-rabbitmq
+  test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+x-healthcheck-redis: &healthcheck-redis
+  test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+x-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   # PostgreSQL 15 - Primary Database
@@ -17,14 +49,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d birthday_app"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-postgres
+    logging:
+      <<: *logging
     networks:
       - birthday-app-network
 
-  # RabbitMQ 3.12+ with Management Plugin
+  # RabbitMQ 3.13+ with Management Plugin
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: birthday-app-rabbitmq
@@ -42,10 +73,9 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./scripts/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-rabbitmq
+    logging:
+      <<: *logging
     networks:
       - birthday-app-network
 
@@ -60,10 +90,9 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *healthcheck-redis
+    logging:
+      <<: *logging
     networks:
       - birthday-app-network
 
@@ -84,6 +113,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    logging:
+      <<: *logging
     networks:
       - birthday-app-network
 

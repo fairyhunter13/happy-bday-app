@@ -1,0 +1,587 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - API Performance",
+    "tags": ["birthday-scheduler", "api", "performance", "production"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            { "text": "1m", "value": "1m", "selected": false },
+            { "text": "5m", "value": "5m", "selected": true },
+            { "text": "10m", "value": "10m", "selected": false },
+            { "text": "30m", "value": "30m", "selected": false },
+            { "text": "1h", "value": "1h", "selected": false }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        },
+        {
+          "name": "path",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\"}, path)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Path",
+          "description": "HTTP path filter"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Infrastructure Dashboard",
+        "url": "/d/infrastructure?var-namespace=$namespace&var-instance=$instance&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View infrastructure metrics for system resources",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Overview Dashboard",
+        "url": "/d/overview?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "Return to overview dashboard",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"HighErrorRate|APILatencyP99High|HighLatency|ErrorRateWarning\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "API Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate by Endpoint",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+        "description": "Shows incoming traffic distribution across API endpoints. Monitor for traffic spikes or unusual patterns.",
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (method, path)",
+            "legendFormat": "{{method}} {{path}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          { "label": "Requests/sec", "format": "reqps" }
+        ],
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right",
+            "calcs": ["mean", "max", "last"]
+          }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "links": [
+              {
+                "title": "Filter by this path",
+                "url": "/d/api-performance?var-path=${__field.labels.path}&var-namespace=$namespace&var-instance=$instance"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Total Request Rate",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "description": "Current total request rate across all endpoints. Thresholds: Green (0-100), Yellow (100-500), Orange (500+) req/s",
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval]))",
+            "legendFormat": "Total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 100, "color": "yellow" },
+                { "value": 500, "color": "orange" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Success Rate (%)",
+        "type": "gauge",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "description": "Overall API health indicator. SLO target: >99%. Alerts fire when <95%.",
+        "targets": [
+          {
+            "expr": "(sum(rate(birthday_scheduler_api_requests_total{status=~\"2..\", namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) / sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval]))) * 100",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 95, "color": "yellow" },
+                { "value": 99, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Response Time Percentiles (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "description": "Latency distribution tracking (SLI metric). p99 SLO: <1 second. Alert fires when p99 >1s for 5 minutes.",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          { "label": "Response Time", "format": "s" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 1, "color": "red" }
+              ]
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [1], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["C", "5m", "now"] },
+              "reducer": { "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High p99 Response Time",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Rates by Endpoint",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+        "description": "Track 4xx (client errors) and 5xx (server errors) by endpoint. Alert fires when 5xx rate >0.1 req/s.",
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{status=~\"4..\", namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (method, path)",
+            "legendFormat": "4xx {{method}} {{path}}",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{status=~\"5..\", namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (method, path)",
+            "legendFormat": "5xx {{method}} {{path}}",
+            "refId": "B"
+          }
+        ],
+        "yAxes": [
+          { "label": "Errors/sec", "format": "reqps" }
+        ],
+        "seriesOverrides": [
+          { "alias": "/4xx.*/", "color": "#FF9830" },
+          { "alias": "/5xx.*/", "color": "#F2495C" }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [0.1], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["B", "5m", "now"] },
+              "reducer": { "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High 5xx Error Rate",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Slow Endpoints (p95 > 500ms)",
+        "type": "table",
+        "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+        "description": "Top 10 slowest endpoints with p95 latency >500ms. Color-coded: Green (<500ms), Yellow (500ms-1s), Red (>1s)",
+        "targets": [
+          {
+            "expr": "topk(10, histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (le, method, path))) > 0.5",
+            "legendFormat": "{{method}} {{path}}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "method": "Method",
+                "path": "Endpoint",
+                "Value": "p95 (seconds)"
+              }
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            { "displayName": "p95 (seconds)", "desc": true }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "color-background-solid"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.5, "color": "yellow" },
+                { "value": 1, "color": "red" }
+              ]
+            },
+            "unit": "s"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "API Latency Heatmap",
+        "type": "heatmap",
+        "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+        "description": "Visualize latency distribution over time. Darker colors indicate higher request density at that latency.",
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[1m])) by (le)",
+            "legendFormat": "{{le}}",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "calculate": false,
+          "yAxis": {
+            "axisPlacement": "left",
+            "unit": "s"
+          },
+          "color": {
+            "scheme": "Oranges",
+            "mode": "scheme"
+          },
+          "cellGap": 1,
+          "showValue": "never"
+        },
+        "yAxis": {
+          "format": "s",
+          "label": "Response Time"
+        }
+      },
+      {
+        "id": 8,
+        "title": "Request Rate by Status Code",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 20, "w": 12, "h": 8 },
+        "description": "HTTP status code distribution. Color-coded: 2xx (green), 3xx (blue), 4xx (orange), 5xx (red)",
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (status)",
+            "legendFormat": "Status {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          { "label": "Requests/sec", "format": "reqps" }
+        ],
+        "seriesOverrides": [
+          { "alias": "/Status 2../", "color": "#73BF69" },
+          { "alias": "/Status 3../", "color": "#5794F2" },
+          { "alias": "/Status 4../", "color": "#FF9830" },
+          { "alias": "/Status 5../", "color": "#F2495C" }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "External API Latency",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 24, "w": 12, "h": 8 },
+        "description": "Monitor third-party API performance (p95 latency). Track dependencies like email services, SMS providers, etc.",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_external_api_latency_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, api_name))",
+            "legendFormat": "{{api_name}} p95",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          { "label": "Latency", "format": "s" }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 1, "color": "yellow" },
+                { "value": 3, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "External API Calls",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 28, "w": 12, "h": 8 },
+        "description": "External API call volume and success/failure rates by API name and status",
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_external_api_calls_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (api_name, status)",
+            "legendFormat": "{{api_name}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          { "label": "Calls/sec", "format": "reqps" }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Average Response Time by Method",
+        "type": "bargauge",
+        "gridPos": { "x": 0, "y": 32, "w": 8, "h": 6 },
+        "description": "Compare average latency across HTTP methods. Thresholds: Green (<200ms), Yellow (200-500ms), Red (>500ms)",
+        "targets": [
+          {
+            "expr": "avg(rate(birthday_scheduler_api_response_time_seconds_sum{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval]) / rate(birthday_scheduler_api_response_time_seconds_count{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[$interval])) by (method)",
+            "legendFormat": "{{method}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 0.2, "color": "yellow" },
+                { "value": 0.5, "color": "red" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Request Count (24h)",
+        "type": "stat",
+        "gridPos": { "x": 8, "y": 32, "w": 4, "h": 6 },
+        "description": "Total API requests in the last 24 hours",
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[24h]))",
+            "legendFormat": "Requests",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "id": 13,
+        "title": "Error Count (24h)",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 32, "w": 4, "h": 6 },
+        "description": "Total 5xx errors in last 24h. Thresholds: Green (0-10), Yellow (10-100), Red (>100)",
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_api_requests_total{status=~\"5..\", namespace=\"$namespace\", instance=~\"$instance\", path=~\"$path\"}[24h]))",
+            "legendFormat": "5xx Errors",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "value": 0, "color": "green" },
+                { "value": 10, "color": "yellow" },
+                { "value": 100, "color": "red" }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

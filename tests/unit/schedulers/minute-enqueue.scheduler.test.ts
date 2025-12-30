@@ -115,11 +115,14 @@ describe('MinuteEnqueueScheduler', () => {
         },
       ];
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(2);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(2);
 
-      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll')
-        .mockResolvedValue(mockMessages);
+      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll').mockResolvedValue(
+        mockMessages
+      );
 
       await scheduler.triggerManually();
 
@@ -132,8 +135,10 @@ describe('MinuteEnqueueScheduler', () => {
     });
 
     it('should handle zero messages to enqueue', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(0);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(0);
 
       await scheduler.triggerManually();
 
@@ -142,8 +147,10 @@ describe('MinuteEnqueueScheduler', () => {
     });
 
     it('should handle errors during job execution', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockRejectedValue(new Error('Database error'));
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockRejectedValue(new Error('Database error'));
 
       await scheduler.triggerManually();
 
@@ -152,8 +159,10 @@ describe('MinuteEnqueueScheduler', () => {
     });
 
     it('should track consecutive failures', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockRejectedValue(new Error('Database error'));
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockRejectedValue(new Error('Database error'));
 
       await scheduler.triggerManually();
       await scheduler.triggerManually();
@@ -181,11 +190,13 @@ describe('MinuteEnqueueScheduler', () => {
         resolveJob = resolve;
       });
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockImplementation(async () => {
-          await jobPromise;
-          return 0;
-        });
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockImplementation(async () => {
+        await jobPromise;
+        return 0;
+      });
 
       // Start first job
       const job1 = scheduler.triggerManually();
@@ -198,7 +209,9 @@ describe('MinuteEnqueueScheduler', () => {
       await job1;
 
       // Should only have been called once
-      expect(schedulerServiceModule.schedulerService.enqueueUpcomingMessages).toHaveBeenCalledTimes(1);
+      expect(schedulerServiceModule.schedulerService.enqueueUpcomingMessages).toHaveBeenCalledTimes(
+        1
+      );
     });
 
     it('should handle RabbitMQ publish errors gracefully', async () => {
@@ -214,11 +227,14 @@ describe('MinuteEnqueueScheduler', () => {
         },
       ];
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(1);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(1);
 
-      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll')
-        .mockResolvedValue(mockMessages);
+      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll').mockResolvedValue(
+        mockMessages
+      );
 
       // @ts-expect-error - Accessing private property for testing
       scheduler.publisher.publishMessage = vi.fn().mockRejectedValue(new Error('RabbitMQ error'));
@@ -254,8 +270,7 @@ describe('MinuteEnqueueScheduler', () => {
         .mockResolvedValueOnce(3)
         .mockResolvedValueOnce(2);
 
-      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll')
-        .mockResolvedValue([]);
+      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll').mockResolvedValue([]);
 
       await scheduler.triggerManually();
       await scheduler.triggerManually();
@@ -281,8 +296,10 @@ describe('MinuteEnqueueScheduler', () => {
     it('should return true after successful run', async () => {
       await scheduler.start();
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(0);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(0);
 
       await scheduler.triggerManually();
 
@@ -292,8 +309,10 @@ describe('MinuteEnqueueScheduler', () => {
     it('should return false with too many consecutive failures', async () => {
       await scheduler.start();
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockRejectedValue(new Error('Error'));
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockRejectedValue(new Error('Error'));
 
       await scheduler.triggerManually();
       await scheduler.triggerManually();
@@ -305,8 +324,10 @@ describe('MinuteEnqueueScheduler', () => {
     it('should return false if last run was too long ago', async () => {
       await scheduler.start();
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(0);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(0);
 
       await scheduler.triggerManually();
 
@@ -322,11 +343,12 @@ describe('MinuteEnqueueScheduler', () => {
     it('should reset all statistics', async () => {
       await scheduler.start();
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'enqueueUpcomingMessages')
-        .mockResolvedValue(5);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'enqueueUpcomingMessages'
+      ).mockResolvedValue(5);
 
-      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll')
-        .mockResolvedValue([]);
+      vi.spyOn(messageLogRepositoryModule.messageLogRepository, 'findAll').mockResolvedValue([]);
 
       await scheduler.triggerManually();
 

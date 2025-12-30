@@ -55,7 +55,8 @@ export class MessageWorker {
   private async processMessage(job: MessageJob): Promise<void> {
     const startTime = Date.now();
 
-    logger.info('Processing message job', {
+    logger.info({
+      msg: 'Processing message job',
       messageId: job.messageId,
       userId: job.userId,
       messageType: job.messageType,
@@ -67,7 +68,8 @@ export class MessageWorker {
       const message = await messageLogRepository.findById(job.messageId);
 
       if (!message) {
-        logger.error('Message not found in database', {
+        logger.error({
+          msg: 'Message not found in database',
           messageId: job.messageId,
         });
         throw new Error(`Message ${job.messageId} not found in database`);
@@ -75,7 +77,8 @@ export class MessageWorker {
 
       // 2. Check idempotency - skip if already sent
       if (message.status === MessageStatus.SENT) {
-        logger.info('Message already sent, skipping', {
+        logger.info({
+          msg: 'Message already sent, skipping',
           messageId: job.messageId,
           status: message.status,
         });
@@ -90,7 +93,8 @@ export class MessageWorker {
       const userEmail = await this.extractUserEmail(job.userId);
 
       // 5. Send message via external API
-      logger.debug('Sending message via API', {
+      logger.debug({
+        msg: 'Sending message via API',
         messageId: job.messageId,
         email: userEmail,
       });
@@ -118,7 +122,8 @@ export class MessageWorker {
         const duration = Date.now() - startTime;
         const durationSeconds = duration / 1000;
 
-        logger.info('Message sent successfully', {
+        logger.info({
+          msg: 'Message sent successfully',
           messageId: job.messageId,
           userId: job.userId,
           duration,
@@ -135,7 +140,8 @@ export class MessageWorker {
       const duration = Date.now() - startTime;
       const durationSeconds = duration / 1000;
 
-      logger.error('Failed to process message', {
+      logger.error({
+        msg: 'Failed to process message',
         messageId: job.messageId,
         userId: job.userId,
         error: errorMessage,
@@ -213,7 +219,8 @@ export class MessageWorker {
    * Handle processing errors
    */
   private async handleError(error: Error, job?: MessageJob): Promise<void> {
-    logger.error('Message processing error', {
+    logger.error({
+      msg: 'Message processing error',
       messageId: job?.messageId,
       userId: job?.userId,
       error: error.message,

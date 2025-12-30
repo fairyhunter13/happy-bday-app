@@ -263,10 +263,14 @@ describe('Repository Integration Tests', () => {
       expect(message.retryCount).toBe(2);
 
       // Fail 3rd attempt (should FAIL permanently)
-      message = await messageLogRepository.markAsFailed(message.id, {
-        errorMessage: 'Network timeout',
-        apiResponseCode: 503,
-      }, 3);
+      message = await messageLogRepository.markAsFailed(
+        message.id,
+        {
+          errorMessage: 'Network timeout',
+          apiResponseCode: 503,
+        },
+        3
+      );
       expect(message.status).toBe(MessageStatus.FAILED);
       expect(message.retryCount).toBe(3);
     });
@@ -332,9 +336,7 @@ describe('Repository Integration Tests', () => {
       }
 
       // Create all users
-      const createdUsers = await Promise.all(
-        users.map((user) => userRepository.create(user))
-      );
+      const createdUsers = await Promise.all(users.map((user) => userRepository.create(user)));
 
       // Find all users with birthdays today
       const usersWithBirthdays = await userRepository.findBirthdaysToday();

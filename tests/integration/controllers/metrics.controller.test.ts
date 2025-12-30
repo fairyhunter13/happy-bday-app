@@ -122,9 +122,7 @@ describe('MetricsController Integration Tests', () => {
 
       // Validate basic Prometheus format
       const lines = body.split('\n');
-      const metricLines = lines.filter(
-        (line) => !line.startsWith('#') && line.trim() !== ''
-      );
+      const metricLines = lines.filter((line) => !line.startsWith('#') && line.trim() !== '');
 
       // Each metric line should have format: metric_name{labels} value
       for (const line of metricLines) {

@@ -1,0 +1,231 @@
+# SLO-Based Alerts - Service Level Objective Monitoring
+# These alerts track compliance with defined SLOs and error budgets
+
+groups:
+  - name: slo-alerts
+    rules:
+      # Message Delivery Rate Low - Below 99% delivery SLO
+      - alert: MessageDeliveryRateLow
+        expr: |
+          (
+            sum(rate(birthday_scheduler_messages_delivered_total[1h]))
+            /
+            sum(rate(birthday_scheduler_messages_sent_total[1h]))
+          ) * 100 < 99
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: message_delivery
+        annotations:
+          summary: "Message delivery rate below SLO"
+          description: "Message delivery rate is {{ $value | printf \"%.2f\" }}% (SLO: 99%). Error budget is being consumed rapidly."
+          runbook_url: "https://wiki.internal/runbooks/message-delivery-slo"
+          slo_target: "99%"
+
+      # API Availability Low - Below 99.9% uptime SLO
+      - alert: APIAvailabilityLow
+        expr: |
+          (
+            sum(rate(birthday_scheduler_http_requests_total{status!~"5.."}[1h]))
+            /
+            sum(rate(birthday_scheduler_http_requests_total[1h]))
+          ) * 100 < 99.9
+        for: 15m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          slo: api_availability
+        annotations:
+          summary: "API availability below SLO"
+          description: "API availability is {{ $value | printf \"%.3f\" }}% (SLO: 99.9%). Service is experiencing significant errors."
+          runbook_url: "https://wiki.internal/runbooks/api-availability-slo"
+          slo_target: "99.9%"
+
+      # Error Budget Exhausted - Monthly error budget consumed
+      - alert: ErrorBudgetExhausted
+        expr: |
+          (
+            1 - (
+              sum(increase(birthday_scheduler_http_requests_total{status!~"5.."}[30d]))
+              /
+              sum(increase(birthday_scheduler_http_requests_total[30d]))
+            )
+          ) / 0.001 > 1
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          slo: error_budget
+        annotations:
+          summary: "Monthly error budget exhausted"
+          description: "Error budget is {{ $value | printf \"%.1f\" }}x consumed. All non-critical changes should be frozen."
+          runbook_url: "https://wiki.internal/runbooks/error-budget-exhausted"
+          slo_target: "0.1% error budget"
+
+      # Error Budget Burn Rate High - Fast error budget consumption
+      - alert: ErrorBudgetBurnRateHigh
+        expr: |
+          (
+            1 - (
+              sum(rate(birthday_scheduler_http_requests_total{status!~"5.."}[1h]))
+              /
+              sum(rate(birthday_scheduler_http_requests_total[1h]))
+            )
+          ) / (0.001 / 720) > 14.4
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          slo: error_budget
+        annotations:
+          summary: "Error budget burn rate critical"
+          description: "At current rate, monthly error budget will be exhausted in less than 2 hours. Immediate action required."
+          runbook_url: "https://wiki.internal/runbooks/error-budget-burn"
+
+      # Latency SLO Violation - P99 latency above target
+      - alert: LatencySLOViolation
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(birthday_scheduler_http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: latency
+        annotations:
+          summary: "Latency SLO violation"
+          description: "P99 latency is {{ $value | printf \"%.2f\" }}s (SLO: 2s). User experience is degraded."
+          runbook_url: "https://wiki.internal/runbooks/latency-slo"
+          slo_target: "P99 < 2s"
+
+      # Throughput SLO - Processing capacity below target
+      - alert: ThroughputSLOViolation
+        expr: |
+          sum(rate(birthday_scheduler_messages_processed_total[5m])) < 100
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: throughput
+        annotations:
+          summary: "Throughput below SLO"
+          description: "Message processing rate is {{ $value | printf \"%.1f\" }}/s (SLO: 100/s). Processing capacity is limited."
+          runbook_url: "https://wiki.internal/runbooks/throughput-slo"
+          slo_target: "100 messages/second"
+
+      # Scheduler Accuracy SLO - Messages sent on time
+      - alert: SchedulerAccuracySLOViolation
+        expr: |
+          (
+            sum(rate(birthday_scheduler_messages_on_time_total[1h]))
+            /
+            sum(rate(birthday_scheduler_messages_scheduled_total[1h]))
+          ) * 100 < 95
+        for: 30m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: scheduler_accuracy
+        annotations:
+          summary: "Scheduler accuracy below SLO"
+          description: "Only {{ $value | printf \"%.1f\" }}% of messages sent on time (SLO: 95%). Scheduling delays detected."
+          runbook_url: "https://wiki.internal/runbooks/scheduler-accuracy-slo"
+          slo_target: "95% on-time delivery"
+
+      # Data Freshness SLO - Stale data detection
+      - alert: DataFreshnessSLOViolation
+        expr: |
+          birthday_scheduler_data_staleness_seconds > 300
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: data_freshness
+        annotations:
+          summary: "Data freshness SLO violation"
+          description: "Data is {{ $value | printf \"%.0f\" }}s stale (SLO: 300s). Users may see outdated information."
+          runbook_url: "https://wiki.internal/runbooks/data-freshness-slo"
+          slo_target: "< 5 minutes"
+
+      # Error Budget Warning - 50% consumed
+      - alert: ErrorBudget50PercentConsumed
+        expr: |
+          (
+            1 - (
+              sum(increase(birthday_scheduler_http_requests_total{status!~"5.."}[30d]))
+              /
+              sum(increase(birthday_scheduler_http_requests_total[30d]))
+            )
+          ) / 0.001 > 0.5
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: error_budget
+        annotations:
+          summary: "Error budget 50% consumed"
+          description: "{{ $value | printf \"%.0f\" }}% of monthly error budget consumed. Review recent incidents and changes."
+          runbook_url: "https://wiki.internal/runbooks/error-budget-warning"
+
+      # Multi-window Error Budget Burn - Sustained high burn rate
+      - alert: ErrorBudgetBurnRateWarning
+        expr: |
+          (
+            (
+              1 - (
+                sum(rate(birthday_scheduler_http_requests_total{status!~"5.."}[6h]))
+                /
+                sum(rate(birthday_scheduler_http_requests_total[6h]))
+              )
+            ) / (0.001 / 720) > 6
+          )
+          and
+          (
+            (
+              1 - (
+                sum(rate(birthday_scheduler_http_requests_total{status!~"5.."}[1h]))
+                /
+                sum(rate(birthday_scheduler_http_requests_total[1h]))
+              )
+            ) / (0.001 / 720) > 6
+          )
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          slo: error_budget
+        annotations:
+          summary: "Sustained error budget burn"
+          description: "Error budget burn rate elevated over both 1h and 6h windows. Monthly budget will be exhausted in ~5 days."
+          runbook_url: "https://wiki.internal/runbooks/error-budget-burn-sustained"
+
+      # Weekly SLO Compliance Report
+      - alert: WeeklySLOComplianceCheck
+        expr: |
+          (
+            sum(increase(birthday_scheduler_http_requests_total{status!~"5.."}[7d]))
+            /
+            sum(increase(birthday_scheduler_http_requests_total[7d]))
+          ) * 100 < 99.9
+        for: 1h
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          slo: weekly_compliance
+        annotations:
+          summary: "Weekly SLO compliance check"
+          description: "Weekly availability is {{ $value | printf \"%.3f\" }}% (target: 99.9%). Review for trends."
+          runbook_url: "https://wiki.internal/runbooks/weekly-slo-review"

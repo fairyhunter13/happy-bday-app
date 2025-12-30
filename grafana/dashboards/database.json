@@ -1,0 +1,819 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - Database Performance",
+    "tags": [
+      "birthday-scheduler",
+      "database",
+      "postgresql",
+      "production"
+    ],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Connection Pool Status",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"active\"}",
+            "legendFormat": "Active - {{pool_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"idle\"}",
+            "legendFormat": "Idle - {{pool_name}}",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"waiting\"}",
+            "legendFormat": "Waiting - {{pool_name}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Connections",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "/Active/",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "/Idle/",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "/Waiting/",
+            "color": "#FF9830"
+          }
+        ],
+        "description": "Panel 1: Connection Pool Status"
+      },
+      {
+        "id": 2,
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"active\"})",
+            "legendFormat": "Active",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 80,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 2: Active Connections"
+      },
+      {
+        "id": 3,
+        "title": "Idle Connections",
+        "type": "stat",
+        "gridPos": {
+          "x": 16,
+          "y": 0,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"idle\"})",
+            "legendFormat": "Idle",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "blue"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 3: Idle Connections"
+      },
+      {
+        "id": 4,
+        "title": "Waiting Connections",
+        "type": "stat",
+        "gridPos": {
+          "x": 20,
+          "y": 0,
+          "w": 4,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"waiting\"})",
+            "legendFormat": "Waiting",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 5,
+                  "color": "yellow"
+                },
+                {
+                  "value": 10,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [
+                  5
+                ],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": [
+                  "A",
+                  "5m",
+                  "now"
+                ]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Waiting Connections",
+          "noDataState": "no_data"
+        },
+        "description": "Panel 4: Waiting Connections"
+      },
+      {
+        "id": 5,
+        "title": "Connection Pool Utilization",
+        "type": "gauge",
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 12,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "(sum(birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"active\"}) / (sum(birthday_scheduler_database_connections{state=\"active\"}) + sum(birthday_scheduler_database_connections{state=\"idle\"}))) * 100",
+            "legendFormat": "Pool Utilization",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 70,
+                  "color": "yellow"
+                },
+                {
+                  "value": 90,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 5: Connection Pool Utilization"
+      },
+      {
+        "id": 6,
+        "title": "Query Duration by Type",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, query_type))",
+            "legendFormat": "p50 {{query_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, query_type))",
+            "legendFormat": "p95 {{query_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, query_type))",
+            "legendFormat": "p99 {{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 6: Query Duration by Type"
+      },
+      {
+        "id": 7,
+        "title": "Query Duration by Table",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, table))",
+            "legendFormat": "p95 {{table}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Duration",
+            "format": "s"
+          }
+        ],
+        "description": "Panel 7: Query Duration by Table"
+      },
+      {
+        "id": 8,
+        "title": "Slow Queries (p99 > 100ms)",
+        "type": "table",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "topk(10, histogram_quantile(0.99, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le, query_type, table))) > 0.1",
+            "legendFormat": "",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "query_type": "Query Type",
+                "table": "Table",
+                "Value": "p99 (seconds)"
+              }
+            }
+          }
+        ],
+        "options": {
+          "showHeader": true,
+          "sortBy": [
+            {
+              "displayName": "p99 (seconds)",
+              "desc": true
+            }
+          ]
+        },
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "displayMode": "color-background-solid"
+            },
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.5,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 8: Slow Queries (p99 > 100ms)"
+      },
+      {
+        "id": 9,
+        "title": "Query Duration Heatmap",
+        "type": "heatmap",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[1m])) by (le)",
+            "legendFormat": "{{le}}",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "calculate": false,
+          "yAxis": {
+            "axisPlacement": "left",
+            "unit": "s"
+          },
+          "color": {
+            "scheme": "Blues",
+            "mode": "scheme"
+          },
+          "cellGap": 1,
+          "showValue": "never"
+        },
+        "description": "Panel 9: Query Duration Heatmap"
+      },
+      {
+        "id": 10,
+        "title": "Database Size (PostgreSQL)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "pg_database_size_bytes{datname=\"birthday_scheduler\"}",
+            "legendFormat": "Database Size",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Size",
+            "format": "bytes"
+          }
+        ],
+        "description": "Panel 10: Database Size (PostgreSQL)"
+      },
+      {
+        "id": 11,
+        "title": "Database Growth Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "deriv(pg_database_size_bytes{datname=\"birthday_scheduler\"}[1h])",
+            "legendFormat": "Growth Rate",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Bytes/sec",
+            "format": "Bps"
+          }
+        ],
+        "description": "Panel 11: Database Growth Rate"
+      },
+      {
+        "id": 12,
+        "title": "Transaction Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "rate(pg_stat_database_xact_commit{datname=\"birthday_scheduler\"}[$interval])",
+            "legendFormat": "Commits/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(pg_stat_database_xact_rollback{datname=\"birthday_scheduler\"}[$interval])",
+            "legendFormat": "Rollbacks/sec",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Transactions/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Commits/sec",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "Rollbacks/sec",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "Panel 12: Transaction Rate"
+      },
+      {
+        "id": 13,
+        "title": "Query Rate by Operation",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 32,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_database_query_duration_seconds_count{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (query_type)",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Queries/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Panel 13: Query Rate by Operation"
+      },
+      {
+        "id": 14,
+        "title": "Average Query Duration",
+        "type": "bargauge",
+        "gridPos": {
+          "x": 0,
+          "y": 40,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "avg(rate(birthday_scheduler_database_query_duration_seconds_sum{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]) / rate(birthday_scheduler_database_query_duration_seconds_count[$interval])) by (query_type)",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient",
+          "showUnfilled": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.05,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 14: Average Query Duration"
+      },
+      {
+        "id": 15,
+        "title": "Total Queries (24h)",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 40,
+          "w": 6,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_database_query_duration_seconds_count{namespace=\"$namespace\", instance=~\"$instance\"}[24h]))",
+            "legendFormat": "Total Queries",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "description": "Panel 15: Total Queries (24h)"
+      },
+      {
+        "id": 16,
+        "title": "Connection Pool Health",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 40,
+          "w": 6,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(birthday_scheduler_database_connections{namespace=\"$namespace\", instance=~\"$instance\", state=\"active\"}) + sum(birthday_scheduler_database_connections{state=\"idle\"}) > 0",
+            "legendFormat": "Pool Status",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              {
+                "type": "value",
+                "value": "1",
+                "text": "Healthy"
+              },
+              {
+                "type": "value",
+                "value": "0",
+                "text": "Unhealthy"
+              }
+            ],
+            "thresholds": {
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 1,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Panel 16: Connection Pool Health"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {
+              "text": "1m",
+              "value": "1m",
+              "selected": false
+            },
+            {
+              "text": "5m",
+              "value": "5m",
+              "selected": true
+            },
+            {
+              "text": "10m",
+              "value": "10m",
+              "selected": false
+            },
+            {
+              "text": "30m",
+              "value": "30m",
+              "selected": false
+            },
+            {
+              "text": "1h",
+              "value": "1h",
+              "selected": false
+            }
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        },
+        {
+          "name": "table",
+          "type": "query",
+          "query": "label_values(birthday_scheduler_database_query_duration_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}, table)",
+          "label": "Table",
+          "description": "Filter by table name",
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Infrastructure Dashboard",
+        "url": "/d/infrastructure?var-namespace=$namespace&var-instance=$instance&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "View system resource impact on database",
+        "type": "link",
+        "targetBlank": false
+      },
+      {
+        "title": "Overview Dashboard",
+        "url": "/d/overview?var-namespace=$namespace&from=$__from&to=$__to",
+        "icon": "dashboard",
+        "tooltip": "Return to overview dashboard",
+        "type": "link",
+        "targetBlank": false
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\"DBConnectionPoolExhausted|DatabaseDown|DBConnectionPoolHigh|SlowQueries|DatabaseQueryLatency\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    }
+  }
+}

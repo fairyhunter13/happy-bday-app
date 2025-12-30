@@ -7,11 +7,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { RabbitMQContainer, StartedRabbitMQContainer } from '@testcontainers/rabbitmq';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import {
-  RabbitMQConnection,
-  MessagePublisher,
-  MessageJob,
-} from '../../../src/queue/index.js';
+import { RabbitMQConnection, MessagePublisher, MessageJob } from '../../../src/queue/index.js';
 import { MessageType, MessageStatus } from '../../../src/db/schema/message-logs.js';
 import { messageLogRepository } from '../../../src/repositories/message-log.repository.js';
 import { userRepository } from '../../../src/repositories/user.repository.js';

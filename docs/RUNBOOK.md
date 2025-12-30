@@ -763,7 +763,7 @@ aws rds wait db-instance-available \
 ### Incident Response Process
 
 **1. Detection & Alerting**
-- Alert fires in PagerDuty/Slack
+- Alert fires in PagerDuty
 - On-call engineer acknowledges
 
 **2. Initial Response**
@@ -777,7 +777,7 @@ aws rds wait db-instance-available \
 **3. Communication**
 ```bash
 # Update status page: https://status.example.com
-# Notify team in #incidents Slack channel
+# Notify team via email or PagerDuty
 # Create incident ticket
 ```
 
@@ -872,12 +872,6 @@ Rolled back to previous version, fixed migration, redeployed.
 **Monitoring:**
 - Grafana Cloud: support@grafana.com
 - PagerDuty: +1-650-989-2974
-
-**Slack Channels:**
-- #incidents - Active incident discussion
-- #deployments - Deployment notifications
-- #ops-alerts - Automated alerts
-- #postmortems - Incident reviews
 
 ---
 

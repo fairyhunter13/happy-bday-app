@@ -14,7 +14,7 @@ describe('Security Edge Cases', () => {
     it('EC-SEC-001: SQL injection attempts should be detected', () => {
       const sqlInjectionPatterns = [
         "'; DROP TABLE users; --",
-        "1; DELETE FROM message_logs;",
+        '1; DELETE FROM message_logs;',
         "1' UNION SELECT * FROM users--",
         "1' OR 1=1--",
       ];
@@ -399,7 +399,13 @@ describe('Security Edge Cases', () => {
       const publicUser = toPublicUser(internalUser);
 
       // Public user should only have safe fields
-      expect(Object.keys(publicUser)).toEqual(['id', 'email', 'firstName', 'lastName', 'createdAt']);
+      expect(Object.keys(publicUser)).toEqual([
+        'id',
+        'email',
+        'firstName',
+        'lastName',
+        'createdAt',
+      ]);
 
       // Should not contain sensitive fields
       expect(publicUser).not.toHaveProperty('passwordHash');
@@ -424,7 +430,9 @@ describe('Security Edge Cases', () => {
 
       // Valid JWT structure
       expect(
-        isValidJWTStructure('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U')
+        isValidJWTStructure(
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U'
+        )
       ).toBe(true);
 
       // Invalid - not enough parts
@@ -538,7 +546,9 @@ describe('Security Edge Cases', () => {
       });
 
       // HSTS should have sufficient max-age (at least 1 year)
-      const hstsMaxAge = parseInt(securityHeaders['Strict-Transport-Security'].match(/max-age=(\d+)/)?.[1] || '0');
+      const hstsMaxAge = parseInt(
+        securityHeaders['Strict-Transport-Security'].match(/max-age=(\d+)/)?.[1] || '0'
+      );
       expect(hstsMaxAge).toBeGreaterThanOrEqual(31536000);
     });
   });

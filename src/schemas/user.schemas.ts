@@ -6,7 +6,6 @@
  */
 
 import {
-  SuccessResponseSchema,
   UuidParamSchema,
   TimezoneSchema,
   DateStringSchema,

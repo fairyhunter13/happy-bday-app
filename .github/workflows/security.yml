@@ -1,5 +1,11 @@
 name: Security Scanning
 
+# Required GitHub Secrets:
+# - SNYK_TOKEN (optional): Enable Snyk vulnerability scanning
+# Setup: Get token from https://snyk.io/ and run 'gh secret set SNYK_TOKEN'
+# Note: Workflows continue if token is missing (graceful degradation)
+# Verification: ./scripts/verify-github-secrets.sh
+
 on:
   pull_request:
   push:

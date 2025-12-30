@@ -41,12 +41,7 @@ describe('E2E: Multi-Timezone Message Flow', () => {
   ];
 
   // DST-affected timezones
-  const DST_TIMEZONES = [
-    'America/New_York',
-    'Europe/London',
-    'Europe/Paris',
-    'Australia/Sydney',
-  ];
+  const DST_TIMEZONES = ['America/New_York', 'Europe/London', 'Europe/Paris', 'Australia/Sydney'];
 
   beforeAll(async () => {
     env = new TestEnvironment();
@@ -76,7 +71,9 @@ describe('E2E: Multi-Timezone Message Flow', () => {
       // Create users in all timezones
       for (const tz of TIMEZONES) {
         const localToday = today.setZone(tz.name);
-        const birthdayDate = localToday.set({ year: 1990, hour: 0, minute: 0, second: 0 }).toJSDate();
+        const birthdayDate = localToday
+          .set({ year: 1990, hour: 0, minute: 0, second: 0 })
+          .toJSDate();
 
         const user = await insertUser(pool, {
           firstName: `User`,

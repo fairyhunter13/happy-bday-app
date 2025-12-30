@@ -141,8 +141,7 @@ describe('Message Scheduling', () => {
 
       const toEnqueue = messages.filter(
         (msg) =>
-          msg.status === 'SCHEDULED' &&
-          shouldEnqueueNow(msg.scheduledSendTime, now.toJSDate())
+          msg.status === 'SCHEDULED' && shouldEnqueueNow(msg.scheduledSendTime, now.toJSDate())
       );
 
       expect(toEnqueue).toHaveLength(1);
@@ -315,7 +314,7 @@ function batchByHour(
   const batches = new Map();
 
   messages.forEach((msg) => {
-    const hour = DateTime.fromJSDate(msg.scheduledSendTime).toFormat('yyyy-MM-dd\'T\'HH');
+    const hour = DateTime.fromJSDate(msg.scheduledSendTime).toFormat("yyyy-MM-dd'T'HH");
     if (!batches.has(hour)) {
       batches.set(hour, []);
     }

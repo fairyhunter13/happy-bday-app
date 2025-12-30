@@ -225,10 +225,7 @@ describe('Birthday Message E2E Flow', () => {
         users.push(user);
 
         // Schedule message at 9am in user's timezone
-        const sendTime = today
-          .setZone(timezone)
-          .set({ hour: 9, minute: 0, second: 0 })
-          .toJSDate();
+        const sendTime = today.setZone(timezone).set({ hour: 9, minute: 0, second: 0 }).toJSDate();
 
         await pool.query(
           `

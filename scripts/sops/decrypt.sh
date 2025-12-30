@@ -11,7 +11,7 @@
 #   ./scripts/sops/decrypt.sh [environment]
 #
 # Arguments:
-#   environment - (optional) development, test, or production
+#   environment - (optional) development or test
 #                 If not provided, decrypts all environments
 #
 # Examples:
@@ -107,12 +107,9 @@ main() {
             test)
                 decrypt_file "test"
                 ;;
-            production|prod)
-                decrypt_file "production"
-                ;;
             *)
                 error "Invalid environment: $environment"
-                echo "Valid options: development, test, production"
+                echo "Valid options: development, test"
                 exit 1
                 ;;
         esac
@@ -123,14 +120,13 @@ main() {
 
         decrypt_file "development"
         decrypt_file "test"
-        decrypt_file "production"
     fi
 
     echo ""
     info "Decryption complete!"
     echo ""
     info "Decrypted files:"
-    ls -lh .env.development .env.test .env.production 2>/dev/null || true
+    ls -lh .env.development .env.test 2>/dev/null || true
     echo ""
     warn "Never commit the decrypted .env files to git!"
 }

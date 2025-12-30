@@ -169,7 +169,7 @@ describe('RabbitMQ Chaos Tests', () => {
         await channel.sendToQueue(
           'limited_queue',
           { id: i, content: `Message ${i}` },
-          { persistent: true },
+          { persistent: true }
         );
       }
 
@@ -209,7 +209,11 @@ describe('RabbitMQ Chaos Tests', () => {
       });
 
       // Publish a message
-      await channel.sendToQueue('retry_queue', { id: 1, content: 'Test message' }, { persistent: true });
+      await channel.sendToQueue(
+        'retry_queue',
+        { id: 1, content: 'Test message' },
+        { persistent: true }
+      );
 
       let processingAttempts = 0;
       const maxAttempts = 3;
@@ -233,7 +237,7 @@ describe('RabbitMQ Chaos Tests', () => {
             logger.info('Message processed successfully');
           }
         },
-        { noAck: false },
+        { noAck: false }
       );
 
       // Wait for processing
@@ -315,8 +319,8 @@ describe('RabbitMQ Chaos Tests', () => {
         channel.sendToQueue(
           'high_throughput_queue',
           { id: i, content: `Message ${i}` },
-          { persistent: true },
-        ),
+          { persistent: true }
+        )
       );
 
       await Promise.all(publishPromises);
@@ -347,7 +351,7 @@ describe('RabbitMQ Chaos Tests', () => {
             });
           }
         },
-        { noAck: false },
+        { noAck: false }
       );
 
       // Wait for all messages to be processed
@@ -384,7 +388,7 @@ describe('RabbitMQ Chaos Tests', () => {
         await channel.sendToQueue(
           'backpressure_queue',
           { id: i, content: `Message ${i}` },
-          { persistent: true },
+          { persistent: true }
         );
       }
 
@@ -414,7 +418,7 @@ describe('RabbitMQ Chaos Tests', () => {
             });
           }
         },
-        { noAck: false },
+        { noAck: false }
       );
 
       // Wait for all messages

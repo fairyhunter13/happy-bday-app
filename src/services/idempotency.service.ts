@@ -121,7 +121,14 @@ export class IdempotencyService {
       );
     }
 
-    const [userId, messageType, date] = parts;
+    const userId = parts[0];
+    const messageType = parts[1];
+    const date = parts[2];
+
+    // Validate that parts are not undefined
+    if (!userId || !messageType || !date) {
+      throw new ValidationError(`Invalid idempotency key: missing parts in ${key}`);
+    }
 
     // Validate date format
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -173,7 +180,7 @@ export class IdempotencyService {
     // Validate date part format
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
     const datePart = parts[2];
-    if (!datePattern.test(datePart)) {
+    if (!datePart || !datePattern.test(datePart)) {
       return false;
     }
 

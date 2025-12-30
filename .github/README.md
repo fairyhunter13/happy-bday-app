@@ -39,7 +39,7 @@ This directory contains all GitHub-specific configuration for the Birthday Messa
 **File**: `workflows/performance.yml`
 - Runs on: Weekly (Sunday 2 AM UTC), manual trigger
 - Tests: Sustained load (24h), Peak load, Worker scaling
-- Features: Baseline comparison, Slack notifications
+- Features: Baseline comparison
 - Duration: Up to 25 hours (sustained load)
 
 ### Security Scanning
@@ -158,9 +158,6 @@ Configure in repository settings → Secrets and variables → Actions:
 - `SNYK_TOKEN` - Vulnerability scanning (required)
 - `SONAR_TOKEN` - Code quality (optional)
 
-### Notifications
-- `SLACK_WEBHOOK_URL` - Performance alerts (optional)
-
 ## 🌍 Environments
 
 Create in repository settings → Environments:
@@ -206,7 +203,6 @@ Create in repository settings → Environments:
 ### Performance
 - Weekly performance test artifacts
 - Baseline comparison results
-- Slack notifications on failures
 
 ## 🔧 Maintenance
 

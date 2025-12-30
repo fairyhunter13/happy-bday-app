@@ -163,30 +163,61 @@ jobs:
       - name: Setup Node.js and dependencies
         uses: ./.github/actions/setup-node-app
 
-      - name: Install jscpd
-        run: npm install -g jscpd
-
       - name: Run duplication detection
+        id: jscpd
         run: |
-          jscpd src/ --format json --output ./jscpd-report.json || true
+          # Run jscpd with project config (outputs to ./jscpd-report/)
+          npm run lint:duplicates:report || true
+
+          # Extract duplication percentage from JSON report
+          if [ -f jscpd-report/jscpd-report.json ]; then
+            DUPLICATION_PCT=$(cat jscpd-report/jscpd-report.json | jq -r '.statistics.total.percentage // 0')
+            DUPLICATES_COUNT=$(cat jscpd-report/jscpd-report.json | jq -r '.statistics.total.clones // 0')
+            DUPLICATED_LINES=$(cat jscpd-report/jscpd-report.json | jq -r '.statistics.total.duplicatedLines // 0')
+
+            echo "duplication_pct=$DUPLICATION_PCT" >> $GITHUB_OUTPUT
+            echo "duplicates_count=$DUPLICATES_COUNT" >> $GITHUB_OUTPUT
+            echo "duplicated_lines=$DUPLICATED_LINES" >> $GITHUB_OUTPUT
+
+            echo "## Code Duplication Results" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Duplication | ${DUPLICATION_PCT}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Duplicates Found | $DUPLICATES_COUNT |" >> $GITHUB_STEP_SUMMARY
+            echo "| Duplicated Lines | $DUPLICATED_LINES |" >> $GITHUB_STEP_SUMMARY
+            echo "| Threshold | 5% |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "duplication_pct=0" >> $GITHUB_OUTPUT
+            echo "duplicates_count=0" >> $GITHUB_OUTPUT
+            echo "duplicated_lines=0" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check duplication threshold
         run: |
-          if [ -f jscpd-report.json ]; then
-            DUPLICATION_PCT=$(cat jscpd-report.json | jq -r '.statistics.total.percentage')
-            echo "Code duplication: $DUPLICATION_PCT%"
+          DUPLICATION_PCT="${{ steps.jscpd.outputs.duplication_pct }}"
+          echo "Code duplication: ${DUPLICATION_PCT}%"
 
-            if (( $(echo "$DUPLICATION_PCT > 5" | bc -l) )); then
-              echo "::warning::Code duplication is $DUPLICATION_PCT% (threshold: 5%)"
-            fi
+          if (( $(echo "$DUPLICATION_PCT > 5" | bc -l) )); then
+            echo "::error::Code duplication is ${DUPLICATION_PCT}% which exceeds the 5% threshold"
+            exit 1
+          else
+            echo "Code duplication is within acceptable limits (${DUPLICATION_PCT}% <= 5%)"
           fi
 
-      - name: Upload duplication report
+      - name: Upload duplication HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: duplication-report
-          path: jscpd-report.json
+          name: duplication-report-html
+          path: jscpd-report/html/
+          retention-days: 30
+
+      - name: Upload duplication JSON report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplication-report-json
+          path: jscpd-report/jscpd-report.json
           retention-days: 30
 
   sonarcloud:
@@ -254,8 +285,8 @@ jobs:
           fi
 
           # Parse duplication report
-          if [ -f reports/duplication-report/jscpd-report.json ]; then
-            DUPLICATION=$(cat reports/duplication-report/jscpd-report.json | jq -r '.statistics.total.percentage // 0')
+          if [ -f reports/duplication-report-json/jscpd-report.json ]; then
+            DUPLICATION=$(cat reports/duplication-report-json/jscpd-report.json | jq -r '.statistics.total.percentage // 0')
           fi
 
           # Create summary

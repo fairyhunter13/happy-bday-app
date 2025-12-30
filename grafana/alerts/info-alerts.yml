@@ -1,0 +1,190 @@
+# Informational Alerts (P2) - Awareness and monitoring
+# These alerts provide visibility into system behavior and trends
+
+groups:
+  - name: info-alerts
+    rules:
+      # High Request Rate - Unusual traffic pattern
+      - alert: HighRequestRate
+        expr: |
+          sum(rate(birthday_scheduler_http_requests_total[5m]))
+          >
+          (avg_over_time(sum(rate(birthday_scheduler_http_requests_total[5m]))[7d:1h]) * 1.5)
+        for: 30m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Elevated request rate detected"
+          description: "Request rate is {{ $value | printf \"%.0f\" }} req/s, 50% above the 7-day average. Monitor for capacity needs."
+          runbook_url: "https://wiki.internal/runbooks/elevated-traffic"
+
+      # New Security Event - Security-related activity detected
+      - alert: NewSecurityEvent
+        expr: increase(birthday_scheduler_security_events_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: info
+          team: security
+          priority: P2
+        annotations:
+          summary: "Security event detected"
+          description: "{{ $value }} security events of type {{ $labels.event_type }} detected in the last 5 minutes. Review security logs."
+          runbook_url: "https://wiki.internal/runbooks/security-event"
+
+      # Rate Limit Triggered - Users hitting rate limits
+      - alert: RateLimitTriggered
+        expr: increase(birthday_scheduler_rate_limit_exceeded_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Rate limiting is active"
+          description: "{{ $value }} requests rate limited in the last 5 minutes. May indicate abuse or misconfigured clients."
+          runbook_url: "https://wiki.internal/runbooks/rate-limiting"
+
+      # Authentication Failure Spike
+      - alert: AuthFailureSpike
+        expr: |
+          increase(birthday_scheduler_auth_failures_total[5m])
+          >
+          (avg_over_time(increase(birthday_scheduler_auth_failures_total[5m])[24h:5m]) * 3)
+        for: 10m
+        labels:
+          severity: info
+          team: security
+          priority: P2
+        annotations:
+          summary: "Authentication failure spike"
+          description: "Auth failures increased 3x above 24h average. May indicate credential stuffing or user issues."
+          runbook_url: "https://wiki.internal/runbooks/auth-failure-spike"
+
+      # Worker Scaling Needed - Workers approaching capacity
+      - alert: WorkerScalingNeeded
+        expr: |
+          (
+            birthday_scheduler_worker_busy_count
+            /
+            birthday_scheduler_worker_total_count
+          ) * 100 > 90
+        for: 15m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Workers at capacity"
+          description: "{{ $value | printf \"%.1f\" }}% of workers are busy. Consider scaling up worker pool."
+          runbook_url: "https://wiki.internal/runbooks/worker-scaling"
+
+      # Scheduled Jobs Pending
+      - alert: ScheduledJobsPending
+        expr: birthday_scheduler_scheduled_jobs_pending > 500
+        for: 30m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Many scheduled jobs pending"
+          description: "{{ $value }} scheduled jobs are pending execution. Job processing may be backed up."
+          runbook_url: "https://wiki.internal/runbooks/scheduled-jobs-pending"
+
+      # Certificate Expiry Warning
+      - alert: CertificateExpiryWarning
+        expr: birthday_scheduler_certificate_expiry_seconds < 604800
+        for: 1h
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Certificate expiring soon"
+          description: "Certificate {{ $labels.certificate }} expires in {{ $value | humanizeDuration }}. Plan renewal."
+          runbook_url: "https://wiki.internal/runbooks/certificate-expiry"
+
+      # New Version Deployed
+      - alert: NewVersionDeployed
+        expr: |
+          changes(birthday_scheduler_build_info[1h]) > 0
+        for: 0m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "New version deployed"
+          description: "A new version of the service has been deployed. Monitor for regressions."
+          runbook_url: "https://wiki.internal/runbooks/new-deployment"
+
+      # Database Connection Churn
+      - alert: DatabaseConnectionChurn
+        expr: |
+          rate(birthday_scheduler_db_connections_opened_total[5m]) > 10
+        for: 10m
+        labels:
+          severity: info
+          team: database
+          priority: P2
+        annotations:
+          summary: "High database connection churn"
+          description: "{{ $value | printf \"%.1f\" }} new connections/second. May indicate connection pooling issues."
+          runbook_url: "https://wiki.internal/runbooks/db-connection-churn"
+
+      # Birthday Message Volume Spike
+      - alert: BirthdayMessageVolumeSpike
+        expr: |
+          sum(rate(birthday_scheduler_messages_sent_total[5m])) * 300
+          >
+          (avg_over_time(sum(rate(birthday_scheduler_messages_sent_total[5m]))[7d:1h]) * 300 * 2)
+        for: 15m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Birthday message volume spike"
+          description: "Message volume is 2x above normal. May be a popular birthday day or campaign."
+          runbook_url: "https://wiki.internal/runbooks/message-volume"
+
+      # API Deprecation Warning
+      - alert: DeprecatedAPIUsage
+        expr: increase(birthday_scheduler_deprecated_api_calls_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Deprecated API endpoint in use"
+          description: "Deprecated endpoint {{ $labels.endpoint }} received {{ $value }} calls in the last hour. Plan migration."
+          runbook_url: "https://wiki.internal/runbooks/deprecated-api"
+
+      # Feature Flag Activation
+      - alert: FeatureFlagChanged
+        expr: changes(birthday_scheduler_feature_flag_state[10m]) > 0
+        for: 0m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Feature flag changed"
+          description: "Feature flag {{ $labels.flag_name }} state changed. Monitor for any impact."
+          runbook_url: "https://wiki.internal/runbooks/feature-flag"
+
+      # Background Job Failure
+      - alert: BackgroundJobFailure
+        expr: increase(birthday_scheduler_background_job_failures_total[15m]) > 5
+        for: 0m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+        annotations:
+          summary: "Background job failures"
+          description: "{{ $value }} background job failures of type {{ $labels.job_type }} in the last 15 minutes."
+          runbook_url: "https://wiki.internal/runbooks/background-job-failure"

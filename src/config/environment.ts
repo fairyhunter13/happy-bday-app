@@ -53,8 +53,11 @@ const environmentSchema = z.object({
 
   // CRON Schedules
   CRON_DAILY_SCHEDULE: z.string().default('0 0 * * *'),
+  CRON_DAILY_ENABLED: z.string().default('true'),
   CRON_MINUTE_SCHEDULE: z.string().default('* * * * *'),
+  CRON_MINUTE_ENABLED: z.string().default('true'),
   CRON_RECOVERY_SCHEDULE: z.string().default('*/10 * * * *'),
+  CRON_RECOVERY_ENABLED: z.string().default('true'),
 
   // Circuit Breaker
   CIRCUIT_BREAKER_TIMEOUT: z.coerce.number().int().positive().default(10000),

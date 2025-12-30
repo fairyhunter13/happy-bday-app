@@ -195,29 +195,6 @@ docker-perf-down: ## Stop performance test environment
 	npm run docker:perf:down
 	@echo "✅ Performance test environment stopped"
 
-##@ Docker - Production
-
-docker-prod-build: ## Build production Docker images
-	@echo "🔨 Building production images..."
-	npm run docker:prod:build
-	@echo "✅ Production images built"
-
-docker-prod-up: ## Start production environment
-	@echo "🚀 Starting production environment..."
-	npm run docker:prod:up
-	@echo "✅ Production environment started"
-
-docker-prod-down: ## Stop production environment
-	@echo "🛑 Stopping production environment..."
-	npm run docker:prod:down
-	@echo "✅ Production environment stopped"
-
-docker-prod-logs: ## Show production logs
-	npm run docker:prod:logs
-
-docker-prod-ps: ## Show production containers status
-	npm run docker:prod:ps
-
 ##@ Secrets Management (SOPS)
 
 secrets-encrypt: ## Encrypt all environment files
@@ -258,15 +235,6 @@ secrets-decrypt-test: ## Decrypt test environment file
 	bash scripts/sops/decrypt.sh test
 	@echo "✅ Test environment decrypted"
 
-secrets-encrypt-prod: ## Encrypt production environment file
-	@echo "🔐 Encrypting production environment..."
-	bash scripts/sops/encrypt.sh production
-	@echo "✅ Production environment encrypted"
-
-secrets-decrypt-prod: ## Decrypt production environment file
-	@echo "🔓 Decrypting production environment..."
-	bash scripts/sops/decrypt.sh production
-	@echo "✅ Production environment decrypted"
 
 ##@ OpenAPI
 
@@ -370,8 +338,6 @@ status: ## Show status of running services
 	@docker-compose -f docker-compose.test.yml ps 2>/dev/null || echo "ℹ️  Test environment not running"
 	@echo ""
 	@docker-compose -f docker-compose.perf.yml ps 2>/dev/null || echo "ℹ️  Performance environment not running"
-	@echo ""
-	@docker-compose -f docker-compose.prod.yml ps 2>/dev/null || echo "ℹ️  Production environment not running"
 
 version: ## Show version information
 	@echo "📦 Version Information:"

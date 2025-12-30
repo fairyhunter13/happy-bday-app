@@ -164,6 +164,28 @@ export class MessageSenderService {
     const health = emailServiceClient.getHealthStatus();
     return health.sendEmail.state === 'closed';
   }
+
+  /**
+   * Get circuit breaker statistics
+   *
+   * @returns Circuit breaker stats for health monitoring
+   */
+  getCircuitBreakerStats(): {
+    state: string;
+    isOpen: boolean;
+    failures: number;
+    successes: number;
+  } {
+    const health = emailServiceClient.getHealthStatus();
+    const stats = health.sendEmail.stats as any;
+
+    return {
+      state: health.sendEmail.state,
+      isOpen: health.sendEmail.state !== 'closed',
+      failures: stats?.failures || 0,
+      successes: stats?.successes || 0,
+    };
+  }
 }
 
 // Export singleton instance (can be overridden in tests)

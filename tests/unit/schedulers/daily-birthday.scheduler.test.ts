@@ -70,8 +70,10 @@ describe('DailyBirthdayScheduler', () => {
         errors: [],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockResolvedValue(mockStats);
 
       await scheduler.triggerManually();
 
@@ -87,8 +89,10 @@ describe('DailyBirthdayScheduler', () => {
     });
 
     it('should handle errors during job execution', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockRejectedValue(new Error('Database connection failed'));
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockRejectedValue(new Error('Database connection failed'));
 
       await scheduler.triggerManually();
 
@@ -109,8 +113,10 @@ describe('DailyBirthdayScheduler', () => {
         ],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockResolvedValue(mockStats);
 
       await scheduler.triggerManually();
 
@@ -124,17 +130,19 @@ describe('DailyBirthdayScheduler', () => {
         resolveJob = resolve;
       });
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockImplementation(async () => {
-          await jobPromise;
-          return {
-            totalBirthdays: 0,
-            totalAnniversaries: 0,
-            messagesScheduled: 0,
-            duplicatesSkipped: 0,
-            errors: [],
-          };
-        });
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockImplementation(async () => {
+        await jobPromise;
+        return {
+          totalBirthdays: 0,
+          totalAnniversaries: 0,
+          messagesScheduled: 0,
+          duplicatesSkipped: 0,
+          errors: [],
+        };
+      });
 
       // Start first job
       const job1 = scheduler.triggerManually();
@@ -147,7 +155,9 @@ describe('DailyBirthdayScheduler', () => {
       await job1;
 
       // Should only have been called once
-      expect(schedulerServiceModule.schedulerService.preCalculateTodaysBirthdays).toHaveBeenCalledTimes(1);
+      expect(
+        schedulerServiceModule.schedulerService.preCalculateTodaysBirthdays
+      ).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -184,14 +194,16 @@ describe('DailyBirthdayScheduler', () => {
     });
 
     it('should return true after successful run', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockResolvedValue({
-          totalBirthdays: 5,
-          totalAnniversaries: 0,
-          messagesScheduled: 5,
-          duplicatesSkipped: 0,
-          errors: [],
-        });
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockResolvedValue({
+        totalBirthdays: 5,
+        totalAnniversaries: 0,
+        messagesScheduled: 5,
+        duplicatesSkipped: 0,
+        errors: [],
+      });
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -200,8 +212,10 @@ describe('DailyBirthdayScheduler', () => {
     });
 
     it('should return false after failed run', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockRejectedValue(new Error('Failed'));
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockRejectedValue(new Error('Failed'));
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -210,14 +224,16 @@ describe('DailyBirthdayScheduler', () => {
     });
 
     it('should return false if last run was too long ago', async () => {
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockResolvedValue({
-          totalBirthdays: 0,
-          totalAnniversaries: 0,
-          messagesScheduled: 0,
-          duplicatesSkipped: 0,
-          errors: [],
-        });
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockResolvedValue({
+        totalBirthdays: 0,
+        totalAnniversaries: 0,
+        messagesScheduled: 0,
+        duplicatesSkipped: 0,
+        errors: [],
+      });
 
       scheduler.start();
       await scheduler.triggerManually();
@@ -244,12 +260,16 @@ describe('DailyBirthdayScheduler', () => {
         errors: [],
       };
 
-      vi.spyOn(schedulerServiceModule.schedulerService, 'preCalculateTodaysBirthdays')
-        .mockResolvedValue(mockStats);
+      vi.spyOn(
+        schedulerServiceModule.schedulerService,
+        'preCalculateTodaysBirthdays'
+      ).mockResolvedValue(mockStats);
 
       await scheduler.triggerManually();
 
-      expect(schedulerServiceModule.schedulerService.preCalculateTodaysBirthdays).toHaveBeenCalled();
+      expect(
+        schedulerServiceModule.schedulerService.preCalculateTodaysBirthdays
+      ).toHaveBeenCalled();
 
       const status = scheduler.getStatus();
       expect(status.lastRunStats?.totalBirthdays).toBe(3);

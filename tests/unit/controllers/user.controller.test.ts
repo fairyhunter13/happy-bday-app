@@ -13,7 +13,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { UserController } from '../../../src/controllers/user.controller.js';
 import { UserRepository } from '../../../src/repositories/user.repository.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import { UniqueConstraintError, NotFoundError, ValidationError } from '../../../src/utils/errors.js';
+import {
+  UniqueConstraintError,
+  NotFoundError,
+  ValidationError,
+} from '../../../src/utils/errors.js';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -79,11 +83,13 @@ describe('UserController', () => {
 
       expect(mockReply.status).toHaveBeenCalledWith(201);
       expect(mockReply.send).toHaveBeenCalled();
-      expect(mockRepository.create).toHaveBeenCalledWith(expect.objectContaining({
-        firstName: userData.firstName,
-        email: userData.email.toLowerCase(),
-        timezone: userData.timezone,
-      }));
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: userData.firstName,
+          email: userData.email.toLowerCase(),
+          timezone: userData.timezone,
+        })
+      );
     });
 
     it('should return 400 for invalid email', async () => {

@@ -1,15 +1,25 @@
-# Deployment Guide
+# Local Development & CI/CD Deployment Guide
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Environment Setup](#environment-setup)
-3. [Configuration Checklist](#configuration-checklist)
-4. [Database Migration](#database-migration)
-5. [Deployment Strategies](#deployment-strategies)
-6. [Health Check Verification](#health-check-verification)
-7. [Post-Deployment Testing](#post-deployment-testing)
-8. [Rollback Procedures](#rollback-procedures)
+1. [Overview](#overview)
+2. [Prerequisites](#prerequisites)
+3. [Local Development Setup](#local-development-setup)
+4. [CI/CD Testing](#cicd-testing)
+5. [Docker Environments](#docker-environments)
+6. [Database Migrations](#database-migrations)
+7. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+**IMPORTANT: This project is designed for LOCAL DEVELOPMENT and CI/CD TESTING ONLY.**
+
+This guide covers:
+- Local development setup with Docker Compose
+- Running tests in CI/CD environments (GitHub Actions)
+- No production deployment is included or supported
 
 ---
 
@@ -21,752 +31,433 @@
 |------|---------|---------|
 | Node.js | ≥20.0.0 | Runtime environment |
 | npm | ≥10.0.0 | Package manager |
-| PostgreSQL | ≥14.0 | Database |
-| RabbitMQ | ≥3.12 | Message queue |
-| Docker | ≥24.0 (optional) | Containerization |
-| Kubernetes | ≥1.28 (optional) | Orchestration |
+| Docker | ≥24.0 | Container runtime |
+| Docker Compose | ≥2.0 | Multi-container orchestration |
+| git | Latest | Version control |
 
-### Access Requirements
+### Local Setup Checklist
 
-- [ ] SSH access to production servers
-- [ ] kubectl configured for production cluster
-- [ ] Database credentials (in secret manager)
-- [ ] RabbitMQ credentials (in secret manager)
-- [ ] Docker registry access
-- [ ] AWS CLI configured (if using AWS)
-- [ ] PagerDuty/Slack webhook URLs
+- [ ] Node.js and npm installed
+- [ ] Docker and Docker Compose installed
+- [ ] Git repository cloned
+- [ ] SOPS age key configured (for encrypted secrets)
 
-### Pre-Deployment Verification
-
-```bash
-# Check all tests pass
-npm test
-
-# Verify test coverage
-npm run test:coverage
-# Coverage should be >80%
-
-# Run linting
-npm run lint
-
-# Type checking
-npm run typecheck
-
-# Security audit
-npm audit
-```
+See [`docs/DEVELOPER_SETUP.md`](./DEVELOPER_SETUP.md) for detailed setup instructions.
 
 ---
 
-## Environment Setup
+## Local Development Setup
 
-### 1. Production Environment Variables
-
-Create production environment configuration:
+### 1. Clone Repository
 
 ```bash
-# Production .env (stored in secret manager, not git)
-NODE_ENV=production
-PORT=3000
-HOST=0.0.0.0
-LOG_LEVEL=info
-
-# Database
-DATABASE_URL=postgresql://user:password@prod-db.example.com:5432/birthday_scheduler
-DATABASE_POOL_MAX=20
-DATABASE_POOL_MIN=5
-DATABASE_TIMEOUT_MS=2000
-
-# RabbitMQ
-RABBITMQ_URL=amqp://user:password@prod-rabbitmq.example.com:5672
-RABBITMQ_PREFETCH=10
-RABBITMQ_HEARTBEAT=60
-
-# External Services
-MESSAGE_SERVICE_URL=https://api.message-service.com
-MESSAGE_SERVICE_API_KEY=<from_secret_manager>
-
-# Circuit Breaker
-CIRCUIT_BREAKER_TIMEOUT=3000
-CIRCUIT_BREAKER_ERROR_THRESHOLD=50
-CIRCUIT_BREAKER_RESET_TIMEOUT=30000
-
-# Rate Limiting
-RATE_LIMIT_MAX=100
-RATE_LIMIT_TIME_WINDOW=60000
-
-# Monitoring
-METRICS_ENABLED=true
-TRACING_ENABLED=true
+git clone https://github.com/fairyhunter13/happy-bday-app.git
+cd happy-bday-app
 ```
 
-### 2. Infrastructure Setup
-
-**Docker Deployment:**
-
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-
-services:
-  api:
-    image: birthday-scheduler:${VERSION}
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: production
-    env_file:
-      - .env.production
-    depends_on:
-      - postgres
-      - rabbitmq
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  worker:
-    image: birthday-scheduler:${VERSION}
-    command: node dist/worker.js
-    environment:
-      NODE_ENV: production
-    env_file:
-      - .env.production
-    depends_on:
-      - postgres
-      - rabbitmq
-    restart: always
-    deploy:
-      replicas: 3
-
-  scheduler:
-    image: birthday-scheduler:${VERSION}
-    command: node dist/scheduler.js
-    environment:
-      NODE_ENV: production
-    env_file:
-      - .env.production
-    depends_on:
-      - postgres
-      - rabbitmq
-    restart: always
-
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: birthday_scheduler
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
-
-  rabbitmq:
-    image: rabbitmq:3.12-management-alpine
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    ports:
-      - "15672:15672"
-    restart: always
-
-volumes:
-  postgres_data:
-  rabbitmq_data:
-```
-
-**Kubernetes Deployment:**
-
-```yaml
-# k8s/deployment.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: birthday-scheduler-api
-  labels:
-    app: birthday-scheduler
-    component: api
-spec:
-  replicas: 3
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
-  selector:
-    matchLabels:
-      app: birthday-scheduler
-      component: api
-  template:
-    metadata:
-      labels:
-        app: birthday-scheduler
-        component: api
-    spec:
-      containers:
-      - name: api
-        image: birthday-scheduler:VERSION
-        ports:
-        - containerPort: 3000
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: birthday-scheduler-secrets
-              key: database-url
-        - name: RABBITMQ_URL
-          valueFrom:
-            secretKeyRef:
-              name: birthday-scheduler-secrets
-              key: rabbitmq-url
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: birthday-scheduler-api
-spec:
-  selector:
-    app: birthday-scheduler
-    component: api
-  ports:
-  - port: 80
-    targetPort: 3000
-  type: LoadBalancer
-```
-
----
-
-## Configuration Checklist
-
-### Pre-Deployment
-
-- [ ] Environment variables configured in secret manager
-- [ ] Database connection string updated
-- [ ] RabbitMQ credentials rotated (if scheduled)
-- [ ] External API keys validated
-- [ ] SSL/TLS certificates valid
-- [ ] DNS records updated
-- [ ] Load balancer configured
-- [ ] Firewall rules configured
-- [ ] Monitoring dashboards created
-- [ ] Alert rules configured
-- [ ] Backup procedures tested
-- [ ] Rollback plan documented
-
-### Security
-
-- [ ] All secrets in secret manager (not in code)
-- [ ] SSL/TLS enabled for all connections
-- [ ] Rate limiting configured
-- [ ] Helmet.js security headers enabled
-- [ ] CORS properly configured
-- [ ] Database uses SSL connection
-- [ ] RabbitMQ uses TLS (production)
-- [ ] API authentication enabled (if applicable)
-- [ ] Input validation on all endpoints
-- [ ] SQL injection prevention verified
-
-### Performance
-
-- [ ] Database indexes created
-- [ ] Connection pool sized appropriately
-- [ ] Worker count optimized
-- [ ] Circuit breaker configured
-- [ ] Caching strategy implemented
-- [ ] CDN configured (if applicable)
-
----
-
-## Database Migration
-
-### Pre-Migration Checks
+### 2. Install Dependencies
 
 ```bash
-# 1. Backup database
-pg_dump $DATABASE_URL > backup_pre_migration_$(date +%Y%m%d).sql
-
-# 2. Verify connection
-psql $DATABASE_URL -c "SELECT version();"
-
-# 3. Check current migration status
-npm run db:status
-
-# 4. Review pending migrations
-ls -la src/db/migrations/
+npm install
 ```
 
-### Migration Execution
-
-**Development/Staging:**
+### 3. Setup Environment Secrets
 
 ```bash
-# Generate migration
-npm run db:generate
+# Decrypt development secrets (requires SOPS age key)
+npm run secrets:decrypt:dev
 
-# Review generated SQL
-cat src/db/migrations/0001_*.sql
-
-# Apply migration
-npm run db:migrate
-
-# Verify
-psql $DATABASE_URL -c "SELECT * FROM drizzle.__drizzle_migrations;"
+# This creates .env.development from .env.development.enc
 ```
 
-**Production (Zero-Downtime):**
+**First time setup**: See [`docs/DEVELOPER_SETUP.md`](./DEVELOPER_SETUP.md) for age key configuration.
+
+### 4. Start Local Services
 
 ```bash
-# 1. Deploy backward-compatible schema changes first
-# Example: Add new column (nullable)
-npm run db:migrate
-
-# 2. Deploy application code (new version can use new column)
-kubectl rollout restart deployment/birthday-scheduler-api
-
-# 3. Wait for rollout completion
-kubectl rollout status deployment/birthday-scheduler-api
-
-# 4. Deploy non-compatible changes (if any)
-# Example: Make column NOT NULL, drop old columns
-npm run db:migrate:phase2
-
-# 5. Verify data integrity
-psql $DATABASE_URL -c "SELECT COUNT(*) FROM users WHERE new_column IS NULL;"
-```
-
-### Migration Rollback
-
-```bash
-# If migration fails
-npm run db:migrate:rollback
-
-# Restore from backup
-psql $DATABASE_URL < backup_pre_migration_20250130.sql
-
-# Verify rollback
-psql $DATABASE_URL -c "SELECT * FROM drizzle.__drizzle_migrations;"
-```
-
----
-
-## Deployment Strategies
-
-### 1. Blue-Green Deployment
-
-**Concept:** Run two identical production environments, switch traffic instantly.
-
-```bash
-# Step 1: Deploy to Green environment (inactive)
-kubectl apply -f k8s/deployment-green.yaml
-
-# Step 2: Verify Green environment
-kubectl exec -it deployment/birthday-scheduler-green -- curl http://localhost:3000/health
-
-# Step 3: Run smoke tests
-./scripts/smoke-test.sh https://green.example.com
-
-# Step 4: Switch traffic (update load balancer)
-kubectl patch service birthday-scheduler -p '{"spec":{"selector":{"version":"green"}}}'
-
-# Step 5: Monitor Blue environment
-# Keep Blue running for quick rollback
-
-# Step 6: After 24 hours, decommission Blue
-kubectl delete deployment birthday-scheduler-blue
-```
-
-### 2. Rolling Update (Default)
-
-**Kubernetes automatically handles rolling updates:**
-
-```bash
-# Update image
-kubectl set image deployment/birthday-scheduler-api \
-  api=birthday-scheduler:v1.2.0
-
-# Monitor rollout
-kubectl rollout status deployment/birthday-scheduler-api
-
-# Pause rollout (if issues detected)
-kubectl rollout pause deployment/birthday-scheduler-api
-
-# Resume rollout
-kubectl rollout resume deployment/birthday-scheduler-api
-```
-
-### 3. Canary Deployment
-
-**Deploy to small subset of traffic first:**
-
-```bash
-# Step 1: Deploy canary with 10% traffic
-kubectl apply -f k8s/deployment-canary.yaml
-
-# Step 2: Configure traffic split
-apiVersion: networking.istio.io/v1alpha3
-kind: VirtualService
-metadata:
-  name: birthday-scheduler
-spec:
-  hosts:
-  - birthday-scheduler
-  http:
-  - match:
-    - headers:
-        canary:
-          exact: "true"
-    route:
-    - destination:
-        host: birthday-scheduler-canary
-      weight: 10
-  - route:
-    - destination:
-        host: birthday-scheduler-stable
-      weight: 90
-
-# Step 3: Monitor canary metrics
-# Watch error rates, response times for canary vs stable
-
-# Step 4: Gradually increase canary traffic
-# 10% -> 25% -> 50% -> 100%
-
-# Step 5: Promote canary to stable
-kubectl apply -f k8s/deployment-stable.yaml
-```
-
----
-
-## Zero-Downtime Deployment
-
-### Strategy
-
-1. **Database migrations** - Backward compatible changes first
-2. **Rolling update** - Replace pods gradually
-3. **Health checks** - Ensure new pods healthy before routing traffic
-4. **Connection draining** - Wait for active connections to finish
-
-### Implementation
-
-```yaml
-# deployment.yaml
-spec:
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1        # Create 1 extra pod during update
-      maxUnavailable: 0   # Don't terminate old pods until new ones ready
-
-  template:
-    spec:
-      containers:
-      - name: api
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          failureThreshold: 3
-
-        lifecycle:
-          preStop:
-            exec:
-              command: ["/bin/sh", "-c", "sleep 15"]
-```
-
-### Deployment Process
-
-```bash
-# 1. Update deployment
-kubectl set image deployment/birthday-scheduler-api api=birthday-scheduler:v1.2.0
-
-# 2. Kubernetes automatically:
-#    - Creates 1 new pod (maxSurge: 1)
-#    - Waits for readiness probe to pass
-#    - Routes traffic to new pod
-#    - Terminates 1 old pod
-#    - Repeats until all pods updated
-
-# 3. Monitor rollout
-kubectl rollout status deployment/birthday-scheduler-api
-# Waiting for deployment "birthday-scheduler-api" rollout to finish: 1 out of 3 new replicas have been updated...
-# Waiting for deployment "birthday-scheduler-api" rollout to finish: 2 out of 3 new replicas have been updated...
-# deployment "birthday-scheduler-api" successfully rolled out
-
-# 4. Verify all pods running new version
-kubectl get pods -l app=birthday-scheduler -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
-```
-
----
-
-## Health Check Verification
-
-### Post-Deployment Checks
-
-```bash
-# 1. Health endpoint
-curl -f https://api.example.com/health || echo "Health check failed!"
-
-# 2. Detailed health
-curl https://api.example.com/health | jq '.'
-# Expected output:
-# {
-#   "status": "ok",
-#   "timestamp": "2025-01-30T10:00:00Z",
-#   "version": "1.2.0",
-#   "database": "ok",
-#   "queue": "ok",
-#   "uptime": 123
-# }
-
-# 3. Database connectivity
-curl https://api.example.com/health/db | jq '.connected'
-# true
-
-# 4. Queue connectivity
-curl https://api.example.com/health/queue | jq '.connected'
-# true
-
-# 5. Metrics endpoint
-curl https://api.example.com/metrics | grep 'http_requests_total'
-
-# 6. API functionality test
-curl -X POST https://api.example.com/users \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Test",
-    "lastName": "User",
-    "email": "test@example.com",
-    "dateOfBirth": "1990-01-01T00:00:00Z",
-    "timezoneOffset": 0
-  }' | jq '.'
-
-# 7. Check all pods healthy
-kubectl get pods -l app=birthday-scheduler
-# All should be Running with 1/1 Ready
-```
-
----
-
-## Post-Deployment Testing
-
-### Smoke Tests
-
-```bash
-#!/bin/bash
-# scripts/smoke-test.sh
-
-BASE_URL="${1:-https://api.example.com}"
-
-echo "Running smoke tests against $BASE_URL..."
-
-# Test 1: Health check
-echo "Test 1: Health check..."
-if curl -f "$BASE_URL/health" > /dev/null 2>&1; then
-  echo "✅ Health check passed"
-else
-  echo "❌ Health check failed"
-  exit 1
-fi
-
-# Test 2: Create user
-echo "Test 2: Create user..."
-USER_ID=$(curl -s -X POST "$BASE_URL/users" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Smoke",
-    "lastName": "Test",
-    "email": "smoke-test-'$(date +%s)'@example.com",
-    "dateOfBirth": "1990-01-01T00:00:00Z",
-    "timezoneOffset": 0
-  }' | jq -r '.id')
-
-if [ -n "$USER_ID" ] && [ "$USER_ID" != "null" ]; then
-  echo "✅ Create user passed (ID: $USER_ID)"
-else
-  echo "❌ Create user failed"
-  exit 1
-fi
-
-# Test 3: Get user
-echo "Test 3: Get user..."
-if curl -f "$BASE_URL/users/$USER_ID" > /dev/null 2>&1; then
-  echo "✅ Get user passed"
-else
-  echo "❌ Get user failed"
-  exit 1
-fi
-
-# Test 4: Delete user
-echo "Test 4: Delete user..."
-if curl -f -X DELETE "$BASE_URL/users/$USER_ID" > /dev/null 2>&1; then
-  echo "✅ Delete user passed"
-else
-  echo "❌ Delete user failed"
-  exit 1
-fi
-
-echo "All smoke tests passed! ✅"
-```
-
-### Load Testing
-
-```bash
-# Quick load test with k6
-k6 run --vus 10 --duration 30s tests/performance/smoke-load.js
-
-# Expected output:
-# checks.........................: 100.00% ✓ 3000  ✗ 0
-# http_req_duration..............: avg=50ms    p(95)=100ms  p(99)=200ms
-# http_reqs......................: 3000    100/s
-```
-
----
-
-## Rollback Procedures
-
-### When to Rollback
-
-- Critical bugs discovered in production
-- Error rate >10%
-- Performance degradation >50%
-- Health checks failing
-- Customer-impacting issues
-
-### Kubernetes Rollback
-
-```bash
-# 1. Immediate rollback to previous version
-kubectl rollout undo deployment/birthday-scheduler-api
-
-# 2. Rollback to specific revision
-kubectl rollout history deployment/birthday-scheduler-api
-kubectl rollout undo deployment/birthday-scheduler-api --to-revision=5
-
-# 3. Monitor rollback
-kubectl rollout status deployment/birthday-scheduler-api
-
-# 4. Verify health
-curl https://api.example.com/health
-```
-
-### Docker Rollback
-
-```bash
-# 1. Stop current containers
-docker-compose down
-
-# 2. Checkout previous version
-git checkout v1.1.0
-
-# 3. Rebuild and deploy
-docker-compose build
+# Start PostgreSQL, RabbitMQ, Redis, pgAdmin via Docker Compose
 docker-compose up -d
 
-# 4. Verify
-curl http://localhost:3000/health
+# Verify services are healthy
+docker-compose ps
 ```
 
-### Database Rollback
+This starts:
+- **PostgreSQL** on port 5432
+- **RabbitMQ** on ports 5672 (AMQP) and 15672 (Management UI)
+- **Redis** on port 6379
+- **pgAdmin** on port 5050 (optional database UI)
+
+### 5. Run Database Migrations
 
 ```bash
-# If migration needs rollback
+# Apply database schema
+npm run db:migrate
+
+# Verify migrations
+npm run db:status
+```
+
+### 6. Start Application
+
+```bash
+# Terminal 1: Start API server
+npm run dev
+
+# Terminal 2: Start worker
+npm run worker
+
+# Terminal 3: Start scheduler (optional)
+npm run scheduler
+```
+
+### 7. Verify Setup
+
+```bash
+# Check API health
+curl http://localhost:3000/health
+
+# Expected response:
+# {
+#   "status": "ok",
+#   "timestamp": "2025-12-31T...",
+#   "database": "ok",
+#   "queue": "ok"
+# }
+
+# Access API documentation
+open http://localhost:3000/docs
+
+# Access RabbitMQ Management UI
+open http://localhost:15672
+# Username: rabbitmq, Password: rabbitmq_dev_password
+
+# Access pgAdmin (optional)
+open http://localhost:5050
+# Email: admin@birthday-app.local, Password: pgadmin_dev_password
+```
+
+---
+
+## CI/CD Testing
+
+### GitHub Actions Workflows
+
+All testing runs automatically via GitHub Actions:
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **ci.yml** | Every push/PR | Unit, integration, E2E tests |
+| **code-quality.yml** | Every push/PR | Linting, type checking |
+| **security.yml** | Daily, push/PR | Security scanning |
+| **performance.yml** | Weekly | Load testing with k6 |
+| **docker-build.yml** | Push to main | Docker image build verification |
+| **docs.yml** | Push to main | GitHub Pages documentation |
+
+### Running Tests Locally (Same as CI)
+
+```bash
+# Unit tests (fast)
+npm run test:unit
+
+# Integration tests (requires services)
+docker-compose up -d
+npm run test:integration
+
+# E2E tests (full stack)
+docker-compose -f docker-compose.test.yml up -d
+npm run test:e2e
+
+# Performance tests (load testing)
+docker-compose -f docker-compose.perf.yml up -d
+npm run test:performance
+
+# All tests with coverage
+npm run test:coverage
+```
+
+### Manual Workflow Trigger
+
+```bash
+# Trigger any workflow manually
+gh workflow run ci.yml
+gh workflow run performance.yml
+```
+
+---
+
+## Docker Environments
+
+### Environment Files
+
+| File | Purpose | Containers | When to Use |
+|------|---------|------------|-------------|
+| `docker-compose.yml` | Local development | 4 | Daily development |
+| `docker-compose.test.yml` | CI/CD E2E tests | 4 | CI/CD, quick testing |
+| `docker-compose.perf.yml` | Performance testing | 24 | Weekly load tests |
+
+### docker-compose.yml (Local Development)
+
+**Services:**
+- postgres (PostgreSQL 15)
+- rabbitmq (RabbitMQ 3.13 with management UI)
+- redis (Redis 7, optional caching)
+- pgadmin (Database UI, optional)
+
+```bash
+# Start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services (keep data)
+docker-compose stop
+
+# Stop and remove containers (keep data)
+docker-compose down
+
+# Stop and remove everything (including volumes)
+docker-compose down -v
+```
+
+### docker-compose.test.yml (CI/CD Testing)
+
+Minimal environment for E2E testing in GitHub Actions:
+
+```bash
+# Start test environment
+docker-compose -f docker-compose.test.yml up -d
+
+# Run E2E tests
+npm run test:e2e
+
+# Cleanup
+docker-compose -f docker-compose.test.yml down -v
+```
+
+### docker-compose.perf.yml (Performance Testing)
+
+Simulates production-scale infrastructure (24 containers):
+- 5 API replicas
+- 10 worker replicas
+- PostgreSQL primary + replica
+- RabbitMQ
+- Redis
+- Prometheus + Grafana
+- k6 load tester
+
+```bash
+# Start performance environment
+docker-compose -f docker-compose.perf.yml up -d
+
+# Wait for services to be ready
+sleep 30
+
+# Run load tests
+npm run test:performance
+
+# View metrics
+open http://localhost:3001  # Grafana
+open http://localhost:9090  # Prometheus
+
+# Cleanup
+docker-compose -f docker-compose.perf.yml down -v
+```
+
+---
+
+## Database Migrations
+
+### Creating Migrations
+
+```bash
+# Generate migration from schema changes
+npm run db:generate
+
+# This creates: src/db/migrations/0001_*.sql
+```
+
+### Applying Migrations
+
+```bash
+# Apply pending migrations
+npm run db:migrate
+
+# Check migration status
+npm run db:status
+```
+
+### Rolling Back Migrations
+
+```bash
+# Rollback last migration
 npm run db:migrate:rollback
 
-# If data needs restore
-psql $DATABASE_URL < backup_pre_deployment.sql
+# Or restore from backup
+docker-compose exec postgres \
+  psql -U postgres -d birthday_app < backups/backup_20251231.sql
+```
+
+### Backup & Restore
+
+```bash
+# Create backup
+docker-compose exec postgres \
+  pg_dump -U postgres birthday_app > backups/backup_$(date +%Y%m%d).sql
+
+# Restore from backup
+docker-compose exec -T postgres \
+  psql -U postgres -d birthday_app < backups/backup_20251231.sql
 ```
 
 ---
 
-## Deployment Automation
+## Troubleshooting
 
-### CI/CD Pipeline (GitHub Actions)
+### Services Won't Start
 
-```yaml
-# .github/workflows/deploy-production.yml
-name: Deploy to Production
+```bash
+# Check Docker daemon is running
+docker ps
 
-on:
-  push:
-    tags:
-      - 'v*'
+# Check for port conflicts
+lsof -i :5432  # PostgreSQL
+lsof -i :5672  # RabbitMQ
+lsof -i :6379  # Redis
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# Remove old containers
+docker-compose down -v
+docker-compose up -d
+```
 
-    steps:
-    - uses: actions/checkout@v3
+### Database Connection Errors
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+```bash
+# Check database is running
+docker-compose ps postgres
 
-    - name: Install dependencies
-      run: npm ci
+# Check connection
+docker-compose exec postgres psql -U postgres -d birthday_app -c "SELECT 1"
 
-    - name: Run tests
-      run: npm test
+# Reset database (WARNING: deletes data)
+docker-compose down -v
+docker-compose up -d postgres
+npm run db:migrate
+```
 
-    - name: Build
-      run: npm run build
+### Queue Not Processing
 
-    - name: Build Docker image
-      run: docker build -t birthday-scheduler:${{ github.ref_name }} .
+```bash
+# Check RabbitMQ is running
+docker-compose ps rabbitmq
 
-    - name: Push to registry
-      run: |
-        echo ${{ secrets.REGISTRY_PASSWORD }} | docker login -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-        docker push birthday-scheduler:${{ github.ref_name }}
+# Check queue status
+docker-compose exec rabbitmq rabbitmqadmin list queues
 
-    - name: Deploy to Kubernetes
-      run: |
-        kubectl set image deployment/birthday-scheduler-api \
-          api=birthday-scheduler:${{ github.ref_name }}
+# Check worker is running
+# Should see worker logs if started with: npm run worker
 
-    - name: Wait for rollout
-      run: kubectl rollout status deployment/birthday-scheduler-api
+# Restart RabbitMQ
+docker-compose restart rabbitmq
+```
 
-    - name: Run smoke tests
-      run: ./scripts/smoke-test.sh https://api.example.com
+### SOPS Decryption Errors
 
-    - name: Notify team
-      run: |
-        curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
-          -H 'Content-Type: application/json' \
-          -d '{"text":"✅ Deployed ${{ github.ref_name }} to production"}'
+```bash
+# Verify age key is set
+echo $SOPS_AGE_KEY
+
+# If missing, configure age key (see DEVELOPER_SETUP.md)
+export SOPS_AGE_KEY="AGE-SECRET-KEY-..."
+
+# Retry decryption
+npm run secrets:decrypt:dev
+```
+
+### Port Already in Use
+
+```bash
+# Find process using port 3000
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+PORT=3001 npm run dev
+```
+
+### Docker Volume Issues
+
+```bash
+# List volumes
+docker volume ls
+
+# Remove all volumes (WARNING: deletes data)
+docker-compose down -v
+
+# Remove specific volume
+docker volume rm happy-bday-app_postgres_data
+
+# Recreate containers with fresh volumes
+docker-compose up -d
+npm run db:migrate
 ```
 
 ---
 
-**Last Updated:** 2025-12-30
-**Version:** 1.0.0
-**Owner:** DevOps Team
+## Quick Commands Reference
+
+```bash
+# Development
+npm install                          # Install dependencies
+npm run dev                          # Start API server
+npm run worker                       # Start worker
+npm run scheduler                    # Start scheduler
+
+# Database
+npm run db:migrate                   # Apply migrations
+npm run db:status                    # Check migration status
+npm run db:generate                  # Generate new migration
+
+# Testing
+npm test                             # All tests
+npm run test:unit                    # Unit tests only
+npm run test:integration             # Integration tests only
+npm run test:e2e                     # E2E tests
+npm run test:performance             # Performance tests (k6)
+npm run test:coverage                # Coverage report
+
+# Code Quality
+npm run lint                         # ESLint
+npm run typecheck                    # TypeScript type checking
+npm run lint:duplicates              # Check code duplication
+
+# Docker
+docker-compose up -d                 # Start local services
+docker-compose ps                    # Check service status
+docker-compose logs -f               # View logs
+docker-compose down                  # Stop services
+
+# CI/CD
+gh workflow run ci.yml               # Trigger CI workflow
+gh workflow list                     # List workflows
+gh run list                          # List recent runs
+```
+
+---
+
+## Additional Resources
+
+- **Developer Setup:** [`docs/DEVELOPER_SETUP.md`](./DEVELOPER_SETUP.md)
+- **Local Troubleshooting:** [`docs/RUNBOOK.md`](./RUNBOOK.md)
+- **Architecture:** [`plan/02-architecture/architecture-overview.md`](../plan/02-architecture/architecture-overview.md)
+- **Testing Strategy:** [`plan/04-testing/testing-strategy.md`](../plan/04-testing/testing-strategy.md)
+- **API Documentation:** http://localhost:3000/docs (when running locally)
+
+---
+
+**Last Updated:** 2025-12-31
+**Version:** 2.0.0 (Local + CI/CD Scope)
+**Environment:** Local Development + CI/CD Testing Only

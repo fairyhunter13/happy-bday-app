@@ -46,7 +46,8 @@ export class MessageConsumer {
       return;
     }
 
-    logger.info('Starting message consumer...', {
+    logger.info({
+      msg: 'Starting message consumer...',
       queue: QUEUES.BIRTHDAY_MESSAGES,
       prefetch: this.prefetch,
     });
@@ -72,7 +73,7 @@ export class MessageConsumer {
       );
 
       this.consumerTag = consumeResult.consumerTag;
-      logger.info('Consumer started', { consumerTag: this.consumerTag });
+      logger.info({ msg: 'Consumer started', consumerTag: this.consumerTag });
     });
 
     this.isConsuming = true;
@@ -109,7 +110,8 @@ export class MessageConsumer {
       const retryCount = (msg.properties.headers?.['x-retry-count'] as number) || 0;
       job.retryCount = retryCount;
 
-      logger.debug('Processing message', {
+      logger.debug({
+        msg: 'Processing message',
         messageId: job.messageId,
         userId: job.userId,
         messageType: job.messageType,
@@ -121,13 +123,11 @@ export class MessageConsumer {
 
       // Acknowledge successful processing
       channel.ack(msg);
-      logger.info('Message processed successfully', {
-        messageId: job.messageId,
-        retryCount,
-      });
+      logger.info({ msg: 'Message processed successfully', messageId: job.messageId, retryCount });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Failed to process message', {
+      logger.error({
+        msg: 'Failed to process message',
         messageId: job?.messageId,
         error: errorMessage,
       });
@@ -137,7 +137,8 @@ export class MessageConsumer {
         try {
           await this.onError(error instanceof Error ? error : new Error('Unknown error'), job);
         } catch (handlerError) {
-          logger.error('Error handler failed', {
+          logger.error({
+            msg: 'Error handler failed',
             error: handlerError instanceof Error ? handlerError.message : 'Unknown error',
           });
         }
@@ -161,7 +162,8 @@ export class MessageConsumer {
 
     // Check if max retries reached
     if (retryCount >= RETRY_CONFIG.MAX_RETRIES) {
-      logger.error('Max retries reached, sending to DLQ', {
+      logger.error({
+        msg: 'Max retries reached, sending to DLQ',
         retryCount,
         maxRetries: RETRY_CONFIG.MAX_RETRIES,
       });
@@ -174,7 +176,8 @@ export class MessageConsumer {
     // Transient errors: retry with exponential backoff
     if (isTransientError) {
       const delay = calculateRetryDelay(retryCount);
-      logger.warn('Transient error, will retry', {
+      logger.warn({
+        msg: 'Transient error, will retry',
         retryCount,
         nextRetryIn: delay,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -185,7 +188,8 @@ export class MessageConsumer {
       channel.nack(msg, false, true); // Requeue
     } else {
       // Permanent errors: send to DLQ immediately
-      logger.error('Permanent error detected, sending to DLQ', {
+      logger.error({
+        msg: 'Permanent error detected, sending to DLQ',
         error: error instanceof Error ? error.message : 'Unknown error',
       });
 
@@ -262,7 +266,7 @@ export class MessageConsumer {
     try {
       if (this.consumerTag) {
         await channel.cancel(this.consumerTag);
-        logger.info('Consumer cancelled', { consumerTag: this.consumerTag });
+        logger.info({ msg: 'Consumer cancelled', consumerTag: this.consumerTag });
       }
 
       this.isConsuming = false;
@@ -274,7 +278,7 @@ export class MessageConsumer {
       logger.info('Message consumer stopped');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Error stopping consumer', { error: errorMessage });
+      logger.error({ msg: 'Error stopping consumer', error: errorMessage });
       throw error;
     }
   }
@@ -297,7 +301,8 @@ export class MessageConsumer {
         await this.stopConsuming();
         process.exit(0);
       } catch (error) {
-        logger.error('Error during shutdown', {
+        logger.error({
+          msg: 'Error during shutdown',
           error: error instanceof Error ? error.message : 'Unknown error',
         });
         process.exit(1);

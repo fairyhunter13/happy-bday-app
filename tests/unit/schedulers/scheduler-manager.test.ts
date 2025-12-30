@@ -122,8 +122,9 @@ describe('SchedulerManager', () => {
     });
 
     it('should handle scheduler start failure', async () => {
-      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'start')
-        .mockRejectedValueOnce(new Error('RabbitMQ connection failed'));
+      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'start').mockRejectedValueOnce(
+        new Error('RabbitMQ connection failed')
+      );
 
       await expect(manager.start()).rejects.toThrow('RabbitMQ connection failed');
     });
@@ -150,30 +151,28 @@ describe('SchedulerManager', () => {
           lastRunStats: null,
         });
 
-      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus')
-        .mockReturnValue({
-          isRunning: false,
-          isScheduled: true,
-          schedule: '* * * * *',
-          lastRunTime: null,
-          totalEnqueued: 0,
-          totalRuns: 0,
-          consecutiveFailures: 0,
-          averageEnqueuedPerRun: 0,
-        });
+      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus').mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '* * * * *',
+        lastRunTime: null,
+        totalEnqueued: 0,
+        totalRuns: 0,
+        consecutiveFailures: 0,
+        averageEnqueuedPerRun: 0,
+      });
 
-      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus')
-        .mockReturnValue({
-          isRunning: false,
-          isScheduled: true,
-          schedule: '*/10 * * * *',
-          lastRunTime: null,
-          lastRunStats: null,
-          totalRecovered: 0,
-          totalFailed: 0,
-          totalRuns: 0,
-          averageRecoveredPerRun: 0,
-        });
+      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus').mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '*/10 * * * *',
+        lastRunTime: null,
+        lastRunStats: null,
+        totalRecovered: 0,
+        totalFailed: 0,
+        totalRuns: 0,
+        averageRecoveredPerRun: 0,
+      });
 
       await manager.gracefulShutdown(5000);
 
@@ -185,39 +184,36 @@ describe('SchedulerManager', () => {
       await manager.start();
 
       // Simulate jobs that never complete
-      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'getStatus')
-        .mockReturnValue({
-          isRunning: true,
-          isScheduled: true,
-          schedule: '0 0 * * *',
-          lastRunTime: null,
-          lastRunStats: null,
-        });
+      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'getStatus').mockReturnValue({
+        isRunning: true,
+        isScheduled: true,
+        schedule: '0 0 * * *',
+        lastRunTime: null,
+        lastRunStats: null,
+      });
 
-      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus')
-        .mockReturnValue({
-          isRunning: false,
-          isScheduled: true,
-          schedule: '* * * * *',
-          lastRunTime: null,
-          totalEnqueued: 0,
-          totalRuns: 0,
-          consecutiveFailures: 0,
-          averageEnqueuedPerRun: 0,
-        });
+      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus').mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '* * * * *',
+        lastRunTime: null,
+        totalEnqueued: 0,
+        totalRuns: 0,
+        consecutiveFailures: 0,
+        averageEnqueuedPerRun: 0,
+      });
 
-      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus')
-        .mockReturnValue({
-          isRunning: false,
-          isScheduled: true,
-          schedule: '*/10 * * * *',
-          lastRunTime: null,
-          lastRunStats: null,
-          totalRecovered: 0,
-          totalFailed: 0,
-          totalRuns: 0,
-          averageRecoveredPerRun: 0,
-        });
+      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus').mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '*/10 * * * *',
+        lastRunTime: null,
+        lastRunStats: null,
+        totalRecovered: 0,
+        totalFailed: 0,
+        totalRuns: 0,
+        averageRecoveredPerRun: 0,
+      });
 
       await manager.gracefulShutdown(1000); // 1 second timeout
 
@@ -257,8 +253,7 @@ describe('SchedulerManager', () => {
     it('should report unhealthy if any scheduler is unhealthy', async () => {
       await manager.start();
 
-      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'isHealthy')
-        .mockReturnValue(false);
+      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'isHealthy').mockReturnValue(false);
 
       const health = manager.getHealthStatus();
 
