@@ -1,0 +1,77 @@
+Testing Infrastructure File Tree
+=================================
+
+Root Configuration Files:
+├── package.json                          # Updated with test dependencies and scripts
+├── vitest.config.ts                      # Main Vitest configuration
+├── vitest.config.unit.ts                 # Unit test configuration
+├── vitest.config.integration.ts          # Integration test configuration
+├── vitest.config.e2e.ts                  # E2E test configuration
+├── .nycrc.json                           # NYC/Istanbul coverage configuration
+├── docker-compose.test.yml               # Test environment (4 containers)
+├── docker-compose.perf.yml               # Performance environment (24 containers)
+└── .gitignore                            # Updated with test artifacts
+
+GitHub Actions:
+├── .github/workflows/ci.yml              # Main CI pipeline with parallel tests
+└── .github/workflows/performance.yml     # Weekly performance tests
+
+Test Directory:
+tests/
+├── README.md                             # Complete testing documentation
+├── QUICK_START.md                        # Quick reference guide
+├── FILE_TREE.txt                         # This file
+│
+├── unit/                                 # Unit Tests (fast, isolated)
+│   ├── timezone-conversion.test.ts       # 25 tests for timezone handling
+│   ├── idempotency.test.ts               # 15 tests for duplicate prevention
+│   ├── message-scheduling.test.ts        # 18 tests for scheduling logic
+│   └── controllers/
+│       └── health.controller.test.ts     # Health endpoint tests
+│
+├── integration/                          # Integration Tests (with real services)
+│   └── database-integration.test.ts      # 13 tests for PostgreSQL operations
+│
+├── e2e/                                  # End-to-End Tests (full system)
+│   └── birthday-flow.test.ts             # 8 tests for complete message flow
+│
+├── performance/                          # k6 Performance Tests
+│   ├── sustained-load.js                 # 1M messages/day (11.5 msg/sec, 24h)
+│   ├── peak-load.js                      # 100+ msg/sec peak load test
+│   ├── worker-scaling.js                 # Worker scaling validation
+│   └── generate-report.ts                # Performance report generator
+│
+├── helpers/                              # Test Utilities
+│   ├── testcontainers.ts                 # Container management (PostgreSQL, RabbitMQ, Redis)
+│   ├── test-helpers.ts                   # Helper functions and utilities
+│   ├── test-server.ts                    # Test server setup (existing)
+│   └── setup.ts                          # Test setup (existing)
+│
+└── fixtures/                             # Test Data
+    ├── users.ts                          # User fixtures and generators
+    └── messages.ts                       # Message fixtures and generators
+
+Documentation:
+├── TESTING_INFRASTRUCTURE_SUMMARY.md     # Complete infrastructure summary
+└── tests/README.md                       # Detailed testing guide
+
+Summary Statistics:
+===================
+Total Files Created: 25
+- Configuration Files: 9
+- Test Files: 8 (79 tests total)
+- Helper Files: 4
+- Fixture Files: 2
+- Documentation Files: 4
+- CI/CD Workflows: 2
+
+Test Coverage:
+- Unit Tests: 58 tests
+- Integration Tests: 13 tests
+- E2E Tests: 8 tests
+- Performance Scenarios: 3
+
+Infrastructure:
+- Docker Compose Environments: 2 (test: 4 containers, perf: 24 containers)
+- GitHub Actions Workflows: 2 (CI pipeline, Performance testing)
+- Test Configurations: 4 (main, unit, integration, e2e)
