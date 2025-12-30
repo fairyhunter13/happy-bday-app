@@ -1,11 +1,29 @@
 # 🎂 Happy Birthday App - Message Scheduler
 
+<!-- Build Status Badges -->
 [![CI](https://github.com/fairyhunter13/happy-bday-app/workflows/CI/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
 [![Code Quality](https://github.com/fairyhunter13/happy-bday-app/workflows/Code%20Quality/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
-[![Security](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scan/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
+[![Security](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scanning/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
+[![Performance](https://github.com/fairyhunter13/happy-bday-app/workflows/Performance%20Tests/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![Docker](https://github.com/fairyhunter13/happy-bday-app/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml)
+
+<!-- API & Docs Badges -->
 [![OpenAPI](https://github.com/fairyhunter13/happy-bday-app/workflows/OpenAPI%20Validation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
+[![Docs](https://github.com/fairyhunter13/happy-bday-app/workflows/Deploy%20Documentation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docs.yml)
+[![API Docs](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
+
+<!-- Tech Stack Badges -->
+[![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-green?logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![Fastify](https://img.shields.io/badge/Fastify-5.x-black?logo=fastify)](https://fastify.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?logo=postgresql)](https://www.postgresql.org/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-orange?logo=rabbitmq)](https://www.rabbitmq.com/)
+
+<!-- Project Badges -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot)](https://github.com/fairyhunter13/happy-bday-app/security/dependabot)
 
 A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, and RabbitMQ. Designed to handle **1M+ messages/day** with **zero data loss** and extensible support for multiple message types (birthday, anniversary, etc.).
 
@@ -39,12 +57,15 @@ npm run worker
 
 ## 📋 Documentation
 
+**Live API Documentation**: [https://fairyhunter13.github.io/happy-bday-app/](https://fairyhunter13.github.io/happy-bday-app/)
+
 All planning, architecture, research, and implementation documentation is in the **[`plan/`](./plan/)** directory.
 
 ### Quick Links
 
 | Topic | Document |
 |-------|----------|
+| **📡 API Reference** | [Live Docs](https://fairyhunter13.github.io/happy-bday-app/) or `http://localhost:3000/docs` |
 | **📖 Overview** | [`plan/README.md`](./plan/README.md) - Start here! |
 | **🏗️ Architecture** | [`plan/02-architecture/architecture-overview.md`](./plan/02-architecture/architecture-overview.md) |
 | **🎯 Requirements** | [`plan/01-requirements/system-flows.md`](./plan/01-requirements/system-flows.md) |
