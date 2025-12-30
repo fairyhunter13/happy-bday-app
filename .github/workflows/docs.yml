@@ -1,0 +1,176 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'public/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Start server for OpenAPI export
+        run: |
+          npm start &
+          sleep 5
+
+      - name: Export OpenAPI spec
+        run: |
+          curl -s http://localhost:3000/docs/json > docs/openapi.json
+          # Stop server
+          pkill -f "node dist/index.js" || true
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create documentation site
+        run: |
+          mkdir -p _site
+
+          # Create index.html with Redoc
+          cat > _site/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Birthday Message Scheduler API Documentation</title>
+            <meta name="description" content="API documentation for the Birthday Message Scheduler - timezone-aware message scheduling with exactly-once delivery">
+            <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                font-family: 'Inter', sans-serif;
+              }
+              /* Custom Redoc styling */
+              .menu-content {
+                background-color: #1a1a2e !important;
+              }
+              .api-content h1 {
+                color: #16213e;
+              }
+            </style>
+          </head>
+          <body>
+            <redoc spec-url="openapi.json"
+                   hide-download-button="false"
+                   theme='{
+                     "colors": {
+                       "primary": { "main": "#4f46e5" },
+                       "success": { "main": "#10b981" },
+                       "warning": { "main": "#f59e0b" },
+                       "error": { "main": "#ef4444" }
+                     },
+                     "typography": {
+                       "fontFamily": "Inter, sans-serif",
+                       "headings": { "fontFamily": "Inter, sans-serif" }
+                     },
+                     "sidebar": {
+                       "backgroundColor": "#1e1e2f",
+                       "textColor": "#ffffff"
+                     },
+                     "rightPanel": {
+                       "backgroundColor": "#263238"
+                     }
+                   }'>
+            </redoc>
+            <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+          </body>
+          </html>
+          EOF
+
+          # Copy OpenAPI spec
+          cp docs/openapi.json _site/openapi.json
+
+          # Create 404 page
+          cat > _site/404.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>404 - Page Not Found</title>
+            <style>
+              body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+              }
+              h1 { font-size: 4rem; margin-bottom: 0.5rem; }
+              p { font-size: 1.25rem; margin-bottom: 2rem; }
+              a {
+                color: white;
+                text-decoration: none;
+                padding: 0.75rem 1.5rem;
+                border: 2px solid white;
+                border-radius: 8px;
+                transition: all 0.2s;
+              }
+              a:hover {
+                background: white;
+                color: #667eea;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>404</h1>
+            <p>Page not found</p>
+            <a href="/">Go to API Documentation</a>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
