@@ -1,0 +1,271 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - System Overview",
+    "tags": ["birthday-scheduler", "overview", "production"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "System Health Status",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "up{job=\"birthday-scheduler\"}",
+            "legendFormat": "Service Status"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "type": "value", "value": "1", "text": "Healthy" },
+              { "type": "value", "value": "0", "text": "Down" }
+            ],
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 1, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Request Rate (req/s)",
+        "type": "graph",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"birthday-scheduler\"}[5m])",
+            "legendFormat": "{{method}} {{route}}"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate (%)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "(rate(http_requests_total{job=\"birthday-scheduler\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"birthday-scheduler\"}[5m])) * 100",
+            "legendFormat": "Error Rate"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [5], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Error Rate",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 4,
+        "title": "Response Time (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"birthday-scheduler\"}[5m]))",
+            "legendFormat": "p99"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Queue Depth",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 4, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "rabbitmq_queue_messages{queue=\"birthday_messages\"}",
+            "legendFormat": "Messages in Queue"
+          },
+          {
+            "expr": "rabbitmq_queue_messages_ready{queue=\"birthday_messages\"}",
+            "legendFormat": "Ready"
+          },
+          {
+            "expr": "rabbitmq_queue_messages_unacknowledged{queue=\"birthday_messages\"}",
+            "legendFormat": "Unacked"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": { "params": [1000], "type": "gt" },
+              "operator": { "type": "and" },
+              "query": { "params": ["A", "5m", "now"] },
+              "reducer": { "type": "avg" },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Queue Depth",
+          "noDataState": "no_data"
+        }
+      },
+      {
+        "id": 6,
+        "title": "Database Connections",
+        "type": "graph",
+        "gridPos": { "x": 8, "y": 4, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "pg_stat_database_numbackends{datname=\"birthday_scheduler\"}",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "pg_settings_max_connections",
+            "legendFormat": "Max Connections"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Circuit Breaker State",
+        "type": "stat",
+        "gridPos": { "x": 16, "y": 4, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "circuit_breaker_state{job=\"birthday-scheduler\"}",
+            "legendFormat": "{{service}}"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [
+              { "type": "value", "value": "0", "text": "Closed", "color": "green" },
+              { "type": "value", "value": "1", "text": "Open", "color": "red" },
+              { "type": "value", "value": "2", "text": "Half-Open", "color": "yellow" }
+            ]
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"birthday-scheduler\"}",
+            "legendFormat": "RSS Memory"
+          },
+          {
+            "expr": "nodejs_heap_size_used_bytes{job=\"birthday-scheduler\"}",
+            "legendFormat": "Heap Used"
+          },
+          {
+            "expr": "nodejs_heap_size_total_bytes{job=\"birthday-scheduler\"}",
+            "legendFormat": "Heap Total"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 10, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=\"birthday-scheduler\"}[5m]) * 100",
+            "legendFormat": "CPU %"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Messages Sent Today",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "increase(birthday_messages_sent_total[24h])",
+            "legendFormat": "Messages Sent"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "id": 11,
+        "title": "Message Success Rate (%)",
+        "type": "gauge",
+        "gridPos": { "x": 6, "y": 16, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "(sum(rate(birthday_messages_sent_success[5m])) / sum(rate(birthday_messages_sent_total[5m]))) * 100",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "steps": [
+                { "value": 0, "color": "red" },
+                { "value": 95, "color": "yellow" },
+                { "value": 99, "color": "green" }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 12,
+        "title": "Scheduler Executions",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 16, "w": 12, "h": 4 },
+        "targets": [
+          {
+            "expr": "rate(scheduler_executions_total{job=\"birthday-scheduler\"}[5m])",
+            "legendFormat": "{{scheduler}}"
+          }
+        ]
+      }
+    ]
+  }
+}

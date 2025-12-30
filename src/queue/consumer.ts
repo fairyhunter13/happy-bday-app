@@ -18,14 +18,10 @@
 
 import type { Channel, ConsumeMessage } from 'amqplib';
 import { getRabbitMQ } from './connection.js';
-import {
-  QUEUES,
-  PREFETCH_COUNT,
-  RETRY_CONFIG,
-  calculateRetryDelay,
-} from './config.js';
-import { MessageJob, messageJobSchema, ConsumerOptions } from './types.js';
+import { QUEUES, PREFETCH_COUNT, RETRY_CONFIG, calculateRetryDelay } from './config.js';
+import { type MessageJob, messageJobSchema, type ConsumerOptions } from './types.js';
 import { logger } from '../utils/logger.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export class MessageConsumer {
   private isConsuming = false;
@@ -55,6 +51,9 @@ export class MessageConsumer {
       prefetch: this.prefetch,
     });
 
+    // Update active workers metric
+    metricsService.setActiveWorkers('message_consumer', 1);
+
     const rabbitMQ = getRabbitMQ();
     const channel = rabbitMQ.getConsumerChannel();
 
@@ -82,10 +81,7 @@ export class MessageConsumer {
   /**
    * Handle incoming message
    */
-  private async handleMessage(
-    msg: ConsumeMessage | null,
-    channel: Channel
-  ): Promise<void> {
+  private async handleMessage(msg: ConsumeMessage | null, channel: Channel): Promise<void> {
     if (!msg) {
       logger.warn('Consumer cancelled by server');
       this.isConsuming = false;
@@ -139,14 +135,10 @@ export class MessageConsumer {
       // Call error handler if provided
       if (this.onError) {
         try {
-          await this.onError(
-            error instanceof Error ? error : new Error('Unknown error'),
-            job
-          );
+          await this.onError(error instanceof Error ? error : new Error('Unknown error'), job);
         } catch (handlerError) {
           logger.error('Error handler failed', {
-            error:
-              handlerError instanceof Error ? handlerError.message : 'Unknown error',
+            error: handlerError instanceof Error ? handlerError.message : 'Unknown error',
           });
         }
       }
@@ -275,6 +267,10 @@ export class MessageConsumer {
 
       this.isConsuming = false;
       this.consumerTag = null;
+
+      // Update active workers metric
+      metricsService.setActiveWorkers('message_consumer', 0);
+
       logger.info('Message consumer stopped');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

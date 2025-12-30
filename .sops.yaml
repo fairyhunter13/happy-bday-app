@@ -1,0 +1,56 @@
+# ========================================
+# SOPS Configuration
+# Birthday Message Scheduler
+# ========================================
+#
+# This file configures SOPS (Secrets OPerationS) encryption
+# for environment-specific secret files.
+#
+# Documentation: https://github.com/getsops/sops
+# ========================================
+
+creation_rules:
+  # Development environment secrets
+  - path_regex: \.env\.development(\.enc)?$
+    age: >-
+      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
+
+  # Test environment secrets
+  - path_regex: \.env\.test(\.enc)?$
+    age: >-
+      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
+
+  # Production environment secrets
+  - path_regex: \.env\.production(\.enc)?$
+    age: >-
+      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
+
+  # Generic .env files (fallback)
+  - path_regex: \.env(\.enc)?$
+    age: >-
+      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
+
+# ========================================
+# Encryption Strategy
+# ========================================
+#
+# Only sensitive values are encrypted (not the entire file).
+# This allows for:
+# - Easy diff tracking in Git
+# - Clear visibility of non-sensitive configuration
+# - Faster encryption/decryption operations
+#
+# Encrypted patterns include:
+# - DATABASE_*PASSWORD
+# - RABBITMQ_*PASSWORD
+# - REDIS_*PASSWORD
+# - *_SECRET (e.g., JWT_SECRET)
+# - *_KEY (e.g., API_KEY, ENCRYPTION_KEY)
+# - *_TOKEN (e.g., ACCESS_TOKEN)
+# - *API_KEY (e.g., SENDGRID_API_KEY)
+#
+# ========================================

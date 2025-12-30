@@ -1,0 +1,44 @@
+name: 'Setup SOPS'
+description: 'Install SOPS and configure age encryption keys (DRY: Reusable SOPS setup)'
+author: 'Birthday Message Scheduler Team'
+
+inputs:
+  sops-age-key:
+    description: 'SOPS age encryption key (from secrets.SOPS_AGE_KEY)'
+    required: true
+  sops-version:
+    description: 'SOPS version to install'
+    required: false
+    default: 'v3.8.1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install SOPS
+      shell: bash
+      run: |
+        sudo wget -qO /usr/local/bin/sops \
+          https://github.com/getsops/sops/releases/download/${{ inputs.sops-version }}/sops-${{ inputs.sops-version }}.linux.amd64
+        sudo chmod +x /usr/local/bin/sops
+        sops --version
+
+    - name: Setup age keys
+      shell: bash
+      run: |
+        mkdir -p ~/.config/sops/age
+        echo "${{ inputs.sops-age-key }}" > ~/.config/sops/age/keys.txt
+        chmod 600 ~/.config/sops/age/keys.txt
+
+    - name: Verify SOPS configuration
+      shell: bash
+      run: |
+        if [ -f ~/.config/sops/age/keys.txt ]; then
+          echo "✓ SOPS age keys configured successfully"
+        else
+          echo "✗ Failed to configure SOPS age keys"
+          exit 1
+        fi
+
+branding:
+  icon: 'lock'
+  color: 'blue'

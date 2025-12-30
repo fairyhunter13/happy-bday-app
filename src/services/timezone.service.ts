@@ -50,7 +50,10 @@ export class TimezoneService {
     );
 
     if (!sendTime.isValid) {
-      logger.error({ timezone, birthdayDate, reason: sendTime.invalidReason }, 'Invalid send time calculation');
+      logger.error(
+        { timezone, birthdayDate, reason: sendTime.invalidReason },
+        'Invalid send time calculation'
+      );
       throw new ValidationError(`Failed to calculate send time: ${sendTime.invalidExplanation}`);
     }
 
@@ -161,7 +164,10 @@ export class TimezoneService {
    * console.log(dst.isDST); // true (during DST)
    * console.log(dst.offset); // -240 (UTC-4)
    */
-  handleDST(date: Date, timezone: string): {
+  handleDST(
+    date: Date,
+    timezone: string
+  ): {
     isDST: boolean;
     offset: number;
     offsetLabel: string;
@@ -174,10 +180,7 @@ export class TimezoneService {
     const dt = DateTime.fromJSDate(date).setZone(timezone);
 
     if (!dt.isValid) {
-      logger.error(
-        { timezone, date, reason: dt.invalidReason },
-        'Invalid date for DST handling'
-      );
+      logger.error({ timezone, date, reason: dt.invalidReason }, 'Invalid date for DST handling');
       return {
         isDST: false,
         offset: 0,
@@ -190,10 +193,7 @@ export class TimezoneService {
     const offset = dt.offset; // Offset in minutes from UTC
     const offsetLabel = dt.offsetNameShort || 'UTC';
 
-    logger.debug(
-      { timezone, date, isDST, offset, offsetLabel },
-      'DST information calculated'
-    );
+    logger.debug({ timezone, date, isDST, offset, offsetLabel }, 'DST information calculated');
 
     return {
       isDST,

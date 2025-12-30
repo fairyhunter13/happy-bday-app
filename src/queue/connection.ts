@@ -13,7 +13,7 @@
  * - Publisher confirms enabled for reliability
  */
 
-import amqp, { AmqpConnectionManager, ChannelWrapper } from 'amqp-connection-manager';
+import amqp, { type AmqpConnectionManager, type ChannelWrapper } from 'amqp-connection-manager';
 import type { Channel, Options } from 'amqplib';
 import { logger } from '../utils/logger.js';
 
@@ -61,7 +61,9 @@ export class RabbitMQConnection {
       return;
     }
 
-    logger.info('Connecting to RabbitMQ...', { url: this.config.url.replace(/:[^:@]*@/, ':****@') });
+    logger.info('Connecting to RabbitMQ...', {
+      url: this.config.url.replace(/:[^:@]*@/, ':****@'),
+    });
 
     // Create connection manager
     this.connection = amqp.connect([this.config.url], {

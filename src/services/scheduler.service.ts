@@ -1,13 +1,22 @@
 import { DateTime } from 'luxon';
-import { timezoneService, TimezoneService } from './timezone.service.js';
-import { idempotencyService, IdempotencyService } from './idempotency.service.js';
-import { userRepository, UserRepository } from '../repositories/user.repository.js';
-import { messageLogRepository, MessageLogRepository } from '../repositories/message-log.repository.js';
+import { timezoneService, type TimezoneService } from './timezone.service.js';
+import { idempotencyService, type IdempotencyService } from './idempotency.service.js';
+import { userRepository, type UserRepository } from '../repositories/user.repository.js';
+import {
+  messageLogRepository,
+  type MessageLogRepository,
+} from '../repositories/message-log.repository.js';
 import { MessageStatus, MessageType } from '../db/schema/message-logs.js';
 import type { User } from '../db/schema/users.js';
 import type { CreateMessageLogDto } from '../types/dto.js';
 import { logger } from '../config/logger.js';
 import { DatabaseError } from '../utils/errors.js';
+import {
+  messageStrategyFactory,
+  type MessageStrategy,
+  type MessageContext,
+} from '../strategies/index.js';
+import { metricsService } from './metrics.service.js';
 
 /**
  * Message schedule information
@@ -66,9 +75,10 @@ export class SchedulerService {
     private readonly timezoneService: TimezoneService = timezoneService,
     private readonly idempotencyService: IdempotencyService = idempotencyService,
     private readonly userRepo: UserRepository = userRepository,
-    private readonly messageLogRepo: MessageLogRepository = messageLogRepository
+    private readonly messageLogRepo: MessageLogRepository = messageLogRepository,
+    private readonly strategyFactory = messageStrategyFactory
   ) {
-    logger.info('SchedulerService initialized');
+    logger.info('SchedulerService initialized with strategy factory');
   }
 
   /**
@@ -83,7 +93,8 @@ export class SchedulerService {
    * @returns Statistics about messages scheduled
    */
   async preCalculateTodaysBirthdays(): Promise<PrecalculationStats> {
-    logger.info('Starting daily birthday precalculation');
+    const startTime = Date.now();
+    logger.info('Starting daily message precalculation using strategy factory');
 
     const stats: PrecalculationStats = {
       totalBirthdays: 0,
@@ -94,19 +105,33 @@ export class SchedulerService {
     };
 
     try {
-      // Process birthdays
-      const birthdayStats = await this.processMessagesForType('BIRTHDAY');
-      stats.totalBirthdays = birthdayStats.total;
-      stats.messagesScheduled += birthdayStats.scheduled;
-      stats.duplicatesSkipped += birthdayStats.duplicates;
-      stats.errors.push(...birthdayStats.errors);
+      // Dynamically iterate through all registered strategies
+      const strategies = this.strategyFactory.getAllStrategies();
 
-      // Process anniversaries
-      const anniversaryStats = await this.processMessagesForType('ANNIVERSARY');
-      stats.totalAnniversaries = anniversaryStats.total;
-      stats.messagesScheduled += anniversaryStats.scheduled;
-      stats.duplicatesSkipped += anniversaryStats.duplicates;
-      stats.errors.push(...anniversaryStats.errors);
+      logger.info(
+        { strategyCount: strategies.length, types: strategies.map((s) => s.messageType) },
+        'Processing messages for all registered strategies'
+      );
+
+      for (const strategy of strategies) {
+        const messageType = strategy.messageType;
+
+        // Process messages for this strategy
+        const typeStats = await this.processMessagesForStrategy(strategy);
+
+        // Accumulate stats (keep backwards compatibility with totalBirthdays/totalAnniversaries)
+        if (messageType === 'BIRTHDAY') {
+          stats.totalBirthdays = typeStats.total;
+        } else if (messageType === 'ANNIVERSARY') {
+          stats.totalAnniversaries = typeStats.total;
+        }
+
+        stats.messagesScheduled += typeStats.scheduled;
+        stats.duplicatesSkipped += typeStats.duplicates;
+        stats.errors.push(...typeStats.errors);
+      }
+
+      const duration = (Date.now() - startTime) / 1000;
 
       logger.info(
         {
@@ -116,30 +141,46 @@ export class SchedulerService {
           duplicatesSkipped: stats.duplicatesSkipped,
           errorCount: stats.errors.length,
         },
-        'Daily birthday precalculation completed'
+        'Daily message precalculation completed'
       );
+
+      // Record metrics
+      metricsService.recordSchedulerExecution('daily_precalculation', 'success', duration);
 
       return stats;
     } catch (error) {
+      const duration = (Date.now() - startTime) / 1000;
+
       logger.error(
         { error: error instanceof Error ? error.message : String(error) },
         'Failed to complete daily precalculation'
       );
+
+      // Record failed execution
+      metricsService.recordSchedulerExecution('daily_precalculation', 'failure', duration);
+
       throw error;
     }
   }
 
   /**
-   * Process messages for a specific type (BIRTHDAY or ANNIVERSARY)
+   * Process messages for a specific strategy
+   *
+   * Uses the Strategy Pattern to dynamically handle different message types.
+   * The strategy determines:
+   * - Which users should receive messages
+   * - When to send the messages
+   * - What the message content should be
    *
    * @private
    */
-  private async processMessagesForType(messageType: 'BIRTHDAY' | 'ANNIVERSARY'): Promise<{
+  private async processMessagesForStrategy(strategy: MessageStrategy): Promise<{
     total: number;
     scheduled: number;
     duplicates: number;
     errors: Array<{ userId: string; error: string }>;
   }> {
+    const messageType = strategy.messageType;
     const stats = {
       total: 0,
       scheduled: 0,
@@ -147,7 +188,7 @@ export class SchedulerService {
       errors: [] as Array<{ userId: string; error: string }>,
     };
 
-    // Find all users with birthdays/anniversaries today
+    // Find all users with the relevant date for this strategy
     const users =
       messageType === 'BIRTHDAY'
         ? await this.userRepo.findBirthdaysToday()
@@ -156,36 +197,38 @@ export class SchedulerService {
     stats.total = users.length;
 
     logger.info(
-      { messageType, count: users.length },
-      `Found users with ${messageType.toLowerCase()}s today`
+      { messageType, count: users.length, strategyClass: strategy.constructor.name },
+      `Found users for ${messageType} messages`
     );
+
+    const now = new Date();
 
     // Process each user
     for (const user of users) {
       try {
-        // Verify it's actually their birthday in their timezone
-        const relevantDate = messageType === 'BIRTHDAY' ? user.birthdayDate : user.anniversaryDate;
-
-        if (!relevantDate) {
+        // Validate user has required data for this strategy
+        const validation = strategy.validate(user);
+        if (!validation.valid) {
           logger.warn(
-            { userId: user.id, messageType },
-            `User has no ${messageType.toLowerCase()} date, skipping`
+            { userId: user.id, messageType, errors: validation.errors },
+            'User validation failed for strategy'
           );
           continue;
         }
 
-        const isBirthday = this.timezoneService.isBirthdayToday(relevantDate, user.timezone);
+        // Use strategy to check if message should be sent
+        const shouldSend = await strategy.shouldSend(user, now);
 
-        if (!isBirthday) {
+        if (!shouldSend) {
           logger.debug(
-            { userId: user.id, timezone: user.timezone },
-            `Not ${messageType.toLowerCase()} in user's timezone, skipping`
+            { userId: user.id, messageType, timezone: user.timezone },
+            'Strategy determined message should not be sent'
           );
           continue;
         }
 
-        // Calculate send time (9am local time -> UTC)
-        const sendTime = this.timezoneService.calculateSendTime(relevantDate, user.timezone);
+        // Use strategy to calculate send time (9am local time -> UTC)
+        const sendTime = strategy.calculateSendTime(user, now);
 
         // Generate idempotency key
         const idempotencyKey = this.idempotencyService.generateKey(
@@ -207,8 +250,14 @@ export class SchedulerService {
           continue;
         }
 
-        // Create message content
-        const messageContent = this.composeMessage(user, messageType);
+        // Use strategy to compose message content
+        const messageContext: MessageContext = {
+          currentYear: now.getFullYear(),
+          currentDate: now,
+          userTimezone: user.timezone,
+        };
+
+        const messageContent = await strategy.composeMessage(user, messageContext);
 
         // Create message log entry
         const messageData: CreateMessageLogDto = {
@@ -230,9 +279,13 @@ export class SchedulerService {
             scheduledSendTime: sendTime,
             timezone: user.timezone,
             idempotencyKey,
+            strategyClass: strategy.constructor.name,
           },
-          'Message scheduled successfully'
+          'Message scheduled successfully using strategy'
         );
+
+        // Record metrics for scheduled message
+        metricsService.recordMessageScheduled(messageType, user.timezone);
 
         stats.scheduled++;
       } catch (error) {
@@ -240,6 +293,7 @@ export class SchedulerService {
           {
             userId: user.id,
             messageType,
+            strategyClass: strategy.constructor.name,
             error: error instanceof Error ? error.message : String(error),
           },
           'Failed to schedule message for user'
@@ -266,6 +320,7 @@ export class SchedulerService {
    * @returns Number of messages enqueued
    */
   async enqueueUpcomingMessages(): Promise<number> {
+    const startTime = Date.now();
     logger.debug('Checking for upcoming messages to enqueue');
 
     try {
@@ -312,14 +367,25 @@ export class SchedulerService {
         }
       }
 
+      const duration = (Date.now() - startTime) / 1000;
+
       logger.info({ enqueued }, 'Message enqueueing completed');
+
+      // Record metrics
+      metricsService.recordSchedulerExecution('enqueue_messages', 'success', duration);
 
       return enqueued;
     } catch (error) {
+      const duration = (Date.now() - startTime) / 1000;
+
       logger.error(
         { error: error instanceof Error ? error.message : String(error) },
         'Failed to enqueue upcoming messages'
       );
+
+      // Record failed execution
+      metricsService.recordSchedulerExecution('enqueue_messages', 'failure', duration);
+
       throw new DatabaseError('Failed to enqueue messages', { error });
     }
   }
@@ -335,6 +401,7 @@ export class SchedulerService {
    * @returns Recovery statistics
    */
   async recoverMissedMessages(): Promise<RecoveryStats> {
+    const startTime = Date.now();
     logger.info('Starting missed message recovery');
 
     const stats: RecoveryStats = {
@@ -350,10 +417,7 @@ export class SchedulerService {
 
       stats.totalMissed = missedMessages.length;
 
-      logger.info(
-        { count: missedMessages.length },
-        'Found missed messages for recovery'
-      );
+      logger.info({ count: missedMessages.length }, 'Found missed messages for recovery');
 
       for (const message of missedMessages) {
         try {
@@ -404,6 +468,8 @@ export class SchedulerService {
         }
       }
 
+      const duration = (Date.now() - startTime) / 1000;
+
       logger.info(
         {
           totalMissed: stats.totalMissed,
@@ -414,28 +480,22 @@ export class SchedulerService {
         'Missed message recovery completed'
       );
 
+      // Record metrics
+      metricsService.recordSchedulerExecution('recovery_job', 'success', duration);
+
       return stats;
     } catch (error) {
+      const duration = (Date.now() - startTime) / 1000;
+
       logger.error(
         { error: error instanceof Error ? error.message : String(error) },
         'Failed to recover missed messages'
       );
-      throw new DatabaseError('Failed to recover messages', { error });
-    }
-  }
 
-  /**
-   * Compose message content based on type
-   *
-   * @private
-   */
-  private composeMessage(user: User, messageType: string): string {
-    if (messageType === 'BIRTHDAY') {
-      return `Hey ${user.firstName}, happy birthday!`;
-    } else if (messageType === 'ANNIVERSARY') {
-      return `Hey ${user.firstName}, happy work anniversary!`;
-    } else {
-      return `Hey ${user.firstName}, happy ${messageType.toLowerCase()}!`;
+      // Record failed execution
+      metricsService.recordSchedulerExecution('recovery_job', 'failure', duration);
+
+      throw new DatabaseError('Failed to recover messages', { error });
     }
   }
 
@@ -518,21 +578,27 @@ export class SchedulerService {
         return null;
       }
 
-      if (!user.birthdayDate) {
-        logger.warn({ userId }, 'User has no birthday date');
+      // Get birthday strategy
+      const strategy = this.strategyFactory.get('BIRTHDAY');
+      const now = new Date();
+
+      // Validate user has required data
+      const validation = strategy.validate(user);
+      if (!validation.valid) {
+        logger.warn({ userId, errors: validation.errors }, 'User validation failed for birthday');
         return null;
       }
 
-      // Check if today is birthday
-      const isBirthday = this.timezoneService.isBirthdayToday(user.birthdayDate, user.timezone);
+      // Check if today is birthday using strategy
+      const shouldSend = await strategy.shouldSend(user, now);
 
-      if (!isBirthday) {
+      if (!shouldSend) {
         logger.info({ userId, timezone: user.timezone }, 'Not user birthday today');
         return null;
       }
 
-      // Calculate send time
-      const sendTime = this.timezoneService.calculateSendTime(user.birthdayDate, user.timezone);
+      // Calculate send time using strategy
+      const sendTime = strategy.calculateSendTime(user, now);
 
       // Generate idempotency key
       const idempotencyKey = this.idempotencyService.generateKey(
@@ -550,8 +616,14 @@ export class SchedulerService {
         return null;
       }
 
-      // Create message
-      const messageContent = this.composeMessage(user, 'BIRTHDAY');
+      // Compose message using strategy
+      const messageContext: MessageContext = {
+        currentYear: now.getFullYear(),
+        currentDate: now,
+        userTimezone: user.timezone,
+      };
+
+      const messageContent = await strategy.composeMessage(user, messageContext);
 
       const messageData: CreateMessageLogDto = {
         userId: user.id,
@@ -565,7 +637,10 @@ export class SchedulerService {
 
       await this.messageLogRepo.create(messageData);
 
-      logger.info({ userId, scheduledSendTime: sendTime }, 'Birthday message scheduled');
+      logger.info(
+        { userId, scheduledSendTime: sendTime },
+        'Birthday message scheduled using strategy'
+      );
 
       return {
         userId: user.id,

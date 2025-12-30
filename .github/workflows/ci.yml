@@ -19,14 +19,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
       - name: Run ESLint
         run: npm run lint
@@ -50,17 +44,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Run unit tests (shard ${{ matrix.shard }})
         run: npm run test:unit -- --shard=${{ matrix.shard }}/5 --reporter=verbose
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -117,20 +117,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Wait for services
-        run: |
-          timeout 60 bash -c 'until nc -z localhost 5432; do sleep 1; done'
-          timeout 60 bash -c 'until nc -z localhost 5672; do sleep 1; done'
-          timeout 60 bash -c 'until nc -z localhost 6379; do sleep 1; done'
+        uses: ./.github/actions/wait-for-services
 
       - name: Run database migrations
         run: npm run db:migrate
@@ -151,6 +150,10 @@ jobs:
           path: coverage/
           retention-days: 7
 
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
@@ -160,14 +163,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start test environment
         run: docker-compose -f docker-compose.test.yml up -d
@@ -211,6 +216,10 @@ jobs:
           path: docker-logs.txt
           retention-days: 7
 
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
       - name: Cleanup
         if: always()
         run: docker-compose -f docker-compose.test.yml down -v
@@ -231,11 +240,18 @@ jobs:
           pattern: coverage-*
           path: coverage-artifacts/
 
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
       - name: Merge coverage reports
         run: |
-          npm ci
+          mkdir -p coverage
           npx nyc merge coverage-artifacts/ coverage/coverage.json
-          npx nyc report --reporter=lcov --reporter=text --reporter=html
+          npx nyc report --reporter=lcov --reporter=text --reporter=html --reporter=json-summary
+
+      - name: Check coverage threshold
+        run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
+        continue-on-error: false
 
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -243,7 +259,9 @@ jobs:
           files: ./coverage/lcov.info
           flags: unittests,integration,e2e
           name: codecov-umbrella
-          fail_ci_if_error: false
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'
@@ -251,6 +269,7 @@ jobs:
         with:
           lcov-file: ./coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          delete-old-comments: true
 
   security-scan:
     name: Security Scan
@@ -261,11 +280,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
         with:
-          node-version: '20'
-          cache: 'npm'
+          install-dependencies: 'false'
 
       - name: Run npm audit
         run: npm audit --audit-level=moderate
@@ -288,14 +306,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
       - name: Build application
         run: npm run build

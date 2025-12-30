@@ -16,14 +16,10 @@
 
 import type { Channel } from 'amqplib';
 import { getRabbitMQ } from './connection.js';
-import {
-  EXCHANGES,
-  ROUTING_KEYS,
-  PUBLISHER_OPTIONS,
-  QUEUE_TOPOLOGY,
-} from './config.js';
-import { MessageJob, messageJobSchema } from './types.js';
+import { EXCHANGES, ROUTING_KEYS, PUBLISHER_OPTIONS, QUEUE_TOPOLOGY } from './config.js';
+import { type MessageJob, messageJobSchema } from './types.js';
 import { logger } from '../utils/logger.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export class MessagePublisher {
   private isInitialized = false;
@@ -76,10 +72,7 @@ export class MessagePublisher {
    * @returns Promise<void>
    * @throws Error if publishing fails
    */
-  public async publishMessage(
-    job: MessageJob,
-    routingKey?: string
-  ): Promise<void> {
+  public async publishMessage(job: MessageJob, routingKey?: string): Promise<void> {
     if (!this.isInitialized) {
       throw new Error('MessagePublisher not initialized. Call initialize() first.');
     }
@@ -90,9 +83,7 @@ export class MessagePublisher {
     // Determine routing key based on message type
     const actualRoutingKey =
       routingKey ||
-      (validatedJob.messageType === 'BIRTHDAY'
-        ? ROUTING_KEYS.BIRTHDAY
-        : ROUTING_KEYS.ANNIVERSARY);
+      (validatedJob.messageType === 'BIRTHDAY' ? ROUTING_KEYS.BIRTHDAY : ROUTING_KEYS.ANNIVERSARY);
 
     logger.debug('Publishing message', {
       messageId: validatedJob.messageId,
@@ -109,21 +100,16 @@ export class MessagePublisher {
       const messageBuffer = Buffer.from(JSON.stringify(validatedJob));
 
       // Publish with confirmation
-      await channel.publish(
-        EXCHANGES.BIRTHDAY_MESSAGES,
-        actualRoutingKey,
-        messageBuffer,
-        {
-          ...PUBLISHER_OPTIONS,
-          timestamp: validatedJob.timestamp,
-          messageId: validatedJob.messageId,
-          headers: {
-            'x-retry-count': validatedJob.retryCount || 0,
-            'x-message-type': validatedJob.messageType,
-            'x-user-id': validatedJob.userId,
-          },
-        }
-      );
+      await channel.publish(EXCHANGES.BIRTHDAY_MESSAGES, actualRoutingKey, messageBuffer, {
+        ...PUBLISHER_OPTIONS,
+        timestamp: validatedJob.timestamp,
+        messageId: validatedJob.messageId,
+        headers: {
+          'x-retry-count': validatedJob.retryCount || 0,
+          'x-message-type': validatedJob.messageType,
+          'x-user-id': validatedJob.userId,
+        },
+      });
 
       logger.info('Message published successfully', {
         messageId: validatedJob.messageId,
@@ -184,11 +170,7 @@ export class MessagePublisher {
    * @param maxRetries - Maximum number of retry attempts
    * @param retryDelay - Delay between retries in milliseconds
    */
-  public async publishWithRetry(
-    job: MessageJob,
-    maxRetries = 3,
-    retryDelay = 1000
-  ): Promise<void> {
+  public async publishWithRetry(job: MessageJob, maxRetries = 3, retryDelay = 1000): Promise<void> {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -232,6 +214,10 @@ export class MessagePublisher {
 
     try {
       const result = await channel.checkQueue(queueName);
+
+      // Update metrics
+      metricsService.setQueueDepth(queueName, result.messageCount);
+
       return {
         messages: result.messageCount,
         messagesReady: result.messageCount,
@@ -242,6 +228,20 @@ export class MessagePublisher {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get queue stats', { queueName, error: errorMessage });
       throw error;
+    }
+  }
+
+  /**
+   * Update queue metrics periodically
+   */
+  public async updateQueueMetrics(queueName: string): Promise<void> {
+    try {
+      await this.getQueueStats(queueName);
+    } catch (error) {
+      logger.error(
+        { queueName, error: error instanceof Error ? error.message : 'Unknown error' },
+        'Failed to update queue metrics'
+      );
     }
   }
 }

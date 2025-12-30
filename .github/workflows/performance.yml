@@ -27,14 +27,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start performance environment
         run: docker-compose -f docker-compose.perf.yml up -d
@@ -55,12 +57,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
+        uses: ./.github/actions/install-k6
 
       - name: Run sustained load test (24h)
         run: k6 run tests/performance/sustained-load.js --out json=perf-results/sustained-load.json
@@ -70,12 +67,51 @@ jobs:
       - name: Generate performance report
         run: npm run perf:report
 
+      - name: Download baseline results
+        continue-on-error: true
+        uses: dawidd6/action-download-artifact@v3
+        with:
+          name: performance-baseline
+          path: baseline/
+          workflow: performance.yml
+          workflow_conclusion: success
+
+      - name: Compare with baseline
+        id: compare
+        run: |
+          if [ -f baseline/baseline.json ]; then
+            node -e "
+              const current = require('./perf-results/sustained-load.json');
+              const baseline = require('./baseline/baseline.json');
+              const degradation = ((current.p95 - baseline.p95) / baseline.p95) * 100;
+              console.log('Degradation: ' + degradation.toFixed(2) + '%');
+              if (degradation > 20) {
+                console.log('::error::Performance degraded by ' + degradation.toFixed(2) + '% (threshold: 20%)');
+                process.exit(1);
+              }
+            "
+          else
+            echo "No baseline found, skipping comparison"
+          fi
+
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
           name: sustained-load-results
           path: perf-results/
           retention-days: 30
+
+      - name: Update baseline
+        if: github.ref == 'refs/heads/main' && success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-baseline
+          path: perf-results/sustained-load.json
+          retention-days: 90
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
       - name: Cleanup
         if: always()
@@ -91,14 +127,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start performance environment
         run: docker-compose -f docker-compose.perf.yml up -d
@@ -113,12 +151,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
+        uses: ./.github/actions/install-k6
 
       - name: Run peak load test
         run: k6 run tests/performance/peak-load.js --out json=perf-results/peak-load.json
@@ -134,6 +167,10 @@ jobs:
           name: peak-load-results
           path: perf-results/
           retention-days: 30
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
       - name: Cleanup
         if: always()
@@ -153,14 +190,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start performance environment (${{ matrix.workers }} workers)
         run: |
@@ -176,12 +215,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
+        uses: ./.github/actions/install-k6
 
       - name: Run worker scaling test
         run: k6 run tests/performance/worker-scaling.js --out json=perf-results/worker-scaling-${{ matrix.workers }}.json
@@ -195,6 +229,10 @@ jobs:
           name: worker-scaling-results-${{ matrix.workers }}
           path: perf-results/
           retention-days: 30
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
       - name: Cleanup
         if: always()
@@ -262,3 +300,4 @@ jobs:
               commit_sha: context.sha,
               body: comment
             });
+

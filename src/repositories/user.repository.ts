@@ -40,10 +40,7 @@ export class UserRepository {
    * @returns User or null if not found
    * @throws DatabaseError on database failure
    */
-  async findById(
-    id: string,
-    tx?: TransactionType
-  ): Promise<User | null> {
+  async findById(id: string, tx?: TransactionType): Promise<User | null> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -54,10 +51,7 @@ export class UserRepository {
 
       return result[0] ?? null;
     } catch (error) {
-      throw new DatabaseError(
-        `Failed to find user by ID: ${id}`,
-        { error, id }
-      );
+      throw new DatabaseError(`Failed to find user by ID: ${id}`, { error, id });
     }
   }
 
@@ -68,10 +62,7 @@ export class UserRepository {
    * @returns User or null if not found
    * @throws DatabaseError on database failure
    */
-  async findByEmail(
-    email: string,
-    tx?: TransactionType
-  ): Promise<User | null> {
+  async findByEmail(email: string, tx?: TransactionType): Promise<User | null> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -82,10 +73,7 @@ export class UserRepository {
 
       return result[0] ?? null;
     } catch (error) {
-      throw new DatabaseError(
-        `Failed to find user by email: ${email}`,
-        { error, email }
-      );
+      throw new DatabaseError(`Failed to find user by email: ${email}`, { error, email });
     }
   }
 
@@ -96,10 +84,7 @@ export class UserRepository {
    * @returns Array of users
    * @throws DatabaseError on database failure
    */
-  async findAll(
-    filters?: UserFiltersDto,
-    tx?: TransactionType
-  ): Promise<User[]> {
+  async findAll(filters?: UserFiltersDto, tx?: TransactionType): Promise<User[]> {
     try {
       const dbInstance = tx || this.database;
       const conditions = [isNull(users.deletedAt)];
@@ -138,10 +123,7 @@ export class UserRepository {
 
       return await query;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find users',
-        { error, filters }
-      );
+      throw new DatabaseError('Failed to find users', { error, filters });
     }
   }
 
@@ -153,20 +135,16 @@ export class UserRepository {
    * @throws UniqueConstraintError if email already exists
    * @throws DatabaseError on database failure
    */
-  async create(
-    data: CreateUserDto,
-    tx?: TransactionType
-  ): Promise<User> {
+  async create(data: CreateUserDto, tx?: TransactionType): Promise<User> {
     try {
       const dbInstance = tx || this.database;
 
       // Check for existing email
       const existing = await this.findByEmail(data.email, tx);
       if (existing) {
-        throw new UniqueConstraintError(
-          `User with email ${data.email} already exists`,
-          { email: data.email }
-        );
+        throw new UniqueConstraintError(`User with email ${data.email} already exists`, {
+          email: data.email,
+        });
       }
 
       const newUser: NewUser = {
@@ -180,10 +158,7 @@ export class UserRepository {
         locationCountry: data.locationCountry,
       };
 
-      const result = await dbInstance
-        .insert(users)
-        .values(newUser)
-        .returning();
+      const result = await dbInstance.insert(users).values(newUser).returning();
 
       return result[0]!;
     } catch (error) {
@@ -192,22 +167,14 @@ export class UserRepository {
       }
 
       // Check for PostgreSQL unique constraint violation (23505)
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        error.code === '23505'
-      ) {
-        throw new UniqueConstraintError(
-          `User with email ${data.email} already exists`,
-          { error, email: data.email }
-        );
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        throw new UniqueConstraintError(`User with email ${data.email} already exists`, {
+          error,
+          email: data.email,
+        });
       }
 
-      throw new DatabaseError(
-        'Failed to create user',
-        { error, data }
-      );
+      throw new DatabaseError('Failed to create user', { error, data });
     }
   }
 
@@ -221,31 +188,23 @@ export class UserRepository {
    * @throws UniqueConstraintError if email already exists
    * @throws DatabaseError on database failure
    */
-  async update(
-    id: string,
-    data: UpdateUserDto,
-    tx?: TransactionType
-  ): Promise<User> {
+  async update(id: string, data: UpdateUserDto, tx?: TransactionType): Promise<User> {
     try {
       const dbInstance = tx || this.database;
 
       // Check if user exists
       const existing = await this.findById(id, tx);
       if (!existing) {
-        throw new NotFoundError(
-          `User with ID ${id} not found`,
-          { id }
-        );
+        throw new NotFoundError(`User with ID ${id} not found`, { id });
       }
 
       // Check for email conflict if email is being updated
       if (data.email && data.email !== existing.email) {
         const emailExists = await this.findByEmail(data.email, tx);
         if (emailExists) {
-          throw new UniqueConstraintError(
-            `User with email ${data.email} already exists`,
-            { email: data.email }
-          );
+          throw new UniqueConstraintError(`User with email ${data.email} already exists`, {
+            email: data.email,
+          });
         }
       }
 
@@ -265,22 +224,14 @@ export class UserRepository {
       }
 
       // Check for PostgreSQL unique constraint violation
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        error.code === '23505'
-      ) {
-        throw new UniqueConstraintError(
-          `User with email ${data.email} already exists`,
-          { error, email: data.email }
-        );
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        throw new UniqueConstraintError(`User with email ${data.email} already exists`, {
+          error,
+          email: data.email,
+        });
       }
 
-      throw new DatabaseError(
-        `Failed to update user: ${id}`,
-        { error, id, data }
-      );
+      throw new DatabaseError(`Failed to update user: ${id}`, { error, id, data });
     }
   }
 
@@ -292,20 +243,14 @@ export class UserRepository {
    * @throws NotFoundError if user not found
    * @throws DatabaseError on database failure
    */
-  async delete(
-    id: string,
-    tx?: TransactionType
-  ): Promise<User> {
+  async delete(id: string, tx?: TransactionType): Promise<User> {
     try {
       const dbInstance = tx || this.database;
 
       // Check if user exists
       const existing = await this.findById(id, tx);
       if (!existing) {
-        throw new NotFoundError(
-          `User with ID ${id} not found`,
-          { id }
-        );
+        throw new NotFoundError(`User with ID ${id} not found`, { id });
       }
 
       const result = await dbInstance
@@ -323,10 +268,7 @@ export class UserRepository {
         throw error;
       }
 
-      throw new DatabaseError(
-        `Failed to delete user: ${id}`,
-        { error, id }
-      );
+      throw new DatabaseError(`Failed to delete user: ${id}`, { error, id });
     }
   }
 
@@ -343,16 +285,10 @@ export class UserRepository {
    * @returns Users with birthdays today
    * @throws DatabaseError on database failure
    */
-  async findBirthdaysToday(
-    timezone?: string,
-    tx?: TransactionType
-  ): Promise<User[]> {
+  async findBirthdaysToday(timezone?: string, tx?: TransactionType): Promise<User[]> {
     try {
       const dbInstance = tx || this.database;
-      const conditions = [
-        isNull(users.deletedAt),
-        sql`${users.birthdayDate} IS NOT NULL`,
-      ];
+      const conditions = [isNull(users.deletedAt), sql`${users.birthdayDate} IS NOT NULL`];
 
       if (timezone) {
         conditions.push(eq(users.timezone, timezone));
@@ -364,12 +300,8 @@ export class UserRepository {
       const month = today.getMonth() + 1; // JavaScript months are 0-indexed
       const day = today.getDate();
 
-      conditions.push(
-        sql`EXTRACT(MONTH FROM ${users.birthdayDate}) = ${month}`
-      );
-      conditions.push(
-        sql`EXTRACT(DAY FROM ${users.birthdayDate}) = ${day}`
-      );
+      conditions.push(sql`EXTRACT(MONTH FROM ${users.birthdayDate}) = ${month}`);
+      conditions.push(sql`EXTRACT(DAY FROM ${users.birthdayDate}) = ${day}`);
 
       const result = await dbInstance
         .select()
@@ -378,10 +310,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find users with birthdays today',
-        { error, timezone }
-      );
+      throw new DatabaseError('Failed to find users with birthdays today', { error, timezone });
     }
   }
 
@@ -395,16 +324,10 @@ export class UserRepository {
    * @returns Users with anniversaries today
    * @throws DatabaseError on database failure
    */
-  async findAnniversariesToday(
-    timezone?: string,
-    tx?: TransactionType
-  ): Promise<User[]> {
+  async findAnniversariesToday(timezone?: string, tx?: TransactionType): Promise<User[]> {
     try {
       const dbInstance = tx || this.database;
-      const conditions = [
-        isNull(users.deletedAt),
-        sql`${users.anniversaryDate} IS NOT NULL`,
-      ];
+      const conditions = [isNull(users.deletedAt), sql`${users.anniversaryDate} IS NOT NULL`];
 
       if (timezone) {
         conditions.push(eq(users.timezone, timezone));
@@ -415,12 +338,8 @@ export class UserRepository {
       const month = today.getMonth() + 1;
       const day = today.getDate();
 
-      conditions.push(
-        sql`EXTRACT(MONTH FROM ${users.anniversaryDate}) = ${month}`
-      );
-      conditions.push(
-        sql`EXTRACT(DAY FROM ${users.anniversaryDate}) = ${day}`
-      );
+      conditions.push(sql`EXTRACT(MONTH FROM ${users.anniversaryDate}) = ${month}`);
+      conditions.push(sql`EXTRACT(DAY FROM ${users.anniversaryDate}) = ${day}`);
 
       const result = await dbInstance
         .select()
@@ -429,10 +348,7 @@ export class UserRepository {
 
       return result;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find users with anniversaries today',
-        { error, timezone }
-      );
+      throw new DatabaseError('Failed to find users with anniversaries today', { error, timezone });
     }
   }
 
@@ -452,16 +368,11 @@ export class UserRepository {
    * @returns Result of callback
    * @throws DatabaseError on transaction failure
    */
-  async transaction<T>(
-    callback: (tx: TransactionType) => Promise<T>
-  ): Promise<T> {
+  async transaction<T>(callback: (tx: TransactionType) => Promise<T>): Promise<T> {
     try {
       return await this.database.transaction(callback);
     } catch (error) {
-      throw new DatabaseError(
-        'Transaction failed',
-        { error }
-      );
+      throw new DatabaseError('Transaction failed', { error });
     }
   }
 }

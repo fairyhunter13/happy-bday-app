@@ -1,0 +1,327 @@
+name: Security Scanning
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * *' # Daily at midnight UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  npm-audit:
+    name: NPM Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit (production)
+        run: npm audit --omit=dev --audit-level=moderate
+        continue-on-error: false
+
+      - name: Run npm audit (all dependencies)
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Generate audit report
+        if: always()
+        run: |
+          npm audit --json > npm-audit-report.json || true
+          npm audit --audit-level=info > npm-audit-report.txt || true
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: |
+            npm-audit-report.json
+            npm-audit-report.txt
+          retention-days: 30
+
+  snyk-scan:
+    name: Snyk Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk.sarif
+
+      - name: Upload Snyk results to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk.sarif
+
+      - name: Run Snyk to check Docker image vulnerabilities
+        if: github.ref == 'refs/heads/main'
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: ghcr.io/${{ github.repository }}:latest
+          args: --severity-threshold=high
+
+  owasp-dependency-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'birthday-message-scheduler'
+          path: '.'
+          format: 'ALL'
+          args: >
+            --enableRetired
+            --enableExperimental
+            --failOnCVSS 7
+            --suppression dependency-check-suppressions.xml
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-dependency-check-report
+          path: reports/
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: reports/dependency-check-report.sarif
+
+  trivy-scan:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image for scanning
+        run: |
+          if [ -f Dockerfile ]; then
+            docker build -t test-image:${{ github.sha }} .
+          else
+            echo "No Dockerfile found, skipping container scan"
+            exit 0
+          fi
+
+      - name: Run Trivy vulnerability scanner
+        if: success()
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: test-image:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      - name: Upload Trivy results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+
+      - name: Upload filesystem scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs-results.sarif
+
+  license-compliance:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        run: |
+          license-checker --production --json > licenses.json
+          license-checker --production --summary
+
+      - name: Validate licenses
+        run: |
+          # Fail if any dependency has a restricted license
+          RESTRICTED_LICENSES="GPL|AGPL|LGPL|SSPL|Commons Clause"
+          if license-checker --production --json | jq -r '.[] | .licenses' | grep -iE "$RESTRICTED_LICENSES"; then
+            echo "Found restricted licenses!"
+            exit 1
+          fi
+          echo "All licenses are compliant"
+
+      - name: Upload license report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-report
+          path: licenses.json
+          retention-days: 30
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  security-summary:
+    name: Security Summary
+    needs: [npm-audit, snyk-scan, owasp-dependency-check, trivy-scan, license-compliance, codeql-analysis]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check all security scans
+        run: |
+          if [[ "${{ needs.npm-audit.result }}" != "success" ||
+                "${{ needs.snyk-scan.result }}" != "success" ||
+                "${{ needs.owasp-dependency-check.result }}" != "success" ||
+                "${{ needs.license-compliance.result }}" != "success" ]]; then
+            echo "One or more security scans failed"
+            echo "npm-audit: ${{ needs.npm-audit.result }}"
+            echo "snyk-scan: ${{ needs.snyk-scan.result }}"
+            echo "owasp: ${{ needs.owasp-dependency-check.result }}"
+            echo "license: ${{ needs.license-compliance.result }}"
+            exit 1
+          fi
+          echo "All security scans passed!"
+
+      - name: Post security summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const results = {
+              npm_audit: '${{ needs.npm-audit.result }}',
+              snyk_scan: '${{ needs.snyk-scan.result }}',
+              owasp: '${{ needs.owasp-dependency-check.result }}',
+              trivy: '${{ needs.trivy-scan.result }}',
+              license: '${{ needs.license-compliance.result }}',
+              codeql: '${{ needs.codeql-analysis.result }}'
+            };
+
+            const statusEmoji = (status) => status === 'success' ? '✅' : status === 'skipped' ? '⏭️' : '❌';
+
+            const comment = `## Security Scan Results
+
+            | Scan | Status |
+            |------|--------|
+            | NPM Audit | ${statusEmoji(results.npm_audit)} ${results.npm_audit} |
+            | Snyk Vulnerability Scan | ${statusEmoji(results.snyk_scan)} ${results.snyk_scan} |
+            | OWASP Dependency Check | ${statusEmoji(results.owasp)} ${results.owasp} |
+            | Trivy Container Scan | ${statusEmoji(results.trivy)} ${results.trivy} |
+            | License Compliance | ${statusEmoji(results.license)} ${results.license} |
+            | CodeQL Analysis | ${statusEmoji(results.codeql)} ${results.codeql} |
+
+            [View detailed results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
