@@ -1,29 +1,21 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from './vitest.config.base';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['tests/unit/**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'tests/',
-        '**/*.test.ts',
-        '**/*.spec.ts',
-      ],
+/**
+ * Unit Test Configuration
+ * Fast, isolated tests for individual functions/classes
+ * DRY: Extends base config with unit-specific settings
+ */
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    test: {
+      // Only include unit tests
+      include: ['tests/unit/**/*.test.ts'],
+
+      // Fast timeout for unit tests
+      testTimeout: 10000,  // 10 seconds
+      hookTimeout: 10000,
     },
-    testTimeout: 10000,
-    poolOptions: {
-      threads: {
-        singleThread: false,
-        maxThreads: 5,
-        minThreads: 1,
-      },
-    },
-  },
-});
+  })
+);

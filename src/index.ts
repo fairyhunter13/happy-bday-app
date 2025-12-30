@@ -5,6 +5,7 @@
 
 import { startServer, shutdownServer } from './app.js';
 import { logger, logStartup } from './config/logger.js';
+import { schedulerManager } from './schedulers/index.js';
 
 /**
  * Main application entry point
@@ -17,13 +18,27 @@ async function main(): Promise<void> {
     // Start the server
     const app = await startServer();
 
+    // Start schedulers
+    logger.info('Initializing CRON schedulers...');
+    await schedulerManager.start();
+    logger.info('CRON schedulers initialized successfully');
+
     // Graceful shutdown handlers
     const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'] as const;
 
     signals.forEach((signal) => {
       process.on(signal, async () => {
         logger.info({ signal }, 'Received shutdown signal');
+
+        // Graceful shutdown of schedulers (wait for running jobs)
+        logger.info('Shutting down schedulers...');
+        await schedulerManager.gracefulShutdown(30000); // 30 second timeout
+        logger.info('Schedulers shut down successfully');
+
+        // Shutdown server
         await shutdownServer(app);
+
+        logger.info('Application shut down successfully');
         process.exit(0);
       });
     });

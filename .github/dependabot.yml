@@ -1,0 +1,117 @@
+version: 2
+
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+
+    # Group minor and patch updates together
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+    # Assignees and reviewers
+    assignees:
+      - "fairyhunter13"
+    reviewers:
+      - "fairyhunter13"
+
+    # Labels
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Commit message configuration
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+    # Allow updates for both direct and indirect dependencies
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+    # Ignore specific dependencies (if needed)
+    ignore:
+      # Ignore major version updates for stable packages
+      # - dependency-name: "fastify"
+      #   update-types: ["version-update:semver-major"]
+
+    # Target branch for pull requests
+    target-branch: "main"
+
+    # Rebase strategy
+    rebase-strategy: "auto"
+
+    # Pull request configuration
+    pull-request-branch-name:
+      separator: "/"
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+
+    assignees:
+      - "fairyhunter13"
+    reviewers:
+      - "fairyhunter13"
+
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  # Enable version updates for Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+
+    assignees:
+      - "fairyhunter13"
+    reviewers:
+      - "fairyhunter13"
+
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
+
+# Security updates configuration
+# Dependabot will automatically:
+# - Create PRs for security updates immediately (ignoring schedule)
+# - Label them with "security"
+# - Set them to high priority

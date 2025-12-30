@@ -1,0 +1,211 @@
+name: OpenAPI Validation
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/schemas/**'
+      - 'src/routes/**'
+      - 'src/app.ts'
+      - '.spectral.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'src/schemas/**'
+      - 'src/routes/**'
+      - 'src/app.ts'
+      - '.spectral.yml'
+
+jobs:
+  validate-openapi:
+    name: Validate OpenAPI Specification
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application (background)
+        env:
+          NODE_ENV: development
+          PORT: 3000
+          HOST: localhost
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          RABBITMQ_URL: amqp://guest:guest@localhost:5672
+          RATE_LIMIT_MAX_REQUESTS: 100
+          RATE_LIMIT_WINDOW_MS: 60000
+        run: |
+          npm start &
+          echo $! > app.pid
+
+      - name: Wait for application to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+          echo "Application is ready"
+
+      - name: Validate OpenAPI spec with Redocly
+        run: |
+          npx redocly lint http://localhost:3000/docs/json \
+            --skip-rule operation-operationId-unique \
+            --format stylish
+        continue-on-error: false
+
+      - name: Lint OpenAPI spec with Spectral
+        run: |
+          npx spectral lint http://localhost:3000/docs/json \
+            --fail-severity warn \
+            --format pretty
+        continue-on-error: false
+
+      - name: Export OpenAPI specification
+        run: |
+          mkdir -p docs
+          curl -s http://localhost:3000/docs/json | npx prettier --parser json > docs/openapi.json
+
+      - name: Validate exported spec structure
+        run: |
+          # Check if openapi.json exists and is valid JSON
+          if [ ! -f docs/openapi.json ]; then
+            echo "Error: openapi.json was not created"
+            exit 1
+          fi
+
+          # Validate it's valid JSON
+          cat docs/openapi.json | jq empty
+
+          # Check OpenAPI version
+          VERSION=$(cat docs/openapi.json | jq -r '.openapi')
+          if [ "$VERSION" != "3.1.0" ]; then
+            echo "Error: OpenAPI version is not 3.1.0 (found: $VERSION)"
+            exit 1
+          fi
+
+          echo "OpenAPI specification validation passed!"
+
+      - name: Upload OpenAPI spec as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: docs/openapi.json
+          retention-days: 30
+
+      - name: Generate API documentation preview
+        if: github.event_name == 'pull_request'
+        run: |
+          npx redocly build-docs docs/openapi.json --output docs/api-preview.html
+
+      - name: Upload API documentation preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation-preview
+          path: docs/api-preview.html
+          retention-days: 7
+
+      - name: Comment PR with validation results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = `## OpenAPI Validation Results ✅
+
+            The OpenAPI 3.1.0 specification has been validated successfully!
+
+            - ✅ Redocly linting passed
+            - ✅ Spectral linting passed
+            - ✅ Exported specification is valid
+
+            ### Artifacts
+            - OpenAPI Specification: \`openapi.json\`
+            - API Documentation Preview: \`api-preview.html\`
+
+            You can download these artifacts from the workflow run.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Stop application
+        if: always()
+        run: |
+          if [ -f app.pid ]; then
+            kill $(cat app.pid) || true
+            rm app.pid
+          fi
+
+  security-scan:
+    name: Security Scan for OpenAPI
+    runs-on: ubuntu-latest
+    needs: validate-openapi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download OpenAPI spec
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-spec
+          path: docs
+
+      - name: Install OWASP ZAP API Scan
+        run: |
+          docker pull zaproxy/zap-stable
+
+      - name: Run OWASP ZAP API Scan
+        run: |
+          docker run --rm \
+            -v $(pwd)/docs:/zap/wrk/:rw \
+            zaproxy/zap-stable \
+            zap-api-scan.py \
+            -t /zap/wrk/openapi.json \
+            -f openapi \
+            -r zap-report.html \
+            -w zap-report.md || true
+
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: docs/zap-report.*
+          retention-days: 30

@@ -16,12 +16,13 @@
  * - Logging and monitoring
  */
 
-import { MessageConsumer, MessageJob, RETRY_CONFIG } from '../queue/index.js';
+import { MessageConsumer, type MessageJob, RETRY_CONFIG } from '../queue/index.js';
 import { messageLogRepository } from '../repositories/message-log.repository.js';
 import { userRepository } from '../repositories/user.repository.js';
 import { messageSenderService } from '../services/message-sender.service.js';
 import { MessageStatus } from '../db/schema/message-logs.js';
 import { logger } from '../utils/logger.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export class MessageWorker {
   private consumer: MessageConsumer | null = null;
@@ -94,35 +95,45 @@ export class MessageWorker {
         email: userEmail,
       });
 
-      const sendResult = await messageSenderService.sendMessage({
-        email: userEmail,
-        message: message.messageContent,
-      });
+      // Get full user object for sending
+      const user = await userRepository.findById(job.userId);
+      if (!user) {
+        throw new Error(`User not found: ${job.userId}`);
+      }
+
+      // Send message based on type
+      const sendResult =
+        job.messageType === 'BIRTHDAY'
+          ? await messageSenderService.sendBirthdayMessage(user)
+          : await messageSenderService.sendAnniversaryMessage(user);
 
       // 6. Update message status based on result
-      if (sendResult.success && sendResult.statusCode >= 200 && sendResult.statusCode < 300) {
+      if (sendResult.success) {
         // Success - mark as sent
         await messageLogRepository.markAsSent(job.messageId, {
-          apiResponseCode: sendResult.statusCode,
-          apiResponseBody: sendResult.body,
+          apiResponseCode: 200,
+          apiResponseBody: JSON.stringify({ messageId: sendResult.messageId }),
         });
 
         const duration = Date.now() - startTime;
+        const durationSeconds = duration / 1000;
+
         logger.info('Message sent successfully', {
           messageId: job.messageId,
           userId: job.userId,
           duration,
-          statusCode: sendResult.statusCode,
+          statusCode: 200,
         });
-      } else {
-        // Failure - mark as failed
-        throw new Error(
-          `Failed to send message: HTTP ${sendResult.statusCode} - ${sendResult.body}`
-        );
+
+        // Record metrics
+        metricsService.recordMessageSent(job.messageType, 200);
+        metricsService.recordMessageDeliveryDuration(job.messageType, 'success', durationSeconds);
+        metricsService.recordMessageProcessing(job.messageType, durationSeconds);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const duration = Date.now() - startTime;
+      const durationSeconds = duration / 1000;
 
       logger.error('Failed to process message', {
         messageId: job.messageId,
@@ -143,6 +154,13 @@ export class MessageWorker {
         RETRY_CONFIG.MAX_RETRIES
       );
 
+      // Determine error type for metrics
+      const errorType = this.categorizeError(error);
+
+      // Record metrics
+      metricsService.recordMessageFailed(job.messageType, errorType, job.retryCount);
+      metricsService.recordMessageDeliveryDuration(job.messageType, 'failure', durationSeconds);
+
       // Re-throw to let consumer handle retry/reject logic
       throw error;
     }
@@ -157,6 +175,38 @@ export class MessageWorker {
       throw new Error(`User ${userId} not found`);
     }
     return user.email;
+  }
+
+  /**
+   * Categorize error for metrics
+   */
+  private categorizeError(error: unknown): string {
+    if (!(error instanceof Error)) {
+      return 'unknown';
+    }
+
+    const message = error.message.toLowerCase();
+
+    if (message.includes('timeout') || message.includes('etimedout')) {
+      return 'timeout';
+    }
+    if (message.includes('network') || message.includes('econnrefused')) {
+      return 'network';
+    }
+    if (message.includes('validation') || message.includes('invalid')) {
+      return 'validation';
+    }
+    if (message.includes('404') || message.includes('not found')) {
+      return 'not_found';
+    }
+    if (message.includes('429') || message.includes('rate limit')) {
+      return 'rate_limit';
+    }
+    if (message.includes('500') || message.includes('503')) {
+      return 'server_error';
+    }
+
+    return 'other';
   }
 
   /**

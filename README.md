@@ -1,5 +1,12 @@
 # 🎂 Happy Birthday App - Message Scheduler
 
+[![CI](https://github.com/fairyhunter13/happy-bday-app/workflows/CI/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
+[![Code Quality](https://github.com/fairyhunter13/happy-bday-app/workflows/Code%20Quality/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
+[![Security](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scan/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
+[![OpenAPI](https://github.com/fairyhunter13/happy-bday-app/workflows/OpenAPI%20Validation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, and RabbitMQ. Designed to handle **1M+ messages/day** with **zero data loss** and extensible support for multiple message types (birthday, anniversary, etc.).
 
 ---
@@ -9,6 +16,9 @@ A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, a
 ```bash
 # Install dependencies
 npm install
+
+# Decrypt environment secrets (see docs/DEVELOPER_SETUP.md for age key setup)
+npm run secrets:decrypt:dev
 
 # Start development environment (Docker Compose)
 docker-compose -f docker-compose.dev.yml up -d
@@ -22,6 +32,8 @@ npm run dev
 # Start worker (in separate terminal)
 npm run worker
 ```
+
+**New Developers**: See [`docs/DEVELOPER_SETUP.md`](./docs/DEVELOPER_SETUP.md) for complete setup instructions, including SOPS secret management configuration.
 
 ---
 

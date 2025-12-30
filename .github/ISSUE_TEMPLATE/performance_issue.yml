@@ -1,0 +1,214 @@
+name: Performance Issue
+description: Report a performance problem or regression
+title: "[PERF] "
+labels: ["performance", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a performance issue! Please provide detailed metrics to help us investigate.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: Describe the performance problem
+      placeholder: What is slow or consuming too many resources?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: performance-type
+    attributes:
+      label: Performance Category
+      description: What type of performance issue is this?
+      options:
+        - Response Time / Latency
+        - Throughput / TPS
+        - Memory Usage
+        - CPU Usage
+        - Database Performance
+        - Network I/O
+        - Message Queue Performance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Current Performance Metrics
+      description: Provide current performance measurements
+      placeholder: |
+        - Response time: XXXms (p50), XXXms (p95), XXXms (p99)
+        - Throughput: XXX requests/second
+        - Memory usage: XXX MB
+        - CPU usage: XX%
+        - Database query time: XXXms
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-metrics
+    attributes:
+      label: Expected Performance Metrics
+      description: What performance do you expect?
+      placeholder: |
+        - Response time: XXXms (p95)
+        - Throughput: XXX requests/second
+        - Memory usage: XXX MB
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: load-conditions
+    attributes:
+      label: Load Conditions
+      description: Under what load does this issue occur?
+      placeholder: |
+        - Number of concurrent users/requests
+        - Request rate
+        - Data volume
+        - Duration of load
+    validations:
+      required: true
+
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Is this a regression?
+      description: Did performance degrade in a recent version?
+      options:
+        - "Yes - Performance was better before"
+        - "No - Has always been this way"
+        - "Unknown"
+    validations:
+      required: true
+
+  - type: input
+    id: regression-version
+    attributes:
+      label: Last Known Good Version
+      description: If this is a regression, what was the last version with good performance?
+      placeholder: e.g., v1.2.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: How to reproduce the performance issue
+      placeholder: |
+        1. Configure environment with...
+        2. Run load test with...
+        3. Observe metrics...
+    validations:
+      required: true
+
+  - type: textarea
+    id: profiling-data
+    attributes:
+      label: Profiling Data
+      description: Include any profiling data, flame graphs, or performance traces
+      placeholder: Attach or link to profiling results...
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Details about the environment where performance issue occurs
+      value: |
+        - Node.js version:
+        - PostgreSQL version:
+        - RabbitMQ version:
+        - Hardware (CPU/Memory):
+        - Network bandwidth:
+        - Deployment type (Docker, bare metal, cloud):
+      render: markdown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Business Impact
+      description: What is the impact of this performance issue?
+      options:
+        - Critical - Service is unusable
+        - High - Severely impacts user experience
+        - Medium - Noticeable degradation
+        - Low - Minor impact
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs
+      description: Include any relevant logs showing slow queries, timeouts, etc.
+      render: shell
+      placeholder: Paste logs here...
+    validations:
+      required: false
+
+  - type: textarea
+    id: monitoring-screenshots
+    attributes:
+      label: Monitoring Screenshots
+      description: Include screenshots from monitoring tools (Grafana, CloudWatch, etc.)
+      placeholder: Attach screenshots...
+    validations:
+      required: false
+
+  - type: textarea
+    id: workarounds
+    attributes:
+      label: Temporary Workarounds
+      description: Any temporary workarounds or mitigations being used
+      placeholder: Describe workarounds...
+    validations:
+      required: false
+
+  - type: textarea
+    id: investigation
+    attributes:
+      label: Investigation Done
+      description: What investigation or debugging have you already done?
+      placeholder: |
+        - Checked database query performance
+        - Reviewed application logs
+        - Analyzed memory usage
+        - ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: possible-causes
+    attributes:
+      label: Possible Root Causes
+      description: If you have ideas about what might be causing the issue
+      placeholder: Suspected bottlenecks or causes...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify the following before submitting
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have included performance metrics above
+          required: true
+        - label: I have tested on the latest version
+          required: false
+        - label: I have profiling data or monitoring screenshots
+          required: false

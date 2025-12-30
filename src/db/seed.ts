@@ -31,13 +31,41 @@ const TIMEZONES = [
 ];
 
 const FIRST_NAMES = [
-  'John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Robert', 'Lisa',
-  'James', 'Mary', 'William', 'Jennifer', 'Richard', 'Linda', 'Thomas', 'Patricia',
+  'John',
+  'Jane',
+  'Michael',
+  'Sarah',
+  'David',
+  'Emily',
+  'Robert',
+  'Lisa',
+  'James',
+  'Mary',
+  'William',
+  'Jennifer',
+  'Richard',
+  'Linda',
+  'Thomas',
+  'Patricia',
 ];
 
 const LAST_NAMES = [
-  'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
-  'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas',
+  'Smith',
+  'Johnson',
+  'Williams',
+  'Brown',
+  'Jones',
+  'Garcia',
+  'Miller',
+  'Davis',
+  'Rodriguez',
+  'Martinez',
+  'Hernandez',
+  'Lopez',
+  'Gonzalez',
+  'Wilson',
+  'Anderson',
+  'Thomas',
 ];
 
 /**
@@ -83,16 +111,10 @@ async function seed() {
       const timezone = randomElement(TIMEZONES);
 
       // Random birthday (1980-2005)
-      const birthdayDate = randomDate(
-        new Date(1980, 0, 1),
-        new Date(2005, 11, 31)
-      );
+      const birthdayDate = randomDate(new Date(1980, 0, 1), new Date(2005, 11, 31));
 
       // Random anniversary (2010-2023)
-      const anniversaryDate = randomDate(
-        new Date(2010, 0, 1),
-        new Date(2023, 11, 31)
-      );
+      const anniversaryDate = randomDate(new Date(2010, 0, 1), new Date(2023, 11, 31));
 
       const user = {
         firstName,
@@ -135,11 +157,7 @@ async function seed() {
           messageContent: `Hey, ${user.firstName} ${user.lastName} it's your birthday!`,
           scheduledSendTime: sendTime,
           status: MessageStatus.SCHEDULED,
-          idempotencyKey: generateIdempotencyKey(
-            user.id,
-            MessageType.BIRTHDAY,
-            sendTime
-          ),
+          idempotencyKey: generateIdempotencyKey(user.id, MessageType.BIRTHDAY, sendTime),
           retryCount: 0,
         });
       }
@@ -160,11 +178,7 @@ async function seed() {
           scheduledSendTime: sendTime,
           actualSendTime: DateTime.fromJSDate(sendTime).plus({ seconds: 30 }).toJSDate(),
           status: MessageStatus.SENT,
-          idempotencyKey: generateIdempotencyKey(
-            user.id,
-            MessageType.ANNIVERSARY,
-            sendTime
-          ),
+          idempotencyKey: generateIdempotencyKey(user.id, MessageType.ANNIVERSARY, sendTime),
           retryCount: 0,
           apiResponseCode: 200,
           apiResponseBody: '{"status": "success"}',
@@ -173,9 +187,7 @@ async function seed() {
 
       // Failed message example (for testing recovery)
       if (i < 5) {
-        const sendTime = DateTime.now()
-          .minus({ hours: 2 })
-          .toJSDate();
+        const sendTime = DateTime.now().minus({ hours: 2 }).toJSDate();
 
         testMessages.push({
           userId: user.id,
@@ -183,11 +195,8 @@ async function seed() {
           messageContent: `Hey, ${user.firstName} ${user.lastName} it's your birthday!`,
           scheduledSendTime: sendTime,
           status: MessageStatus.FAILED,
-          idempotencyKey: generateIdempotencyKey(
-            user.id,
-            MessageType.BIRTHDAY,
-            sendTime
-          ) + ':failed',
+          idempotencyKey:
+            generateIdempotencyKey(user.id, MessageType.BIRTHDAY, sendTime) + ':failed',
           retryCount: 5,
           lastRetryAt: DateTime.now().minus({ minutes: 30 }).toJSDate(),
           apiResponseCode: 500,
@@ -206,9 +215,15 @@ async function seed() {
     console.log('📊 Seed Summary:');
     console.log(`  - Total users: ${insertedUsers.length}`);
     console.log(`  - Total messages: ${testMessages.length}`);
-    console.log(`  - Scheduled messages: ${testMessages.filter(m => m.status === MessageStatus.SCHEDULED).length}`);
-    console.log(`  - Sent messages: ${testMessages.filter(m => m.status === MessageStatus.SENT).length}`);
-    console.log(`  - Failed messages: ${testMessages.filter(m => m.status === MessageStatus.FAILED).length}`);
+    console.log(
+      `  - Scheduled messages: ${testMessages.filter((m) => m.status === MessageStatus.SCHEDULED).length}`
+    );
+    console.log(
+      `  - Sent messages: ${testMessages.filter((m) => m.status === MessageStatus.SENT).length}`
+    );
+    console.log(
+      `  - Failed messages: ${testMessages.filter((m) => m.status === MessageStatus.FAILED).length}`
+    );
     console.log();
 
     console.log('🎉 Database seed completed successfully!');

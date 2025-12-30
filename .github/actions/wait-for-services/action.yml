@@ -1,0 +1,66 @@
+name: 'Wait for Services'
+description: 'Wait for Docker services to be healthy and ready'
+
+inputs:
+  postgres:
+    description: 'Wait for PostgreSQL'
+    required: false
+    default: 'true'
+  postgres-port:
+    description: 'PostgreSQL port'
+    required: false
+    default: '5432'
+  rabbitmq:
+    description: 'Wait for RabbitMQ'
+    required: false
+    default: 'true'
+  rabbitmq-port:
+    description: 'RabbitMQ port'
+    required: false
+    default: '5672'
+  redis:
+    description: 'Wait for Redis'
+    required: false
+    default: 'true'
+  redis-port:
+    description: 'Redis port'
+    required: false
+    default: '6379'
+  timeout:
+    description: 'Timeout in seconds'
+    required: false
+    default: '60'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for services
+      shell: bash
+      run: |
+        TIMEOUT="${{ inputs.timeout }}"
+
+        wait_for_port() {
+          local host="$1"
+          local port="$2"
+          local name="$3"
+          echo "Waiting for $name on port $port..."
+          timeout $TIMEOUT bash -c "until nc -z $host $port; do sleep 1; done" || {
+            echo "Error: $name did not become ready in $TIMEOUT seconds"
+            exit 1
+          }
+          echo "$name is ready!"
+        }
+
+        if [ "${{ inputs.postgres }}" = "true" ]; then
+          wait_for_port localhost ${{ inputs.postgres-port }} "PostgreSQL"
+        fi
+
+        if [ "${{ inputs.rabbitmq }}" = "true" ]; then
+          wait_for_port localhost ${{ inputs.rabbitmq-port }} "RabbitMQ"
+        fi
+
+        if [ "${{ inputs.redis }}" = "true" ]; then
+          wait_for_port localhost ${{ inputs.redis-port }} "Redis"
+        fi
+
+        echo "All services are ready!"

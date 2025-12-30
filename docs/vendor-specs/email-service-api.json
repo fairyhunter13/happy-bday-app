@@ -1,0 +1,299 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Digital Envision Email Service API",
+    "description": "Third-party email service API for sending transactional emails. This specification is documented based on implementation requirements and mock service behavior.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Digital Envision",
+      "url": "https://email-service.digitalenvision.com.au"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://email-service.digitalenvision.com.au",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Email",
+      "description": "Email sending operations"
+    }
+  ],
+  "paths": {
+    "/send-email": {
+      "post": {
+        "tags": ["Email"],
+        "summary": "Send an email message",
+        "description": "Sends a transactional email to a specified recipient. This endpoint is used for sending birthday messages and other automated notifications.",
+        "operationId": "sendEmail",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailRequest"
+              },
+              "examples": {
+                "birthdayMessage": {
+                  "summary": "Birthday Message",
+                  "value": {
+                    "email": "john.doe@example.com",
+                    "message": "Hey, John Doe it's your birthday"
+                  }
+                },
+                "genericMessage": {
+                  "summary": "Generic Message",
+                  "value": {
+                    "email": "user@example.com",
+                    "message": "Your custom message content here"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendEmailSuccessResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "Successful response",
+                    "value": {
+                      "success": true,
+                      "messageId": "msg-1704024000000"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidEmail": {
+                    "summary": "Invalid email address",
+                    "value": {
+                      "error": "Bad Request",
+                      "message": "Invalid email address format"
+                    }
+                  },
+                  "missingFields": {
+                    "summary": "Missing required fields",
+                    "value": {
+                      "error": "Bad Request",
+                      "message": "Required fields missing: email, message"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "rateLimitExceeded": {
+                    "summary": "Rate limit exceeded",
+                    "value": {
+                      "error": "Too Many Requests",
+                      "message": "Rate limit exceeded. Please retry after 60 seconds",
+                      "retryAfter": 60
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Number of seconds to wait before retrying",
+                "schema": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error - Service temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "serverError": {
+                    "summary": "Server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "message": "An unexpected error occurred. Please retry later"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable - Service is under maintenance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "maintenance": {
+                    "summary": "Service under maintenance",
+                    "value": {
+                      "error": "Service Unavailable",
+                      "message": "Service is currently under maintenance",
+                      "retryAfter": 300
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-code-samples": [
+          {
+            "lang": "TypeScript",
+            "label": "TypeScript with Axios",
+            "source": "import axios from 'axios';\n\nconst response = await axios.post(\n  'https://email-service.digitalenvision.com.au/send-email',\n  {\n    email: 'john.doe@example.com',\n    message: 'Hey, John Doe it\\'s your birthday'\n  },\n  {\n    headers: {\n      'Content-Type': 'application/json'\n    },\n    timeout: 10000\n  }\n);\n\nconsole.log(response.data);"
+          },
+          {
+            "lang": "curl",
+            "label": "cURL",
+            "source": "curl -X POST https://email-service.digitalenvision.com.au/send-email \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"email\": \"john.doe@example.com\",\n    \"message\": \"Hey, John Doe it's your birthday\"\n  }'"
+          }
+        ]
+      }
+    },
+    "/api-docs": {
+      "get": {
+        "tags": ["Documentation"],
+        "summary": "Get API documentation (Swagger UI)",
+        "description": "Returns the Swagger UI interface for interactive API documentation",
+        "operationId": "getApiDocs",
+        "responses": {
+          "200": {
+            "description": "Swagger UI HTML page",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SendEmailRequest": {
+        "type": "object",
+        "required": ["email", "message"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Recipient email address",
+            "example": "john.doe@example.com",
+            "maxLength": 255
+          },
+          "message": {
+            "type": "string",
+            "description": "Email message content (plain text)",
+            "example": "Hey, John Doe it's your birthday",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        }
+      },
+      "SendEmailSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates whether the email was sent successfully",
+            "example": true
+          },
+          "messageId": {
+            "type": "string",
+            "description": "Unique identifier for the sent message",
+            "example": "msg-1704024000000",
+            "pattern": "^msg-[0-9]+$"
+          }
+        },
+        "required": ["success", "messageId"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type",
+            "example": "Bad Request"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "Invalid email address format"
+          },
+          "retryAfter": {
+            "type": "integer",
+            "description": "Number of seconds to wait before retrying (for rate limiting and maintenance)",
+            "example": 60
+          }
+        },
+        "required": ["error", "message"]
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authentication (if required in production)"
+      }
+    }
+  },
+  "x-service-characteristics": {
+    "reliability": {
+      "availability": "99.5%",
+      "expectedFailureRate": "~10%",
+      "description": "Service may experience intermittent failures requiring retry logic"
+    },
+    "performance": {
+      "averageLatency": "50-200ms",
+      "timeout": "10000ms recommended",
+      "description": "Response times vary between 50ms and 200ms under normal conditions"
+    },
+    "rateLimits": {
+      "description": "Rate limits are not explicitly documented but should be assumed",
+      "recommendation": "Implement exponential backoff retry strategy"
+    },
+    "retryStrategy": {
+      "maxRetries": 5,
+      "backoffType": "exponential",
+      "initialDelay": "2000ms",
+      "description": "Recommended retry configuration for handling transient failures"
+    }
+  }
+}

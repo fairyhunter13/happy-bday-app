@@ -1,0 +1,453 @@
+/**
+ * E2E Test: Complete Birthday Message Flow
+ *
+ * Tests the complete end-to-end flow of birthday message delivery:
+ * 1. Create user via API
+ * 2. Trigger daily scheduler (or mock time to be birthday)
+ * 3. Verify message log created with SCHEDULED status
+ * 4. Trigger minute scheduler to enqueue message
+ * 5. Verify message queued to RabbitMQ
+ * 6. Verify worker processes message
+ * 7. Verify message status updated to SENT
+ * 8. Verify external API was called (mock server)
+ * 9. Verify no duplicate messages sent
+ */
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { TestEnvironment, waitFor, cleanDatabase, purgeQueues } from '../helpers/testcontainers.js';
+import { createMockEmailServer, MockEmailServer } from '../helpers/mock-email-server.js';
+import { insertUser, findMessageLogsByUserId, sleep } from '../helpers/test-helpers.js';
+import { SchedulerService } from '../../src/services/scheduler.service.js';
+import { MessageWorker } from '../../src/workers/message-worker.js';
+import { MessagePublisher } from '../../src/queue/publisher.js';
+import { MessageStatus } from '../../src/db/schema/message-logs.js';
+import { DateTime } from 'luxon';
+import type { Pool } from 'pg';
+import type { Connection } from 'amqplib';
+
+describe('E2E: Complete Birthday Message Flow', () => {
+  let env: TestEnvironment;
+  let pool: Pool;
+  let amqpConnection: Connection;
+  let mockEmailServer: MockEmailServer;
+  let scheduler: SchedulerService;
+  let worker: MessageWorker;
+  let publisher: MessagePublisher;
+
+  beforeAll(async () => {
+    // Start test environment (PostgreSQL + RabbitMQ)
+    env = new TestEnvironment();
+    await env.setup();
+    await env.runMigrations();
+
+    pool = env.getPostgresPool();
+    amqpConnection = env.getRabbitMQConnection();
+
+    // Start mock email server
+    mockEmailServer = await createMockEmailServer();
+
+    // Initialize services
+    scheduler = new SchedulerService();
+    worker = new MessageWorker();
+    publisher = new MessagePublisher();
+    await publisher.initialize();
+  }, 180000);
+
+  afterAll(async () => {
+    // Stop worker
+    if (worker.isRunning()) {
+      await worker.stop();
+    }
+
+    // Stop mock email server
+    await mockEmailServer.stop();
+
+    // Teardown test environment
+    await env.teardown();
+  }, 60000);
+
+  beforeEach(async () => {
+    // Clean database and purge queues before each test
+    await cleanDatabase(pool);
+    await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    mockEmailServer.clearRequests();
+  });
+
+  describe('Complete flow: User creation -> Scheduling -> Queue -> Worker -> Email sent', () => {
+    it('should complete full birthday message flow successfully', async () => {
+      // Step 1: Create user with birthday today
+      const timezone = 'America/New_York';
+      const today = DateTime.now().setZone(timezone);
+      const birthdayDate = today.set({ year: 1990, hour: 0, minute: 0, second: 0 }).toJSDate();
+
+      const user = await insertUser(pool, {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@test.com',
+        timezone,
+        birthdayDate,
+        anniversaryDate: null,
+      });
+
+      expect(user.id).toBeDefined();
+      expect(user.email).toBe('john.doe@test.com');
+
+      // Step 2: Trigger daily scheduler
+      const precalcStats = await scheduler.preCalculateTodaysBirthdays();
+
+      expect(precalcStats.messagesScheduled).toBeGreaterThanOrEqual(1);
+      expect(precalcStats.totalBirthdays).toBeGreaterThanOrEqual(1);
+
+      // Step 3: Verify message log created with SCHEDULED status
+      await waitFor(async () => {
+        const messages = await findMessageLogsByUserId(pool, user.id);
+        return messages.length > 0 && messages[0].status === MessageStatus.SCHEDULED;
+      }, 10000);
+
+      const scheduledMessages = await findMessageLogsByUserId(pool, user.id);
+      expect(scheduledMessages).toHaveLength(1);
+
+      const message = scheduledMessages[0];
+      expect(message.messageType).toBe('BIRTHDAY');
+      expect(message.status).toBe(MessageStatus.SCHEDULED);
+      expect(message.messageContent).toContain('John');
+      expect(message.idempotencyKey).toContain(user.id);
+
+      // Verify send time is 9am in user timezone
+      const sendTime = DateTime.fromJSDate(message.scheduledSendTime).setZone(timezone);
+      expect(sendTime.hour).toBe(9);
+      expect(sendTime.minute).toBe(0);
+
+      // Step 4: Update scheduled_send_time to NOW to trigger immediate processing
+      await pool.query(
+        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1',
+        [message.id]
+      );
+
+      // Step 5: Trigger minute scheduler to enqueue message
+      const enqueuedCount = await scheduler.enqueueUpcomingMessages();
+      expect(enqueuedCount).toBeGreaterThanOrEqual(1);
+
+      // Step 6: Verify message status updated to QUEUED
+      await waitFor(async () => {
+        const messages = await findMessageLogsByUserId(pool, user.id);
+        return messages[0].status === MessageStatus.QUEUED;
+      }, 5000);
+
+      // Step 7: Publish message to RabbitMQ
+      const queuedMessages = await findMessageLogsByUserId(pool, user.id);
+      await publisher.publishMessage({
+        messageId: queuedMessages[0].id!,
+        userId: user.id,
+        messageType: 'BIRTHDAY',
+        scheduledSendTime: queuedMessages[0].scheduledSendTime.toISOString(),
+        timestamp: Date.now(),
+        retryCount: 0,
+      });
+
+      // Step 8: Start worker to process message
+      await worker.start();
+
+      // Step 9: Wait for worker to process message
+      await waitFor(async () => {
+        const messages = await findMessageLogsByUserId(pool, user.id);
+        return messages[0].status === MessageStatus.SENT;
+      }, 15000);
+
+      // Step 10: Verify message status updated to SENT
+      const sentMessages = await findMessageLogsByUserId(pool, user.id);
+      expect(sentMessages[0].status).toBe(MessageStatus.SENT);
+      expect(sentMessages[0].actualSendTime).toBeDefined();
+      expect(sentMessages[0].apiResponseCode).toBeDefined();
+
+      // Step 11: Verify external API was called
+      await waitFor(async () => {
+        return mockEmailServer.getRequestCount() > 0;
+      }, 5000);
+
+      expect(mockEmailServer.getRequestCount()).toBeGreaterThanOrEqual(1);
+
+      const lastRequest = mockEmailServer.getLastRequest();
+      expect(lastRequest).toBeDefined();
+      expect(lastRequest?.body).toMatchObject({
+        email: 'john.doe@test.com',
+        firstName: 'John',
+        messageType: 'BIRTHDAY',
+      });
+      expect(lastRequest?.body.messageContent).toContain('John');
+
+      // Step 12: Verify no duplicate messages
+      const finalMessages = await findMessageLogsByUserId(pool, user.id);
+      expect(finalMessages).toHaveLength(1);
+
+      // Stop worker
+      await worker.stop();
+    }, 60000);
+
+    it('should prevent duplicate messages with idempotency', async () => {
+      const timezone = 'UTC';
+      const today = DateTime.now().setZone(timezone);
+      const birthdayDate = today.set({ year: 1985, hour: 0, minute: 0 }).toJSDate();
+
+      const user = await insertUser(pool, {
+        firstName: 'Jane',
+        lastName: 'Smith',
+        email: 'jane.smith@test.com',
+        timezone,
+        birthdayDate,
+        anniversaryDate: null,
+      });
+
+      // First run - should create message
+      const stats1 = await scheduler.preCalculateTodaysBirthdays();
+      expect(stats1.messagesScheduled).toBe(1);
+
+      // Second run - should skip (idempotency)
+      const stats2 = await scheduler.preCalculateTodaysBirthdays();
+      expect(stats2.duplicatesSkipped).toBe(1);
+      expect(stats2.messagesScheduled).toBe(0);
+
+      // Verify only one message exists
+      const messages = await findMessageLogsByUserId(pool, user.id);
+      expect(messages).toHaveLength(1);
+    });
+
+    it('should handle both birthday and anniversary messages for same user', async () => {
+      const timezone = 'Europe/London';
+      const today = DateTime.now().setZone(timezone);
+
+      const user = await insertUser(pool, {
+        firstName: 'Alice',
+        lastName: 'Johnson',
+        email: 'alice.johnson@test.com',
+        timezone,
+        birthdayDate: today.set({ year: 1992, hour: 0, minute: 0 }).toJSDate(),
+        anniversaryDate: today.set({ year: 2020, hour: 0, minute: 0 }).toJSDate(),
+      });
+
+      // Run scheduler
+      const stats = await scheduler.preCalculateTodaysBirthdays();
+      expect(stats.messagesScheduled).toBe(2); // Birthday + Anniversary
+
+      // Verify both messages created
+      await waitFor(async () => {
+        const messages = await findMessageLogsByUserId(pool, user.id);
+        return messages.length === 2;
+      }, 10000);
+
+      const messages = await findMessageLogsByUserId(pool, user.id);
+      expect(messages).toHaveLength(2);
+
+      const messageTypes = messages.map((m) => m.messageType).sort();
+      expect(messageTypes).toEqual(['ANNIVERSARY', 'BIRTHDAY']);
+
+      // Verify both have unique idempotency keys
+      const idempotencyKeys = messages.map((m) => m.idempotencyKey);
+      expect(new Set(idempotencyKeys).size).toBe(2);
+    });
+  });
+
+  describe('Message timing accuracy', () => {
+    it('should schedule message at exactly 9am in user timezone', async () => {
+      const timezones = [
+        'America/New_York',
+        'Europe/London',
+        'Asia/Tokyo',
+        'Australia/Sydney',
+      ];
+
+      for (const timezone of timezones) {
+        const today = DateTime.now().setZone(timezone);
+        const birthdayDate = today.set({ year: 1990 }).toJSDate();
+
+        const user = await insertUser(pool, {
+          firstName: 'User',
+          lastName: timezone,
+          email: `user-${timezone}@test.com`,
+          timezone,
+          birthdayDate,
+          anniversaryDate: null,
+        });
+
+        await scheduler.preCalculateTodaysBirthdays();
+
+        const messages = await findMessageLogsByUserId(pool, user.id);
+        expect(messages).toHaveLength(1);
+
+        // Verify send time is 9am in user's timezone
+        const sendTime = DateTime.fromJSDate(messages[0].scheduledSendTime).setZone(timezone);
+        expect(sendTime.hour).toBe(9);
+        expect(sendTime.minute).toBe(0);
+        expect(sendTime.second).toBe(0);
+      }
+    });
+
+    it('should calculate correct UTC send time for different timezones', async () => {
+      const timezone1 = 'America/Los_Angeles'; // UTC-8
+      const timezone2 = 'Asia/Tokyo'; // UTC+9
+
+      const today = DateTime.now();
+
+      const user1 = await insertUser(pool, {
+        firstName: 'User1',
+        lastName: 'LA',
+        email: 'user1@test.com',
+        timezone: timezone1,
+        birthdayDate: today.setZone(timezone1).set({ year: 1990 }).toJSDate(),
+        anniversaryDate: null,
+      });
+
+      const user2 = await insertUser(pool, {
+        firstName: 'User2',
+        lastName: 'Tokyo',
+        email: 'user2@test.com',
+        timezone: timezone2,
+        birthdayDate: today.setZone(timezone2).set({ year: 1990 }).toJSDate(),
+        anniversaryDate: null,
+      });
+
+      await scheduler.preCalculateTodaysBirthdays();
+
+      const messages1 = await findMessageLogsByUserId(pool, user1.id);
+      const messages2 = await findMessageLogsByUserId(pool, user2.id);
+
+      // Tokyo should be sent much earlier in UTC time than LA
+      const utcTime1 = DateTime.fromJSDate(messages1[0].scheduledSendTime).setZone('UTC');
+      const utcTime2 = DateTime.fromJSDate(messages2[0].scheduledSendTime).setZone('UTC');
+
+      // Tokyo (UTC+9) 9am = 00:00 UTC
+      // LA (UTC-8) 9am = 17:00 UTC
+      // Difference should be about 17 hours
+      const diffHours = utcTime1.diff(utcTime2, 'hours').hours;
+      expect(Math.abs(diffHours)).toBeGreaterThan(10); // At least 10 hours difference
+    });
+  });
+
+  describe('Worker processing behavior', () => {
+    it('should skip already sent messages (idempotency)', async () => {
+      const user = await insertUser(pool, {
+        firstName: 'Bob',
+        lastName: 'Wilson',
+        email: 'bob.wilson@test.com',
+        timezone: 'UTC',
+        birthdayDate: DateTime.now().set({ year: 1990 }).toJSDate(),
+        anniversaryDate: null,
+      });
+
+      await scheduler.preCalculateTodaysBirthdays();
+
+      const messages = await findMessageLogsByUserId(pool, user.id);
+      const messageId = messages[0].id!;
+
+      // Manually mark as SENT
+      await pool.query(
+        'UPDATE message_logs SET status = $1, actual_send_time = NOW() WHERE id = $2',
+        [MessageStatus.SENT, messageId]
+      );
+
+      // Try to process again - should be skipped
+      await publisher.publishMessage({
+        messageId,
+        userId: user.id,
+        messageType: 'BIRTHDAY',
+        scheduledSendTime: messages[0].scheduledSendTime.toISOString(),
+        timestamp: Date.now(),
+        retryCount: 0,
+      });
+
+      await worker.start();
+      await sleep(3000);
+      await worker.stop();
+
+      // Email API should not be called again
+      expect(mockEmailServer.getRequestCount()).toBe(0);
+
+      // Status should remain SENT
+      const finalMessages = await findMessageLogsByUserId(pool, user.id);
+      expect(finalMessages[0].status).toBe(MessageStatus.SENT);
+    });
+
+    it('should track message processing time', async () => {
+      const user = await insertUser(pool, {
+        firstName: 'Carol',
+        lastName: 'Davis',
+        email: 'carol.davis@test.com',
+        timezone: 'UTC',
+        birthdayDate: DateTime.now().set({ year: 1990 }).toJSDate(),
+        anniversaryDate: null,
+      });
+
+      await scheduler.preCalculateTodaysBirthdays();
+
+      const messages = await findMessageLogsByUserId(pool, user.id);
+      const scheduledTime = messages[0].scheduledSendTime;
+
+      // Update to trigger immediate processing
+      await pool.query(
+        'UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1',
+        [messages[0].id]
+      );
+
+      await scheduler.enqueueUpcomingMessages();
+      await publisher.publishMessage({
+        messageId: messages[0].id!,
+        userId: user.id,
+        messageType: 'BIRTHDAY',
+        scheduledSendTime: messages[0].scheduledSendTime.toISOString(),
+        timestamp: Date.now(),
+        retryCount: 0,
+      });
+
+      const startTime = Date.now();
+      await worker.start();
+
+      await waitFor(async () => {
+        const msgs = await findMessageLogsByUserId(pool, user.id);
+        return msgs[0].status === MessageStatus.SENT;
+      }, 15000);
+
+      const processingTime = Date.now() - startTime;
+
+      await worker.stop();
+
+      // Processing should be reasonably fast (< 10 seconds)
+      expect(processingTime).toBeLessThan(10000);
+
+      const sentMessages = await findMessageLogsByUserId(pool, user.id);
+      expect(sentMessages[0].actualSendTime).toBeDefined();
+
+      // Verify actual send time is close to scheduled time (within 1 hour for this test)
+      const actualTime = DateTime.fromJSDate(sentMessages[0].actualSendTime!);
+      const scheduledDateTime = DateTime.fromJSDate(scheduledTime);
+      const diff = Math.abs(actualTime.diff(scheduledDateTime, 'minutes').minutes);
+
+      // Should be sent within reasonable time of scheduled time
+      expect(diff).toBeLessThan(60);
+    });
+  });
+
+  describe('Scheduler statistics and monitoring', () => {
+    it('should provide accurate scheduler statistics', async () => {
+      // Create 5 users with birthdays today
+      for (let i = 0; i < 5; i++) {
+        await insertUser(pool, {
+          firstName: `User${i}`,
+          lastName: 'Test',
+          email: `user${i}@test.com`,
+          timezone: 'UTC',
+          birthdayDate: DateTime.now().set({ year: 1990 - i }).toJSDate(),
+          anniversaryDate: null,
+        });
+      }
+
+      await scheduler.preCalculateTodaysBirthdays();
+
+      const stats = await scheduler.getSchedulerStats();
+
+      expect(stats.scheduledCount).toBeGreaterThanOrEqual(5);
+      expect(stats.queuedCount).toBe(0); // None queued yet
+      expect(stats.sentCount).toBe(0); // None sent yet
+      expect(stats.nextScheduled).toBeDefined();
+    });
+  });
+});

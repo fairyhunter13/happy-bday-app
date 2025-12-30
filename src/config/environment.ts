@@ -41,9 +41,9 @@ const environmentSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.coerce.number().int().nonnegative().default(0),
 
-  // Message Service
-  MESSAGE_API_URL: z.string().url().default('http://localhost:3001/api/messages'),
-  MESSAGE_SERVICE_TIMEOUT: z.coerce.number().int().positive().default(10000),
+  // Email Service (Digital Envision vendor)
+  EMAIL_SERVICE_URL: z.string().url().default('https://email-service.digitalenvision.com.au'),
+  EMAIL_SERVICE_TIMEOUT: z.coerce.number().int().positive().default(30000),
 
   // Queue Configuration
   QUEUE_CONCURRENCY: z.coerce.number().int().positive().default(5),

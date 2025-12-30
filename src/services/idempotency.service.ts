@@ -46,12 +46,7 @@ export class IdempotencyService {
    * generateKey('abc-123', 'BIRTHDAY', new Date('2025-12-30'))
    * // Returns: "abc-123:BIRTHDAY:2025-12-30"
    */
-  generateKey(
-    userId: string,
-    messageType: string,
-    date: Date,
-    timezone: string = 'UTC'
-  ): string {
+  generateKey(userId: string, messageType: string, date: Date, timezone: string = 'UTC'): string {
     // Validate inputs
     if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
       throw new ValidationError('userId must be a non-empty string');
@@ -71,7 +66,9 @@ export class IdempotencyService {
     }
 
     if (messageType.includes(this.SEPARATOR)) {
-      throw new ValidationError(`messageType cannot contain separator character '${this.SEPARATOR}'`);
+      throw new ValidationError(
+        `messageType cannot contain separator character '${this.SEPARATOR}'`
+      );
     }
 
     // Format date in the specified timezone
@@ -132,10 +129,7 @@ export class IdempotencyService {
       throw new ValidationError(`Invalid date format in key: ${date}`);
     }
 
-    logger.debug(
-      { key, userId, messageType, date },
-      'Parsed idempotency key'
-    );
+    logger.debug({ key, userId, messageType, date }, 'Parsed idempotency key');
 
     return {
       userId,
@@ -172,7 +166,7 @@ export class IdempotencyService {
     }
 
     // Validate each part is non-empty
-    if (parts.some(part => part.trim().length === 0)) {
+    if (parts.some((part) => part.trim().length === 0)) {
       return false;
     }
 
@@ -264,7 +258,7 @@ export class IdempotencyService {
     date: Date,
     timezone: string = 'UTC'
   ): string[] {
-    return users.map(userId => this.generateKey(userId, messageType, date, timezone));
+    return users.map((userId) => this.generateKey(userId, messageType, date, timezone));
   }
 
   /**

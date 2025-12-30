@@ -1,0 +1,90 @@
+# Spectral OpenAPI Linting Configuration
+# https://meta.stoplight.io/docs/spectral/
+
+extends:
+  - spectral:oas
+
+rules:
+  # Require operation IDs for all operations
+  operation-operationId: error
+
+  # Require descriptions for all operations
+  operation-description: error
+
+  # Require summaries for all operations
+  operation-summary: error
+
+  # Require tags for all operations
+  operation-tags: error
+
+  # Require examples in all responses
+  oas3-valid-media-example: warn
+
+  # Require descriptions for all parameters
+  operation-parameters: error
+
+  # Ensure all operations have success response
+  operation-success-response: error
+
+  # Require contact information
+  info-contact: error
+
+  # Require license information
+  info-license: error
+
+  # Require API description
+  info-description: error
+
+  # Limit line length for better readability
+  line-length:
+    severity: warn
+    given: $..*
+    then:
+      function: length
+      functionOptions:
+        max: 200
+
+  # Ensure all schemas have descriptions
+  oas3-schema-description:
+    severity: warn
+    given: $.components.schemas[*]
+    then:
+      field: description
+      function: truthy
+
+  # Require examples for request bodies
+  oas3-request-body-examples:
+    severity: warn
+    given: $.paths[*][*].requestBody.content[*]
+    then:
+      field: examples
+      function: truthy
+
+  # Ensure error responses have proper status codes
+  oas3-error-response-status-codes:
+    severity: error
+    given: $.paths[*][*].responses
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ['400']
+            - required: ['404']
+            - required: ['500']
+
+  # Prevent duplicate operation IDs
+  operation-operationId-unique: error
+
+  # Ensure proper HTTP methods
+  oas3-valid-http-methods: error
+
+  # Tag names should be lowercase with hyphens
+  tag-names-kebab-case:
+    severity: warn
+    given: $.tags[*].name
+    then:
+      function: pattern
+      functionOptions:
+        match: '^[a-z][a-z0-9-]*$'

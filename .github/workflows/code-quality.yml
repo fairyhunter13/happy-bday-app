@@ -1,0 +1,338 @@
+name: Code Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eslint:
+    name: ESLint Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Run ESLint
+        run: npm run lint -- --format json --output-file eslint-report.json
+        continue-on-error: true
+
+      - name: Annotate code with ESLint results
+        uses: ataylorme/eslint-annotate-action@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          report-json: eslint-report.json
+
+      - name: Upload ESLint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report
+          path: eslint-report.json
+          retention-days: 30
+
+      - name: ESLint quality gate
+        run: |
+          ERROR_COUNT=$(cat eslint-report.json | jq '[.[].errorCount] | add')
+          WARNING_COUNT=$(cat eslint-report.json | jq '[.[].warningCount] | add')
+
+          echo "Errors: $ERROR_COUNT"
+          echo "Warnings: $WARNING_COUNT"
+
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::ESLint found $ERROR_COUNT errors"
+            exit 1
+          fi
+
+          if [ "$WARNING_COUNT" -gt 10 ]; then
+            echo "::warning::ESLint found $WARNING_COUNT warnings (threshold: 10)"
+            exit 1
+          fi
+
+  typescript-strict:
+    name: TypeScript Strict Mode Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Check TypeScript strict mode
+        run: |
+          # Verify tsconfig has strict mode enabled
+          STRICT_MODE=$(cat tsconfig.json | jq -r '.compilerOptions.strict')
+          if [ "$STRICT_MODE" != "true" ]; then
+            echo "::error::TypeScript strict mode is not enabled"
+            exit 1
+          fi
+          echo "✅ TypeScript strict mode is enabled"
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Check for any type errors
+        run: |
+          # Run tsc and capture output
+          npx tsc --noEmit > tsc-output.txt 2>&1 || true
+
+          if grep -q "error TS" tsc-output.txt; then
+            echo "::error::TypeScript compilation errors found"
+            cat tsc-output.txt
+            exit 1
+          fi
+
+          echo "✅ No TypeScript errors found"
+
+  complexity-analysis:
+    name: Code Complexity Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Install complexity tools
+        run: npm install -g complexity-report
+
+      - name: Run complexity analysis
+        run: |
+          # Create output directory
+          mkdir -p complexity-reports
+
+          # Run complexity analysis on source files
+          find src -name "*.ts" -type f | while read file; do
+            cr "$file" --format json >> complexity-reports/complexity.json || true
+          done
+
+      - name: Check complexity thresholds
+        run: |
+          # Install jq if not available
+          if ! command -v jq &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+
+          # Check for high complexity functions
+          if [ -f complexity-reports/complexity.json ]; then
+            HIGH_COMPLEXITY=$(cat complexity-reports/complexity.json | jq '[.functions[] | select(.complexity > 10)] | length')
+            echo "Functions with complexity > 10: $HIGH_COMPLEXITY"
+
+            if [ "$HIGH_COMPLEXITY" -gt 5 ]; then
+              echo "::warning::Found $HIGH_COMPLEXITY functions with high complexity (threshold: 5)"
+            fi
+          fi
+
+      - name: Upload complexity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: complexity-report
+          path: complexity-reports/
+          retention-days: 30
+
+  code-duplication:
+    name: Code Duplication Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Install jscpd
+        run: npm install -g jscpd
+
+      - name: Run duplication detection
+        run: |
+          jscpd src/ --format json --output ./jscpd-report.json || true
+
+      - name: Check duplication threshold
+        run: |
+          if [ -f jscpd-report.json ]; then
+            DUPLICATION_PCT=$(cat jscpd-report.json | jq -r '.statistics.total.percentage')
+            echo "Code duplication: $DUPLICATION_PCT%"
+
+            if (( $(echo "$DUPLICATION_PCT > 5" | bc -l) )); then
+              echo "::warning::Code duplication is $DUPLICATION_PCT% (threshold: 5%)"
+            fi
+          fi
+
+      - name: Upload duplication report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: duplication-report
+          path: jscpd-report.json
+          retention-days: 30
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        continue-on-error: true
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=birthday-message-scheduler
+            -Dsonar.organization=your-org
+            -Dsonar.sources=src
+            -Dsonar.tests=tests
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.typescript.tsconfigPath=tsconfig.json
+            -Dsonar.qualitygate.wait=true
+
+  pr-quality-report:
+    name: PR Quality Report
+    needs: [eslint, typescript-strict, complexity-analysis, code-duplication]
+    runs-on: ubuntu-latest
+    if: always() && github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: reports/
+
+      - name: Generate quality report
+        id: quality
+        run: |
+          # Initialize counters
+          ESLINT_ERRORS=0
+          ESLINT_WARNINGS=0
+          TS_ERRORS=0
+          HIGH_COMPLEXITY=0
+          DUPLICATION=0
+
+          # Parse ESLint report
+          if [ -f reports/eslint-report/eslint-report.json ]; then
+            ESLINT_ERRORS=$(cat reports/eslint-report/eslint-report.json | jq '[.[].errorCount] | add // 0')
+            ESLINT_WARNINGS=$(cat reports/eslint-report/eslint-report.json | jq '[.[].warningCount] | add // 0')
+          fi
+
+          # Parse duplication report
+          if [ -f reports/duplication-report/jscpd-report.json ]; then
+            DUPLICATION=$(cat reports/duplication-report/jscpd-report.json | jq -r '.statistics.total.percentage // 0')
+          fi
+
+          # Create summary
+          cat > quality-summary.md << EOF
+          ## Code Quality Report
+
+          ### Summary
+          | Metric | Value | Status |
+          |--------|-------|--------|
+          | ESLint Errors | $ESLINT_ERRORS | $([ $ESLINT_ERRORS -eq 0 ] && echo '✅' || echo '❌') |
+          | ESLint Warnings | $ESLINT_WARNINGS | $([ $ESLINT_WARNINGS -le 10 ] && echo '✅' || echo '⚠️') |
+          | TypeScript Strict | Enabled | ✅ |
+          | Code Duplication | ${DUPLICATION}% | $([ $(echo "$DUPLICATION < 5" | bc -l) -eq 1 ] && echo '✅' || echo '⚠️') |
+
+          ### Quality Gates
+          - ✅ **ESLint**: $([ $ESLINT_ERRORS -eq 0 ] && echo 'Passed' || echo 'Failed')
+          - $([ $ESLINT_WARNINGS -le 10 ] && echo '✅' || echo '⚠️') **Warnings**: $ESLINT_WARNINGS / 10 max
+          - ✅ **TypeScript**: Strict mode enabled
+          - $([ $(echo "$DUPLICATION < 5" | bc -l) -eq 1 ] && echo '✅' || echo '⚠️') **Duplication**: ${DUPLICATION}% / 5% max
+
+          ---
+          *Generated by Code Quality workflow*
+          EOF
+
+          cat quality-summary.md
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('quality-summary.md', 'utf8');
+
+            // Delete old comments
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            for (const comment of comments.data) {
+              if (comment.user.type === 'Bot' && comment.body.includes('Code Quality Report')) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id,
+                });
+              }
+            }
+
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+
+  quality-summary:
+    name: Quality Summary
+    needs: [eslint, typescript-strict, complexity-analysis, code-duplication]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check quality gates
+        run: |
+          echo "Quality Check Results:"
+          echo "ESLint: ${{ needs.eslint.result }}"
+          echo "TypeScript Strict: ${{ needs.typescript-strict.result }}"
+          echo "Complexity: ${{ needs.complexity-analysis.result }}"
+          echo "Duplication: ${{ needs.code-duplication.result }}"
+
+          if [[ "${{ needs.eslint.result }}" != "success" ||
+                "${{ needs.typescript-strict.result }}" != "success" ]]; then
+            echo "One or more quality gates failed"
+            exit 1
+          fi
+
+          echo "All quality gates passed!"

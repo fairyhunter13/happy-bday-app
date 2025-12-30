@@ -1,56 +1,121 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import type { HealthCheckResponse } from '../types/index.js';
+import { healthCheckService, type HealthCheckService } from '../services/health-check.service.js';
 import { logger } from '../config/logger.js';
-import { version } from '../../package.json' assert { type: 'json' };
 
 /**
- * Health check controller
- * Provides endpoints for monitoring application and service health
+ * Health Check Controller
+ *
+ * Provides endpoints for monitoring application and service health:
+ * - GET /health - Basic health check
+ * - GET /health/detailed - Detailed health with all components
+ * - GET /health/ready - Readiness probe (Kubernetes)
+ * - GET /health/live - Liveness probe (Kubernetes)
  */
-
 export class HealthController {
+  constructor(private readonly healthService: HealthCheckService = healthCheckService) {
+    logger.debug('HealthController initialized');
+  }
+
   /**
    * Basic health check endpoint
-   * Returns application uptime and version
+   * Returns simple health status
+   *
+   * GET /health
    */
   async getHealth(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const response: HealthCheckResponse = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version,
-      services: {
-        database: 'healthy', // TODO: Implement actual database health check
-        rabbitmq: 'healthy', // TODO: Implement actual RabbitMQ health check
-      },
-    };
+    try {
+      const response = await this.healthService.getSimpleHealth();
 
-    logger.debug({ response }, 'Health check performed');
+      logger.debug({ response }, 'Basic health check performed');
 
-    await reply.status(200).send(response);
+      await reply.status(200).send(response);
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Health check failed'
+      );
+
+      await reply.status(503).send({
+        status: 'down',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  /**
+   * Detailed health check endpoint
+   * Returns comprehensive health status of all components
+   *
+   * GET /health/detailed
+   */
+  async getDetailedHealth(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const response = await this.healthService.getDetailedHealth();
+
+      logger.debug(
+        {
+          status: response.status,
+          database: response.services.database.healthy,
+          rabbitmq: response.services.rabbitmq.healthy,
+          circuitBreaker: response.services.circuitBreaker.healthy,
+        },
+        'Detailed health check performed'
+      );
+
+      // Return 200 for ok, 200 for degraded (partial), 503 for down
+      const statusCode = response.status === 'down' ? 503 : 200;
+
+      await reply.status(statusCode).send(response);
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Detailed health check failed'
+      );
+
+      await reply.status(503).send({
+        status: 'down',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   /**
    * Readiness probe for Kubernetes/orchestration
    * Checks if the application is ready to accept traffic
+   *
+   * Returns 200 if ready, 503 if not ready
+   *
+   * GET /health/ready
    */
   async getReady(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    // TODO: Implement actual readiness checks
-    // - Database connection pool ready
-    // - RabbitMQ connection established
-    // - Critical services initialized
+    try {
+      const isReady = await this.healthService.isReady();
 
-    const isReady = true; // Placeholder
+      logger.debug({ isReady }, 'Readiness check performed');
 
-    if (isReady) {
-      await reply.status(200).send({
-        status: 'ready',
-        timestamp: new Date().toISOString(),
-      });
-    } else {
+      if (isReady) {
+        await reply.status(200).send({
+          status: 'ready',
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        await reply.status(503).send({
+          status: 'not_ready',
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Readiness check failed'
+      );
+
       await reply.status(503).send({
         status: 'not_ready',
         timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -58,12 +123,37 @@ export class HealthController {
   /**
    * Liveness probe for Kubernetes/orchestration
    * Checks if the application is alive and should not be restarted
+   *
+   * Returns 200 if alive
+   *
+   * GET /health/live
    */
   async getLive(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    // Simple liveness check - if this endpoint responds, the app is alive
-    await reply.status(200).send({
-      status: 'alive',
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      const isLive = await this.healthService.isLive();
+
+      logger.debug({ isLive }, 'Liveness check performed');
+
+      await reply.status(200).send({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      // If we can execute this code, the service is still somewhat alive
+      // Return 500 instead of 503
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error) },
+        'Liveness check encountered error'
+      );
+
+      await reply.status(500).send({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 }
+
+// Export singleton instance
+export const healthController = new HealthController();

@@ -1,0 +1,31 @@
+name: 'Setup Node.js App'
+description: 'Setup Node.js and install dependencies (DRY: Reusable Node.js setup)'
+author: 'Birthday Message Scheduler Team'
+
+inputs:
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  install-dependencies:
+    description: 'Whether to install npm dependencies'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: npm ci
+
+branding:
+  icon: 'package'
+  color: 'green'

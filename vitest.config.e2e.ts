@@ -1,21 +1,28 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import baseConfig from './vitest.config.base';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['tests/e2e/**/*.test.ts'],
-    exclude: ['node_modules', 'dist'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-    },
-    testTimeout: 120000, // 2 minutes for E2E tests
-    hookTimeout: 120000,
-    poolOptions: {
-      threads: {
-        singleThread: true, // Run E2E tests sequentially
+/**
+ * End-to-End Test Configuration
+ * Full system tests with all components running
+ * DRY: Extends base config with e2e-specific settings
+ */
+export default mergeConfig(
+  baseConfig,
+  defineConfig({
+    test: {
+      // Only include e2e tests
+      include: ['tests/e2e/**/*.test.ts'],
+
+      // Long timeout for e2e tests (full system startup)
+      testTimeout: 120000,  // 2 minutes
+      hookTimeout: 120000,
+
+      // Run e2e tests sequentially to avoid port conflicts
+      poolOptions: {
+        threads: {
+          singleThread: true,
+        },
       },
     },
-  },
-});
+  })
+);

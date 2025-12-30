@@ -54,10 +54,7 @@ export class MessageLogRepository {
    * @returns Message log or null if not found
    * @throws DatabaseError on database failure
    */
-  async findById(
-    id: string,
-    tx?: TransactionType
-  ): Promise<MessageLog | null> {
+  async findById(id: string, tx?: TransactionType): Promise<MessageLog | null> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -68,10 +65,7 @@ export class MessageLogRepository {
 
       return result[0] ?? null;
     } catch (error) {
-      throw new DatabaseError(
-        `Failed to find message log by ID: ${id}`,
-        { error, id }
-      );
+      throw new DatabaseError(`Failed to find message log by ID: ${id}`, { error, id });
     }
   }
 
@@ -82,10 +76,7 @@ export class MessageLogRepository {
    * @returns Array of message logs
    * @throws DatabaseError on database failure
    */
-  async findByUserId(
-    userId: string,
-    tx?: TransactionType
-  ): Promise<MessageLog[]> {
+  async findByUserId(userId: string, tx?: TransactionType): Promise<MessageLog[]> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -96,10 +87,7 @@ export class MessageLogRepository {
 
       return result;
     } catch (error) {
-      throw new DatabaseError(
-        `Failed to find message logs for user: ${userId}`,
-        { error, userId }
-      );
+      throw new DatabaseError(`Failed to find message logs for user: ${userId}`, { error, userId });
     }
   }
 
@@ -114,11 +102,7 @@ export class MessageLogRepository {
    * @returns Array of message logs
    * @throws DatabaseError on database failure
    */
-  async findScheduled(
-    startTime: Date,
-    endTime: Date,
-    tx?: TransactionType
-  ): Promise<MessageLog[]> {
+  async findScheduled(startTime: Date, endTime: Date, tx?: TransactionType): Promise<MessageLog[]> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -135,10 +119,7 @@ export class MessageLogRepository {
 
       return result;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find scheduled messages',
-        { error, startTime, endTime }
-      );
+      throw new DatabaseError('Failed to find scheduled messages', { error, startTime, endTime });
     }
   }
 
@@ -177,10 +158,7 @@ export class MessageLogRepository {
 
       return result;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find missed messages',
-        { error }
-      );
+      throw new DatabaseError('Failed to find missed messages', { error });
     }
   }
 
@@ -191,10 +169,7 @@ export class MessageLogRepository {
    * @returns Array of message logs
    * @throws DatabaseError on database failure
    */
-  async findAll(
-    filters?: MessageLogFiltersDto,
-    tx?: TransactionType
-  ): Promise<MessageLog[]> {
+  async findAll(filters?: MessageLogFiltersDto, tx?: TransactionType): Promise<MessageLog[]> {
     try {
       const dbInstance = tx || this.database;
       const conditions = [];
@@ -229,10 +204,7 @@ export class MessageLogRepository {
 
       return await query;
     } catch (error) {
-      throw new DatabaseError(
-        'Failed to find message logs',
-        { error, filters }
-      );
+      throw new DatabaseError('Failed to find message logs', { error, filters });
     }
   }
 
@@ -244,10 +216,7 @@ export class MessageLogRepository {
    * @throws UniqueConstraintError if idempotency key already exists
    * @throws DatabaseError on database failure
    */
-  async create(
-    data: CreateMessageLogDto,
-    tx?: TransactionType
-  ): Promise<MessageLog> {
+  async create(data: CreateMessageLogDto, tx?: TransactionType): Promise<MessageLog> {
     try {
       const dbInstance = tx || this.database;
 
@@ -270,10 +239,7 @@ export class MessageLogRepository {
         retryCount: data.retryCount ?? 0,
       };
 
-      const result = await dbInstance
-        .insert(messageLogs)
-        .values(newMessageLog)
-        .returning();
+      const result = await dbInstance.insert(messageLogs).values(newMessageLog).returning();
 
       return result[0]!;
     } catch (error) {
@@ -282,22 +248,14 @@ export class MessageLogRepository {
       }
 
       // Check for PostgreSQL unique constraint violation (23505)
-      if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
-        error.code === '23505'
-      ) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         throw new UniqueConstraintError(
           `Message with idempotency key ${data.idempotencyKey} already exists`,
           { error, idempotencyKey: data.idempotencyKey }
         );
       }
 
-      throw new DatabaseError(
-        'Failed to create message log',
-        { error, data }
-      );
+      throw new DatabaseError('Failed to create message log', { error, data });
     }
   }
 
@@ -321,10 +279,7 @@ export class MessageLogRepository {
       // Check if message exists
       const existing = await this.findById(id, tx);
       if (!existing) {
-        throw new NotFoundError(
-          `Message log with ID ${id} not found`,
-          { id }
-        );
+        throw new NotFoundError(`Message log with ID ${id} not found`, { id });
       }
 
       const result = await dbInstance
@@ -342,10 +297,7 @@ export class MessageLogRepository {
         throw error;
       }
 
-      throw new DatabaseError(
-        `Failed to update message status: ${id}`,
-        { error, id, status }
-      );
+      throw new DatabaseError(`Failed to update message status: ${id}`, { error, id, status });
     }
   }
 
@@ -365,21 +317,14 @@ export class MessageLogRepository {
    * @throws NotFoundError if message not found
    * @throws DatabaseError on database failure
    */
-  async markAsSent(
-    id: string,
-    response: MarkAsSentDto,
-    tx?: TransactionType
-  ): Promise<MessageLog> {
+  async markAsSent(id: string, response: MarkAsSentDto, tx?: TransactionType): Promise<MessageLog> {
     try {
       const dbInstance = tx || this.database;
 
       // Check if message exists
       const existing = await this.findById(id, tx);
       if (!existing) {
-        throw new NotFoundError(
-          `Message log with ID ${id} not found`,
-          { id }
-        );
+        throw new NotFoundError(`Message log with ID ${id} not found`, { id });
       }
 
       const result = await dbInstance
@@ -400,10 +345,7 @@ export class MessageLogRepository {
         throw error;
       }
 
-      throw new DatabaseError(
-        `Failed to mark message as sent: ${id}`,
-        { error, id, response }
-      );
+      throw new DatabaseError(`Failed to mark message as sent: ${id}`, { error, id, response });
     }
   }
 
@@ -438,16 +380,11 @@ export class MessageLogRepository {
       // Check if message exists
       const existing = await this.findById(id, tx);
       if (!existing) {
-        throw new NotFoundError(
-          `Message log with ID ${id} not found`,
-          { id }
-        );
+        throw new NotFoundError(`Message log with ID ${id} not found`, { id });
       }
 
       const newRetryCount = existing.retryCount + 1;
-      const status = newRetryCount >= maxRetries
-        ? MessageStatus.FAILED
-        : MessageStatus.RETRYING;
+      const status = newRetryCount >= maxRetries ? MessageStatus.FAILED : MessageStatus.RETRYING;
 
       const result = await dbInstance
         .update(messageLogs)
@@ -469,10 +406,7 @@ export class MessageLogRepository {
         throw error;
       }
 
-      throw new DatabaseError(
-        `Failed to mark message as failed: ${id}`,
-        { error, id, errorData }
-      );
+      throw new DatabaseError(`Failed to mark message as failed: ${id}`, { error, id, errorData });
     }
   }
 
@@ -484,10 +418,7 @@ export class MessageLogRepository {
    * @returns Message log or null if not found
    * @throws DatabaseError on database failure
    */
-  async checkIdempotency(
-    key: string,
-    tx?: TransactionType
-  ): Promise<MessageLog | null> {
+  async checkIdempotency(key: string, tx?: TransactionType): Promise<MessageLog | null> {
     try {
       const dbInstance = tx || this.database;
       const result = await dbInstance
@@ -498,10 +429,7 @@ export class MessageLogRepository {
 
       return result[0] ?? null;
     } catch (error) {
-      throw new DatabaseError(
-        `Failed to check idempotency key: ${key}`,
-        { error, key }
-      );
+      throw new DatabaseError(`Failed to check idempotency key: ${key}`, { error, key });
     }
   }
 
@@ -521,16 +449,11 @@ export class MessageLogRepository {
    * @returns Result of callback
    * @throws DatabaseError on transaction failure
    */
-  async transaction<T>(
-    callback: (tx: TransactionType) => Promise<T>
-  ): Promise<T> {
+  async transaction<T>(callback: (tx: TransactionType) => Promise<T>): Promise<T> {
     try {
       return await this.database.transaction(callback);
     } catch (error) {
-      throw new DatabaseError(
-        'Transaction failed',
-        { error }
-      );
+      throw new DatabaseError('Transaction failed', { error });
     }
   }
 }

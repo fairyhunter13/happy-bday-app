@@ -13,7 +13,9 @@ import * as schema from './schema';
  */
 
 // Database URL from environment
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres_dev_password@localhost:5432/birthday_app';
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'postgres://postgres:postgres_dev_password@localhost:5432/birthday_app';
 
 // Connection pool configuration
 const poolConfig = {

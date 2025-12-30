@@ -17,7 +17,9 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres_dev_password@localhost:5432/birthday_app';
+const DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'postgres://postgres:postgres_dev_password@localhost:5432/birthday_app';
 
 async function runMigrations() {
   console.log('🚀 Starting database migrations...\n');
@@ -87,11 +89,13 @@ async function createMonthlyPartitions(db: any) {
     if (!partitionExists.rows[0]?.exists) {
       console.log(`  Creating partition: ${partitionName} (${startDateStr} to ${endDateStr})`);
 
-      await db.execute(sql.raw(`
+      await db.execute(
+        sql.raw(`
         CREATE TABLE IF NOT EXISTS ${partitionName}
         PARTITION OF message_logs
         FOR VALUES FROM ('${startDateStr}') TO ('${endDateStr}');
-      `));
+      `)
+      );
     } else {
       console.log(`  Partition already exists: ${partitionName}`);
     }

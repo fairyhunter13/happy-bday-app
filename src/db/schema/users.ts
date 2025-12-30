@@ -17,20 +17,15 @@ export const users = pgTable(
       .primaryKey()
       .default(sql`gen_random_uuid()`),
 
-    firstName: varchar('first_name', { length: 100 })
-      .notNull(),
+    firstName: varchar('first_name', { length: 100 }).notNull(),
 
-    lastName: varchar('last_name', { length: 100 })
-      .notNull(),
+    lastName: varchar('last_name', { length: 100 }).notNull(),
 
-    email: varchar('email', { length: 255 })
-      .notNull()
-      .unique(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
 
     // IANA timezone identifier (e.g., "America/New_York", "Europe/London")
     // This handles DST automatically when using date-fns-tz or luxon
-    timezone: varchar('timezone', { length: 100 })
-      .notNull(),
+    timezone: varchar('timezone', { length: 100 }).notNull(),
 
     // Date fields for different message types
     // Stored as DATE (not TIMESTAMP) - only month/day matters
@@ -44,13 +39,9 @@ export const users = pgTable(
     locationCountry: varchar('location_country', { length: 100 }),
 
     // Timestamps
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
-      .notNull()
-      .defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
 
     // Soft delete support
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),

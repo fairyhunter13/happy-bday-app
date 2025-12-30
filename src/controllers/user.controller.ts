@@ -10,6 +10,7 @@
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { UserRepository } from '../repositories/user.repository.js';
+import { MessageRescheduleService } from '../services/message-reschedule.service.js';
 import { createUserSchema, updateUserSchema } from '../types/dto.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { ValidationError } from '../utils/errors.js';
@@ -46,8 +47,10 @@ interface DeleteUserRequest {
  * Handles all user-related HTTP requests
  */
 export class UserController {
-  // eslint-disable-next-line no-unused-vars
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly messageRescheduleService: MessageRescheduleService = new MessageRescheduleService()
+  ) {}
 
   /**
    * Create a new user
@@ -59,10 +62,7 @@ export class UserController {
    * @throws 400 Bad Request on validation error
    * @throws 409 Conflict if email already exists
    */
-  async create(
-    request: FastifyRequest<CreateUserRequest>,
-    reply: FastifyReply
-  ): Promise<void> {
+  async create(request: FastifyRequest<CreateUserRequest>, reply: FastifyReply): Promise<void> {
     // Validate request body
     const validationResult = createUserSchema.safeParse(request.body);
 
@@ -74,18 +74,12 @@ export class UserController {
 
     const userData = validationResult.data;
 
-    logger.info(
-      { email: userData.email },
-      'Creating new user'
-    );
+    logger.info({ email: userData.email }, 'Creating new user');
 
     // Create user via repository
     const user = await this.userRepository.create(userData);
 
-    logger.info(
-      { userId: user.id, email: user.email },
-      'User created successfully'
-    );
+    logger.info({ userId: user.id, email: user.email }, 'User created successfully');
 
     // Return 201 Created
     await reply.status(201).send(createSuccessResponse(user));
@@ -100,10 +94,7 @@ export class UserController {
    * @returns 200 OK with user data
    * @throws 404 Not Found if user doesn't exist
    */
-  async getById(
-    request: FastifyRequest<GetUserRequest>,
-    reply: FastifyReply
-  ): Promise<void> {
+  async getById(request: FastifyRequest<GetUserRequest>, reply: FastifyReply): Promise<void> {
     const { id } = request.params;
 
     logger.debug({ userId: id }, 'Fetching user by ID');
@@ -136,10 +127,7 @@ export class UserController {
    * @throws 404 Not Found if user doesn't exist
    * @throws 409 Conflict if email already exists
    */
-  async update(
-    request: FastifyRequest<UpdateUserRequest>,
-    reply: FastifyReply
-  ): Promise<void> {
+  async update(request: FastifyRequest<UpdateUserRequest>, reply: FastifyReply): Promise<void> {
     const { id } = request.params;
 
     // Validate request body
@@ -153,27 +141,47 @@ export class UserController {
 
     const updateData = validationResult.data;
 
-    logger.info(
-      { userId: id, updates: Object.keys(updateData) },
-      'Updating user'
-    );
+    logger.info({ userId: id, updates: Object.keys(updateData) }, 'Updating user');
 
     // Update user via repository
     const updatedUser = await this.userRepository.update(id, updateData);
 
-    logger.info(
-      { userId: id },
-      'User updated successfully'
-    );
+    logger.info({ userId: id }, 'User updated successfully');
 
-    // TODO: If timezone or birthday/anniversary dates changed, trigger message rescheduling
-    // This would be handled by a service layer in a production app
-    if (updateData.timezone || updateData.birthdayDate !== undefined || updateData.anniversaryDate !== undefined) {
-      logger.info(
-        { userId: id },
-        'User dates/timezone updated - message rescheduling may be required'
-      );
-      // await messageSchedulerService.rescheduleMessagesForUser(id);
+    // Trigger message rescheduling if timezone or dates changed
+    if (
+      updateData.timezone ||
+      updateData.birthdayDate !== undefined ||
+      updateData.anniversaryDate !== undefined
+    ) {
+      logger.info({ userId: id }, 'User dates/timezone updated - triggering message rescheduling');
+
+      try {
+        const rescheduleResult = await this.messageRescheduleService.rescheduleMessagesForUser(id, {
+          timezone: updateData.timezone,
+          birthdayDate: updateData.birthdayDate,
+          anniversaryDate: updateData.anniversaryDate,
+        });
+
+        logger.info(
+          {
+            userId: id,
+            deletedMessages: rescheduleResult.deletedMessages,
+            rescheduledMessages: rescheduleResult.rescheduledMessages,
+            success: rescheduleResult.success,
+          },
+          'Message rescheduling completed'
+        );
+      } catch (error) {
+        // Log error but don't fail the user update
+        logger.error(
+          {
+            userId: id,
+            error: error instanceof Error ? error.message : String(error),
+          },
+          'Message rescheduling failed, but user update succeeded'
+        );
+      }
     }
 
     await reply.status(200).send(createSuccessResponse(updatedUser));
@@ -188,10 +196,7 @@ export class UserController {
    * @returns 200 OK with success message
    * @throws 404 Not Found if user doesn't exist
    */
-  async delete(
-    request: FastifyRequest<DeleteUserRequest>,
-    reply: FastifyReply
-  ): Promise<void> {
+  async delete(request: FastifyRequest<DeleteUserRequest>, reply: FastifyReply): Promise<void> {
     const { id } = request.params;
 
     logger.info({ userId: id }, 'Soft deleting user');

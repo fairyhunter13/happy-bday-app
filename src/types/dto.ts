@@ -16,10 +16,9 @@ import { MessageStatus, MessageType } from '../db/schema/message-logs.js';
  * IANA timezone validation
  * Common examples: "America/New_York", "Europe/London", "Asia/Tokyo"
  */
-const timezoneSchema = z.string().regex(
-  /^[A-Za-z]+\/[A-Za-z_]+$/,
-  'Invalid IANA timezone format (e.g., "America/New_York")'
-);
+const timezoneSchema = z
+  .string()
+  .regex(/^[A-Za-z]+\/[A-Za-z_]+$/, 'Invalid IANA timezone format (e.g., "America/New_York")');
 
 /**
  * Email validation using RFC 5322 simplified regex
@@ -36,7 +35,10 @@ const uuidSchema = z.string().uuid('Invalid UUID format');
  */
 const dateSchema = z.union([
   z.date(),
-  z.string().datetime().transform((str) => new Date(str)),
+  z
+    .string()
+    .datetime()
+    .transform((str) => new Date(str)),
 ]);
 
 /**
@@ -44,7 +46,10 @@ const dateSchema = z.union([
  */
 const optionalDateSchema = z.union([
   z.date(),
-  z.string().datetime().transform((str) => new Date(str)),
+  z
+    .string()
+    .datetime()
+    .transform((str) => new Date(str)),
   z.undefined(),
 ]);
 
@@ -120,10 +125,7 @@ const messageStatusSchema = z.enum([
 /**
  * Message type enum validation
  */
-const messageTypeSchema = z.enum([
-  MessageType.BIRTHDAY,
-  MessageType.ANNIVERSARY,
-]);
+const messageTypeSchema = z.enum([MessageType.BIRTHDAY, MessageType.ANNIVERSARY]);
 
 /**
  * Create Message Log DTO

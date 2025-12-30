@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Auto-generated code
+src/clients/generated/
+
+# Coverage
+coverage/
+
+# Test results
+test-results/
+perf-results/
+
+# Cache
+.vitest/
+.cache/
