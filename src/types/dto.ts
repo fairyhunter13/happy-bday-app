@@ -44,7 +44,7 @@ const emailSchema = z.string().email('Invalid email format');
 const uuidSchema = z.string().uuid('Invalid UUID format');
 
 /**
- * Date validation - accepts Date object or ISO string
+ * Date validation - accepts Date object, ISO datetime string, or date string (YYYY-MM-DD)
  */
 const dateSchema = z.union([
   z.date(),
@@ -52,16 +52,24 @@ const dateSchema = z.union([
     .string()
     .datetime()
     .transform((str) => new Date(str)),
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+    .transform((str) => new Date(str)),
 ]);
 
 /**
- * Optional date validation
+ * Optional date validation - accepts Date object, ISO datetime string, date string, or undefined
  */
 const optionalDateSchema = z.union([
   z.date(),
   z
     .string()
     .datetime()
+    .transform((str) => new Date(str)),
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
     .transform((str) => new Date(str)),
   z.undefined(),
 ]);
