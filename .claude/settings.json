@@ -42,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-command --command '{}' --validate-safety true --prepare-resources true 2>/dev/null || true"
+            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-command --command '{}' --validate-safety true --prepare-resources true"
           }
         ]
       },
@@ -51,12 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-edit --file '{}' --auto-assign-agents true --load-context true 2>/dev/null || true"
-          },
-          {
-            "type": "prompt",
-            "prompt": "## PRE-EDIT DOCUMENTATION AWARENESS\n\nBefore modifying this file, consider:\n1. Will this edit require README.md updates?\n2. Does this change affect plan/ documentation?\n3. Is this change aligned with project_data/ requirements?\n\nproject_data/ requirements: TypeScript, POST/DELETE/PUT /user, birthday messages at 9am local time, error handling, scalability.\n\nProceed with edit.",
-            "timeout": 10
+            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-edit --file '{}' --auto-assign-agents true --load-context true"
           }
         ]
       }
@@ -67,7 +62,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-command --command '{}' --track-metrics true --store-results true 2>/dev/null || true"
+            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-command --command '{}' --track-metrics true --store-results true"
           }
         ]
       },
@@ -76,16 +71,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true 2>/dev/null || true"
+            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true"
           },
           {
             "type": "command",
-            "command": "/bin/bash -c 'FILE=$(cat | jq -r \".tool_input.file_path // .tool_input.path // empty\"); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx || \"$FILE\" == *.js || \"$FILE\" == *.jsx ]]; then npx eslint --fix \"$FILE\" 2>/dev/null || true; fi'"
-          },
-          {
-            "type": "prompt",
-            "prompt": "## POST-EDIT SYNC CHECK\n\nFile modified. Note if docs need sync:\n- src/ changes -> docs/RUNBOOK.md, plan/05-implementation/\n- tests/ changes -> plan/04-testing/\n- API changes -> README.md API section\n\nQueue updates if needed.",
-            "timeout": 10
+            "command": "/bin/bash -c 'FILE=$(cat | jq -r \".tool_input.file_path // .tool_input.path // empty\"); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx || \"$FILE\" == *.js || \"$FILE\" == *.jsx ]]; then echo \"🔍 Running ESLint on $FILE...\"; npx eslint --fix \"$FILE\" 2>/dev/null && echo \"✅ Linting passed\" || echo \"⚠️ Linting issues found (auto-fixed where possible)\"; fi'"
           }
         ]
       }
@@ -96,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash -c 'echo \"🔄 PreCompact: Review CLAUDE.md for agents, swarm coordination, and SPARC methodology.\"'"
+            "command": "/bin/bash -c 'INPUT=$(cat); CUSTOM=$(echo \"$INPUT\" | jq -r \".custom_instructions // \\\"\\\"\"); echo \"🔄 PreCompact Guidance:\"; echo \"📋 IMPORTANT: Review CLAUDE.md in project root for:\"; echo \"   • 54 available agents and concurrent usage patterns\"; echo \"   • Swarm coordination strategies (hierarchical, mesh, adaptive)\"; echo \"   • SPARC methodology workflows with batchtools optimization\"; echo \"   • Critical concurrent execution rules (GOLDEN RULE: 1 MESSAGE = ALL OPERATIONS)\"; if [ -n \"$CUSTOM\" ]; then echo \"🎯 Custom compact instructions: $CUSTOM\"; fi; echo \"✅ Ready for compact operation\"'"
           }
         ]
       },
@@ -105,7 +95,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash -c 'echo \"🔄 Auto-Compact: Apply GOLDEN RULE - batch operations in single messages.\"'"
+            "command": "/bin/bash -c 'echo \"🔄 Auto-Compact Guidance (Context Window Full):\"; echo \"📋 CRITICAL: Before compacting, ensure you understand:\"; echo \"   • All 54 agents available in .claude/agents/ directory\"; echo \"   • Concurrent execution patterns from CLAUDE.md\"; echo \"   • Batchtools optimization for 300% performance gains\"; echo \"   • Swarm coordination strategies for complex tasks\"; echo \"⚡ Apply GOLDEN RULE: Always batch operations in single messages\"; echo \"✅ Auto-compact proceeding with full agent context\"'"
           }
         ]
       }
@@ -115,20 +105,25 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Session ending. Briefly note any documentation that may need updates next session based on work done. Keep response short.",
-            "timeout": 10
+            "prompt": "## COMPREHENSIVE DOCUMENTATION SYNC\n\n### MANDATORY: Update ALL Related Documentation After Changes\n\nAnalyze modifications made this session and UPDATE all affected documentation:\n\n#### 1. README.md Updates (if changes affect):\n- Project structure (directories changed)\n- Test statistics (tests added/modified)\n- Quick start commands (setup changed)\n- Tech stack (dependencies changed)\n- Key features (functionality changed)\n- API endpoints (API changed)\n\n#### 2. docs/ Updates (if changes affect):\n- `docs/RUNBOOK.md` - Operational procedures\n- `docs/METRICS.md` - Metrics documentation\n- `docs/DEPLOYMENT_GUIDE.md` - Deployment steps\n- `docs/vendor-specs/` - API specifications\n\n#### 3. plan/ Updates (if changes affect):\n- `plan/01-requirements/*.md` - Requirements changes\n- `plan/02-architecture/*.md` - Architecture changes\n- `plan/03-research/*.md` - Research findings\n- `plan/04-testing/*.md` - Test approach changes\n- `plan/05-implementation/master-plan.md` - Implementation status\n- `plan/09-reports/GAP_ANALYSIS_REPORT.md` - Gap status\n\n#### 4. INDEX.md Updates:\n- Update `plan/*/INDEX.md` files to list all files\n- Ensure `docs/README.md` index is current\n\n### Protocol:\n1. IDENTIFY modified files this session\n2. DETERMINE which docs need updates\n3. UPDATE each affected file\n4. VERIFY cross-references\n\nProceed to update documentation. This is mandatory.",
+            "timeout": 120
+          },
+          {
+            "type": "prompt",
+            "prompt": "## REQUIREMENTS VALIDATION & GAP ANALYSIS\n\n### Validate Implementation Against project_data/ Requirements\n\n**Source: project_data/Fullstack Backend Developer Assessment Test.docx.txt**\n\n#### Core Requirements (13 total):\n1. TypeScript implementation\n2. POST /user endpoint - Create users\n3. DELETE /user endpoint - Delete users\n4. PUT /user endpoint (BONUS) - Edit users\n5. User fields: firstName, lastName, birthday, location\n6. Birthday message at 9am local time (timezone-aware)\n7. Email service: email-service.digitalenvision.com.au\n8. Message format: \"Hey, {full_name} it's your birthday\"\n9. Error handling for API errors and timeouts\n10. Recovery mechanism for unsent messages\n11. Scalability: handle thousands of birthdays/day\n12. Abstraction for future message types (anniversary)\n13. Race condition prevention - no duplicate messages\n\n#### Validation Tasks:\n1. Compare src/ implementation against plan/05-implementation/master-plan.md\n2. Check test coverage against plan/04-testing/testing-strategy.md (>=80%)\n3. Verify monitoring against plan/07-monitoring/ specs\n4. Validate queue matches plan/03-research/ findings\n\n#### Gap Report:\nUpdate plan/09-reports/GAP_ANALYSIS_REPORT.md with:\n- Current completion percentage\n- Implemented vs planned endpoints\n- Test coverage vs target\n- Critical gaps needing attention\n\n### Action:\nIf gaps found, update GAP_ANALYSIS_REPORT.md and list high-priority items.\n\nReturn: {\"continue\": boolean, \"requirements_met\": number, \"completion_percentage\": 0-100, \"critical_gaps\": []}",
+            "timeout": 120
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cleanup-unused.sh >/dev/null 2>&1 || true"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cleanup-unused.sh 2>/dev/null || echo 'Cleanup skipped'"
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-commit.sh >/dev/null 2>&1 || true"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-commit.sh 2>/dev/null || echo 'Auto-commit skipped'"
           },
           {
             "type": "command",
-            "command": "npx claude-flow@alpha hooks session-end --generate-summary true --persist-state true --export-metrics true >/dev/null 2>&1 || true"
+            "command": "npx claude-flow@alpha hooks session-end --generate-summary true --persist-state true --export-metrics true"
           }
         ]
       }
