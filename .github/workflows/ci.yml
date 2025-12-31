@@ -64,8 +64,10 @@ jobs:
       - name: Decrypt test secrets
         run: sops --decrypt .env.test.enc > .env.test
 
+      # Use CI-specific config that disables coverage thresholds for sharded tests
+      # Coverage thresholds are checked after merging all shard reports in coverage-report job
       - name: Run unit tests (shard ${{ matrix.shard }})
-        run: npm run test:unit -- --shard=${{ matrix.shard }}/5 --reporter=verbose --coverage
+        run: npx vitest run --config vitest.config.unit-ci.ts --shard=${{ matrix.shard }}/5 --reporter=verbose --coverage
 
       - name: Cleanup decrypted secrets
         if: always()
@@ -77,9 +79,6 @@ jobs:
           name: coverage-unit-shard-${{ matrix.shard }}
           path: coverage/
           retention-days: 7
-
-      - name: Check unit test coverage thresholds
-        run: npm run test:coverage:check
 
   integration-tests:
     name: Integration Tests
