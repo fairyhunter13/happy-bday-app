@@ -373,6 +373,91 @@
         }
       }
     },
+    "/live": {
+      "get": {
+        "summary": "Liveness check",
+        "tags": [
+          "health"
+        ],
+        "description": "Kubernetes liveness probe - checks if the service is alive",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-4"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/schedulers": {
+      "get": {
+        "summary": "Scheduler health check",
+        "tags": [
+          "health"
+        ],
+        "description": "Check the health status of all CRON schedulers",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-6"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "tags": [
+          "metrics"
+        ],
+        "description": "Get Prometheus-formatted metrics for monitoring",
+        "responses": {
+          "200": {
+            "description": "Prometheus text format metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "description": "Prometheus text format metrics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics/summary": {
+      "get": {
+        "summary": "Metrics summary",
+        "tags": [
+          "metrics"
+        ],
+        "description": "Get a JSON summary of all metrics for debugging",
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/def-6"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/users": {
       "post": {
         "summary": "Create a new user",
@@ -829,7 +914,11 @@
   "tags": [
     {
       "name": "health",
-      "description": "Health check endpoints"
+      "description": "Health check endpoints for monitoring and orchestration"
+    },
+    {
+      "name": "metrics",
+      "description": "Prometheus metrics endpoints for observability"
     },
     {
       "name": "users",

@@ -90,9 +90,34 @@ jobs:
               .api-content h1 {
                 color: #16213e;
               }
+              /* Navigation bar */
+              .doc-nav {
+                position: fixed;
+                top: 0;
+                right: 0;
+                z-index: 1000;
+                padding: 10px 20px;
+                display: flex;
+                gap: 15px;
+                background: rgba(30, 30, 47, 0.95);
+                border-bottom-left-radius: 8px;
+              }
+              .doc-nav a {
+                color: #94a3b8;
+                text-decoration: none;
+                font-size: 14px;
+                transition: color 0.2s;
+              }
+              .doc-nav a:hover {
+                color: #4f46e5;
+              }
             </style>
           </head>
           <body>
+            <nav class="doc-nav">
+              <a href="coverage-trends.html">Coverage Trends</a>
+              <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub</a>
+            </nav>
             <redoc spec-url="openapi.json"
                    hide-download-button="false"
                    theme='{

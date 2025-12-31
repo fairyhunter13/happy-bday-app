@@ -24,7 +24,6 @@ Operational documentation covering GitHub secrets, exporter deployments, CI/CD m
 | Document | Description | Status |
 |----------|-------------|--------|
 | [`github-secrets-verification.md`](./github-secrets-verification.md) | GitHub secrets setup and verification guide | Final |
-| [`github-secrets-status.md`](./github-secrets-status.md) | Current secrets status and configuration | Final |
 
 ### Exporter Deployments
 
@@ -203,9 +202,10 @@ gh secret list
 - [`../07-monitoring/metrics-implementation-plan.md`](../07-monitoring/metrics-implementation-plan.md)
 - [`../07-monitoring/grafana-dashboards-research.md`](../07-monitoring/grafana-dashboards-research.md)
 
-### Phase Reports
-- [`../06-phase-reports/phase6/CI_CD_GUIDE.md`](../06-phase-reports/phase6/CI_CD_GUIDE.md)
-- [`../06-phase-reports/phase5/DOCKER_DEPLOYMENT_GUIDE.md`](../06-phase-reports/phase5/DOCKER_DEPLOYMENT_GUIDE.md)
+### Core Documentation
+- Runbook: [`/docs/RUNBOOK.md`](/docs/RUNBOOK.md)
+- Deployment Guide: [`/docs/DEPLOYMENT_GUIDE.md`](/docs/DEPLOYMENT_GUIDE.md)
+- Troubleshooting: [`/docs/TROUBLESHOOTING.md`](/docs/TROUBLESHOOTING.md)
 
 ---
 
@@ -253,7 +253,7 @@ gh secret list
 ### Documentation
 - GitHub Secrets: [`github-secrets-verification.md`](./github-secrets-verification.md)
 - Exporters: [`exporter-deployment-checklist.md`](./exporter-deployment-checklist.md)
-- CI/CD: [`../06-phase-reports/phase6/CI_CD_GUIDE.md`](../06-phase-reports/phase6/CI_CD_GUIDE.md)
+- CI/CD: [`../02-architecture/cicd-pipeline.md`](../02-architecture/cicd-pipeline.md)
 
 ### External Resources
 - [GitHub Secrets Documentation](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
