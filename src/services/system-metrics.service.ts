@@ -33,6 +33,17 @@ interface GCPerformanceEntry extends PerformanceEntry {
 }
 
 /**
+ * Extended heap statistics for tracking GC memory changes
+ * Reserved for future use in GC memory tracking
+ */
+
+interface HeapSnapshot {
+  totalHeapSize: number;
+  usedHeapSize: number;
+  timestamp: number;
+}
+
+/**
  * GC types mapping for metric labels
  */
 const GC_TYPES: Record<number, string> = {
@@ -68,6 +79,10 @@ export class SystemMetricsService {
   private gcObserver?: PerformanceObserver;
   private previousEventLoopUtilization?: ReturnType<typeof performance.eventLoopUtilization>;
   private isShuttingDown = false;
+  // Reserved for future CPU usage tracking
+  private _heapBeforeGc?: HeapSnapshot;
+  private _previousCpuUsage?: NodeJS.CpuUsage;
+  private _previousTimestamp?: number;
 
   // ============================================
   // SYSTEM LOAD METRICS
@@ -271,7 +286,6 @@ export class SystemMetricsService {
       'Starting SystemMetricsService'
     );
 
-
     // Initialize CPU usage tracking
     this.previousCpuUsage = process.cpuUsage();
     this.previousTimestamp = Date.now();
@@ -439,6 +453,25 @@ export class SystemMetricsService {
 
       // CPU count
       this.systemCpuCount.set(cpus().length);
+
+      // Process metrics
+      this.processUptimeSeconds.set(process.uptime());
+      this.processMemoryRss.set(process.memoryUsage().rss);
+
+      // CPU usage calculation
+      if (this.previousCpuUsage && this.previousTimestamp) {
+        const currentCpuUsage = process.cpuUsage(this.previousCpuUsage);
+        const currentTimestamp = Date.now();
+        const timeDelta = currentTimestamp - this.previousTimestamp;
+        
+        // Convert microseconds to percentage per CPU core
+        const cpuPercent = ((currentCpuUsage.user + currentCpuUsage.system) / (timeDelta * 1000)) * 100;
+        this.processCpuUsagePercent.set(cpuPercent);
+      }
+      
+      // Store current values for next calculation
+      this.previousCpuUsage = process.cpuUsage();
+      this.previousTimestamp = Date.now();
     } catch (error) {
       logger.error({ error }, 'Error collecting system load metrics');
     }
