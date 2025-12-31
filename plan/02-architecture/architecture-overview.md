@@ -250,6 +250,7 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 ## Tech Stack
 
 ### Backend
+
 - **Language:** TypeScript 5.3+
 - **Runtime:** Node.js 20 LTS
 - **API Framework:** Fastify 4.x
@@ -258,22 +259,26 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Date/Time:** Luxon (IANA timezone support)
 
 ### Database
+
 - **Database:** PostgreSQL 15
 - **Partitioning:** Monthly partitions
 - **Connection Pooling:** pg + pgbouncer
 
 ### Queue & Workers
+
 - **Queue:** RabbitMQ 3.12+ (Quorum Queues)
 - **Workers:** Node.js processes (horizontal scaling)
 - **Client Library:** amqplib (or amqp-connection-manager for reconnection)
 
 ### Testing
+
 - **Unit/Integration:** Vitest
 - **E2E:** Supertest + Docker Compose
 - **Performance:** k6 + pgbench
 - **Mocking:** Email service (MockServer)
 
 ### DevOps
+
 - **Containerization:** Docker + Docker Compose
 - **CI/CD:** GitHub Actions
 - **Monitoring:** Prometheus + Grafana

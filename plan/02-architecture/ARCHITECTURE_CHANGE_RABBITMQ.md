@@ -1,5 +1,20 @@
 # 🔄 Architecture Change: BullMQ → RabbitMQ
 
+## Table of Contents
+
+1. [🚨 Why the Change?](#-why-the-change)
+2. [✅ Solution: RabbitMQ with Quorum Queues](#-solution-rabbitmq-with-quorum-queues)
+3. [📊 Comparison Table](#-comparison-table)
+4. [💰 Cost Analysis](#-cost-analysis)
+5. [📝 What Changed in Documentation](#-what-changed-in-documentation)
+6. [🔧 Implementation Changes Needed](#-implementation-changes-needed)
+7. [📚 Next Steps](#-next-steps)
+8. [✅ Benefits Summary](#-benefits-summary)
+9. [🔍 Archive Cleanup](#-archive-cleanup)
+10. [📞 Questions?](#-questions)
+
+---
+
 **Date:** 2025-12-30
 **Status:** ✅ Updated
 **Impact:** Critical - Queue System Change
@@ -212,6 +227,7 @@ await channel.consume('birthday-messages', async (msg) => {
 ## ✅ Benefits Summary
 
 ### Technical Benefits
+
 - ✅ Zero data loss (Raft consensus replication)
 - ✅ Native message persistence (no Redis config needed)
 - ✅ Battle-tested reliability (15+ years production use)
@@ -219,6 +235,7 @@ await channel.consume('birthday-messages', async (msg) => {
 - ✅ AMQP standard protocol (not proprietary)
 
 ### Business Benefits
+
 - ✅ **Prevents customer churn** from missed birthdays
 - ✅ **ROI positive:** One prevented incident pays for the year
 - ✅ **Reduced operational risk:** No Redis persistence tuning needed

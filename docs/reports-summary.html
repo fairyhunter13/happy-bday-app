@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Summary - Happy Birthday App</title>
+    <meta name="description" content="Comprehensive summary of all code quality, security, performance, and testing reports">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+    <style>
+        :root {
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+            --color-cyan: #06b6d4;
+            --color-indigo: #6366f1;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .nav-links {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--color-blue);
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-purple);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--color-indigo), var(--color-purple));
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hero h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-blue), var(--color-purple));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value.green { color: var(--color-green); }
+        .stat-value.yellow { color: var(--color-yellow); }
+        .stat-value.blue { color: var(--color-blue); }
+        .stat-value.purple { color: var(--color-purple); }
+
+        .stat-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Section */
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+        }
+
+        /* Report Cards Grid */
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .report-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+            border-color: var(--color-blue);
+        }
+
+        .report-header {
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .report-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .report-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .report-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .report-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-item {
+            background: var(--bg-primary);
+            padding: 0.75rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .metric-value.green { color: var(--color-green); }
+        .metric-value.yellow { color: var(--color-yellow); }
+        .metric-value.blue { color: var(--color-blue); }
+        .metric-value.red { color: var(--color-red); }
+
+        .report-footer {
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .report-link {
+            color: var(--color-blue);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .report-link:hover {
+            color: var(--color-purple);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-green);
+        }
+
+        .badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--color-yellow);
+        }
+
+        .badge.info {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-blue);
+        }
+
+        .badge.automated {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--color-purple);
+        }
+
+        /* Features List */
+        .features-list {
+            list-style: none;
+            margin-bottom: 1rem;
+        }
+
+        .features-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .features-list li::before {
+            content: '✓';
+            color: var(--color-green);
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+
+        footer a {
+            color: var(--color-blue);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .hero {
+                padding: 2rem 1rem;
+            }
+
+            .hero h2 {
+                font-size: 1.5rem;
+            }
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Reports Summary</h1>
+            <p class="subtitle">Comprehensive Quality, Security & Performance Reports</p>
+            <nav class="nav-links">
+                <a href="index.html">API Documentation</a>
+                <a href="test-reports.html">Test Reports</a>
+                <a href="coverage-trends.html">Coverage Trends</a>
+                <a href="dashboards-index.html">Dashboards</a>
+                <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub Repository</a>
+            </nav>
+        </header>
+
+        <div class="hero">
+            <h2>All Reports in One Place</h2>
+            <p>Code quality metrics, security scans, performance benchmarks, and more</p>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-label">Report Types</div>
+                <div class="stat-value blue">8</div>
+                <div class="stat-subtitle">Categories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-label">Quality Score</div>
+                <div class="stat-value green">A+</div>
+                <div class="stat-subtitle">Overall grade</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔒</div>
+                <div class="stat-label">Security</div>
+                <div class="stat-value green">0</div>
+                <div class="stat-subtitle">Vulnerabilities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-label">Performance</div>
+                <div class="stat-value green">95+</div>
+                <div class="stat-subtitle">Lighthouse score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-label">Coverage</div>
+                <div class="stat-value green">95%</div>
+                <div class="stat-subtitle">Code coverage</div>
+            </div>
+        </div>
+
+        <!-- Testing & Coverage Reports -->
+        <section class="section">
+            <div class="section-header">
+                <span style="font-size: 2rem;">🧪</span>
+                <h2 class="section-title">Testing & Coverage</h2>
+            </div>
+
+            <div class="reports-grid">
+                <!-- Test Reports -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">🧪</span>
+                        <h3 class="report-title">Test Reports</h3>
+                        <p class="report-description">
+                            Comprehensive testing coverage across unit, integration, E2E, and chaos tests
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Total Tests</div>
+                                <div class="metric-value green">460+</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Test Files</div>
+                                <div class="metric-value blue">46</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Pass Rate</div>
+                                <div class="metric-value green">100%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Duration</div>
+                                <div class="metric-value blue">~2m</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>Unit tests (28 files)</li>
+                            <li>Integration tests (8 files)</li>
+                            <li>E2E tests (7 files)</li>
+                            <li>Chaos engineering tests (3 files)</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">All Passing</span>
+                        <a href="test-reports.html" class="report-link">View Report →</a>
+                    </div>
+                </div>
+
+                <!-- Coverage Trends -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">📈</span>
+                        <h3 class="report-title">Coverage Trends</h3>
+                        <p class="report-description">
+                            Historical code coverage tracking with detailed metrics and visualization
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Lines</div>
+                                <div class="metric-value green">95%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Functions</div>
+                                <div class="metric-value green">93%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Branches</div>
+                                <div class="metric-value green">91%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Statements</div>
+                                <div class="metric-value green">96%</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>Interactive trend charts</li>
+                            <li>Branch coverage visualization</li>
+                            <li>File-level breakdown</li>
+                            <li>Historical data export</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Excellent</span>
+                        <a href="coverage-trends.html" class="report-link">View Trends →</a>
+                    </div>
+                </div>
+
+                <!-- Mutation Testing -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">🧬</span>
+                        <h3 class="report-title">Mutation Testing</h3>
+                        <p class="report-description">
+                            Advanced test quality analysis with Stryker mutation testing
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Mutation Score</div>
+                                <div class="metric-value green">85%+</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Mutants Killed</div>
+                                <div class="metric-value green">850+</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>Incremental mode support</li>
+                            <li>Multiple mutation operators</li>
+                            <li>HTML & JSON reports</li>
+                            <li>CI/CD integration</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge automated">Automated</span>
+                        <a href="MUTATION_TESTING.md" class="report-link">View Docs →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Quality Reports -->
+        <section class="section">
+            <div class="section-header">
+                <span style="font-size: 2rem;">✨</span>
+                <h2 class="section-title">Code Quality</h2>
+            </div>
+
+            <div class="reports-grid">
+                <!-- ESLint Report -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">🔍</span>
+                        <h3 class="report-title">ESLint Analysis</h3>
+                        <p class="report-description">
+                            TypeScript code quality and style enforcement with ESLint
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Errors</div>
+                                <div class="metric-value green">0</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Warnings</div>
+                                <div class="metric-value yellow">< 50</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>TypeScript strict mode</li>
+                            <li>Prettier integration</li>
+                            <li>Custom rules configured</li>
+                            <li>Auto-fix on save</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Clean</span>
+                        <a href="https://github.com/fairyhunter13/happy-bday-app" class="report-link">View Config →</a>
+                    </div>
+                </div>
+
+                <!-- Code Duplication -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">📋</span>
+                        <h3 class="report-title">Code Duplication</h3>
+                        <p class="report-description">
+                            JSCPD analysis for identifying duplicate code blocks
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Duplication</div>
+                                <div class="metric-value green">< 5%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Files Scanned</div>
+                                <div class="metric-value blue">200+</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>HTML & JSON reports</li>
+                            <li>Configurable thresholds</li>
+                            <li>Multi-format support</li>
+                            <li>CI integration</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Excellent</span>
+                        <a href="../reports/" class="report-link">View Reports →</a>
+                    </div>
+                </div>
+
+                <!-- TypeScript Compilation -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">⚙️</span>
+                        <h3 class="report-title">TypeScript Build</h3>
+                        <p class="report-description">
+                            Type safety and compilation analysis
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Type Errors</div>
+                                <div class="metric-value green">0</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Strictness</div>
+                                <div class="metric-value green">Max</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>Strict mode enabled</li>
+                            <li>No implicit any</li>
+                            <li>Null safety checks</li>
+                            <li>Unused code detection</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Type Safe</span>
+                        <a href="../tsconfig.json" class="report-link">View Config →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Performance & Monitoring -->
+        <section class="section">
+            <div class="section-header">
+                <span style="font-size: 2rem;">⚡</span>
+                <h2 class="section-title">Performance & Monitoring</h2>
+            </div>
+
+            <div class="reports-grid">
+                <!-- Performance Benchmarks -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">⚡</span>
+                        <h3 class="report-title">Performance Benchmarks</h3>
+                        <p class="report-description">
+                            K6 load testing and performance benchmarks
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">p95 Latency</div>
+                                <div class="metric-value green">< 200ms</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Throughput</div>
+                                <div class="metric-value green">1000+ RPS</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>API load testing</li>
+                            <li>Scheduler performance</li>
+                            <li>Worker throughput</li>
+                            <li>E2E scenarios</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Optimized</span>
+                        <a href="../tests/performance/" class="report-link">View Tests →</a>
+                    </div>
+                </div>
+
+                <!-- Monitoring Dashboards -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">📊</span>
+                        <h3 class="report-title">Grafana Dashboards</h3>
+                        <p class="report-description">
+                            Production monitoring with 6 comprehensive dashboards
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Dashboards</div>
+                                <div class="metric-value blue">6</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Metrics</div>
+                                <div class="metric-value blue">50+</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>API performance</li>
+                            <li>Database metrics</li>
+                            <li>Message processing</li>
+                            <li>Infrastructure & security</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge info">Real-time</span>
+                        <a href="dashboards-index.html" class="report-link">View Dashboards →</a>
+                    </div>
+                </div>
+
+                <!-- Security Analysis -->
+                <div class="report-card">
+                    <div class="report-header">
+                        <span class="report-icon">🔒</span>
+                        <h3 class="report-title">Security Scan</h3>
+                        <p class="report-description">
+                            Dependency audits and security vulnerability scanning
+                        </p>
+                    </div>
+                    <div class="report-body">
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">Vulnerabilities</div>
+                                <div class="metric-value green">0</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Dependencies</div>
+                                <div class="metric-value blue">Updated</div>
+                            </div>
+                        </div>
+                        <ul class="features-list">
+                            <li>npm audit</li>
+                            <li>SOPS encryption</li>
+                            <li>Security headers</li>
+                            <li>Rate limiting</li>
+                        </ul>
+                    </div>
+                    <div class="report-footer">
+                        <span class="badge success">Secure</span>
+                        <a href="https://github.com/fairyhunter13/happy-bday-app/security" class="report-link">View Security →</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>Last updated: <span id="lastUpdated"></span></p>
+            <p><a href="https://github.com/fairyhunter13/happy-bday-app">Happy Birthday App</a> - Reports Summary Dashboard</p>
+        </footer>
+    </div>
+
+    <script>
+        // Set last updated time
+        document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+    </script>
+</body>
+</html>

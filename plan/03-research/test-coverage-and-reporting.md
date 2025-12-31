@@ -24,6 +24,7 @@
 ## Executive Summary
 
 ### Current State
+
 - **Framework:** Vitest + @vitest/coverage-v8
 - **Current Coverage:** Not measured in production
 - **Target:** 80% line, 80% branch, 80% function, 85% statement coverage
@@ -31,6 +32,7 @@
 - **Tests:** 37+ test files across unit, integration, E2E, chaos testing
 
 ### Goals
+
 1. Achieve and maintain 80% test coverage across all coverage types
 2. Display coverage badges in README.md
 3. Publish interactive HTML coverage reports to GitHub Pages
@@ -39,6 +41,7 @@
 6. Track historical coverage trends
 
 ### Recommended Solutions
+
 - **Coverage Tool:** Vitest v8 coverage (already configured)
 - **Badge Service:** Codecov (free for public repos, better analytics)
 - **Backup Badge:** shields.io (self-hosted, no external dependency)
@@ -94,13 +97,17 @@ Total:             70-90% coverage (target: 80%+)
 #### 1. Identify Coverage Gaps
 
 ```bash
+
 # Generate detailed coverage report
+
 npm run test:coverage
 
 # View HTML report
+
 open coverage/index.html
 
 # Find uncovered lines
+
 npx nyc report --reporter=text | grep "uncovered lines"
 ```
 
@@ -408,7 +415,9 @@ export default defineConfig({
 **Setup:**
 
 ```yaml
+
 # .github/workflows/ci.yml
+
 coverage-report:
   needs: [unit-tests, integration-tests, e2e-tests]
   runs-on: ubuntu-latest
@@ -445,7 +454,9 @@ coverage-report:
 
 **Badge Markdown:**
 ```markdown
+
 # README.md
+
 [![codecov](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg?token=YOUR_TOKEN)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
 ```
 
@@ -507,7 +518,9 @@ coverage-report:
 **Setup:**
 
 ```yaml
+
 # .github/workflows/coverage-badge.yml
+
 name: Update Coverage Badge
 
 on:
@@ -560,7 +573,9 @@ jobs:
 
 **Setup:**
 ```yaml
+
 # Generate JSON for shields.io
+
 - name: Generate coverage JSON
   run: |
     COVERAGE=$(npx nyc report --reporter=text-summary | grep 'Lines' | awk '{print $3}' | sed 's/%//')
@@ -584,6 +599,7 @@ jobs:
 ### Multiple Badges Strategy
 
 ```markdown
+
 # README.md badges section
 ## Test Coverage
 
@@ -631,10 +647,12 @@ gh-pages branch
 ### Setup GitHub Pages
 
 ```bash
+
 # 1. Enable GitHub Pages in repository settings
 # Settings > Pages > Source: gh-pages branch
 
 # 2. Create gh-pages branch
+
 git checkout --orphan gh-pages
 git rm -rf .
 echo "# Test Reports" > index.html
@@ -643,13 +661,16 @@ git commit -m "Initialize GitHub Pages"
 git push origin gh-pages
 
 # 3. Return to main branch
+
 git checkout main
 ```
 
 ### Automated Deployment Workflow
 
 ```yaml
+
 # .github/workflows/publish-reports.yml
+
 name: Publish Test Reports
 
 on:
@@ -829,7 +850,9 @@ jobs:
 ### Using gh CLI (Alternative)
 
 ```yaml
+
 # Alternative deployment using gh CLI
+
 - name: Deploy to GitHub Pages (gh CLI)
   run: |
     # Install gh CLI
@@ -951,7 +974,9 @@ console.log('Coverage trends generated');
 **Goal:** Block PRs if coverage drops below 80%
 
 ```yaml
+
 # .github/workflows/ci.yml (enhanced)
+
 coverage-report:
   name: Coverage Report & Enforcement
   needs: [unit-tests, integration-tests, e2e-tests]
@@ -1142,7 +1167,9 @@ coverage-report:
 ### Enforce Coverage Before E2E Tests
 
 ```yaml
+
 # .github/workflows/ci.yml
+
 e2e-tests:
   name: E2E Tests
   needs: [unit-tests, integration-tests, coverage-report]  # Add coverage-report dependency
@@ -1159,7 +1186,9 @@ e2e-tests:
 ### Coverage-Dependent Performance Tests
 
 ```yaml
+
 # .github/workflows/performance.yml
+
 on:
   workflow_run:
     workflows: ["CI"]
@@ -1724,7 +1753,9 @@ describe('MessageService', () => {
 ### 2. GitHub Actions Workflow (Complete)
 
 ```yaml
+
 # .github/workflows/coverage.yml
+
 name: Test Coverage
 
 on:
@@ -2028,6 +2059,7 @@ it.each([
 npm install -D @stryker-mutator/core @stryker-mutator/typescript-checker @stryker-mutator/vitest-runner
 
 # Run mutation tests
+
 npx stryker run
 ```
 
@@ -2077,16 +2109,21 @@ it('should identify adults', () => {
 ### Quick Start Commands
 
 ```bash
+
 # Generate coverage report
+
 npm run test:coverage
 
 # View HTML report
+
 open coverage/index.html
 
 # Check thresholds
+
 npx nyc check-coverage --lines 80 --functions 80 --branches 80 --statements 85
 
 # Deploy to GitHub Pages
+
 npm run publish:reports
 ```
 

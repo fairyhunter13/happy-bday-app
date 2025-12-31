@@ -693,7 +693,7 @@ registry.setDefaultLabels({
 **Components:**
 
 1. **postgres_exporter (Critical)**
-   ```yaml
+```
    # docker-compose.yml
    postgres-exporter:
      image: prometheuscommunity/postgres-exporter:latest
@@ -712,7 +712,7 @@ registry.setDefaultLabels({
    - `pg_stat_bgwriter_*` - Background writer stats
 
 2. **rabbitmq_prometheus Plugin (Critical)**
-   ```bash
+```
    rabbitmq-plugins enable rabbitmq_prometheus
    ```
 
@@ -725,7 +725,7 @@ registry.setDefaultLabels({
    - `rabbitmq_erlang_processes_used` - Erlang VM metrics
 
 3. **Prometheus Scrape Configuration**
-   ```yaml
+```
    # prometheus.yml
    scrape_configs:
      - job_name: 'birthday-scheduler'
@@ -754,7 +754,7 @@ registry.setDefaultLabels({
 **Recommended Additions:**
 
 1. **SLI/SLO Tracking (P1)**
-   ```typescript
+```
    birthday_scheduler_availability_sli_ratio
    birthday_scheduler_latency_sli_ratio
    birthday_scheduler_throughput_sli_ratio
@@ -762,7 +762,7 @@ registry.setDefaultLabels({
    ```
 
    **PromQL Examples:**
-   ```promql
+```
    # 99.9% availability SLI
    (
      sum(rate(birthday_scheduler_api_requests_total{status!~"5.."}[30d]))
@@ -777,7 +777,7 @@ registry.setDefaultLabels({
    ```
 
 2. **Business KPI Metrics (P1)**
-   ```typescript
+```
    birthday_scheduler_daily_active_users_count
    birthday_scheduler_message_success_rate_percentage
    birthday_scheduler_birthday_processing_time_seconds
@@ -785,14 +785,14 @@ registry.setDefaultLabels({
    ```
 
 3. **Advanced Queue Metrics (P2)**
-   ```typescript
+```
    birthday_scheduler_queue_processing_efficiency_ratio
    birthday_scheduler_consumer_lag_seconds{queue, consumer}
    birthday_scheduler_dlq_movement_rate
    ```
 
 4. **Security & Compliance (P0)**
-   ```typescript
+```
    birthday_scheduler_suspicious_activity_total{activity_type, severity}
    birthday_scheduler_pii_access_total{entity, action}
    birthday_scheduler_audit_log_gaps_total
@@ -915,7 +915,7 @@ Based on the GAP report showing only ~16 metrics:
    - Verify metrics collection
 
 3. **Create Recording Rules**
-   ```yaml
+```
    # prometheus-rules.yml
    groups:
      - name: birthday_scheduler_aggregations

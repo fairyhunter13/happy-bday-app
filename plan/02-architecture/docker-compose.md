@@ -221,7 +221,9 @@ worker:
 
 **Scaling Strategy:**
 ```bash
+
 # Scale workers dynamically based on queue depth
+
 docker-compose up --scale worker=5
 ```
 
@@ -279,7 +281,9 @@ postgres:
 
 **Performance Tuning (postgresql.conf):**
 ```conf
+
 # Optimized for 1GB RAM container
+
 shared_buffers = 256MB
 effective_cache_size = 768MB
 work_mem = 16MB
@@ -565,13 +569,17 @@ backup:
 
 **Manual Backup Commands:**
 ```bash
+
 # Backup database
+
 docker-compose exec postgres pg_dump -U postgres birthday_app > backup.sql
 
 # Restore database
+
 docker-compose exec -T postgres psql -U postgres birthday_app < backup.sql
 
 # Backup Redis
+
 docker-compose exec redis redis-cli BGSAVE
 docker cp birthday-redis:/data/dump.rdb ./backups/redis-$(date +%Y%m%d).rdb
 ```
@@ -583,43 +591,52 @@ docker cp birthday-redis:/data/dump.rdb ./backups/redis-$(date +%Y%m%d).rdb
 ### .env File Structure
 
 ```bash
+
 # .env
 # Application
+
 NODE_ENV=production
 PORT=3000
 LOG_LEVEL=info
 
 # Database
+
 POSTGRES_PASSWORD=your_secure_password_here
 DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/birthday_app
 DATABASE_POOL_SIZE=20
 DATABASE_SSL=false
 
 # Redis
+
 REDIS_URL=redis://redis:6379
 REDIS_DB=0
 
 # Email Service
+
 EMAIL_API_URL=https://email-service.digitalenvision.com.au/send-email
 EMAIL_API_TIMEOUT=10000
 
 # Queue Configuration
+
 QUEUE_NAME=birthday-messages
 QUEUE_CONCURRENCY=5
 QUEUE_MAX_RETRIES=5
 QUEUE_BACKOFF_DELAY=2000
 
 # CRON Schedules
+
 CRON_DAILY_SCHEDULE=0 0 * * *          # Daily at midnight UTC
 CRON_MINUTE_SCHEDULE=* * * * *         # Every minute
 CRON_RECOVERY_SCHEDULE=*/10 * * * *    # Every 10 minutes
 
 # Circuit Breaker
+
 CIRCUIT_BREAKER_TIMEOUT=10000
 CIRCUIT_BREAKER_ERROR_THRESHOLD=50
 CIRCUIT_BREAKER_RESET_TIMEOUT=30000
 
 # Monitoring
+
 ENABLE_METRICS=true
 METRICS_PORT=9090
 ```
@@ -669,13 +686,17 @@ services:
 
 **Usage:**
 ```bash
+
 # Development
+
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # Testing
+
 docker-compose -f docker-compose.yml -f docker-compose.test.yml up
 
 # Production
+
 docker-compose up -d
 ```
 
@@ -762,13 +783,17 @@ worker:
 
 **Scaling Commands:**
 ```bash
+
 # Scale API servers
+
 docker-compose up --scale api=5
 
 # Scale workers
+
 docker-compose up --scale worker=10
 
 # Combined scaling
+
 docker-compose up --scale api=5 --scale worker=10
 ```
 
@@ -776,7 +801,9 @@ docker-compose up --scale api=5 --scale worker=10
 
 **External Orchestrator (Kubernetes/Docker Swarm):**
 ```yaml
+
 # Kubernetes HPA (Horizontal Pod Autoscaler)
+
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -818,10 +845,13 @@ spec:
 
 **Usage:**
 ```bash
+
 # Start development environment
+
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # With rebuild
+
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
@@ -860,7 +890,9 @@ export async function teardownTestEnvironment() {
 
 **CI/CD Integration:**
 ```yaml
+
 # .github/workflows/test.yml
+
 - name: Start test environment
   run: docker-compose -f docker-compose.test.yml up -d
 
@@ -975,13 +1007,17 @@ k6:
 
 **Usage:**
 ```bash
+
 # Run API load tests
+
 docker-compose run --rm k6 run /scripts/api-load.k6.ts
 
 # Run with custom parameters
+
 docker-compose run --rm k6 run --vus 1000 --duration 5m /scripts/api-load.k6.ts
 
 # Generate HTML report
+
 docker-compose run --rm k6 run --out html=/results/report.html /scripts/api-load.k6.ts
 ```
 
@@ -1011,10 +1047,13 @@ pgbench:
 
 **Usage:**
 ```bash
+
 # Initialize test data
+
 docker-compose run --rm pgbench pgbench -i -s 100 -h postgres -U postgres birthday_app
 
 # Run benchmark
+
 docker-compose run --rm pgbench pgbench -c 50 -j 4 -t 10000 -h postgres -U postgres birthday_app
 ```
 
@@ -1209,11 +1248,14 @@ services:
 
 **Environment Variable Security:**
 ```bash
+
 # .env.example (commit to repo)
+
 POSTGRES_PASSWORD=changeme
 GRAFANA_PASSWORD=changeme
 
 # .env (gitignored, local only)
+
 POSTGRES_PASSWORD=actual_secure_password_here
 GRAFANA_PASSWORD=actual_secure_password_here
 ```
@@ -1222,7 +1264,9 @@ GRAFANA_PASSWORD=actual_secure_password_here
 
 **Firewall Rules:**
 ```bash
+
 # Allow only essential ports
+
 ufw allow 80/tcp    # HTTP
 ufw allow 443/tcp   # HTTPS
 ufw deny 5432/tcp   # PostgreSQL (block external)
@@ -1262,21 +1306,28 @@ certbot:
 ### Local Development Workflow
 
 ```bash
+
 # 1. Clone repository
+
 git clone https://github.com/your-org/happy-bday-app.git
 cd happy-bday-app
 
 # 2. Copy environment file
+
 cp .env.example .env
+
 # Edit .env with your local settings
 
 # 3. Start development environment
+
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # 4. Run database migrations
+
 docker-compose exec api npm run migrate
 
 # 5. Create test user
+
 curl -X POST http://localhost:3000/user \
   -H "Content-Type: application/json" \
   -d '{
@@ -1288,9 +1339,11 @@ curl -X POST http://localhost:3000/user \
   }'
 
 # 6. Watch logs
+
 docker-compose logs -f api worker
 
 # 7. Stop environment
+
 docker-compose down
 ```
 
@@ -1299,28 +1352,37 @@ docker-compose down
 ### Production Deployment Workflow
 
 ```bash
+
 # 1. Pull latest changes
+
 git pull origin main
 
 # 2. Build production images
+
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
 
 # 3. Stop existing containers (zero-downtime with nginx)
+
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 # 4. Start new containers
+
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # 5. Run database migrations
+
 docker-compose exec api npm run migrate
 
 # 6. Health check
+
 curl -f http://localhost/health
 
 # 7. Monitor startup
+
 docker-compose logs -f --tail=100
 
 # 8. Rollback if needed
+
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
@@ -1331,25 +1393,32 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 **Strategy:**
 ```bash
+
 # Current: blue (live)
 # Deploy: green (new version)
 
 # 1. Start green environment
+
 docker-compose -f docker-compose.green.yml up -d
 
 # 2. Run smoke tests
+
 curl -f http://localhost:3001/health
 
 # 3. Switch nginx to green
+
 docker-compose exec nginx nginx -s reload
 
 # 4. Monitor for 5 minutes
+
 docker-compose -f docker-compose.green.yml logs -f
 
 # 5. If stable, stop blue
+
 docker-compose -f docker-compose.blue.yml down
 
 # 6. Rename green to blue for next deployment
+
 mv docker-compose.green.yml docker-compose.blue.yml
 ```
 

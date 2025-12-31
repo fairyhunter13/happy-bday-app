@@ -1,5 +1,28 @@
 # Coverage Trends Design Document
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [1. Architecture Recommendation](#1-architecture-recommendation)
+3. [2. Data Storage Strategy](#2-data-storage-strategy)
+4. [3. Chart Library Selection](#3-chart-library-selection)
+5. [4. Key Metrics to Track](#4-key-metrics-to-track)
+6. [5. GitHub Actions Workflow Modifications](#5-github-actions-workflow-modifications)
+7. [6. HTML/JavaScript Implementation](#6-htmljavascript-implementation)
+8. [7. Example Visualizations](#7-example-visualizations)
+9. [8. Testing Strategy](#8-testing-strategy)
+10. [9. Migration Plan](#9-migration-plan)
+11. [10. Performance Considerations](#10-performance-considerations)
+12. [11. Security Considerations](#11-security-considerations)
+13. [12. Monitoring and Alerts](#12-monitoring-and-alerts)
+14. [13. Cost Analysis](#13-cost-analysis)
+15. [14. References and Resources](#14-references-and-resources)
+16. [15. Conclusion](#15-conclusion)
+17. [Appendix A: Sample Data Structures](#appendix-a-sample-data-structures)
+18. [Appendix B: Configuration Examples](#appendix-b-configuration-examples)
+
+---
+
 ## Executive Summary
 
 This document provides a comprehensive design for implementing historical coverage trend tracking for the Birthday Message Scheduler project, deployable to GitHub Pages. The solution leverages a self-hosted, static-site approach using Chart.js for visualization, JSON-based storage, and GitHub Actions for automation.
@@ -17,6 +40,7 @@ This document provides a comprehensive design for implementing historical covera
 After comprehensive research and analysis, **self-hosted solution is recommended** for the following reasons:
 
 #### Self-Hosted Advantages
+
 - **Zero External Dependencies**: No reliance on Codecov/Coveralls API availability
 - **No CODECOV_TOKEN Required**: Eliminates security token management overhead
 - **Complete Control**: Full ownership of data and visualization customization
@@ -753,7 +777,9 @@ const renderVisibleDataOnly = (entries, viewportRange) => {
 ### 8.1 Coverage History Script Testing
 
 ```bash
+
 # Test update-history.sh script
+
 tests/coverage/test-update-history.sh
 
 #!/bin/bash
@@ -764,11 +790,13 @@ set -e
 echo "Testing update-history.sh..."
 
 # Setup
+
 TEMP_DIR=$(mktemp -d)
 MOCK_COVERAGE="$TEMP_DIR/coverage-summary.json"
 MOCK_HISTORY="$TEMP_DIR/coverage-history.json"
 
 # Create mock coverage data
+
 cat > "$MOCK_COVERAGE" <<EOF
 {
   "total": {
@@ -781,22 +809,26 @@ cat > "$MOCK_COVERAGE" <<EOF
 EOF
 
 # Test 1: Initial creation
+
 ./scripts/coverage/update-history.sh "$MOCK_COVERAGE" "$MOCK_HISTORY"
 test -f "$MOCK_HISTORY" || exit 1
 echo "✓ Test 1: History file created"
 
 # Test 2: Entry added
+
 ENTRIES=$(jq '.entries | length' "$MOCK_HISTORY")
 test "$ENTRIES" -eq 1 || exit 1
 echo "✓ Test 2: Entry added"
 
 # Test 3: Second update
+
 ./scripts/coverage/update-history.sh "$MOCK_COVERAGE" "$MOCK_HISTORY"
 ENTRIES=$(jq '.entries | length' "$MOCK_HISTORY")
 test "$ENTRIES" -eq 2 || exit 1
 echo "✓ Test 3: Second entry added"
 
 # Test 4: Max entries limit
+
 for i in {1..105}; do
   ./scripts/coverage/update-history.sh "$MOCK_COVERAGE" "$MOCK_HISTORY"
 done
@@ -805,6 +837,7 @@ test "$ENTRIES" -le 100 || exit 1
 echo "✓ Test 4: Max entries enforced"
 
 # Cleanup
+
 rm -rf "$TEMP_DIR"
 
 echo "All tests passed!"
@@ -874,7 +907,9 @@ test.describe('Coverage Trends Dashboard', () => {
 ### 8.3 Integration Testing
 
 ```yaml
+
 # .github/workflows/test-coverage-workflow.yml
+
 name: Test Coverage Workflow
 
 on:
@@ -1124,7 +1159,9 @@ If issues arise:
 
 **Implementation**:
 ```yaml
+
 # .github/workflows/coverage-alerts.yml
+
 - name: Check coverage regression
   run: |
     CURRENT=$(jq -r '.entries[0].coverage.lines.pct' docs/coverage-history.json)
@@ -1416,9 +1453,11 @@ This design document provides a comprehensive blueprint for implementing histori
 ### B.1 Environment Variables
 
 ```bash
+
 # .env.example for coverage tracking
 
 # Coverage History Settings
+
 MAX_DATA_POINTS=100
 COVERAGE_THRESHOLD_LINES=80
 COVERAGE_THRESHOLD_FUNCTIONS=80
@@ -1426,15 +1465,18 @@ COVERAGE_THRESHOLD_BRANCHES=80
 COVERAGE_THRESHOLD_STATEMENTS=85
 
 # Alert Settings
+
 ALERT_ON_REGRESSION=true
 ALERT_THRESHOLD=-5
 SLACK_WEBHOOK_URL=https://hooks.slack.com/...
 
 # Git Settings
+
 GIT_AUTHOR_NAME="github-actions[bot]"
 GIT_AUTHOR_EMAIL="github-actions[bot]@users.noreply.github.com"
 
 # Paths
+
 COVERAGE_FILE=coverage/coverage-summary.json
 HISTORY_FILE=docs/coverage-history.json
 ```

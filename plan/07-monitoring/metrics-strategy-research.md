@@ -300,10 +300,13 @@ The Apdex (Application Performance Index) score combines user satisfaction level
 
 **PromQL Example:**
 ```promql
+
 # Request rate (requests per second)
+
 rate(birthday_scheduler_api_requests_total[5m])
 
 # Messages per minute
+
 rate(birthday_scheduler_messages_sent_total[1m]) * 60
 ```
 
@@ -324,7 +327,9 @@ rate(birthday_scheduler_messages_sent_total[1m]) * 60
 
 **PromQL Example:**
 ```promql
+
 # Error rate percentage
+
 (
   rate(birthday_scheduler_messages_failed_total[5m])
   /
@@ -350,7 +355,9 @@ rate(birthday_scheduler_messages_sent_total[1m]) * 60
 
 **PromQL Example:**
 ```promql
+
 # Database connection pool saturation
+
 (
   birthday_scheduler_database_connections{state="active"}
   /
@@ -365,6 +372,7 @@ rate(birthday_scheduler_messages_sent_total[1m]) * 60
 The RED Method, introduced by Tom Wilkie, focuses on microservices monitoring.
 
 #### Components:
+
 1. **Rate** - Requests per second (equivalent to Traffic)
 2. **Errors** - Failed requests per second
 3. **Duration** - Request processing time (equivalent to Latency)
@@ -373,14 +381,18 @@ The RED Method, introduced by Tom Wilkie, focuses on microservices monitoring.
 
 **PromQL Dashboard Example:**
 ```promql
+
 # RED Method for Birthday Scheduler API
 # Rate
+
 sum(rate(birthday_scheduler_api_requests_total[5m])) by (method, path)
 
 # Errors
+
 sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) by (method, path)
 
 # Duration (p95)
+
 histogram_quantile(0.95,
   rate(birthday_scheduler_api_response_time_seconds_bucket[5m])
 )
@@ -393,6 +405,7 @@ histogram_quantile(0.95,
 The USE Method (Brendan Gregg) focuses on resource monitoring.
 
 #### Components:
+
 1. **Utilization** - How busy resources are (% time busy)
 2. **Saturation** - How full/constrained resources are (queue depth)
 3. **Errors** - Error counts for resources
@@ -423,6 +436,7 @@ The USE Method (Brendan Gregg) focuses on resource monitoring.
 ### 1. Fastify Node.js Application Metrics
 
 #### Current Implementation
+
 The application uses Fastify with comprehensive API metrics.
 
 #### Recommended Fastify Metrics (from fastify-metrics plugin)
@@ -483,6 +497,7 @@ await metricsApp.listen({ port: 9090, host: '0.0.0.0' });
 ### 2. PostgreSQL Database Metrics
 
 #### Current Implementation
+
 The application has comprehensive database metrics covering connections, queries, transactions.
 
 #### Recommended PostgreSQL Metrics (from postgres_exporter)
@@ -565,7 +580,9 @@ pg_stat_wal_wal_buffers_full
 
 **Deployment:**
 ```yaml
+
 # docker-compose.yml addition
+
 postgres-exporter:
   image: prometheuscommunity/postgres-exporter:latest
   environment:
@@ -611,6 +628,7 @@ pg_database_bloat:
 ### 3. RabbitMQ Message Queue Metrics
 
 #### Current Implementation
+
 Comprehensive RabbitMQ metrics covering queues, channels, messages.
 
 #### Recommended RabbitMQ Metrics (from rabbitmq_prometheus plugin)
@@ -718,6 +736,7 @@ scrape_configs:
 ### 4. TypeORM Performance Metrics
 
 #### Current Implementation
+
 Database connection pool and query metrics are tracked.
 
 #### Recommended TypeORM Metrics
@@ -820,7 +839,9 @@ birthday_scheduler_availability_sli_ratio
 
 **PromQL:**
 ```promql
+
 # 99.9% availability target
+
 (
   sum(rate(birthday_scheduler_api_requests_total{status!~"5.."}[30d]))
   /
@@ -836,7 +857,9 @@ birthday_scheduler_latency_sli_ratio
 
 **PromQL:**
 ```promql
+
 # 95% of requests under 200ms
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le)
 ) < 0.2
@@ -850,7 +873,9 @@ birthday_scheduler_throughput_sli_ratio
 
 **PromQL:**
 ```promql
+
 # 99% delivery success rate
+
 (
   sum(rate(birthday_scheduler_messages_sent_total[1h]))
   /
@@ -866,7 +891,9 @@ birthday_scheduler_error_budget_remaining_ratio
 
 **PromQL:**
 ```promql
+
 # Error budget: 0.1% (100% - 99.9% availability)
+
 1 - (
   sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[30d]))
   /
@@ -1235,13 +1262,17 @@ The application correctly uses default labels:
 
 **PromQL Filtering:**
 ```promql
+
 # Production only
+
 birthday_scheduler_api_requests_total{environment="production"}
 
 # Specific version
+
 birthday_scheduler_api_requests_total{version="1.2.3"}
 
 # Cross-environment comparison
+
 sum(rate(birthday_scheduler_api_requests_total[5m])) by (environment)
 ```
 
@@ -1322,13 +1353,17 @@ metricsService.recordApiRequest(method, normalizePath(path), status);
 
 **Check Cardinality in Prometheus:**
 ```promql
+
 # Count time series per metric
+
 count({__name__=~"birthday_scheduler_.*"}) by (__name__)
 
 # Total time series for application
+
 count({service="birthday-message-scheduler"})
 
 # Cardinality by label
+
 count(birthday_scheduler_api_requests_total) by (method)
 count(birthday_scheduler_api_requests_total) by (path)
 ```
@@ -1381,6 +1416,7 @@ birthday_scheduler_queue_depth{queue_name}
 ### 1. Metrics Integration Checklist
 
 #### Phase 1: Core Metrics (Already Implemented ✅)
+
 - [x] Initialize Prometheus registry
 - [x] Configure default labels (service, environment, version)
 - [x] Collect default Node.js metrics
@@ -1390,12 +1426,14 @@ birthday_scheduler_queue_depth{queue_name}
 - [x] Expose /metrics endpoint
 
 #### Phase 2: External Exporters (Recommended)
+
 - [ ] Deploy postgres_exporter sidecar
 - [ ] Enable rabbitmq_prometheus plugin
 - [ ] Configure Prometheus scraping for exporters
 - [ ] Create unified Grafana dashboards
 
 #### Phase 3: Advanced Metrics (Optional)
+
 - [ ] Implement SLI/SLO tracking
 - [ ] Add business KPI metrics
 - [ ] Create custom recording rules
@@ -1590,7 +1628,9 @@ describe('Metrics Endpoint', () => {
 #### Prometheus Configuration
 
 ```yaml
+
 # prometheus.yml
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -1632,7 +1672,9 @@ alerting:
 #### Recording Rules
 
 ```yaml
+
 # /etc/prometheus/rules/birthday_scheduler.yml
+
 groups:
   - name: birthday_scheduler_aggregations
     interval: 30s
@@ -1681,20 +1723,26 @@ groups:
 #### Rate (Requests per Second)
 
 ```promql
+
 # Overall request rate
+
 sum(rate(birthday_scheduler_api_requests_total[5m]))
 
 # Per-endpoint request rate
+
 sum(rate(birthday_scheduler_api_requests_total[5m])) by (method, path)
 
 # Per-environment request rate
+
 sum(rate(birthday_scheduler_api_requests_total[5m])) by (environment)
 ```
 
 #### Errors (Error Rate %)
 
 ```promql
+
 # Overall error rate (%)
+
 (
   sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
   /
@@ -1702,6 +1750,7 @@ sum(rate(birthday_scheduler_api_requests_total[5m])) by (environment)
 ) * 100
 
 # Error rate by endpoint
+
 (
   sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) by (path)
   /
@@ -1709,6 +1758,7 @@ sum(rate(birthday_scheduler_api_requests_total[5m])) by (environment)
 ) * 100
 
 # 4xx vs 5xx errors
+
 sum(rate(birthday_scheduler_api_requests_total{status=~"4.."}[5m])) by (status)
 sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) by (status)
 ```
@@ -1716,17 +1766,21 @@ sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) by (status)
 #### Duration (Latency Percentiles)
 
 ```promql
+
 # P50, P95, P99 latency
+
 histogram_quantile(0.50, sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le))
 histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le))
 histogram_quantile(0.99, sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le))
 
 # Per-endpoint P95 latency
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le, path)
 )
 
 # Average latency (use histogram_avg or summary)
+
 avg(rate(birthday_scheduler_api_response_time_seconds_sum[5m]) / rate(birthday_scheduler_api_response_time_seconds_count[5m]))
 ```
 
@@ -1735,13 +1789,17 @@ avg(rate(birthday_scheduler_api_response_time_seconds_sum[5m]) / rate(birthday_s
 #### Traffic
 
 ```promql
+
 # Messages scheduled per minute
+
 sum(rate(birthday_scheduler_messages_scheduled_total[1m])) * 60
 
 # Messages sent per hour
+
 sum(rate(birthday_scheduler_messages_sent_total[1h])) * 3600
 
 # Peak traffic hour
+
 topk(1,
   sum(rate(birthday_scheduler_api_requests_total[1h])) by (hour)
 )
@@ -1750,33 +1808,43 @@ topk(1,
 #### Latency
 
 ```promql
+
 # API latency percentiles
+
 histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le))
 
 # Database query latency
+
 histogram_quantile(0.99, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket[5m])) by (le))
 
 # Message delivery latency
+
 histogram_quantile(0.95, sum(rate(birthday_scheduler_message_delivery_duration_seconds_bucket[5m])) by (le))
 ```
 
 #### Errors
 
 ```promql
+
 # Overall error rate
+
 sum(rate(birthday_scheduler_messages_failed_total[5m]))
 
 # Authentication failure rate
+
 sum(rate(birthday_scheduler_auth_failures_total[5m]))
 
 # Database error rate
+
 sum(rate(birthday_scheduler_database_rollbacks_total[5m]))
 ```
 
 #### Saturation
 
 ```promql
+
 # Database connection pool saturation
+
 (
   birthday_scheduler_database_connections{state="active"}
   /
@@ -1784,19 +1852,24 @@ sum(rate(birthday_scheduler_database_rollbacks_total[5m]))
 ) * 100
 
 # Queue depth vs capacity
+
 (birthday_scheduler_queue_depth{queue_name="birthday_notifications"} / 1000) * 100
 
 # Event loop saturation
+
 birthday_scheduler_event_loop_utilization * 100
 
 # Memory saturation
+
 (birthday_scheduler_system_total_memory - birthday_scheduler_system_free_memory) / birthday_scheduler_system_total_memory * 100
 ```
 
 ### 3. Business KPI Queries
 
 ```promql
+
 # Delivery success rate (last hour)
+
 (
   sum(rate(birthday_scheduler_messages_sent_total[1h]))
   /
@@ -1804,22 +1877,28 @@ birthday_scheduler_event_loop_utilization * 100
 ) * 100
 
 # Birthdays processed today (24h)
+
 sum(increase(birthday_scheduler_birthdays_processed_total[24h]))
 
 # Active users (last 15 minutes)
+
 birthday_scheduler_active_users{time_window="15m"}
 
 # Template usage distribution
+
 topk(10, sum(rate(birthday_scheduler_message_template_usage_total[1h])) by (template_name))
 
 # Peak messaging hours
+
 topk(5, sum(rate(birthday_scheduler_message_delivery_by_hour_total[24h])) by (hour))
 ```
 
 ### 4. Performance Analysis Queries
 
 ```promql
+
 # Cache hit rate
+
 (
   sum(rate(birthday_scheduler_cache_hits_total[5m]))
   /
@@ -1827,41 +1906,53 @@ topk(5, sum(rate(birthday_scheduler_message_delivery_by_hour_total[24h])) by (ho
 ) * 100
 
 # Database query performance by type
+
 avg(rate(birthday_scheduler_database_query_duration_seconds_sum[5m]) / rate(birthday_scheduler_database_query_duration_seconds_count[5m])) by (query_type)
 
 # Slow queries (>1s)
+
 sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{le="1.0"}[5m])) by (query_type)
 
 # GC overhead
+
 sum(rate(birthday_scheduler_gc_pause_time_seconds_sum[5m])) / sum(rate(birthday_scheduler_process_uptime_seconds[5m])) * 100
 
 # Connection pool wait time
+
 avg(birthday_scheduler_connection_pool_wait_time) by (pool_name)
 ```
 
 ### 5. Queue Health Queries
 
 ```promql
+
 # Queue depth trend
+
 delta(birthday_scheduler_queue_depth{queue_name="birthday_notifications"}[5m])
 
 # Consumer efficiency (acks per second)
+
 sum(rate(birthday_scheduler_message_acks_total[5m])) by (queue_name)
 
 # Redelivery rate (should be low)
+
 sum(rate(birthday_scheduler_message_redeliveries_total[5m])) by (queue_name)
 
 # Message age (time in queue)
+
 birthday_scheduler_message_age_seconds{queue_name="birthday_notifications"}
 
 # Consumer utilization
+
 birthday_scheduler_consumer_count{queue_name="birthday_notifications"} > 0
 ```
 
 ### 6. Alerting Queries
 
 ```promql
+
 # High error rate alert (>1%)
+
 (
   sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
   /
@@ -1869,14 +1960,17 @@ birthday_scheduler_consumer_count{queue_name="birthday_notifications"} > 0
 ) > 0.01
 
 # High latency alert (P95 >500ms)
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le)
 ) > 0.5
 
 # Queue saturation alert (>80%)
+
 birthday_scheduler_queue_depth{queue_name="birthday_notifications"} / 1000 > 0.8
 
 # Database connection exhaustion (>90%)
+
 (
   birthday_scheduler_database_connections{state="active"}
   /
@@ -1884,6 +1978,7 @@ birthday_scheduler_queue_depth{queue_name="birthday_notifications"} / 1000 > 0.8
 ) > 0.9
 
 # Memory pressure (>85%)
+
 (
   (birthday_scheduler_system_total_memory - birthday_scheduler_system_free_memory)
   /
@@ -1894,16 +1989,21 @@ birthday_scheduler_queue_depth{queue_name="birthday_notifications"} / 1000 > 0.8
 ### 7. Capacity Planning Queries
 
 ```promql
+
 # Predict queue growth (linear regression)
+
 predict_linear(birthday_scheduler_queue_depth{queue_name="birthday_notifications"}[30m], 3600)
 
 # Database growth rate (bytes per hour)
+
 rate(birthday_scheduler_database_table_size{table="messages"}[1h]) * 3600
 
 # Request rate trend (next hour)
+
 predict_linear(sum(rate(birthday_scheduler_api_requests_total[30m]))[30m], 3600)
 
 # Memory usage trend
+
 predict_linear(birthday_scheduler_system_total_memory - birthday_scheduler_system_free_memory[1h], 3600)
 ```
 

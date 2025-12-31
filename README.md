@@ -1,19 +1,41 @@
 # 🎂 Happy Birthday App - Message Scheduler
 
-<!-- Build Status Badges -->
-[![CI](https://github.com/fairyhunter13/happy-bday-app/workflows/CI/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
-[![Code Quality](https://github.com/fairyhunter13/happy-bday-app/workflows/Code%20Quality/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
-[![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
-[![Security](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scanning/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
-[![Performance](https://github.com/fairyhunter13/happy-bday-app/workflows/Performance%20Tests/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
-[![Docker](https://github.com/fairyhunter13/happy-bday-app/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml)
+## Table of Contents
 
-<!-- API & Docs Badges -->
-[![OpenAPI](https://github.com/fairyhunter13/happy-bday-app/workflows/OpenAPI%20Validation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
-[![Docs](https://github.com/fairyhunter13/happy-bday-app/workflows/Deploy%20Documentation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docs.yml)
-[![API Docs](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
-[![Coverage Trends](https://img.shields.io/badge/Coverage-Trends-purple?logo=chartdotjs)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
+1. [📊 Test Reports & Metrics](#-test-reports-metrics)
+2. [🔗 Quick Links](#-quick-links)
+3. [⚠️ Project Scope](#-project-scope)
+4. [🚀 Quick Start](#-quick-start)
+5. [📋 Documentation](#-documentation)
+6. [🎯 Key Features](#-key-features)
+7. [🛠️ Tech Stack](#-tech-stack)
+8. [📦 Project Structure](#-project-structure)
+9. [🧪 Testing](#-testing)
+10. [📚 Architecture Highlights](#-architecture-highlights)
+11. [🚀 Deployment & Infrastructure](#-deployment-infrastructure)
+12. [🎓 Key Decisions](#-key-decisions)
+13. [📈 Performance Targets](#-performance-targets)
+14. [📞 Getting Help](#-getting-help)
+15. [🎓 Learning & Educational Use](#-learning-educational-use)
+16. [📄 License](#-license)
+
+---
+
+<!-- CI/CD Status Badges -->
+[![CI](https://github.com/fairyhunter13/happy-bday-app/workflows/CI/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/fairyhunter13/happy-bday-app/workflows/Code%20Quality/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
+[![Security Scanning](https://github.com/fairyhunter13/happy-bday-app/workflows/Security%20Scanning/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
+[![Performance Tests](https://github.com/fairyhunter13/happy-bday-app/workflows/Performance%20Tests/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![Docker Build and Push](https://github.com/fairyhunter13/happy-bday-app/workflows/Docker%20Build%20and%20Push/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml)
+[![OpenAPI Validation](https://github.com/fairyhunter13/happy-bday-app/workflows/OpenAPI%20Validation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
+[![Deploy Documentation](https://github.com/fairyhunter13/happy-bday-app/workflows/Deploy%20Documentation/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docs.yml)
+[![Mutation Testing](https://github.com/fairyhunter13/happy-bday-app/workflows/Mutation%20Testing/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml)
+[![SonarCloud](https://github.com/fairyhunter13/happy-bday-app/workflows/SonarCloud%20Analysis/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/sonar.yml)
+
+<!-- Quality & Coverage Badges -->
+[![Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
+[![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
+[![Quality Gate Status](https://img.shields.io/badge/SonarCloud-Quality%20Gate-brightgreen?logo=sonarcloud)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
 
 <!-- Tech Stack Badges -->
 [![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-green?logo=node.js)](https://nodejs.org/)
@@ -21,6 +43,14 @@
 [![Fastify](https://img.shields.io/badge/Fastify-5.x-black?logo=fastify)](https://fastify.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue?logo=postgresql)](https://www.postgresql.org/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-orange?logo=rabbitmq)](https://www.rabbitmq.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
+[![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-orange?logo=prometheus)](https://prometheus.io/)
+[![Grafana](https://img.shields.io/badge/Grafana-Dashboards-orange?logo=grafana)](https://grafana.com/)
+
+<!-- Documentation & API Badges -->
+[![API Docs](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
+[![Coverage Trends](https://img.shields.io/badge/Coverage-Trends-purple?logo=chartdotjs)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
+[![GitHub Pages](https://img.shields.io/badge/GitHub-Pages-blue?logo=github)](https://fairyhunter13.github.io/happy-bday-app/)
 
 <!-- Project Badges -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -28,6 +58,50 @@
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot)](https://github.com/fairyhunter13/happy-bday-app/security/dependabot)
 
 A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, and RabbitMQ. Designed to handle **1M+ messages/day** with **zero data loss** and extensible support for multiple message types (birthday, anniversary, etc.).
+
+---
+
+## 📊 Test Reports & Metrics
+
+### Test Statistics
+
+| Metric | Value |
+|--------|-------|
+| **Total Tests** | 460+ passing |
+| **Test Files** | 46 test suites |
+| **Test Types** | Unit, Integration, E2E, Performance |
+| **Coverage** | ~65% (Target: 80%+) |
+| **Mutation Testing** | Stryker (Optional) |
+
+### Coverage Metrics
+
+| Type | Current | Target | Status |
+|------|---------|--------|--------|
+| **Statement Coverage** | ~65% | 80% | 🟡 In Progress |
+| **Branch Coverage** | ~60% | 75% | 🟡 In Progress |
+| **Function Coverage** | ~70% | 80% | 🟡 In Progress |
+| **Line Coverage** | ~65% | 80% | 🟡 In Progress |
+
+### Interactive Reports
+
+- **[API Documentation](https://fairyhunter13.github.io/happy-bday-app/)** - Interactive Swagger/OpenAPI docs
+- **[Coverage Trends](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)** - Historical coverage analysis
+- **[Test Reports](https://github.com/fairyhunter13/happy-bday-app/actions)** - CI/CD test results
+
+---
+
+## 🔗 Quick Links
+
+| Resource | Description | Link |
+|----------|-------------|------|
+| **📡 API Documentation** | Interactive Swagger/OpenAPI docs | [GitHub Pages](https://fairyhunter13.github.io/happy-bday-app/) |
+| **📈 Coverage Trends** | Historical coverage visualization | [Trends Page](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html) |
+| **📋 OpenAPI Spec** | OpenAPI 3.0 specification | [JSON Spec](https://fairyhunter13.github.io/happy-bday-app/openapi.json) |
+| **📊 Grafana Dashboards** | Monitoring & metrics dashboards | [Local: http://localhost:3001](http://localhost:3001) |
+| **🧪 Test Reports** | CI/CD test execution results | [GitHub Actions](https://github.com/fairyhunter13/happy-bday-app/actions) |
+| **🔍 SonarCloud** | Code quality analysis | [SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app) |
+| **🐳 Docker Registry** | Container images | [GitHub Container Registry](https://github.com/fairyhunter13/happy-bday-app/pkgs/container/happy-bday-app) |
+| **📚 Documentation** | Planning & architecture docs | [`plan/`](./plan/) directory |
 
 ---
 
@@ -54,22 +128,29 @@ All "production" configurations (`docker-compose.prod.yml`, monitoring setup, et
 ## 🚀 Quick Start
 
 ```bash
+
 # Install dependencies
+
 npm install
 
 # Decrypt environment secrets (see docs/DEVELOPER_SETUP.md for age key setup)
+
 npm run secrets:decrypt:dev
 
 # Start development environment (Docker Compose)
+
 docker-compose -f docker-compose.dev.yml up -d
 
 # Run database migrations
+
 npm run db:migrate
 
 # Start API server
+
 npm run dev
 
 # Start worker (in separate terminal)
+
 npm run worker
 ```
 
@@ -83,16 +164,19 @@ npm run worker
 
 All planning, architecture, research, and implementation documentation is in the **[`plan/`](./plan/)** directory.
 
-### Quick Links
+### Documentation Quick Links
 
 | Topic | Document |
 |-------|----------|
 | **📡 API Reference** | [Live Docs](https://fairyhunter13.github.io/happy-bday-app/) or `http://localhost:3000/docs` |
+| **📈 Coverage Trends** | [Coverage History](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html) |
+| **📊 Test Reports** | [CI/CD Results](https://github.com/fairyhunter13/happy-bday-app/actions) |
 | **📖 Overview** | [`plan/README.md`](./plan/README.md) - Start here! |
 | **🏗️ Architecture** | [`plan/02-architecture/architecture-overview.md`](./plan/02-architecture/architecture-overview.md) |
 | **🎯 Requirements** | [`plan/01-requirements/system-flows.md`](./plan/01-requirements/system-flows.md) |
 | **📅 Implementation Plan** | [`plan/05-implementation/master-plan.md`](./plan/05-implementation/master-plan.md) |
 | **🧪 Testing Strategy** | [`plan/04-testing/testing-strategy.md`](./plan/04-testing/testing-strategy.md) |
+| **📊 Monitoring** | [`plan/07-monitoring/INDEX.md`](./plan/07-monitoring/INDEX.md) |
 | **🔬 Research** | [`plan/03-research/`](./plan/03-research/) |
 
 ---
@@ -116,12 +200,51 @@ All planning, architecture, research, and implementation documentation is in the
 
 ## 🛠️ Tech Stack
 
-- **API:** Fastify + TypeScript
+### Core Technologies
+
+- **API Framework:** Fastify 5.x + TypeScript 5.7
 - **Database:** PostgreSQL 15 + Drizzle ORM
-- **Queue:** RabbitMQ (Quorum Queues for zero data loss)
-- **Testing:** Vitest + k6 + Docker Compose
-- **CI/CD:** GitHub Actions
-- **Monitoring:** Prometheus + Grafana
+- **Message Queue:** RabbitMQ 3.x (Quorum Queues for zero data loss)
+- **Runtime:** Node.js ≥20.0.0
+
+### Testing & Quality
+
+- **Testing Framework:** Vitest with v8 coverage
+- **Performance Testing:** k6 load testing
+- **Mutation Testing:** Stryker
+- **Code Quality:** SonarCloud + ESLint + Prettier
+- **Code Duplication:** jscpd (<5% threshold)
+- **E2E Testing:** Docker Compose + Testcontainers
+
+### Monitoring & Observability
+
+- **Metrics:** Prometheus (258 custom metrics)
+- **Visualization:** Grafana dashboards
+- **Metrics Categories:**
+  - Business metrics (15 metrics)
+  - Queue metrics (10 metrics)
+  - Performance metrics (5 metrics)
+  - Database metrics (5 metrics)
+  - HTTP client metrics (5 metrics)
+  - Circuit breaker metrics
+  - API performance metrics
+  - System health metrics
+
+### CI/CD & DevOps
+
+- **CI/CD Platform:** GitHub Actions
+- **Container Registry:** GitHub Container Registry (GHCR)
+- **Secret Management:** SOPS + age encryption
+- **Documentation:** GitHub Pages
+- **API Documentation:** Swagger/OpenAPI 3.0
+
+### Security & Compliance
+
+- **Security Scanning:** Snyk + npm audit
+- **Dependency Management:** Dependabot
+- **Authentication:** JWT tokens
+- **Rate Limiting:** Fastify rate-limit
+- **Security Headers:** Helmet middleware
 
 ---
 
@@ -163,29 +286,41 @@ happy-bday-app/
 All tests run **locally** or in **CI/CD pipelines**. No production deployment required.
 
 ### Unit & Integration Tests
+
 ```bash
+
 # Run all tests with coverage
+
 npm test
 
 # Watch mode for development
+
 npm run test:watch
 ```
 
 ### E2E Tests (Local/CI)
+
 ```bash
+
 # Start test environment (4 containers, local Docker)
+
 docker-compose -f docker-compose.test.yml up -d
 
 # Run E2E tests (< 5 min)
+
 npm run test:e2e
 ```
 
 ### Performance Tests (Local Only)
+
 ```bash
+
 # Start performance environment (24 containers, local Docker)
+
 docker-compose -f docker-compose.perf.yml up -d
 
 # Run k6 load tests (1M msg/day simulation)
+
 npm run test:performance
 ```
 
@@ -197,6 +332,16 @@ npm run test:performance
 
 > **Design Philosophy:** Production-grade architecture for local development and CI/CD validation.
 > See [`docs/ARCHITECTURE_SCOPE.md`](./docs/ARCHITECTURE_SCOPE.md) for complete scope details.
+
+### Key Architecture Features
+
+- **258 Prometheus Metrics** - Comprehensive observability across all system components
+- **5 Grafana Dashboards** - API Performance, Database, Infrastructure, Message Processing, Security
+- **Automated Alerting** - 4 alert rule files (Critical, Warning, Info, SLO)
+- **Zero Data Loss** - RabbitMQ Quorum Queues with Raft consensus
+- **Horizontal Scaling** - 10-30 workers, 5 API replicas
+- **Circuit Breaker Pattern** - Opossum for external service resilience
+- **Strategy Pattern** - Extensible message type system
 
 ### Message Type Abstraction (Strategy Pattern)
 
@@ -245,6 +390,55 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 
 ---
 
+## 🚀 Deployment & Infrastructure
+
+### Container Registry
+
+- **GitHub Container Registry (GHCR)**: Automated Docker image builds and publishing
+- **Multi-stage Builds**: Optimized production images
+- **Image Tagging**: Semantic versioning with git SHA
+
+### Monitoring Stack (Local)
+
+#### Prometheus Metrics (258 Total)
+
+- **Business Metrics** (15): Birthdays processed, template usage, user events
+- **Queue Metrics** (10): Publisher confirms, acks/nacks, redeliveries
+- **Performance Metrics** (5): Cache hits/misses, connection pools, GC events
+- **Database Metrics** (5): Deadlocks, commits, rollbacks, checkpoints
+- **HTTP Client Metrics** (5): Retries, timeouts, TLS handshakes
+- **System Metrics**: Default Node.js and process metrics
+
+#### Grafana Dashboards (5 Dashboards)
+
+1. **API Performance** - Request rates, latency, error rates
+2. **Database** - Connection pools, query performance, table stats
+3. **Infrastructure** - System resources, network, containers
+4. **Message Processing** - Queue depth, worker throughput, delivery rates
+5. **Security** - Auth events, rate limiting, security incidents
+
+#### Alert Rules (4 Categories)
+
+- **Critical Alerts**: System down, data loss, security breaches
+- **Warning Alerts**: High latency, queue backlog, resource usage
+- **Info Alerts**: Deployment events, configuration changes
+- **SLO Alerts**: Service Level Objective violations
+
+### CI/CD Workflows (10 Workflows)
+
+1. **CI** - Lint, type-check, unit tests (5 shards)
+2. **Code Quality** - ESLint, code duplication checks
+3. **Security Scanning** - npm audit, Snyk (optional)
+4. **Performance Tests** - k6 load testing
+5. **Docker Build** - Multi-platform image builds
+6. **OpenAPI Validation** - API spec validation
+7. **Deploy Documentation** - GitHub Pages deployment
+8. **Mutation Testing** - Stryker mutation testing (optional)
+9. **SonarCloud** - Code quality analysis
+10. **Release** - Automated releases and changelogs
+
+---
+
 ## 🎓 Key Decisions
 
 | Decision | Choice | Rationale |
@@ -280,12 +474,14 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 ## 📞 Getting Help
 
 ### Core Documentation
+
 - **Documentation Hub:** [`plan/README.md`](./plan/README.md)
 - **Architecture Overview:** [`plan/02-architecture/`](./plan/02-architecture/)
 - **Implementation Plan:** [`plan/05-implementation/master-plan.md`](./plan/05-implementation/master-plan.md)
 - **Testing Strategy:** [`plan/04-testing/testing-strategy.md`](./plan/04-testing/testing-strategy.md)
 
 ### Essential Guides
+
 - **Developer Setup:** [`docs/DEVELOPER_SETUP.md`](./docs/DEVELOPER_SETUP.md) - First-time setup
 - **Local Deployment:** [`docs/DEPLOYMENT_GUIDE.md`](./docs/DEPLOYMENT_GUIDE.md) - Run locally
 - **Architecture Scope:** [`docs/ARCHITECTURE_SCOPE.md`](./docs/ARCHITECTURE_SCOPE.md) - Design decisions

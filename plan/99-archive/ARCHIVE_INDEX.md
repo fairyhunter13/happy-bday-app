@@ -31,12 +31,14 @@ Historical documents that have been superseded by newer versions or consolidated
 ## Why These Are Archived
 
 ### INDEX.md
+
 - **Created:** 2025-12-31 (coverage trends implementation)
 - **Archived:** 2025-12-31 (directory reorganization)
 - **Reason:** Focused only on coverage trends; now part of broader testing documentation
 - **New Location:** All coverage tracking docs in [`../04-testing/coverage-tracking/`](../04-testing/coverage-tracking/)
 
 ### REORGANIZATION_SUMMARY.md
+
 - **Created:** 2025-12-30
 - **Archived:** 2025-12-31
 - **Reason:** Superseded by new reorganization
@@ -47,6 +49,7 @@ Historical documents that have been superseded by newer versions or consolidated
 ## Archive Policy
 
 ### When to Archive
+
 Documents are archived when they:
 1. Have been superseded by newer versions
 2. Are no longer relevant to current implementation
@@ -54,6 +57,7 @@ Documents are archived when they:
 4. Have been consolidated into other documents
 
 ### When NOT to Archive
+
 Documents should NOT be archived if they:
 1. Contain unique historical context
 2. Are referenced by active documentation
@@ -67,14 +71,19 @@ Documents should NOT be archived if they:
 All archived documents remain accessible in git history and in this directory for reference purposes.
 
 ### Git History
+
 ```bash
+
 # View document history
+
 git log --follow plan/99-archive/<filename>
 
 # View old version
+
 git show <commit>:plan/<filename>
 
 # Compare versions
+
 git diff <commit1> <commit2> -- plan/<filename>
 ```
 
@@ -83,6 +92,7 @@ git diff <commit1> <commit2> -- plan/<filename>
 ## Related Documentation
 
 ### Current Documentation Structure
+
 - **Main Index:** [`../README.md`](../README.md)
 - **Requirements:** [`../01-requirements/`](../01-requirements/)
 - **Architecture:** [`../02-architecture/`](../02-architecture/)

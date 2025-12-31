@@ -427,7 +427,7 @@ ON message_logs(idempotency_key);
 **Scenario Analysis:**
 
 **Scenario 1: Normal Operation**
-```
+```sql
 Worker A: INSERT message_log → Success
 Worker A: Send email → Success
 Worker B: INSERT message_log → FAILS (constraint violation)
@@ -437,7 +437,7 @@ Result: 1 email sent ✅
 ```
 
 **Scenario 2: Race Condition (without Redlock)**
-```
+```sql
 Worker A: INSERT message_log → Success
 Worker B: INSERT message_log → FAILS (constraint violation)
 Worker A: Send email → Success
@@ -447,7 +447,7 @@ Result: 1 email sent ✅
 ```
 
 **Scenario 3: Extreme Race Condition (database lag)**
-```
+```sql
 Worker A: INSERT message_log → Success (committed at T+10ms)
 Worker B: INSERT message_log → Success (checks at T+5ms, commits at T+15ms) ❌
 Worker A: Send email → Success

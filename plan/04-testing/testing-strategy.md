@@ -67,7 +67,9 @@ Performance Tests (Separate)  ← 20+ containers, weekly schedule
 ### Docker Compose Setup (4 containers, < 5 min)
 
 ```yaml
+
 # docker-compose.test.yml
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -217,7 +219,9 @@ describe('Birthday Message E2E Flow', () => {
 ### GitHub Actions Workflow (Simple E2E)
 
 ```yaml
+
 # .github/workflows/e2e-tests.yml
+
 name: E2E Tests
 
 on:
@@ -269,7 +273,9 @@ jobs:
 ### Docker Compose Setup (24 containers, for weekly perf tests)
 
 ```yaml
+
 # docker-compose.perf.yml
+
 services:
   nginx:
     image: nginx:alpine
@@ -418,7 +424,9 @@ export const options = {
 ### GitHub Actions Workflow (Weekly Performance Tests)
 
 ```yaml
+
 # .github/workflows/performance-tests.yml
+
 name: Performance Tests
 
 on:
@@ -707,7 +715,9 @@ describe('Database Performance (10M users)', () => {
 ### Complete GitHub Actions Workflow
 
 ```yaml
+
 # .github/workflows/ci.yml
+
 name: CI
 
 on:
@@ -782,22 +792,26 @@ jobs:
 ## Success Criteria
 
 ### Unit Tests
+
 - ✅ Coverage: 85%+
 - ✅ Duration: < 2 minutes
 - ✅ All strategies tested with generic framework
 
 ### Integration Tests
+
 - ✅ Coverage: 80%+
 - ✅ Duration: < 3 minutes
 - ✅ Database integration verified
 
 ### E2E Tests (CI/CD)
+
 - ✅ Coverage: 75%+
 - ✅ Duration: < 5 minutes
 - ✅ Containers: 4 (postgres, redis, api, worker)
 - ✅ Full user flow tested
 
 ### Performance Tests (Weekly)
+
 - ✅ Sustained: 11.5 msg/sec for 24 hours
 - ✅ Peak: 100+ msg/sec for 5 minutes
 - ✅ Database: < 200ms birthday queries with 10M users

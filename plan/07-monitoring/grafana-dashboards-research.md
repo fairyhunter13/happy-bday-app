@@ -8,6 +8,7 @@
 ---
 
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Design Principles & Best Practices](#design-principles--best-practices)
 3. [Dashboard 1: API Performance](#dashboard-1-api-performance)
@@ -25,6 +26,7 @@
 This research document provides comprehensive guidance for implementing 4 production-grade Grafana dashboards based on industry best practices, the RED method, Four Golden Signals, and USE methodology. Each dashboard is designed for specific monitoring concerns while maintaining consistency in design patterns.
 
 ### Dashboard Overview
+
 - **API Performance**: Request rate, latency percentiles, error tracking (RED method)
 - **Message Processing**: Queue depth, processing rate, retry patterns (Queue-specific metrics)
 - **Database**: Connection pools, query performance, replication health (Database-specific metrics)
@@ -103,9 +105,11 @@ Source: [Four Golden Signals](https://www.sysdig.com/blog/golden-signals-kuberne
 ## Dashboard 1: API Performance
 
 ### Purpose
+
 Monitor HTTP API health using the RED method: request Rate, Error rate, and Duration (latency).
 
 ### Technology Context
+
 - **Framework**: Fastify with `fastify-metrics` plugin
 - **Metrics Plugin**: [fastify-metrics](https://github.com/SkeLLLa/fastify-metrics)
 - **Default Metrics**: `http_request_duration_seconds` (histogram), `http_request_summary_seconds` (summary)
@@ -118,7 +122,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Stat panel with sparkline
 - **Metric**: Total requests per second across all endpoints
 - **PromQL**:
-  ```promql
+```
   sum(rate(http_request_duration_seconds_count[5m]))
   ```
 - **Thresholds**:
@@ -130,7 +134,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Stat panel with percentage
 - **Metric**: Percentage of 5xx errors
 - **PromQL**:
-  ```promql
+```
   sum(rate(http_request_duration_seconds_count{status_code=~"5.."}[5m]))
   /
   sum(rate(http_request_duration_seconds_count[5m])) * 100
@@ -144,7 +148,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Stat panel with gauge
 - **Metric**: 99th percentile latency
 - **PromQL**:
-  ```promql
+```
   histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
   ```
 - **Thresholds**:
@@ -157,7 +161,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Time series (stacked area)
 - **Metric**: Request rate broken down by route
 - **PromQL**:
-  ```promql
+```
   sum by (route) (rate(http_request_duration_seconds_count[5m]))
   ```
 - **Legend**: `{{route}}`
@@ -168,7 +172,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Time series (lines)
 - **Metrics**: p50, p90, p95, p99
 - **PromQL**:
-  ```promql
+```
   # P50
   histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
 
@@ -189,7 +193,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Heatmap
 - **Metric**: Request duration distribution
 - **PromQL**:
-  ```promql
+```
   sum(increase(http_request_duration_seconds_bucket[1m])) by (le)
   ```
 - **Purpose**: Visualize latency distribution patterns and outliers over time
@@ -200,7 +204,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Time series (stacked bars)
 - **Metric**: Request count by status code range
 - **PromQL**:
-  ```promql
+```
   sum by (status_code) (rate(http_request_duration_seconds_count[5m]))
   ```
 - **Color Mapping**:
@@ -213,7 +217,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Table
 - **Metric**: Error percentage per endpoint, sorted by error count
 - **PromQL**:
-  ```promql
+```
   # Error Rate
   sum by (route) (rate(http_request_duration_seconds_count{status_code=~"5.."}[5m]))
   /
@@ -230,7 +234,7 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 - **Visualization**: Bar gauge (horizontal)
 - **Metric**: P95 latency by route
 - **PromQL**:
-  ```promql
+```
   topk(10,
     histogram_quantile(0.95,
       sum by (route, le) (rate(http_request_duration_seconds_bucket[5m]))
@@ -285,13 +289,13 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
    - P99: Expose architectural bottlenecks
 
 3. **Recording Rules**: Create for performance ([Essential Prometheus Queries](https://last9.io/blog/prometheus-query-examples/))
-   ```yaml
+```
    - record: api:http_request_duration_seconds:p95
      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route))
    ```
 
 4. **Anomaly Detection**: Alert when P95 exceeds baseline ([Practical Anomaly Detection](https://grigorkh.medium.com/practical-anomaly-detection-with-prometheus-and-promql-d3027b97da96))
-   ```promql
+```
    # Alert if P95 latency exceeds 4σ above 1h baseline
    histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
    >
@@ -304,9 +308,11 @@ Monitor HTTP API health using the RED method: request Rate, Error rate, and Dura
 ## Dashboard 2: Message Processing
 
 ### Purpose
+
 Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 
 ### Technology Context
+
 - **Message Broker**: RabbitMQ with Prometheus plugin
 - **Exporter**: `rabbitmq_prometheus` plugin (port 15692)
 - **Official Guide**: [RabbitMQ Prometheus Monitoring](https://www.rabbitmq.com/docs/prometheus)
@@ -319,7 +325,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Stat panel with trend
 - **Metric**: Sum of messages across all queues
 - **PromQL**:
-  ```promql
+```
   sum(rabbitmq_detailed_queue_messages)
   ```
 - **Thresholds**:
@@ -331,7 +337,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Stat panel
 - **Metric**: Messages delivered per second
 - **PromQL**:
-  ```promql
+```
   sum(rate(rabbitmq_detailed_queue_messages_delivered_ack_total[5m]))
   ```
 
@@ -339,7 +345,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Stat panel
 - **Metric**: Total active consumers
 - **PromQL**:
-  ```promql
+```
   sum(rabbitmq_detailed_queue_consumers)
   ```
 - **Thresholds**:
@@ -352,7 +358,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series (multi-line)
 - **Metric**: Messages ready per queue
 - **PromQL**:
-  ```promql
+```
   sum by (queue) (rabbitmq_detailed_queue_messages_ready)
   ```
 - **Legend**: `{{queue}}`
@@ -362,7 +368,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Rate of queue depth change
 - **PromQL**:
-  ```promql
+```
   deriv(rabbitmq_detailed_queue_messages[5m])
   ```
 - **Purpose**: Detect queues filling faster than draining
@@ -373,7 +379,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series (stacked area)
 - **Metric**: Messages published per second by exchange
 - **PromQL**:
-  ```promql
+```
   sum by (exchange) (rate(rabbitmq_detailed_exchange_messages_published_total[5m]))
   ```
 - **Legend**: `{{exchange}}`
@@ -382,7 +388,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Messages delivered and acknowledged
 - **PromQL**:
-  ```promql
+```
   sum by (queue) (rate(rabbitmq_detailed_queue_messages_delivered_ack_total[5m]))
   ```
 
@@ -390,7 +396,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Message ack rate vs delivery rate
 - **PromQL**:
-  ```promql
+```
   # Delivery rate
   sum(rate(rabbitmq_detailed_queue_messages_delivered_ack_total[5m]))
 
@@ -404,7 +410,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Messages redelivered (retries)
 - **PromQL**:
-  ```promql
+```
   sum by (queue) (rate(rabbitmq_detailed_queue_messages_redelivered_total[5m]))
   ```
 - **Alert**: High redelivery rate indicates processing failures
@@ -413,7 +419,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Messages that couldn't be routed
 - **PromQL**:
-  ```promql
+```
   sum by (exchange) (rate(rabbitmq_detailed_exchange_messages_unroutable_returned_total[5m]))
   ```
 - **Color**: Red (these are errors)
@@ -422,7 +428,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Stat panel + time series
 - **Metric**: Messages in Dead Letter Queue
 - **PromQL**:
-  ```promql
+```
   sum(rabbitmq_detailed_queue_messages{queue=~".*dlq.*|.*dead.*"})
   ```
 - **Alert**: DLQ accumulation requires investigation
@@ -432,7 +438,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Gauge per queue
 - **Metric**: Percentage of time consumers are active
 - **PromQL**:
-  ```promql
+```
   (sum by (queue) (rabbitmq_detailed_queue_consumer_utilisation)) * 100
   ```
 - **Thresholds**:
@@ -444,7 +450,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series by queue
 - **Metric**: Messages delivered but not yet acknowledged
 - **PromQL**:
-  ```promql
+```
   sum by (queue) (rabbitmq_detailed_queue_messages_unacked)
   ```
 - **Purpose**: Detect slow processing or hung consumers
@@ -454,7 +460,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Memory consumed by messages per queue
 - **PromQL**:
-  ```promql
+```
   sum by (queue) (rabbitmq_detailed_queue_messages_ram_bytes + rabbitmq_detailed_queue_messages_persistent_bytes)
   ```
 
@@ -462,7 +468,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 - **Visualization**: Time series
 - **Metric**: Rate of connections/channels opened
 - **PromQL**:
-  ```promql
+```
   rate(rabbitmq_detailed_connections_opened_total[5m])
   rate(rabbitmq_detailed_channels_opened_total[5m])
   ```
@@ -510,7 +516,7 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
    - Use for dashboards querying specific queues
 
 2. **Configuration for Large Deployments**:
-   ```
+```
    prometheus.tcp.idle_timeout = 120000
    prometheus.tcp.request_timeout = 120000
    ```
@@ -529,9 +535,11 @@ Monitor RabbitMQ message queue health, throughput, and processing efficiency.
 ## Dashboard 3: Database Monitoring
 
 ### Purpose
+
 Monitor PostgreSQL database performance, connection health, query efficiency, and replication status.
 
 ### Technology Context
+
 - **Database**: PostgreSQL 13-17
 - **Exporter**: [postgres_exporter](https://github.com/prometheus-community/postgres_exporter) (port 9187)
 - **Key Extensions**: `pg_stat_statements`, `pg_stat_activity`, `pg_stat_database`
@@ -544,7 +552,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Stat panel with gauge
 - **Metric**: Current active database connections
 - **PromQL**:
-  ```promql
+```
   sum(pg_stat_activity_count)
   ```
 - **Thresholds** (assuming max_connections=100):
@@ -556,7 +564,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Stat panel with percentage
 - **Metric**: Buffer cache hit ratio (target: > 99%)
 - **PromQL**:
-  ```promql
+```
   sum(pg_stat_database_blks_hit)
   /
   (sum(pg_stat_database_blks_hit) + sum(pg_stat_database_blks_read)) * 100
@@ -570,7 +578,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Stat panel with trend
 - **Metric**: Transactions per second
 - **PromQL**:
-  ```promql
+```
   sum(rate(pg_stat_database_xact_commit[5m]))
   ```
 
@@ -579,7 +587,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series (stacked area)
 - **Metric**: Connections by state (active, idle, idle in transaction)
 - **PromQL**:
-  ```promql
+```
   sum by (state) (pg_stat_activity_count)
   ```
 - **Legend**: `{{state}}`
@@ -593,7 +601,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Gauge
 - **Metric**: Percentage of max connections used
 - **PromQL**:
-  ```promql
+```
   (sum(pg_stat_activity_count) / pg_settings_max_connections) * 100
   ```
 - **Alert**: > 80% utilization
@@ -609,7 +617,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series
 - **Metric**: Database query duration from application metrics
 - **PromQL**:
-  ```promql
+```
   # Assuming application exports postgres_query_duration_seconds
   histogram_quantile(0.95,
     sum by (le, query_type) (rate(postgres_query_duration_seconds_bucket[5m]))
@@ -621,7 +629,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Stat panel + time series
 - **Metric**: Queries exceeding threshold (e.g., > 1 second)
 - **PromQL**:
-  ```promql
+```
   # From pg_stat_statements if exported
   count(pg_stat_statements_mean_exec_time_seconds > 1)
   ```
@@ -637,7 +645,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series
 - **Metrics**: Blocks read from disk vs blocks read from cache
 - **PromQL**:
-  ```promql
+```
   # Disk reads
   sum(rate(pg_stat_database_blks_read[5m]))
 
@@ -650,7 +658,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series (stacked)
 - **Metrics**: Rows inserted, updated, deleted per second
 - **PromQL**:
-  ```promql
+```
   sum(rate(pg_stat_database_tup_inserted[5m]))
   sum(rate(pg_stat_database_tup_updated[5m]))
   sum(rate(pg_stat_database_tup_deleted[5m]))
@@ -660,7 +668,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Stat panel + time series
 - **Metric**: Deadlock occurrences
 - **PromQL**:
-  ```promql
+```
   sum(rate(pg_stat_database_deadlocks[5m]))
   ```
 - **Alert**: Any deadlock should trigger investigation
@@ -670,7 +678,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series by replica
 - **Metric**: Write lag in seconds
 - **PromQL**:
-  ```promql
+```
   pg_stat_replication_write_lag
   ```
 - **Thresholds**:
@@ -688,7 +696,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 - **Visualization**: Time series
 - **Metric**: Database size growth
 - **PromQL**:
-  ```promql
+```
   pg_database_size_bytes
   ```
 
@@ -747,7 +755,7 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
    - Resource usage (CPU, memory, disk I/O)
 
 3. **Non-Superuser Setup**: [postgres_exporter docs](https://github.com/prometheus-community/postgres_exporter)
-   ```sql
+```
    -- Grant pg_monitor role (PostgreSQL 10+)
    GRANT pg_monitor TO prometheus_user;
    ```
@@ -765,9 +773,11 @@ Monitor PostgreSQL database performance, connection health, query efficiency, an
 ## Dashboard 4: Infrastructure Monitoring
 
 ### Purpose
+
 Monitor system resources, Node.js runtime health, and infrastructure saturation using the USE method and Four Golden Signals.
 
 ### Technology Context
+
 - **Runtime**: Node.js with prom-client default metrics
 - **Metrics Library**: [prom-client](https://github.com/siimon/prom-client)
 - **Collection**: `collectDefaultMetrics()` with default prefix
@@ -780,7 +790,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Stat panel + sparkline
 - **Metric**: Event loop lag in milliseconds
 - **PromQL**:
-  ```promql
+```
   nodejs_eventloop_lag_seconds * 1000
   ```
 - **Thresholds**:
@@ -793,7 +803,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Stat panel
 - **Metric**: Total request throughput
 - **PromQL**:
-  ```promql
+```
   sum(rate(http_request_duration_seconds_count[5m]))
   ```
 
@@ -801,7 +811,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Stat panel
 - **Metric**: Process restarts or error rate
 - **PromQL**:
-  ```promql
+```
   changes(process_start_time_seconds[1h])
   ```
 - **Alert**: Any process restart
@@ -810,7 +820,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Dual gauge
 - **Metrics**: CPU usage percentage + Memory usage percentage
 - **PromQL**:
-  ```promql
+```
   # CPU (user + system)
   rate(process_cpu_user_seconds_total[5m]) + rate(process_cpu_system_seconds_total[5m])
 
@@ -823,7 +833,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series (stacked area)
 - **Metrics**: User CPU + System CPU
 - **PromQL**:
-  ```promql
+```
   # User CPU time
   rate(process_cpu_user_seconds_total[5m])
 
@@ -849,7 +859,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series
 - **Metrics**: Heap used, heap total, RSS, external memory
 - **PromQL**:
-  ```promql
+```
   # Heap used
   nodejs_heap_size_used_bytes
 
@@ -868,7 +878,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Gauge
 - **Metric**: Heap usage as percentage of limit
 - **PromQL**:
-  ```promql
+```
   (nodejs_heap_size_used_bytes / nodejs_heap_space_size_total_bytes{space="total"}) * 100
   ```
 - **Thresholds**:
@@ -880,7 +890,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series
 - **Metric**: GC duration and frequency
 - **PromQL**:
-  ```promql
+```
   # GC duration histogram
   rate(nodejs_gc_duration_seconds_sum[5m])
 
@@ -895,7 +905,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Metric**: Disk usage percentage
 - **Note**: Requires node_exporter or custom metrics (not in prom-client defaults)
 - **PromQL**:
-  ```promql
+```
   # If using node_exporter
   (node_filesystem_size_bytes - node_filesystem_avail_bytes)
   /
@@ -906,7 +916,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series
 - **Metric**: Open file descriptors vs limit
 - **PromQL**:
-  ```promql
+```
   # Open FDs (Linux only)
   process_open_fds
 
@@ -926,7 +936,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Metrics**: Bytes received and transmitted
 - **Note**: Requires node_exporter or custom instrumentation
 - **PromQL**:
-  ```promql
+```
   # If using node_exporter
   rate(node_network_receive_bytes_total[5m])
   rate(node_network_transmit_bytes_total[5m])
@@ -942,7 +952,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series
 - **Metric**: Number of active handles (timers, sockets, etc.)
 - **PromQL**:
-  ```promql
+```
   nodejs_active_handles_total
   ```
 - **Alert**: Unbounded growth indicates resource leak
@@ -951,7 +961,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series
 - **Metric**: Number of active async requests
 - **PromQL**:
-  ```promql
+```
   nodejs_active_requests_total
   ```
 
@@ -959,7 +969,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Stat panel
 - **Metric**: Process uptime in days
 - **PromQL**:
-  ```promql
+```
   (time() - process_start_time_seconds) / 86400
   ```
 
@@ -973,7 +983,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 - **Visualization**: Time series (stacked area)
 - **Metrics**: Heap space usage by type
 - **PromQL**:
-  ```promql
+```
   sum by (space) (nodejs_heap_space_size_used_bytes)
   ```
 - **Legend**: `{{space}}` (new_space, old_space, code_space, map_space, large_object_space)
@@ -1009,7 +1019,7 @@ Monitor system resources, Node.js runtime health, and infrastructure saturation 
 ### Best Practices for Infrastructure Dashboard
 
 1. **Enable Default Metrics**: [prom-client documentation](https://github.com/siimon/prom-client)
-   ```javascript
+```typescript
    const promClient = require('prom-client');
    promClient.collectDefaultMetrics({
      prefix: 'nodejs_',
@@ -1305,7 +1315,9 @@ Based on [Grafana SLO Documentation](https://grafana.com/docs/grafana-cloud/aler
 
 **Example SLOs**:
 ```yaml
+
 # API Availability SLO
+
 - name: api_availability
   target: 99.9%  # 43.2 minutes downtime per month
   window: 28d
@@ -1314,6 +1326,7 @@ Based on [Grafana SLO Documentation](https://grafana.com/docs/grafana-cloud/aler
     total_metric: sum(rate(http_request_duration_seconds_count[5m]))
 
 # API Latency SLO
+
 - name: api_latency_p95
   target: 95%  # 95% of requests under 200ms
   window: 28d
@@ -1428,6 +1441,7 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 ## References & Sources
 
 ### Official Documentation
+
 - [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/)
 - [Grafana Visualizations Guide](https://grafana.com/docs/grafana/latest/visualizations/panels-visualizations/visualizations/)
 - [Grafana Dashboard JSON Model](https://grafana.com/docs/grafana/latest/visualizations/dashboards/build-dashboards/view-dashboard-json-model/)
@@ -1435,6 +1449,7 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 - [Introduction to Histograms and Heatmaps](https://grafana.com/docs/grafana/latest/fundamentals/intro-histograms/)
 
 ### Monitoring Methodologies
+
 - [Building a RED Dashboard](https://deepwiki.com/grafana/intro-to-prometheus-breakouts/5.1-building-a-red-dashboard)
 - [Four Golden Signals of Monitoring](https://www.sysdig.com/blog/golden-signals-kubernetes)
 - [Monitoring Golden Signals Dashboard](https://grafana.com/grafana/dashboards/21073-monitoring-golden-signals/)
@@ -1463,6 +1478,7 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 - [Node.js Application Monitoring with Prometheus and Grafana](https://codersociety.com/blog/articles/nodejs-application-monitoring-with-prometheus-and-grafana)
 
 ### Prometheus/PromQL
+
 - [Histogram Buckets in Prometheus](https://last9.io/blog/histogram-buckets-in-prometheus/)
 - [Essential Prometheus Queries](https://last9.io/blog/prometheus-query-examples/)
 - [Prometheus Metrics Types Deep Dive](https://last9.io/blog/prometheus-metrics-types-a-deep-dive/)
@@ -1470,11 +1486,13 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 - [Introduction to Prometheus Metrics Types](https://chronosphere.io/learn/an-introduction-to-the-four-primary-types-of-prometheus-metrics/)
 
 ### DevOps & GitOps
+
 - [Dashboards as Code: GitOps for Grafana](https://grafana.co.za/dashboards-as-code-gitops-for-grafana/)
 - [Git Sync for Development and Production](https://grafana.com/docs/grafana-cloud/as-code/observability-as-code/provision-resources/git-sync-deployment-scenarios/dev-prod/)
 - [Creating and Managing Dashboards using Terraform and GitHub Actions](https://grafana.com/docs/grafana-cloud/developer-resources/infrastructure-as-code/terraform/dashboards-github-action/)
 
 ### Community Dashboards
+
 - [Server Metrics - CPU/Memory/Disk/Network](https://grafana.com/grafana/dashboards/15334-server-metrics-cpu-memory-disk-network/)
 - [grafana-dashboard GitHub Topic](https://github.com/topics/grafana-dashboard)
 - [grafana-dashboards GitHub Topic](https://github.com/topics/grafana-dashboards)
@@ -1484,11 +1502,13 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 ## Appendix: Quick Start Checklist
 
 ### Prerequisites
+
 - [ ] Prometheus server running and scraping metrics
 - [ ] Grafana instance configured with Prometheus data source
 - [ ] Application instrumented with metrics exporters
 
 ### Metrics Implementation
+
 - [ ] `fastify-metrics` plugin installed and configured
 - [ ] `prom-client` default metrics enabled
 - [ ] `postgres_exporter` deployed and scraping PostgreSQL
@@ -1496,6 +1516,7 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 - [ ] Metrics accessible at `/metrics` endpoints
 
 ### Dashboard Creation
+
 - [ ] Create dashboard JSON files in version control
 - [ ] Define template variables for filtering
 - [ ] Implement RED method panels for API dashboard
@@ -1506,6 +1527,7 @@ Based on [Grafana Best Practices](https://grafana.com/docs/grafana/latest/dashbo
 - [ ] Test dashboards with real traffic
 
 ### Production Readiness
+
 - [ ] Document dashboard purpose and usage
 - [ ] Configure SLO-based alerting
 - [ ] Implement recording rules for performance

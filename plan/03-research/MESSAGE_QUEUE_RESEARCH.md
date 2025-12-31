@@ -4,16 +4,37 @@
 
 ---
 
+## Table of Contents
+
+1. [Quick Navigation](#quick-navigation)
+2. [Research Summary](#research-summary)
+3. [Key Decision Factors](#key-decision-factors)
+4. [Final Recommendation](#final-recommendation)
+5. [Document Overview](#document-overview)
+6. [Quick Start Guide](#quick-start-guide)
+7. [Key Statistics from Research](#key-statistics-from-research)
+8. [Cost Comparison (Production)](#cost-comparison-production)
+9. [Research Methodology](#research-methodology)
+10. [Common Questions](#common-questions)
+11. [Action Items](#action-items)
+12. [Files Summary](#files-summary)
+13. [Conclusion](#conclusion)
+
+---
+
 ## Quick Navigation
 
 ### 📋 START HERE
+
 - **[QUEUE_DECISION_SUMMARY.md](QUEUE_DECISION_SUMMARY.md)** - Executive summary with clear recommendation
 
 ### 📊 Detailed Analysis
+
 - **[RABBITMQ_VS_BULLMQ_ANALYSIS.md](RABBITMQ_VS_BULLMQ_ANALYSIS.md)** - Full technical comparison (40KB)
 - **[PROS_CONS_COMPARISON.md](PROS_CONS_COMPARISON.md)** - Detailed pros/cons for each system (17KB)
 
 ### 🛠️ Implementation
+
 - **[RABBITMQ_IMPLEMENTATION_GUIDE.md](RABBITMQ_IMPLEMENTATION_GUIDE.md)** - Production-ready setup guide (24KB)
 - **[MIGRATION_GUIDE_BULLMQ_TO_RABBITMQ.md](MIGRATION_GUIDE_BULLMQ_TO_RABBITMQ.md)** - Migration strategy (17KB)
 
@@ -41,27 +62,32 @@
 ## Key Decision Factors
 
 ### 1. Data Durability
+
 - **RabbitMQ:** Native persistence with Raft consensus. Zero data loss with quorum queues.
 - **BullMQ:** Depends on Redis persistence. 1-second data loss window with best-case AOF config.
 - **Winner:** RabbitMQ (critical for birthday scheduler)
 
 ### 2. Performance
+
 - **RabbitMQ:** 9,987-99,413 msg/sec (quorum vs classic queues)
 - **BullMQ:** 10,000-50,000 msg/sec (depending on Redis)
 - **Your needs:** 11.5 avg, 100 peak msg/sec
 - **Winner:** Tie (both massive overkill)
 
 ### 3. Developer Experience
+
 - **RabbitMQ:** More boilerplate, steeper learning curve, AMQP knowledge required
 - **BullMQ:** Clean API, minimal code, excellent TypeScript support
 - **Winner:** BullMQ
 
 ### 4. Cost
+
 - **RabbitMQ Managed:** $702/month (AWS Amazon MQ, 3-node cluster)
 - **BullMQ Managed:** $146/month (AWS ElastiCache Multi-AZ)
 - **Winner:** BullMQ (5x cheaper)
 
 ### 5. Production Maturity
+
 - **RabbitMQ:** 15+ years, battle-tested, used by Goldman Sachs, NASA, Mozilla
 - **BullMQ:** Growing adoption, but production issues reported in 2024
 - **Winner:** RabbitMQ
@@ -194,28 +220,39 @@ Covers:
 ### If Choosing RabbitMQ (Recommended):
 
 ```bash
+
 # 1. Review the decision summary
+
 cat QUEUE_DECISION_SUMMARY.md
 
 # 2. Read implementation guide
+
 cat RABBITMQ_IMPLEMENTATION_GUIDE.md
 
 # 3. Deploy RabbitMQ
+
 docker-compose up -d rabbitmq
 
 # 4. Implement publisher and consumer
+
 npm install amqplib
+
 # Copy code from RABBITMQ_IMPLEMENTATION_GUIDE.md
 
 # 5. Test persistence
+
 docker-compose restart rabbitmq
+
 # Verify no messages lost
+
 ```
 
 ### If Choosing BullMQ (Not Recommended for Birthday Scheduler):
 
 ```bash
+
 # 1. Review the warnings in QUEUE_DECISION_SUMMARY.md
+
 cat QUEUE_DECISION_SUMMARY.md
 
 # 2. Configure Redis persistence (CRITICAL)
@@ -229,6 +266,7 @@ cat QUEUE_DECISION_SUMMARY.md
 
 # 5. Test crash recovery
 # Verify job loss is acceptable
+
 ```
 
 ---
@@ -363,21 +401,25 @@ cat QUEUE_DECISION_SUMMARY.md
 5. **Timeline:** Plan 1-week implementation for RabbitMQ
 
 ### Week 1 (Setup):
+
 - Deploy RabbitMQ with Docker Compose
 - Configure quorum queues
 - Set up monitoring
 
 ### Week 2 (Development):
+
 - Implement publisher
 - Implement consumer
 - Add error handling
 
 ### Week 3 (Testing):
+
 - Integration testing
 - Load testing (10x expected load)
 - Crash recovery testing
 
 ### Week 4 (Production):
+
 - Deploy to staging
 - Gradual rollout
 - Monitor and validate

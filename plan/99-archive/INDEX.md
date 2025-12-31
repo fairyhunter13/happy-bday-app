@@ -345,7 +345,9 @@ Tests → Coverage → Script → History → GitHub → Pages → Charts
 ### Use Case 1: Check Current Coverage
 
 ```bash
+
 # See QUICK_REFERENCE.md - "View Current Coverage"
+
 npm run test:coverage
 cat coverage/coverage-summary.json | jq '.total'
 ```
@@ -353,29 +355,37 @@ cat coverage/coverage-summary.json | jq '.total'
 ### Use Case 2: Update History
 
 ```bash
+
 # See QUICK_REFERENCE.md - "Update History Manually"
+
 ./scripts/coverage/update-history.sh
 ```
 
 ### Use Case 3: View Trends
 
 ```bash
+
 # Open in browser
+
 open https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html
 ```
 
 ### Use Case 4: Export Data
 
 ```bash
+
 # See QUICK_REFERENCE.md - "Export Data"
 # From HTML page: Click "Export CSV" button
+
 ```
 
 ### Use Case 5: Troubleshoot Issues
 
 ```bash
+
 # See IMPLEMENTATION_GUIDE.md - "Troubleshooting" section
 # Or QUICK_REFERENCE.md - "Troubleshooting" table
+
 ```
 
 ## FAQs

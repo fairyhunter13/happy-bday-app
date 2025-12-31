@@ -805,6 +805,7 @@ This document catalogs all identified edge cases for the Birthday Message Schedu
 ### Priority Coverage Gaps
 
 #### Critical Priority (20 gaps)
+
 1. EC-DB-001: Database connection lost
 2. EC-DB-005: Network partition to database
 3. EC-Q-001-003: RabbitMQ connection failures
@@ -819,6 +820,7 @@ This document catalogs all identified edge cases for the Birthday Message Schedu
 12. EC-SEC-002: XSS in message content
 
 #### High Priority (45 gaps)
+
 - Timezone DST transitions (EC-TZ-016 to EC-TZ-018)
 - User update/delete cascades (EC-UD-015, EC-BD-015, EC-AN-012)
 - Strategy error handling (EC-ST-005, EC-ST-006)
@@ -873,6 +875,7 @@ This document catalogs all identified edge cases for the Birthday Message Schedu
 **Goal:** Cover all Critical priority edge cases
 
 #### Database Resilience Tests
+
 ```typescript
 // tests/chaos/database-connection-loss.test.ts
 describe('Database Connection Loss', () => {
@@ -895,6 +898,7 @@ describe('Database Connection Loss', () => {
 ```
 
 #### User Lifecycle Race Conditions
+
 ```typescript
 // tests/integration/user-lifecycle-races.test.ts
 describe('User Deleted While Message in Queue', () => {
@@ -916,6 +920,7 @@ describe('User Deleted While Message in Queue', () => {
 ```
 
 #### Timezone DST Transitions
+
 ```typescript
 // tests/unit/timezone-dst-transitions.test.ts
 describe('DST Spring Forward', () => {
@@ -941,6 +946,7 @@ describe('DST Spring Forward', () => {
 **Goal:** Cover all High priority edge cases
 
 #### Scheduler Distributed Locks
+
 ```typescript
 // src/schedulers/distributed-lock.ts
 export class DistributedLock {
@@ -971,6 +977,7 @@ it('should prevent duplicate scheduling with distributed lock', async () => {
 ```
 
 #### API Rate Limiting
+
 ```typescript
 // src/services/rate-limiter.service.ts
 export class RateLimiterService {
@@ -990,6 +997,7 @@ export class RateLimiterService {
 ```
 
 #### XSS Sanitization
+
 ```typescript
 // src/utils/sanitizer.ts
 import DOMPurify from 'isomorphic-dompurify';

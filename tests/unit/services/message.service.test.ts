@@ -232,6 +232,13 @@ describe('MessageSenderService', () => {
 
   describe('getHealthStatus', () => {
     it('should return health status from email client', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: {
+          state: 'closed',
+          stats: { successes: 10, failures: 0 },
+        },
+      });
+
       const status = service.getHealthStatus();
 
       expect(status).toEqual({

@@ -364,12 +364,15 @@ Redpanda implements **Apache Kafka-compatible transaction semantics**, enabling 
 
 **Configuration Requirements:**
 ```
+
 # Producer Configuration
+
 enable_idempotence = true
 enable_transactions = true
 transactional.id = "unique-producer-id"
 
 # Cluster Configuration
+
 transaction_coordinator_delete_retention_ms >= transactional_id_expiration_ms
 ```
 
@@ -605,12 +608,15 @@ Design operations to be inherently idempotent where reprocessing has the same ef
 
 **Examples:**
 ```
+
 # Idempotent (Good)
+
 SET user.balance = 100
 SET user.status = "active"
 UPDATE timestamp = "2025-01-15T10:00:00Z"
 
 # Non-Idempotent (Bad)
+
 user.balance += 10  // Duplicate adds $10 each time
 user.login_count++  // Duplicate increments count
 ```
@@ -933,13 +939,16 @@ Choose Orchestration when:
 Hold locks for the absolute minimum time required to prevent contention.
 
 ```python
+
 # Bad: Long-held lock
+
 with distributed_lock("resource"):
     data = fetch_from_database()      # Slow
     result = complex_computation(data)  # Very slow
     external_api_call(result)         # Slowest!
 
 # Good: Minimal lock scope
+
 data = fetch_from_database()
 result = complex_computation(data)
 external_result = external_api_call(result)
@@ -952,10 +961,13 @@ with distributed_lock("resource"):
 Fine-grained locks reduce contention but increase complexity.
 
 ```
+
 # Coarse (high contention)
+
 global_lock()
 
 # Fine-grained (lower contention)
+
 lock_by_user_id(user_id)
 lock_by_resource_type(resource_type, resource_id)
 ```
@@ -1017,11 +1029,14 @@ Avoid:
 
 **2. Consumer Group Configuration**
 ```
+
 # One consumer per partition maximum
+
 partitions = 10
 max_consumers = 10  # More consumers don't help
 
 # Scale by increasing partitions
+
 partitions = 100
 max_consumers = 100  # Linear scaling
 ```

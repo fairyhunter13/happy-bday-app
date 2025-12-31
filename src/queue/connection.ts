@@ -16,6 +16,7 @@
 import amqp, { type AmqpConnectionManager, type ChannelWrapper } from 'amqp-connection-manager';
 import type { Channel } from 'amqplib';
 import { logger } from '../utils/logger.js';
+import { queueMetricsInstrumentation } from '../services/queue/queue-metrics.js';
 
 export interface RabbitMQConfig {
   url: string;
@@ -72,22 +73,28 @@ export class RabbitMQConnection {
       reconnectTimeInSeconds: Math.floor((this.config.reconnectTimeout || 5000) / 1000),
     });
 
+    // Get metrics instrumentation handlers
+    const metricsHandlers = queueMetricsInstrumentation.instrumentConnection('rabbitmq');
+
     // Connection event handlers
     this.connection.on('connect', ({ url }) => {
       const sanitizedUrl =
         typeof url === 'string' ? url.replace(/:[^:@]*@/, ':****@') : String(url);
       logger.info({ msg: 'Connected to RabbitMQ', url: sanitizedUrl });
       this.isConnected = true;
+      metricsHandlers.onConnect();
     });
 
     this.connection.on('disconnect', ({ err }) => {
       logger.warn({ msg: 'Disconnected from RabbitMQ', error: err?.message });
       this.isConnected = false;
+      metricsHandlers.onDisconnect();
     });
 
     this.connection.on('connectFailed', ({ err }) => {
       logger.error({ msg: 'Failed to connect to RabbitMQ', error: err?.message });
       this.isConnected = false;
+      metricsHandlers.onConnectFailed();
     });
 
     // Create publisher channel with confirms
@@ -100,6 +107,9 @@ export class RabbitMQConnection {
         logger.info('Publisher channel configured with confirms');
       },
     });
+
+    // Instrument publisher channel with metrics
+    queueMetricsInstrumentation.instrumentChannel(this.publisherChannel, 'publisher');
 
     // Publisher channel event handlers
     this.publisherChannel.on('error', (err) => {
@@ -117,6 +127,9 @@ export class RabbitMQConnection {
         logger.info('Consumer channel configured');
       },
     });
+
+    // Instrument consumer channel with metrics
+    queueMetricsInstrumentation.instrumentChannel(this.consumerChannel, 'consumer');
 
     // Consumer channel event handlers
     this.consumerChannel.on('error', (err) => {

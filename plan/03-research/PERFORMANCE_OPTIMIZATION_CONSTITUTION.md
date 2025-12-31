@@ -1,6 +1,19 @@
 # Performance Optimization Constitution
 
 **Constitutional Principle for Repository:**
+
+## Table of Contents
+
+1. [🎯 Performance Targets (Constitutional Requirements)](#-performance-targets-constitutional-requirements)
+2. [✅ Performance Optimizations IMPLEMENTED](#-performance-optimizations-implemented)
+3. [✅ Recently Implemented Optimizations](#-recently-implemented-optimizations)
+4. [⚠️ Performance Verification Checklist](#-performance-verification-checklist)
+5. [🎯 Performance Optimization Roadmap](#-performance-optimization-roadmap)
+6. [📊 Performance Metrics to Monitor](#-performance-metrics-to-monitor)
+7. [⚠️ Critical Invariants (Constitutional Rules)](#-critical-invariants-constitutional-rules)
+8. [📚 References](#-references)
+
+---
 This document serves as the authoritative standard for ALL performance optimizations. ALL agents and developers MUST ensure performance targets are met and optimizations are maintained.
 
 **Source:** `plan/` directory performance research (Phases 3-4)
@@ -54,7 +67,9 @@ This document serves as the authoritative standard for ALL performance optimizat
 
 **Verification**:
 ```bash
+
 # Check queue stats
+
 npm run perf:k6:worker-throughput
 ```
 
@@ -173,7 +188,9 @@ await app.register(rateLimit, {
 
 **Verification**:
 ```bash
+
 # Test rate limiting
+
 for i in {1..150}; do curl http://localhost:3000/api/v1/users; done
 ```
 
@@ -293,8 +310,10 @@ DROP TABLE message_logs_old;
 
 **Automation Script**: `scripts/create-partitions.sh`
 ```bash
+
 #!/bin/bash
 # Auto-create next month's partition
+
 NEXT_MONTH=$(date -d "+1 month" +%Y-%m-01)
 NEXT_NEXT_MONTH=$(date -d "+2 months" +%Y-%m-01)
 
@@ -374,7 +393,9 @@ await app.register(fastifyCompress, {
 **Verification**:
 ```bash
 curl -H "Accept-Encoding: gzip" http://localhost:3000/api/v1/users
+
 # Should return gzipped response
+
 ```
 
 **Constitutional Requirement**: ⚠️ **SHOULD IMPLEMENT** - Compression recommended for production
@@ -460,11 +481,15 @@ await cacheService.setBirthdaysToday(tomorrow, users.map(u => u.id));
 
 **Verification**:
 ```bash
+
 # Check Redis connection
+
 redis-cli PING
+
 # Should return: PONG
 
 # Check cache hit rate
+
 redis-cli INFO stats | grep keyspace_hits
 ```
 
@@ -565,65 +590,93 @@ SELECT NOW() - pg_last_xact_replay_timestamp() AS replication_lag;
 Before deploying to production, verify ALL performance targets are met:
 
 ### Database Performance
+
 ```bash
+
 # 1. Verify indexes exist
+
 psql -c "SELECT tablename, indexname FROM pg_indexes WHERE schemaname = 'public';"
 
 # 2. Check index usage
+
 psql -c "SELECT schemaname, tablename, indexname, idx_scan
 FROM pg_stat_user_indexes
 ORDER BY idx_scan DESC;"
 
 # 3. Query performance analysis
+
 psql -c "EXPLAIN ANALYZE
 SELECT * FROM message_logs
 WHERE status = 'SCHEDULED'
   AND scheduled_send_time < NOW()
   AND message_type = 'BIRTHDAY';"
+
 # Should use idx_message_logs_scheduler (Index Scan)
 
 # 4. Connection pool stats
+
 psql -c "SELECT count(*) as active_connections FROM pg_stat_activity;"
 ```
 
 ### Queue Performance
+
 ```bash
+
 # 1. Check queue stats
+
 curl http://localhost:15672/api/queues/%2F/birthday.messages.queue
+
 # Should show: "type": "quorum"
 
 # 2. Check consumer count
+
 curl http://localhost:15672/api/queues/%2F/birthday.messages.queue
+
 # Should show: "consumers": 10 (or worker count)
 
 # 3. Check message rates
+
 curl http://localhost:15672/api/queues/%2F/birthday.messages.queue
+
 # Should show: "message_stats": { "publish_details": { "rate": ... } }
+
 ```
 
 ### API Performance
+
 ```bash
+
 # 1. Run k6 load tests
+
 npm run perf:k6:api
 
 # 2. Check p95 < 1s, p99 < 2s
+
 grep "http_req_duration" perf-results/api-load-test.json
 
 # 3. Verify error rate < 1%
+
 grep "checks" perf-results/api-load-test.json
 ```
 
 ### Worker Performance
+
 ```bash
+
 # 1. Run worker throughput tests
+
 npm run perf:k6:worker-throughput
 
 # 2. Check processing rate > 10 msg/sec per worker
+
 grep "iteration_duration" perf-results/worker-throughput-test.json
 
 # 3. Monitor queue depth
+
 curl http://localhost:9090/metrics | grep queue_depth
+
 # Should stay < 1000 during normal load
+
 ```
 
 ---
@@ -633,6 +686,7 @@ curl http://localhost:9090/metrics | grep queue_depth
 **Priority: CRITICAL (Required for 1M+ msg/day)**
 
 ### Phase 1: Database Partitioning (✅ COMPLETED)
+
 - [x] Create partitioning migration script
 - [x] Create automation for monthly partition creation
 - [x] Add Makefile commands for partition management
@@ -642,6 +696,7 @@ curl http://localhost:9090/metrics | grep queue_depth
 - **Impact**: 10-100x query speedup on large tables
 
 ### Phase 2: Response Compression (✅ COMPLETED)
+
 - [x] Install @fastify/compress
 - [x] Configure gzip/brotli compression
 - [ ] Test compression with load tests (next step)
@@ -649,6 +704,7 @@ curl http://localhost:9090/metrics | grep queue_depth
 - **Impact**: 70-80% smaller responses
 
 ### Phase 3: Redis Caching (RECOMMENDED)
+
 - [ ] Setup Redis in docker-compose
 - [ ] Implement CacheService
 - [ ] Add cache warming cron job
@@ -657,6 +713,7 @@ curl http://localhost:9090/metrics | grep queue_depth
 - **Impact**: 10-100x faster birthday queries
 
 ### Phase 4: Read Replicas (PRODUCTION SCALE)
+
 - [ ] Setup PostgreSQL streaming replication
 - [ ] Split read/write operations in repositories
 - [ ] Monitor replication lag
@@ -664,6 +721,7 @@ curl http://localhost:9090/metrics | grep queue_depth
 - **Impact**: 2-5x database throughput
 
 ### Phase 5: Connection Pool Tuning (PRODUCTION SCALE)
+
 - [ ] Increase DATABASE_POOL_MAX to 40 per API instance
 - [ ] Configure idle_timeout based on load
 - [ ] Monitor connection pool utilization

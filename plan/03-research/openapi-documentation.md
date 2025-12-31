@@ -827,7 +827,7 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Create Schema Directories**
-   ```bash
+```
    mkdir -p src/schemas
    touch src/schemas/openapi.schemas.ts
    touch src/schemas/user.schemas.ts
@@ -841,7 +841,7 @@ fastify.post('/users', {
    - Create reusable response components
 
 3. **Create User Schemas**
-   ```typescript
+```
    // src/schemas/user.schemas.ts
    export const userSchema = { /* ... */ };
    export const createUserRequestSchema = { /* ... */ };
@@ -849,7 +849,7 @@ fastify.post('/users', {
    ```
 
 4. **Update Route Imports**
-   ```typescript
+```
    // Before
    const createUserSchema = { /* inline */ };
 
@@ -869,7 +869,7 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Upgrade OpenAPI Version**
-   ```typescript
+```
    // src/app.ts
    await app.register(swagger, {
      openapi: {
@@ -959,7 +959,7 @@ fastify.post('/users', {
    ```
 
 2. **Update Swagger UI Configuration**
-   ```typescript
+```
    await app.register(swaggerUi, {
      routePrefix: '/docs',
      uiConfig: {
@@ -1000,7 +1000,7 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Create Error Schema Library**
-   ```typescript
+```
    // src/schemas/error.schemas.ts
    export const errorResponseSchema = {
      type: 'object',
@@ -1048,7 +1048,7 @@ fastify.post('/users', {
    ```
 
 2. **Create Reusable Error Responses**
-   ```typescript
+```
    // src/schemas/components.ts
    export const components = {
      responses: {
@@ -1095,7 +1095,7 @@ fastify.post('/users', {
    ```
 
 3. **Update All Route Error Responses**
-   ```typescript
+```
    response: {
      200: { /* ... */ },
      400: { $ref: '#/components/responses/BadRequest' },
@@ -1118,7 +1118,7 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Define Rate Limit Headers**
-   ```typescript
+```
    // src/schemas/components.ts
    export const rateLimitHeaders = {
      'X-RateLimit-Limit': {
@@ -1137,7 +1137,7 @@ fastify.post('/users', {
    ```
 
 2. **Add Headers to Success Responses**
-   ```typescript
+```
    response: {
      200: {
        description: 'User retrieved successfully',
@@ -1148,7 +1148,7 @@ fastify.post('/users', {
    ```
 
 3. **Update Rate Limit Error Response**
-   ```typescript
+```
    components.responses.RateLimitExceeded = {
      description: 'Too many requests - rate limit exceeded',
      headers: {
@@ -1174,7 +1174,7 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Create Example Library**
-   ```typescript
+```
    // src/schemas/examples/user.examples.ts
    export const userExamples = {
      createUser: {
@@ -1212,7 +1212,7 @@ fastify.post('/users', {
    ```
 
 2. **Add Examples to Routes**
-   ```typescript
+```
    body: {
      ...createUserRequestSchema,
      examples: {
@@ -1245,13 +1245,13 @@ fastify.post('/users', {
 **Tasks:**
 
 1. **Install Validation Tools**
-   ```bash
+```bash
    npm install --save-dev @apidevtools/swagger-cli
    npm install --save-dev spectral-cli
    ```
 
 2. **Create Validation Scripts**
-   ```json
+```
    // package.json
    {
      "scripts": {
@@ -1264,7 +1264,7 @@ fastify.post('/users', {
    ```
 
 3. **Export OpenAPI Spec**
-   ```typescript
+```
    // src/scripts/export-openapi.ts
    import { writeFile } from 'node:fs/promises';
    import { createApp } from '../app.js';
@@ -1287,7 +1287,7 @@ fastify.post('/users', {
    ```
 
 4. **Add GitHub Actions Workflow**
-   ```yaml
+```
    # .github/workflows/openapi.yml
    name: OpenAPI Validation
 
@@ -1331,7 +1331,7 @@ fastify.post('/users', {
    ```
 
 5. **Create Spectral Ruleset**
-   ```yaml
+```
    # .spectral.yml
    extends: spectral:oas
    rules:
@@ -1769,7 +1769,9 @@ Get application metrics in Prometheus exposition format.
               description: 'Prometheus exposition format'
             },
             example: `# HELP http_request_duration_seconds HTTP request duration
+
 # TYPE http_request_duration_seconds histogram
+
 http_request_duration_seconds_bucket{le="0.05",method="GET",route="/api/v1/users/:id",status_code="200"} 100
 http_request_duration_seconds_bucket{le="0.1",method="GET",route="/api/v1/users/:id",status_code="200"} 150
 http_request_duration_seconds_sum{method="GET",route="/api/v1/users/:id",status_code="200"} 12.5
@@ -1777,11 +1779,13 @@ http_request_duration_seconds_count{method="GET",route="/api/v1/users/:id",statu
 
 # HELP messages_sent_total Total messages sent
 # TYPE messages_sent_total counter
+
 messages_sent_total{message_type="birthday"} 1500
 messages_sent_total{message_type="anniversary"} 800
 
 # HELP messages_failed_total Total messages failed
 # TYPE messages_failed_total counter
+
 messages_failed_total{message_type="birthday",reason="rate_limit"} 10
 messages_failed_total{message_type="birthday",reason="timeout"} 5`
           }
@@ -1837,7 +1841,9 @@ messages_failed_total{message_type="birthday",reason="timeout"} 5`
 ### GitHub Actions Workflow
 
 ```yaml
+
 # .github/workflows/openapi-validation.yml
+
 name: OpenAPI Validation
 
 on:
@@ -1921,11 +1927,14 @@ jobs:
 ### Pre-commit Hook
 
 ```bash
+
 # .husky/pre-commit
 #!/bin/sh
+
 . "$(dirname "$0")/_/husky.sh"
 
 # Validate OpenAPI spec if routes changed
+
 if git diff --cached --name-only | grep -qE '^src/(routes|schemas)/'; then
   echo "🔍 Validating OpenAPI spec..."
   npm run openapi:export
@@ -1960,11 +1969,13 @@ fi
 ### 1. Schema Design Principles
 
 #### Use JSON Schema Draft 2020-12
+
 ```yaml
 openapi: 3.1.0  # Supports JSON Schema Draft 2020-12
 ```
 
 #### Prefer `$ref` for Reusability
+
 ```typescript
 // ✅ Good - Reusable component
 response: {
@@ -1981,6 +1992,7 @@ response: {
 ```
 
 #### Use `allOf` for Schema Composition
+
 ```typescript
 // Compose base + specific fields
 const userWithMetadata = {
@@ -1998,6 +2010,7 @@ const userWithMetadata = {
 ### 2. Documentation Quality
 
 #### Write Descriptive Summaries
+
 ```typescript
 // ✅ Good
 summary: 'Create a new user with birthday tracking'
@@ -2007,6 +2020,7 @@ summary: 'Create user'
 ```
 
 #### Provide Multiple Examples
+
 ```typescript
 examples: {
   minimal: { /* minimal required fields */ },
@@ -2016,6 +2030,7 @@ examples: {
 ```
 
 #### Document Error Scenarios
+
 ```typescript
 response: {
   400: {
@@ -2036,6 +2051,7 @@ response: {
 ### 3. Versioning Strategy
 
 #### URL-Based Versioning
+
 ```typescript
 // ✅ Current approach
 fastify.register(userRoutes, { prefix: '/api/v1' });
@@ -2048,6 +2064,7 @@ servers: [
 ```
 
 #### Version Info Object
+
 ```typescript
 info: {
   version: '1.0.0',  // API version
@@ -2059,6 +2076,7 @@ info: {
 ### 4. Security Documentation
 
 #### Document Authentication (Future)
+
 ```yaml
 components:
   securitySchemes:
@@ -2073,6 +2091,7 @@ security:
 ```
 
 #### Document Rate Limiting
+
 ```yaml
 x-rate-limit:
   limit: 100
@@ -2083,6 +2102,7 @@ x-rate-limit:
 ### 5. Extension Fields (x-*)
 
 #### Custom Metadata
+
 ```yaml
 paths:
   /api/v1/users:
@@ -2097,6 +2117,7 @@ paths:
 ### 6. Error Response Standards
 
 #### Follow RFC 9457 (Problem Details)
+
 ```typescript
 {
   "type": "https://example.com/errors/validation-error",

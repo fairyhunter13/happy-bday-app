@@ -1,5 +1,19 @@
 # Phase 9: Comprehensive Enhancements - Implementation Plan
 
+## Table of Contents
+
+1. [📋 Overview](#-overview)
+2. [🎯 Success Criteria](#-success-criteria)
+3. [📚 Phase 9 Sub-Projects](#-phase-9-sub-projects)
+4. [🗂️ Project Structure](#-project-structure)
+5. [📊 Implementation Timeline](#-implementation-timeline)
+6. [📈 Success Metrics](#-success-metrics)
+7. [🚀 Getting Started](#-getting-started)
+8. [🎯 Dependencies](#-dependencies)
+9. [📝 Notes](#-notes)
+
+---
+
 **Phase**: Quality, Testing, and Automation Enhancements
 **Status**: 📋 Planned
 **Estimated Duration**: 8-10 weeks
@@ -452,6 +466,7 @@ Week 10: Buffer for issues/polish
 ## 📈 Success Metrics
 
 ### Before Phase 9
+
 - Unit Test Coverage: ~70-90%
 - Edge Case Coverage: 53%
 - Code Duplication: 12.5%
@@ -461,6 +476,7 @@ Week 10: Buffer for issues/polish
 - Test Reports: None
 
 ### After Phase 9
+
 - Unit Test Coverage: ✅ 80%+
 - Edge Case Coverage: ✅ 95%+
 - Code Duplication: ✅ <5%
@@ -476,23 +492,23 @@ Week 10: Buffer for issues/polish
 **Week 1 Immediate Actions**:
 
 1. **Set up test coverage infrastructure**
-   ```bash
+```bash
    npm install -D vitest @vitest/coverage-v8 @codecov/codecov-action
    npm run test:coverage
    ```
 
 2. **Review DRY audit and prioritize fixes**
-   ```bash
+```
    cat plan/03-research/dry-principle-audit.md
    ```
 
 3. **Set up GitHub Secrets**
-   ```bash
+```
    bash scripts/setup-github-secrets.sh
    ```
 
 4. **Start edge case testing**
-   ```bash
+```
    cat plan/04-testing/edge-cases-catalog.md
    # Implement P1 (critical) edge cases first
    ```

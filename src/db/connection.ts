@@ -1,6 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
+import {
+  databaseMetricsInterceptor,
+  startConnectionPoolMetrics,
+} from './interceptors/metrics-interceptor.js';
 
 /**
  * Database connection configuration
@@ -10,6 +14,7 @@ import * as schema from './schema';
  * - Auto-reconnection on failure
  * - Statement timeout (30s)
  * - Idle timeout (30s)
+ * - Prometheus metrics tracking
  */
 
 // Database URL from environment
@@ -31,11 +36,41 @@ export const queryClient = postgres(DATABASE_URL, {
   prepare: true, // Enable prepared statements
 });
 
-// Create Drizzle ORM instance
+// Create Drizzle ORM instance with metrics interceptor
 export const db = drizzle(queryClient, {
   schema,
-  logger: process.env.NODE_ENV === 'development',
+  logger: databaseMetricsInterceptor,
 });
+
+// Start connection pool metrics collection
+// This runs a periodic query to track active database connections
+let metricsCleanup: (() => void) | undefined;
+
+/**
+ * Start database metrics collection
+ * Automatically called on module load
+ */
+function startMetrics() {
+  if (!metricsCleanup) {
+    metricsCleanup = startConnectionPoolMetrics(queryClient, 10000); // Update every 10 seconds
+  }
+}
+
+/**
+ * Stop database metrics collection
+ * Call this during graceful shutdown
+ */
+export function stopMetrics(): void {
+  if (metricsCleanup) {
+    metricsCleanup();
+    metricsCleanup = undefined;
+  }
+}
+
+// Start metrics collection on module load
+if (process.env.ENABLE_DB_METRICS !== 'false') {
+  startMetrics();
+}
 
 /**
  * Test database connection
@@ -56,6 +91,7 @@ export async function testConnection(): Promise<boolean> {
  * Call this on graceful shutdown
  */
 export async function closeConnection(): Promise<void> {
+  stopMetrics();
   await queryClient.end();
 }
 

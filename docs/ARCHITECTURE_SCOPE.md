@@ -4,6 +4,24 @@
 
 **This project is designed exclusively for local development and CI/CD testing. It will NOT be deployed to any production or staging servers.**
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Scope Definition](#scope-definition)
+3. [Architecture Components Status](#architecture-components-status)
+4. [Docker Compose Environments](#docker-compose-environments)
+5. [Removed/Renamed Files](#removedrenamed-files)
+6. [Environment Variables](#environment-variables)
+7. [GitHub Actions Workflows](#github-actions-workflows)
+8. [Performance Testing Philosophy](#performance-testing-philosophy)
+9. [Monitoring & Observability](#monitoring-observability)
+10. [Migration Path to Production (If Ever Needed)](#migration-path-to-production-if-ever-needed)
+11. [Benefits of Local + CI/CD Only Scope](#benefits-of-local-cicd-only-scope)
+12. [Related Documentation](#related-documentation)
+13. [FAQ](#faq)
+
+---
+
 **Date:** 2025-12-31
 **Decision:** Scope limited to Local + CI/CD only
 **Impact:** All production deployment references removed
@@ -111,13 +129,16 @@
 ## Removed/Renamed Files
 
 ### Renamed
+
 - `docs/PRODUCTION_READINESS.md` → `docs/LOCAL_READINESS.md`
 - `docker-compose.prod.yml` → Kept as-is (clarified as CI/CD testing only)
 
 ### Marked as N/A
+
 - `docs/SLA.md` - Now marked as "Not Applicable"
 
 ### Updated
+
 - `docs/DEPLOYMENT_GUIDE.md` - Rewritten for local + CI/CD only
 - `docs/RUNBOOK.md` - Updated for local troubleshooting (TBD)
 - `.github/workflows/release.yml` - Production deployment steps removed (TBD)
@@ -129,11 +150,13 @@
 ## Environment Variables
 
 ### Renamed/Updated
+
 - `.env.production.enc` - Kept for CI/CD testing purposes
 - `.env.prod.example` - Kept for reference
 - All references clarified: "production" means "production-like CI/CD testing"
 
 ### Environment Tiers
+
 1. **Development** - `.env.development` (local dev)
 2. **Test** - `.env.test` (CI/CD testing)
 3. **Performance** - `.env.perf` (load testing)
@@ -144,6 +167,7 @@
 ## GitHub Actions Workflows
 
 ### Kept (All for CI/CD Testing)
+
 - ✅ `ci.yml` - Unit, integration, E2E tests
 - ✅ `code-quality.yml` - Linting, type checking
 - ✅ `security.yml` - Security scanning
@@ -155,6 +179,7 @@
 - ⚠️ `mutation.yml` - Mutation testing (if exists)
 
 ### Removed Sections
+
 - Production deployment jobs from `release.yml`
 - Staging deployment jobs
 - Production smoke tests
@@ -166,6 +191,7 @@
 Even though this is not deployed to production, the project maintains production-grade quality standards:
 
 ### Performance Targets (Tested Locally)
+
 - **Daily Throughput:** 1M+ messages (simulated)
 - **API Latency P95:** < 500ms
 - **API Latency P99:** < 1000ms
@@ -173,6 +199,7 @@ Even though this is not deployed to production, the project maintains production
 - **Database Queries:** < 200ms (with partitioning)
 
 ### Why Test at Production Scale?
+
 1. **Learning:** Understand production challenges without production costs
 2. **Validation:** Prove architecture can handle scale
 3. **Benchmarking:** Establish performance baselines
@@ -183,6 +210,7 @@ Even though this is not deployed to production, the project maintains production
 ## Monitoring & Observability
 
 ### Local Monitoring Stack
+
 - **Prometheus** - Metrics collection (http://localhost:9090)
 - **Grafana** - Dashboards (http://localhost:3001)
 - **128+ Metrics** - Application and system metrics
@@ -190,6 +218,7 @@ Even though this is not deployed to production, the project maintains production
 - **46 Alert Rules** - Critical, Warning, Info, SLO-based
 
 ### Purpose
+
 - Development debugging
 - Performance analysis
 - Load testing visualization

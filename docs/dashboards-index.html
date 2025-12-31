@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Dashboards - Happy Birthday App</title>
+    <meta name="description" content="Grafana monitoring dashboards for production metrics and observability">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <style>
+        :root {
+            --color-green: #10b981;
+            --color-yellow: #f59e0b;
+            --color-red: #ef4444;
+            --color-blue: #3b82f6;
+            --color-purple: #8b5cf6;
+            --color-pink: #ec4899;
+            --color-cyan: #06b6d4;
+            --color-orange: #f97316;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .nav-links {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-links a {
+            color: var(--color-blue);
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-purple);
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(135deg, var(--color-purple), var(--color-blue));
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .alert-banner h2 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .alert-banner p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        /* Dashboard Grid */
+        .dashboards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 0;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
+            border-color: var(--color-blue);
+        }
+
+        .dashboard-header {
+            padding: 1.5rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .dashboard-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .dashboard-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .dashboard-body {
+            padding: 1.5rem;
+            flex: 1;
+        }
+
+        .metrics-list {
+            list-style: none;
+        }
+
+        .metrics-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .metrics-list li:last-child {
+            border-bottom: none;
+        }
+
+        .metrics-list li::before {
+            content: '📊';
+            font-size: 1rem;
+        }
+
+        .dashboard-footer {
+            padding: 1rem 1.5rem;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-link {
+            color: var(--color-blue);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+
+        .dashboard-link:hover {
+            color: var(--color-purple);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .badge.production {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-green);
+        }
+
+        .badge.monitoring {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-blue);
+        }
+
+        .badge.alerts {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-red);
+        }
+
+        /* Section */
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .alert-rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .alert-rule-card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 3px solid var(--color-yellow);
+        }
+
+        .alert-rule-card.critical {
+            border-left-color: var(--color-red);
+        }
+
+        .alert-rule-card.warning {
+            border-left-color: var(--color-yellow);
+        }
+
+        .alert-rule-card.info {
+            border-left-color: var(--color-blue);
+        }
+
+        .alert-rule-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .alert-rule-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 3rem;
+        }
+
+        footer a {
+            color: var(--color-blue);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .dashboards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Monitoring Dashboards</h1>
+            <p class="subtitle">Production Metrics & Observability with Grafana</p>
+            <nav class="nav-links">
+                <a href="index.html">API Documentation</a>
+                <a href="test-reports.html">Test Reports</a>
+                <a href="coverage-trends.html">Coverage Trends</a>
+                <a href="reports-summary.html">All Reports</a>
+                <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub Repository</a>
+            </nav>
+        </header>
+
+        <div class="alert-banner">
+            <h2>Real-time Production Monitoring</h2>
+            <p>Comprehensive Grafana dashboards for API performance, database metrics, infrastructure health, and more</p>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-label">Dashboards</div>
+                <div class="stat-value">6</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🚨</div>
+                <div class="stat-label">Alert Rules</div>
+                <div class="stat-value">12+</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📈</div>
+                <div class="stat-label">Metrics</div>
+                <div class="stat-value">50+</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-label">Refresh Rate</div>
+                <div class="stat-value">30s</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboards -->
+        <h2 class="section-title">
+            <span>🎯</span>
+            Available Dashboards
+        </h2>
+
+        <div class="dashboards-grid">
+            <!-- Overview Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">🏠</span>
+                    <h3 class="dashboard-title">System Overview</h3>
+                    <p class="dashboard-description">
+                        High-level view of system health, request rates, and key performance indicators
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>Overall system health</li>
+                        <li>Total request volume</li>
+                        <li>Success/error rates</li>
+                        <li>Active users & sessions</li>
+                        <li>Resource utilization</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge production">Production</span>
+                    <a href="../grafana/dashboards/overview-dashboard.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+
+            <!-- API Performance Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">⚡</span>
+                    <h3 class="dashboard-title">API Performance</h3>
+                    <p class="dashboard-description">
+                        Detailed API metrics including latency, throughput, and endpoint-specific performance
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>Request latency (p50, p95, p99)</li>
+                        <li>Requests per second</li>
+                        <li>Error rate by endpoint</li>
+                        <li>Response time distribution</li>
+                        <li>Circuit breaker status</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge monitoring">Monitoring</span>
+                    <a href="../grafana/dashboards/api-performance.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+
+            <!-- Database Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">🗄️</span>
+                    <h3 class="dashboard-title">Database Metrics</h3>
+                    <p class="dashboard-description">
+                        PostgreSQL performance, connection pool status, and query analytics
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>Active connections</li>
+                        <li>Query execution time</li>
+                        <li>Transaction throughput</li>
+                        <li>Lock wait time</li>
+                        <li>Cache hit ratio</li>
+                        <li>Table & index sizes</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge monitoring">Monitoring</span>
+                    <a href="../grafana/dashboards/database.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+
+            <!-- Message Processing Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">📨</span>
+                    <h3 class="dashboard-title">Message Processing</h3>
+                    <p class="dashboard-description">
+                        RabbitMQ queue metrics, message throughput, and delivery success rates
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>Messages queued</li>
+                        <li>Processing rate</li>
+                        <li>Delivery success rate</li>
+                        <li>Failed message count</li>
+                        <li>Queue depth over time</li>
+                        <li>Worker utilization</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge monitoring">Monitoring</span>
+                    <a href="../grafana/dashboards/message-processing.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+
+            <!-- Infrastructure Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">🖥️</span>
+                    <h3 class="dashboard-title">Infrastructure</h3>
+                    <p class="dashboard-description">
+                        System resources, container metrics, and infrastructure health monitoring
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>CPU usage</li>
+                        <li>Memory utilization</li>
+                        <li>Disk I/O</li>
+                        <li>Network traffic</li>
+                        <li>Container status</li>
+                        <li>Load averages</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge production">Production</span>
+                    <a href="../grafana/dashboards/infrastructure.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+
+            <!-- Security Dashboard -->
+            <div class="dashboard-card">
+                <div class="dashboard-header">
+                    <span class="dashboard-icon">🔒</span>
+                    <h3 class="dashboard-title">Security</h3>
+                    <p class="dashboard-description">
+                        Authentication metrics, rate limiting, and security event monitoring
+                    </p>
+                </div>
+                <div class="dashboard-body">
+                    <ul class="metrics-list">
+                        <li>Failed authentication attempts</li>
+                        <li>Rate limit violations</li>
+                        <li>Suspicious activity</li>
+                        <li>Token usage</li>
+                        <li>API key validations</li>
+                        <li>Security events log</li>
+                    </ul>
+                </div>
+                <div class="dashboard-footer">
+                    <span class="badge alerts">Alerts</span>
+                    <a href="../grafana/dashboards/security.json" class="dashboard-link">View JSON →</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Rules Section -->
+        <section class="section">
+            <h2 class="section-title">
+                <span>🚨</span>
+                Alert Rules
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Automated alerts for critical conditions and SLO violations
+            </p>
+
+            <div class="alert-rules-grid">
+                <div class="alert-rule-card critical">
+                    <div class="alert-rule-title">Critical Alerts</div>
+                    <div class="alert-rule-description">
+                        Service down, high error rates, database failures
+                    </div>
+                </div>
+
+                <div class="alert-rule-card warning">
+                    <div class="alert-rule-title">Warning Alerts</div>
+                    <div class="alert-rule-description">
+                        High latency, memory pressure, queue buildup
+                    </div>
+                </div>
+
+                <div class="alert-rule-card info">
+                    <div class="alert-rule-title">Info Alerts</div>
+                    <div class="alert-rule-description">
+                        Deployment events, scaling actions, config changes
+                    </div>
+                </div>
+
+                <div class="alert-rule-card critical">
+                    <div class="alert-rule-title">SLO Violations</div>
+                    <div class="alert-rule-description">
+                        99.9% uptime, p95 latency < 200ms violations
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="../grafana/alerts/critical-alerts.yml" style="color: var(--color-blue); margin: 0 1rem;">Critical Rules →</a>
+                <a href="../grafana/alerts/warning-alerts.yml" style="color: var(--color-blue); margin: 0 1rem;">Warning Rules →</a>
+                <a href="../grafana/alerts/info-alerts.yml" style="color: var(--color-blue); margin: 0 1rem;">Info Rules →</a>
+                <a href="../grafana/alerts/slo-alerts.yml" style="color: var(--color-blue); margin: 0 1rem;">SLO Rules →</a>
+            </div>
+        </section>
+
+        <!-- Quick Links -->
+        <section class="section">
+            <h2 class="section-title">
+                <span>🔗</span>
+                Related Resources
+            </h2>
+            <div class="dashboards-grid">
+                <a href="test-reports.html" class="dashboard-card" style="text-decoration: none; color: inherit;">
+                    <div class="dashboard-header">
+                        <span class="dashboard-icon">🧪</span>
+                        <h3 class="dashboard-title">Test Reports</h3>
+                        <p class="dashboard-description">
+                            Comprehensive testing coverage and results
+                        </p>
+                    </div>
+                </a>
+
+                <a href="coverage-trends.html" class="dashboard-card" style="text-decoration: none; color: inherit;">
+                    <div class="dashboard-header">
+                        <span class="dashboard-icon">📈</span>
+                        <h3 class="dashboard-title">Coverage Trends</h3>
+                        <p class="dashboard-description">
+                            Historical code coverage visualization
+                        </p>
+                    </div>
+                </a>
+
+                <a href="reports-summary.html" class="dashboard-card" style="text-decoration: none; color: inherit;">
+                    <div class="dashboard-header">
+                        <span class="dashboard-icon">📋</span>
+                        <h3 class="dashboard-title">All Reports</h3>
+                        <p class="dashboard-description">
+                            Code quality, security, and performance reports
+                        </p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <footer>
+            <p>Grafana Dashboards v1.0 - Production Monitoring</p>
+            <p><a href="https://github.com/fairyhunter13/happy-bday-app">Happy Birthday App</a> - Monitoring Infrastructure</p>
+        </footer>
+    </div>
+</body>
+</html>

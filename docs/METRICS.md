@@ -1,410 +1,1263 @@
-# Prometheus Metrics and Monitoring
+# Metrics Documentation
 
-Comprehensive monitoring and observability for the Birthday Message Scheduler using Prometheus metrics.
+This document provides a comprehensive reference for all Prometheus metrics exposed by the Birthday Message Scheduler application, including operational guidance for monitoring, alerting, and troubleshooting.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Monitoring Strategy](#monitoring-strategy)
+- [SLO and Threshold Reference](#slo-and-threshold-reference)
+- [Metric Interpretation Guide](#metric-interpretation-guide)
+- [Counter Metrics](#counter-metrics)
+- [Gauge Metrics](#gauge-metrics)
+- [Histogram Metrics](#histogram-metrics)
+- [Summary Metrics](#summary-metrics)
+- [Queue Metrics Deep-Dive](#queue-metrics-deep-dive)
+- [Alerting Rules](#alerting-rules)
+- [Troubleshooting Decision Trees](#troubleshooting-decision-trees)
+- [Grafana Query Examples](#grafana-query-examples)
+- [Usage Examples](#usage-examples)
+- [Configuration](#configuration)
+- [Instrumentation Status](#instrumentation-status)
+
+---
 
 ## Overview
 
-This implementation provides production-ready Prometheus metrics for monitoring all aspects of the birthday message scheduler, including:
+| Category | Count | Description |
+|----------|-------|-------------|
+| **Counter Metrics** | 105 | Cumulative values that only increase |
+| **Gauge Metrics** | 117 | Values that can increase or decrease |
+| **Histogram Metrics** | 36 | Distribution of values with buckets |
+| **Summary Metrics** | 10 | Percentile-based distributions |
+| **Total** | 268 | Complete observability coverage |
 
-- Message throughput and delivery
-- Queue depth and worker health
-- API performance and errors
-- Database connections
-- Circuit breaker status
-- Scheduler job execution
+### Quick Reference
 
-## Metrics Endpoint
+- **Metrics Endpoint:** `/metrics` (Prometheus exposition format)
+- **Default Labels:** `service`, `environment`, `version`
+- **Scrape Interval:** 15s (recommended)
+- **Retention:** 15 days (Prometheus default)
+- **Metric Prefix:** `birthday_scheduler_`
 
-### GET /metrics
+---
 
-Returns metrics in Prometheus exposition format.
+## Monitoring Strategy
 
-```bash
-curl http://localhost:3000/metrics
+### The RED Method
+
+The RED method focuses on three key metrics for request-driven services:
+
+| Signal | Metric | Description | Target |
+|--------|--------|-------------|--------|
+| **Rate** | `rate(api_requests_total[5m])` | Requests per second | Baseline + 50% headroom |
+| **Errors** | `rate(api_requests_total{status=~"5.."}[5m])` | Error rate percentage | < 0.1% |
+| **Duration** | `histogram_quantile(0.99, api_response_time_seconds_bucket)` | Request latency | P99 < 2s |
+
+**When to use RED:** For API endpoints, external service calls, and any request/response patterns.
+
+### The Four Golden Signals
+
+Google SRE's golden signals for comprehensive service health:
+
+| Signal | Primary Metric | Description | Investigation Trigger |
+|--------|---------------|-------------|----------------------|
+| **Latency** | `api_response_time_seconds` | Time to serve requests | P99 > 2s for 5m |
+| **Traffic** | `api_requests_total` | Demand on your system | 2x baseline for 10m |
+| **Errors** | `messages_failed_total` | Rate of failed requests | > 5% for 2m |
+| **Saturation** | `queue_depth`, `database_connections` | System fullness | > 80% capacity for 5m |
+
+**When to use Golden Signals:** For overall system health dashboards and SLO tracking.
+
+### Observability Layers
+
+```
++------------------+     +------------------+     +------------------+
+|   Application    |     |   Infrastructure |     |   Business       |
+|   Metrics        |     |   Metrics        |     |   Metrics        |
++------------------+     +------------------+     +------------------+
+| - API latency    |     | - CPU/Memory     |     | - Birthdays/day  |
+| - Error rates    |     | - Disk I/O       |     | - Messages sent  |
+| - Queue depth    |     | - Network        |     | - User growth    |
++------------------+     +------------------+     +------------------+
+         |                        |                        |
+         +------------------------+------------------------+
+                                  |
+                         [Unified Dashboard]
 ```
 
-**Response**: `text/plain; version=0.0.4`
+---
 
-### GET /metrics/summary
+## SLO and Threshold Reference
 
-Returns metrics summary in JSON format (for debugging).
+### Service Level Objectives (SLOs)
 
-```bash
-curl http://localhost:3000/metrics/summary
+| SLO | Target | Measurement | Error Budget (30d) |
+|-----|--------|-------------|-------------------|
+| **API Availability** | 99.9% | Successful requests / Total requests | 43.2 minutes |
+| **Message Delivery** | 99% | Messages delivered / Messages sent | 7.2 hours |
+| **Latency (P99)** | < 2s | 99th percentile response time | N/A |
+| **Throughput** | > 100 msg/s | Messages processed per second | N/A |
+| **Scheduler Accuracy** | 95% | On-time deliveries / Scheduled | N/A |
+
+### Threshold Reference Table
+
+#### API Performance Thresholds
+
+| Metric | Normal | Warning | Critical | Action |
+|--------|--------|---------|----------|--------|
+| `api_response_time_seconds` (P99) | < 500ms | 500ms - 2s | > 2s | Scale horizontally, optimize queries |
+| `api_error_rate` | < 0.1% | 0.1% - 5% | > 5% | Check dependencies, review logs |
+| `api_requests_per_second` | Baseline | 1.5x baseline | 2x baseline | Auto-scale, investigate traffic source |
+| `api_active_requests` | < 100 | 100 - 500 | > 500 | Check for slow endpoints, increase workers |
+
+#### Queue Performance Thresholds
+
+| Metric | Normal | Warning | Critical | Action |
+|--------|--------|---------|----------|--------|
+| `queue_depth` | < 100 | 100 - 1000 | > 1000 | Scale workers, check consumer health |
+| `dlq_depth` | 0 | 1 - 100 | > 100 | Investigate failed messages, fix root cause |
+| `message_age_seconds` | < 60s | 60s - 300s | > 300s | Increase consumer count, check processing time |
+| `consumer_count` | >= 2 | 1 | 0 | Restart consumers, check connectivity |
+| `queue_consumer_utilization` | < 70% | 70% - 90% | > 90% | Add consumers, optimize processing |
+
+#### Database Performance Thresholds
+
+| Metric | Normal | Warning | Critical | Action |
+|--------|--------|---------|----------|--------|
+| `database_query_duration_seconds` (P95) | < 100ms | 100ms - 1s | > 1s | Add indexes, optimize queries |
+| `database_connections` (active) | < 50% pool | 50% - 80% | > 80% | Increase pool size, check connection leaks |
+| `replication_lag` | < 1s | 1s - 30s | > 30s | Check network, replica health |
+| `index_hit_ratio` | > 99% | 95% - 99% | < 95% | Add missing indexes, tune queries |
+| `buffer_cache_hit_ratio` | > 99% | 95% - 99% | < 95% | Increase shared_buffers |
+
+#### Resource Thresholds
+
+| Metric | Normal | Warning | Critical | Action |
+|--------|--------|---------|----------|--------|
+| Memory usage | < 70% | 70% - 85% | > 85% | Scale up, investigate memory leaks |
+| CPU usage | < 60% | 60% - 80% | > 80% | Scale out, optimize hot paths |
+| Disk usage | < 70% | 70% - 85% | > 85% | Cleanup, expand storage |
+| File descriptors | < 50% | 50% - 80% | > 80% | Increase limits, check connection leaks |
+
+#### Business Metric Thresholds
+
+| Metric | Normal | Warning | Critical | Action |
+|--------|--------|---------|----------|--------|
+| `message_delivery_success_rate` | > 99% | 95% - 99% | < 95% | Check email service, validate addresses |
+| `birthdays_pending` | < 100 | 100 - 500 | > 500 | Scale scheduler, check processing |
+| `cache_hit_rate` | > 90% | 80% - 90% | < 80% | Review cache keys, increase TTL |
+
+---
+
+## Metric Interpretation Guide
+
+### Baseline Expectations
+
+Understanding what "normal" looks like for your system:
+
+#### Traffic Patterns
+
+| Time Period | Expected Pattern | Variance |
+|-------------|-----------------|----------|
+| **Weekdays (9am-5pm)** | Peak traffic | +30-50% |
+| **Weekdays (night)** | Low traffic | -60-80% |
+| **Weekends** | Moderate traffic | -20-40% |
+| **Holidays** | High birthday volume | +100-200% |
+| **New Year's Day** | Highest volume | +300-500% |
+
+#### Seasonal Considerations
+
+- **January 1st**: Highest birthday volume globally
+- **September**: Elevated births (US)
+- **Month start/end**: Potential billing-related spikes
+- **Leap year (Feb 29)**: Special handling required
+
+### Common Patterns
+
+#### Healthy System Indicators
+
+```
+API Response Time: Stable P99 < 500ms
+Queue Depth:       Sawtooth pattern (fills/drains)
+Error Rate:        < 0.1% with no spikes
+Worker Utilization: 40-60% average
+Cache Hit Rate:    > 95% stable
 ```
 
-**Response**: `application/json`
+#### Warning Patterns
 
-## Available Metrics
+| Pattern | Metric Behavior | Likely Cause |
+|---------|-----------------|--------------|
+| **Gradual latency increase** | P99 climbing over hours | Memory leak, connection exhaustion |
+| **Queue depth not draining** | Monotonic increase | Consumer failure, processing bottleneck |
+| **Periodic spikes** | Regular intervals | Scheduled job interference, cron conflicts |
+| **Error bursts** | Sudden error increase | Dependency failure, deployment issue |
 
-### Counter Metrics
+### Anomaly Indicators
 
-Monotonically increasing counters for events.
+| Anomaly | Detection Query | Investigation Priority |
+|---------|-----------------|----------------------|
+| **Latency spike** | P99 > 3x baseline | High - User impact |
+| **Error rate spike** | Errors > 10x baseline | Critical - Service degradation |
+| **Traffic drop** | Rate < 50% baseline | High - Potential outage |
+| **Zero consumers** | `consumer_count == 0` | Critical - Message loss risk |
+| **DLQ growth** | `increase(dlq_depth[1h]) > 10` | Medium - Data quality issue |
 
-#### `birthday_scheduler_messages_scheduled_total`
-Total number of messages scheduled.
+### Correlation Guide
 
-**Labels**:
-- `message_type`: BIRTHDAY, ANNIVERSARY
-- `timezone`: User timezone (e.g., America/New_York)
+When investigating issues, check these metric correlations:
 
-**Example**:
+| Primary Symptom | Related Metrics to Check |
+|-----------------|-------------------------|
+| High latency | `database_query_duration`, `queue_wait_time`, `external_api_latency` |
+| High error rate | `circuit_breaker_open`, `database_connections`, `rate_limit_hits_total` |
+| Queue backup | `consumer_count`, `active_workers`, `message_processing_latency` |
+| Memory growth | `cache_hit_rate`, `active_connections`, `gc_events_total` |
+
+---
+
+## Counter Metrics
+
+Counters are cumulative metrics that only increase (or reset on restart).
+
+### Original Counters (10 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `messages_scheduled_total` | `message_type` | Total messages scheduled for delivery |
+| `messages_sent_total` | `message_type`, `status` | Total messages sent successfully |
+| `messages_failed_total` | `message_type`, `reason` | Total message delivery failures |
+| `api_requests_total` | `method`, `path`, `status` | Total API requests received |
+| `user_activity_total` | `action` | Total user activity events |
+| `message_retries_total` | `message_type` | Total message retry attempts |
+| `external_api_calls_total` | `service`, `status` | Total external API calls |
+| `security_events_total` | `event_type` | Total security events |
+| `rate_limit_hits_total` | `endpoint` | Total rate limit violations |
+| `auth_failures_total` | `reason` | Total authentication failures |
+
+### Business Counters (25 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `birthdays_processed_total` | `status` | Total birthdays processed today |
+| `message_template_usage_total` | `template_name` | Message template usage by name |
+| `user_creations_total` | - | Total user creation events |
+| `user_deletions_total` | - | Total user deletion events |
+| `configuration_changes_total` | `config_type` | Configuration changes by type |
+| `feature_usage_total` | `feature_name` | Feature usage tracking |
+| `message_delivery_by_hour_total` | `hour` | Messages delivered by hour |
+| `birthday_greeting_types_total` | `greeting_type` | Birthday greeting types sent |
+| `notification_preferences_changed_total` | `preference` | Notification preferences changed |
+| `user_logins_total` | `method` | User login events |
+| `subscription_events_total` | `event_type` | Subscription events |
+| `webhook_deliveries_total` | `status` | Webhook deliveries |
+| `email_bounces_total` | `bounce_type` | Email bounces |
+| `sms_delivery_status_total` | `status` | SMS delivery status |
+| `push_notification_status_total` | `status` | Push notification status |
+| `user_updates_total` | `field` | User updates by field |
+| `messages_by_channel_total` | `channel` | Messages sent by channel type |
+| `messages_by_priority_total` | `priority` | Messages sent by priority |
+| `user_timezone_changes_total` | - | User timezone changes |
+| `birthday_date_updates_total` | - | Birthday date updates |
+| `user_opt_ins_total` | - | Opt-in events |
+| `user_opt_outs_total` | - | Opt-out events |
+| `message_personalization_usage_total` | `type` | Message personalization usage |
+| `bulk_operations_total` | `operation` | Bulk operations performed |
+| `data_export_requests_total` | - | Data export requests |
+
+### Queue Counters (20 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `publisher_confirms_total` | - | Publisher confirms received |
+| `message_acks_total` | `queue` | Message acknowledgments |
+| `message_nacks_total` | `queue` | Message negative acknowledgments |
+| `message_redeliveries_total` | `queue` | Message redeliveries |
+| `queue_bindings_created_total` | `exchange` | Queue bindings created |
+| `channel_opens_total` | - | Channel opens |
+| `channel_closes_total` | `reason` | Channel closes |
+| `connection_recoveries_total` | - | Connection recoveries |
+| `queue_purges_total` | `queue` | Queue purges |
+| `exchange_declarations_total` | `type` | Exchange declarations |
+| `dlq_messages_added_total` | `source_queue` | Dead letter queue additions |
+| `dlq_messages_processed_total` | - | DLQ messages processed |
+| `queue_overflow_events_total` | `queue` | Queue overflow events |
+| `message_expirations_total` | `queue` | Message expiration events |
+| `message_priority_upgrades_total` | - | Message priority upgrades |
+| `queue_consumer_restarts_total` | `queue` | Queue consumer restarts |
+| `message_deduplications_total` | - | Message deduplication events |
+| `message_batching_events_total` | - | Message batching events |
+| `queue_failover_events_total` | - | Queue failover events |
+| `message_compression_events_total` | - | Message compression events |
+
+### Performance Counters (5 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `cache_hits_total` | `cache_name` | Cache hits |
+| `cache_misses_total` | `cache_name` | Cache misses |
+| `cache_evictions_total` | `cache_name` | Cache evictions |
+| `connection_pool_timeouts_total` | `pool` | Connection pool timeouts |
+| `gc_events_total` | `gc_type` | Garbage collection events |
+
+### Database Counters (15 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `database_deadlocks_total` | - | Database deadlocks |
+| `database_commits_total` | - | Transaction commits |
+| `database_rollbacks_total` | - | Transaction rollbacks |
+| `database_checkpoints_total` | - | Checkpoint completions |
+| `database_seq_scans_total` | `table` | Table sequential scans |
+| `database_query_errors_total` | `error_type` | Query errors by type |
+| `database_connection_errors_total` | `error_type` | Connection errors |
+| `database_slow_queries_total` | `query_type` | Slow queries |
+| `database_prepared_statements_total` | - | Prepared statement executions |
+| `database_index_scans_total` | `table` | Index scans |
+| `database_full_table_scans_total` | `table` | Full table scans |
+| `database_constraint_violations_total` | `constraint` | Constraint violations |
+| `database_migrations_total` | `status` | Migration executions |
+| `database_vacuum_operations_total` | - | Vacuum operations |
+| `database_analyze_operations_total` | - | Analyze operations |
+
+### HTTP Client Counters (5 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `http_client_retries_total` | `service` | HTTP client retry attempts |
+| `http_client_timeouts_total` | `service` | HTTP client timeouts |
+| `http_connection_reuse_total` | - | HTTP connection reuse |
+| `http_dns_lookups_total` | - | HTTP DNS lookups |
+| `http_tls_handshakes_total` | - | HTTP TLS handshakes |
+
+### API Performance Counters (10 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `api_errors_total` | `endpoint`, `error_code` | API errors by endpoint |
+| `api_requests_by_status_range_total` | `range` | Requests by status range (2xx, 4xx, 5xx) |
+| `api_slow_requests_total` | `endpoint` | Slow requests exceeding threshold |
+| `api_timeouts_total` | `endpoint` | API request timeouts |
+| `api_validation_errors_total` | `endpoint` | Validation errors |
+| `api_payload_errors_total` | `endpoint` | Payload parsing errors |
+| `api_circuit_breaker_trips_total` | `service` | Circuit breaker trips |
+| `api_client_retries_total` | `client` | Client retries |
+| `api_cors_rejections_total` | - | CORS rejections |
+| `api_content_negotiation_failures_total` | - | Content negotiation failures |
+
+### Scheduler Counters (15 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `scheduler_jobs_scheduled_total` | `job_type` | Jobs scheduled |
+| `scheduler_jobs_executed_total` | `job_type` | Jobs executed |
+| `scheduler_job_failures_total` | `job_type`, `reason` | Job failures |
+| `scheduler_jobs_skipped_total` | `job_type` | Jobs skipped (overlap) |
+| `scheduler_job_cancellations_total` | `job_type` | Job cancellations |
+| `scheduler_job_timeouts_total` | `job_type` | Job timeouts |
+| `scheduler_recovery_events_total` | - | Recovery events |
+| `scheduler_missed_executions_total` | `job_type` | Missed executions |
+| `scheduler_job_retries_total` | `job_type` | Job retries |
+| `scheduler_cron_parse_errors_total` | - | Cron parse errors |
+| `birthday_scan_completions_total` | - | Birthday scan completions |
+| `birthday_scan_errors_total` | `error_type` | Birthday scan errors |
+| `timezone_processing_completions_total` | `timezone` | Timezone processing completions |
+| `scheduled_message_dispatches_total` | - | Scheduled message dispatches |
+| `scheduler_health_checks_total` | `status` | Health check executions |
+
+---
+
+## Gauge Metrics
+
+Gauges represent current values that can increase or decrease.
+
+### Original Gauges (7 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `queue_depth` | `queue_name` | Current queue depth |
+| `active_workers` | - | Number of active workers |
+| `database_connections` | `state` | Database connections (active/idle) |
+| `circuit_breaker_open` | `service` | Circuit breaker state (1=open, 0=closed) |
+| `dlq_depth` | `queue_name` | Dead letter queue depth |
+| `active_users` | - | Number of active users |
+| `pending_messages` | `message_type` | Pending messages count |
+
+### Business Gauges (20 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `birthdays_today` | - | Number of birthdays today |
+| `birthdays_pending` | - | Pending birthdays to process |
+| `user_timezone_distribution` | `timezone` | User timezone distribution |
+| `peak_hour_messaging_load` | - | Peak hour messaging load |
+| `active_message_templates` | - | Active message templates count |
+| `users_by_tier` | `tier` | Users by subscription tier |
+| `scheduled_jobs_count` | `job_type` | Scheduled jobs count |
+| `failed_jobs_retry_queue` | - | Failed jobs in retry queue |
+| `active_webhooks_count` | - | Active webhooks count |
+| `notification_queue_backlog` | - | Notification queue backlog |
+| `total_registered_users` | - | Total registered users |
+| `users_by_timezone` | `timezone` | Users by timezone count |
+| `messages_in_send_queue` | - | Messages in send queue |
+| `average_message_delivery_time` | - | Average message delivery time |
+| `daily_active_users` | - | Daily active users (DAU) |
+| `weekly_active_users` | - | Weekly active users (WAU) |
+| `monthly_active_users` | - | Monthly active users (MAU) |
+| `message_delivery_success_rate` | - | Message delivery success rate |
+| `user_engagement_score` | - | User engagement score |
+| `platform_health_score` | - | Platform health score (0-100) |
+
+### Performance Gauges (10 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `cache_hit_rate` | `cache_name` | Cache hit rate percentage |
+| `connection_pool_wait_time` | `pool` | Connection pool wait time |
+| `batch_processing_size` | - | Current batch processing size |
+| `event_loop_utilization` | - | Event loop utilization percentage |
+| `compression_ratio` | - | Memory compression ratio |
+| `payload_size_bytes` | - | Current payload size in bytes |
+| `node_active_handles` | - | Node.js active handles count |
+| `node_active_requests` | - | Node.js active requests count |
+| `node_event_loop_lag` | - | Node.js event loop lag |
+| `memory_pool_utilization` | `pool` | Memory pool utilization |
+
+### Queue Gauges (20 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `message_age_seconds` | `queue` | Message age in seconds |
+| `consumer_count` | `queue` | Active consumer count |
+| `channel_count` | - | Active channel count |
+| `exchange_bindings_count` | `exchange` | Exchange bindings count |
+| `prefetch_count` | - | Prefetch count setting |
+| `ack_rate` | `queue` | Message ack rate |
+| `nack_rate` | `queue` | Message nack rate |
+| `redelivery_rate` | `queue` | Redelivery rate |
+| `queue_memory_usage` | `queue` | Queue memory usage |
+| `unacked_messages_count` | `queue` | Unacked messages count |
+| `queue_messages_ready` | `queue` | Queue messages ready |
+| `queue_messages_unacked` | `queue` | Queue messages unacked |
+| `queue_publish_rate` | - | Queue message publish rate |
+| `queue_delivery_rate` | - | Queue message delivery rate |
+| `queue_consumer_utilization` | `queue` | Queue consumer utilization |
+| `dlq_oldest_message_age` | `queue` | DLQ oldest message age |
+| `queue_connection_count` | - | Queue connection count |
+| `queue_message_size_average` | `queue` | Queue message size average |
+| `queue_high_watermark` | `queue` | Queue high watermark |
+| `queue_redelivery_backoff` | `queue` | Queue redelivery backoff |
+
+### Database Gauges (20 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `index_hit_ratio` | - | Index hit ratio |
+| `buffer_cache_hit_ratio` | - | Buffer cache hit ratio |
+| `replication_lag` | - | Database replication lag |
+| `active_transactions` | - | Active database transactions |
+| `lock_wait_count` | - | Database lock wait count |
+| `database_table_size` | `table` | Database table size |
+| `database_index_size` | `index` | Database index size |
+| `database_row_estimates` | `table` | Database row estimates |
+| `database_connection_age` | - | Database connection age |
+| `database_query_queue_length` | - | Database query queue length |
+| `database_pool_size` | - | Connection pool size |
+| `database_pool_idle_connections` | - | Pool idle connections |
+| `database_pool_waiting_requests` | - | Pool waiting requests |
+| `database_query_execution_queue` | - | Query execution queue size |
+| `database_connection_latency` | - | Connection latency |
+| `database_transactions_in_progress` | - | Transactions in progress |
+| `database_replication_slots_active` | - | Active replication slots |
+| `database_wal_size` | - | WAL size |
+| `database_cache_size` | - | Cache size |
+| `database_temp_files_size` | - | Temp files size |
+
+### System Gauges (10 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `process_open_file_descriptors` | - | Process open file descriptors |
+| `process_max_file_descriptors` | - | Process max file descriptors |
+| `process_start_time` | - | Process start time |
+| `process_uptime_seconds` | - | Process uptime seconds |
+| `v8_heap_space_size` | `space` | V8 heap space size |
+| `v8_heap_statistics` | `stat` | V8 heap statistics |
+| `v8_external_memory` | - | V8 external memory |
+| `system_load_average` | `period` | System load average |
+| `system_free_memory` | - | System free memory |
+| `system_total_memory` | - | System total memory |
+
+### API Performance Gauges (10 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `api_active_requests` | - | Current active API requests |
+| `api_request_queue_length` | - | API request queue length |
+| `api_average_response_time` | `endpoint` | Average response time (rolling) |
+| `api_error_rate` | - | API error rate percentage |
+| `api_requests_per_second` | - | API requests per second |
+| `api_payload_size_average` | - | API payload size average |
+| `api_connection_pool_utilization` | - | Connection pool utilization |
+| `api_rate_limit_remaining` | `endpoint` | Rate limit remaining |
+| `api_circuit_breaker_state` | `service` | Circuit breaker state (0/0.5/1) |
+| `api_health_score` | - | API health score (0-100) |
+
+### Scheduler Gauges (15 metrics)
+
+| Metric Name | Labels | Description |
+|-------------|--------|-------------|
+| `scheduler_next_execution_time` | `job_type` | Next execution timestamp |
+| `scheduler_job_lag` | `job_type` | Job lag (seconds behind) |
+| `scheduler_active_jobs` | - | Active scheduled jobs |
+| `scheduler_pending_jobs` | - | Pending scheduled jobs |
+| `scheduler_running_jobs` | - | Running scheduled jobs |
+| `scheduler_thread_pool_size` | - | Thread pool size |
+| `scheduler_thread_pool_active` | - | Thread pool active |
+| `scheduler_lock_status` | `job_type` | Lock status |
+| `birthdays_remaining_today` | - | Birthdays remaining today |
+| `scheduler_backlog_size` | - | Scheduler backlog size |
+| `scheduler_current_timezone_offset` | - | Current timezone being processed |
+| `scheduler_last_successful_run` | `job_type` | Last successful run timestamp |
+| `scheduler_consecutive_failures` | `job_type` | Consecutive failures |
+| `scheduler_execution_window_remaining` | - | Execution window remaining |
+| `scheduler_resource_utilization` | - | Resource utilization |
+
+---
+
+## Histogram Metrics
+
+Histograms track value distributions across configurable buckets.
+
+### Original Histograms (6 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `message_delivery_duration_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5, 10 | Message delivery duration |
+| `api_response_time_seconds` | 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5 | API response time |
+| `scheduler_execution_duration_seconds` | 0.1, 0.5, 1, 5, 10, 30, 60 | Scheduler execution duration |
+| `external_api_latency_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5, 10 | External API latency |
+| `database_query_duration_seconds` | 0.001, 0.01, 0.05, 0.1, 0.5, 1 | Database query duration |
+| `message_time_to_delivery_seconds` | 1, 5, 10, 60, 300, 900, 3600 | Time from schedule to delivery |
+
+### Performance Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `batch_processing_duration_seconds` | 0.1, 0.5, 1, 5, 10, 30 | Batch processing duration |
+| `gc_pause_time_seconds` | 0.001, 0.005, 0.01, 0.05, 0.1 | GC pause time |
+| `connection_pool_acquisition_time_seconds` | 0.001, 0.01, 0.05, 0.1, 0.5 | Pool acquisition time |
+| `cache_operation_duration_seconds` | 0.0001, 0.001, 0.01, 0.1 | Cache operation duration |
+| `serialization_duration_seconds` | 0.0001, 0.001, 0.01, 0.1 | Serialization duration |
+
+### Queue Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `message_publish_duration_seconds` | 0.001, 0.01, 0.05, 0.1, 0.5 | Message publish duration |
+| `message_consume_duration_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5 | Message consume duration |
+| `queue_wait_time_seconds` | 0.1, 1, 5, 10, 30, 60 | Queue wait time |
+| `channel_operation_duration_seconds` | 0.001, 0.01, 0.05, 0.1 | Channel operation duration |
+| `message_processing_latency_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5 | Message processing latency |
+
+### Database Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `transaction_duration_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5 | Transaction duration |
+| `lock_wait_time_seconds` | 0.01, 0.1, 1, 5, 10 | Lock wait time |
+| `checkpoint_duration_seconds` | 0.1, 1, 5, 10, 30 | Checkpoint duration |
+| `connection_establishment_time_seconds` | 0.01, 0.05, 0.1, 0.5, 1 | Connection establishment time |
+| `query_planning_time_seconds` | 0.001, 0.01, 0.05, 0.1 | Query planning time |
+
+### HTTP Client Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `http_request_duration_seconds` | 0.01, 0.05, 0.1, 0.5, 1, 5, 10 | HTTP request duration |
+| `dns_lookup_duration_seconds` | 0.001, 0.01, 0.05, 0.1 | DNS lookup duration |
+| `tcp_connection_duration_seconds` | 0.01, 0.05, 0.1, 0.5 | TCP connection duration |
+| `tls_handshake_duration_seconds` | 0.01, 0.05, 0.1, 0.5 | TLS handshake duration |
+| `http_first_byte_duration_seconds` | 0.01, 0.05, 0.1, 0.5, 1 | Time to first byte |
+
+### API Performance Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `api_request_size_bytes` | 100, 1K, 10K, 100K, 1M | API request size |
+| `api_response_size_bytes` | 100, 1K, 10K, 100K, 1M | API response size |
+| `api_request_body_parsing_seconds` | 0.0001, 0.001, 0.01, 0.1 | Body parsing time |
+| `api_response_serialization_seconds` | 0.0001, 0.001, 0.01, 0.1 | Response serialization time |
+| `api_middleware_duration_seconds` | 0.0001, 0.001, 0.01, 0.1 | Middleware duration |
+
+### Scheduler Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `birthday_scan_duration_seconds` | 1, 5, 10, 30, 60, 300 | Birthday scan duration |
+| `timezone_processing_duration_seconds` | 0.1, 0.5, 1, 5, 10 | Timezone processing duration |
+| `scheduler_lock_acquisition_seconds` | 0.01, 0.1, 1, 5, 10 | Lock acquisition time |
+| `scheduler_job_queue_time_seconds` | 0.1, 1, 5, 10, 30, 60 | Job queue time |
+| `scheduler_recovery_duration_seconds` | 0.1, 1, 5, 10, 30 | Recovery duration |
+
+---
+
+## Summary Metrics
+
+Summaries provide quantile-based distributions (p50, p90, p99).
+
+| Metric Name | Quantiles | Description |
+|-------------|-----------|-------------|
+| `api_response_time_summary` | 0.5, 0.9, 0.95, 0.99 | API response time percentiles |
+| `message_processing_time_summary` | 0.5, 0.9, 0.95, 0.99 | Message processing percentiles |
+| `database_query_time_summary` | 0.5, 0.9, 0.95, 0.99 | Database query percentiles |
+| `scheduler_execution_summary` | 0.5, 0.9, 0.95, 0.99 | Scheduler execution percentiles |
+| `queue_latency_summary` | 0.5, 0.9, 0.95, 0.99 | Queue latency percentiles |
+| `external_api_summary` | 0.5, 0.9, 0.95, 0.99 | External API percentiles |
+| `batch_processing_summary` | 0.5, 0.9, 0.95, 0.99 | Batch processing percentiles |
+| `connection_time_summary` | 0.5, 0.9, 0.95, 0.99 | Connection time percentiles |
+| `gc_pause_summary` | 0.5, 0.9, 0.95, 0.99 | GC pause percentiles |
+| `event_loop_lag_summary` | 0.5, 0.9, 0.95, 0.99 | Event loop lag percentiles |
+
+---
+
+## Queue Metrics Deep-Dive
+
+### RabbitMQ Queue Instrumentation
+
+The queue metrics system provides comprehensive monitoring of RabbitMQ operations through the `QueueMetricsInstrumentation` class.
+
+#### Architecture
+
+```
++-------------------+     +------------------------+     +------------------+
+| MessagePublisher  |---->| QueueMetricsInstrument |---->| MetricsService   |
++-------------------+     +------------------------+     +------------------+
+        |                          |                            |
+        v                          v                            v
++-------------------+     +------------------------+     +------------------+
+| MessageConsumer   |---->| Event Handlers         |---->| Prometheus       |
++-------------------+     +------------------------+     +------------------+
+```
+
+#### Configuration Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `queueDepthInterval` | 30000ms | Queue depth monitoring interval |
+| `trackConsumerCount` | true | Enable consumer count tracking |
+| `trackConnectionStatus` | true | Enable connection status monitoring |
+| `trackMessageDetails` | true | Enable detailed message tracking |
+
+#### Key Queue Metrics Explained
+
+| Metric | Type | What It Measures | When to Investigate |
+|--------|------|------------------|---------------------|
+| `queue_depth` | Gauge | Messages waiting in queue | Sustained > 1000 |
+| `message_age_seconds` | Gauge | Age of oldest message | > 5 minutes |
+| `consumer_count` | Gauge | Active consumers | < 2 or drops suddenly |
+| `ack_rate` | Gauge | Message acknowledgment rate | Declining trend |
+| `nack_rate` | Gauge | Negative acknowledgment rate | > 1% of ack rate |
+| `redelivery_rate` | Gauge | Message redelivery rate | > 5% of deliveries |
+| `dlq_depth` | Gauge | Dead letter queue depth | Any increase |
+| `unacked_messages_count` | Gauge | Unacknowledged messages | Sustained > prefetch |
+
+#### Message Lifecycle Metrics
+
+```
+[Publish] --> message_publish_duration_seconds
+    |
+    v
+[Queue] --> queue_wait_time_seconds, message_age_seconds
+    |
+    v
+[Consume] --> message_consume_duration_seconds
+    |
+    +--[Success]--> message_acks_total
+    |
+    +--[Retry]--> message_nacks_total, message_redeliveries_total
+    |
+    +--[Fail]--> dlq_messages_added_total
+```
+
+#### Queue Health Indicators
+
+| State | Metrics Pattern | Meaning |
+|-------|-----------------|---------|
+| **Healthy** | `queue_depth` stable, `ack_rate` > `publish_rate` | Processing keeping up |
+| **Backing up** | `queue_depth` increasing, `ack_rate` < `publish_rate` | Need more consumers |
+| **Consumer issues** | `nack_rate` high, `redelivery_rate` high | Processing failures |
+| **Degraded** | `dlq_depth` increasing | Persistent failures |
+| **Critical** | `consumer_count` = 0, `queue_depth` growing | Consumer failure |
+
+#### Publisher Confirm Tracking
+
 ```promql
-rate(birthday_scheduler_messages_scheduled_total[5m])
+# Publisher confirm success rate
+sum(rate(birthday_scheduler_publisher_confirms_total{status="success"}[5m]))
+/
+sum(rate(birthday_scheduler_publisher_confirms_total[5m]))
 ```
 
-#### `birthday_scheduler_messages_sent_total`
-Total number of messages successfully sent.
+#### Consumer Health Metrics
 
-**Labels**:
-- `message_type`: BIRTHDAY, ANNIVERSARY
-- `status_code`: HTTP status code (200, 201, etc.)
-
-**Example**:
 ```promql
-sum(rate(birthday_scheduler_messages_sent_total[5m])) by (message_type)
+# Consumer utilization
+birthday_scheduler_queue_consumer_utilization{queue="birthday_messages"}
+
+# Redelivery ratio (should be < 5%)
+rate(birthday_scheduler_message_redeliveries_total[5m])
+/
+rate(birthday_scheduler_message_acks_total[5m])
 ```
 
-#### `birthday_scheduler_messages_failed_total`
-Total number of messages that failed to send.
-
-**Labels**:
-- `message_type`: BIRTHDAY, ANNIVERSARY
-- `error_type`: timeout, network, validation, rate_limit, etc.
-- `retry_count`: Number of retries attempted
-
-**Example**:
-```promql
-sum(rate(birthday_scheduler_messages_failed_total[5m])) by (error_type)
-```
-
-#### `birthday_scheduler_api_requests_total`
-Total number of API requests.
-
-**Labels**:
-- `method`: HTTP method (GET, POST, etc.)
-- `path`: Normalized request path
-- `status`: HTTP status code
-
-**Example**:
-```promql
-rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])
-```
-
-### Gauge Metrics
-
-Current state measurements.
-
-#### `birthday_scheduler_queue_depth`
-Current depth of message queue.
-
-**Labels**:
-- `queue_name`: Name of the queue
-
-**Example**:
-```promql
-birthday_scheduler_queue_depth{queue_name="birthday_messages"}
-```
-
-#### `birthday_scheduler_active_workers`
-Number of active worker processes.
-
-**Labels**:
-- `worker_type`: Type of worker (message_consumer, etc.)
-
-**Example**:
-```promql
-birthday_scheduler_active_workers
-```
-
-#### `birthday_scheduler_database_connections`
-Number of active database connections.
-
-**Labels**:
-- `pool_name`: Database pool name
-- `state`: active, idle
-
-**Example**:
-```promql
-sum(birthday_scheduler_database_connections) by (state)
-```
-
-#### `birthday_scheduler_circuit_breaker_open`
-Circuit breaker status (1 = open, 0 = closed).
-
-**Labels**:
-- `service_name`: Name of the service
-
-**Example**:
-```promql
-birthday_scheduler_circuit_breaker_open{service_name="message_api"}
-```
-
-### Histogram Metrics
-
-Distribution of observed values.
-
-#### `birthday_scheduler_message_delivery_duration_seconds`
-Duration of message delivery in seconds.
-
-**Labels**:
-- `message_type`: BIRTHDAY, ANNIVERSARY
-- `status`: success, failure
-
-**Buckets**: 0.1, 0.5, 1, 2, 5, 10, 30
-
-**Example**:
-```promql
-histogram_quantile(0.95, sum(rate(birthday_scheduler_message_delivery_duration_seconds_bucket[5m])) by (le, message_type))
-```
-
-#### `birthday_scheduler_api_response_time_seconds`
-API response time in seconds.
-
-**Labels**:
-- `method`: HTTP method
-- `path`: Request path
-- `status`: HTTP status code
-
-**Buckets**: 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5
-
-**Example**:
-```promql
-histogram_quantile(0.99, sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le))
-```
-
-#### `birthday_scheduler_scheduler_execution_duration_seconds`
-Scheduler job execution duration in seconds.
-
-**Labels**:
-- `job_type`: daily_precalculation, enqueue_messages, recovery_job
-- `status`: success, failure
-
-**Buckets**: 0.1, 0.5, 1, 5, 10, 30, 60, 120
-
-**Example**:
-```promql
-birthday_scheduler_scheduler_execution_duration_seconds{job_type="daily_precalculation"}
-```
-
-### Summary Metrics
-
-Quantiles and aggregations.
-
-#### `birthday_scheduler_message_processing_quantiles`
-Message processing time quantiles.
-
-**Labels**:
-- `message_type`: BIRTHDAY, ANNIVERSARY
-
-**Quantiles**: 0.5, 0.9, 0.95, 0.99
-
-**Example**:
-```promql
-birthday_scheduler_message_processing_quantiles{quantile="0.99"}
-```
-
-## Default Labels
-
-All metrics include default labels:
-- `service`: birthday-message-scheduler
-- `environment`: development, staging, production
-- `version`: Application version
-
-## Grafana Dashboard
-
-A pre-configured Grafana dashboard is available at `grafana/dashboard.json`.
-
-### Dashboard Panels
-
-1. **Message Throughput** - Rate of scheduled, sent, and failed messages
-2. **Error Rate** - Percentage of failed messages
-3. **Message Delivery Latency** - p50, p95, p99 latency percentiles
-4. **Queue Depth** - Current queue depth with alerts
-5. **Circuit Breaker Status** - Real-time circuit breaker state
-6. **Active Workers** - Number of active worker processes
-7. **Database Connections** - Connection pool usage
-8. **API Response Time** - p95 API response time
-9. **Scheduler Job Duration** - Job execution time by type
-
-### Alerts Configured
-
-1. **High Queue Depth**: Triggers when queue depth > 1000 for 5 minutes
-2. **High Error Rate**: Triggers when error rate > 5%
-3. **Circuit Breaker Open**: Triggers when circuit breaker opens
-
-### Importing the Dashboard
-
-1. Open Grafana
-2. Go to Dashboards → Import
-3. Upload `grafana/dashboard.json`
-4. Select your Prometheus datasource
-5. Click Import
-
-## Prometheus Configuration
-
-Add to your `prometheus.yml`:
-
-```yaml
-scrape_configs:
-  - job_name: 'birthday-scheduler'
-    scrape_interval: 15s
-    static_configs:
-      - targets: ['localhost:3000']
-    metrics_path: '/metrics'
-```
+---
 
 ## Alerting Rules
 
-Example Prometheus alerting rules:
+### Critical Alerts (P0) - Immediate Action Required
 
-```yaml
-groups:
-  - name: birthday_scheduler
-    interval: 30s
-    rules:
-      # High error rate
-      - alert: HighMessageErrorRate
-        expr: |
-          (
-            rate(birthday_scheduler_messages_failed_total[5m])
-            /
-            (rate(birthday_scheduler_messages_sent_total[5m]) + rate(birthday_scheduler_messages_failed_total[5m]))
-          ) > 0.05
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High message error rate detected"
-          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+| Alert | Condition | Duration | Description | Runbook |
+|-------|-----------|----------|-------------|---------|
+| **ServiceDown** | `up{job="birthday-scheduler"} == 0` | 1m | Service not responding to health checks | Check pod status, logs |
+| **HighErrorRate** | Error rate > 5% | 2m | Significant request failures | Check dependencies, review errors |
+| **DatabaseConnectionPoolExhausted** | Available connections = 0 | 30s | All DB connections in use | Increase pool, check leaks |
+| **QueueDepthCritical** | `queue_depth > 10000` | 2m | Severe message backlog | Scale workers, check consumers |
+| **CircuitBreakerOpen** | `circuit_breaker_state == 1` | 1m | External service protection triggered | Check dependency health |
+| **DLQDepthHigh** | `dlq_depth > 100` | 5m | Failed messages accumulating | Investigate failures, manual retry |
+| **HTTP5xxSpike** | > 100 5xx errors in 5m | 1m | Sudden server error increase | Check logs, recent deploys |
+| **OutOfMemoryRisk** | Memory > 95% | 1m | OOM kill imminent | Scale up, restart pods |
+| **MessageDeliveryFailureCritical** | Failure rate > 10% | 2m | Users not receiving notifications | Check email service |
+| **DatabaseReplicationLagCritical** | Lag > 30s | 2m | Stale data risk | Check replica health |
 
-      # High queue depth
-      - alert: HighQueueDepth
-        expr: birthday_scheduler_queue_depth > 1000
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Message queue depth is high"
-          description: "Queue {{ $labels.queue_name }} has {{ $value }} messages"
+### Warning Alerts (P1) - Action Required Within Hours
 
-      # Circuit breaker open
-      - alert: CircuitBreakerOpen
-        expr: birthday_scheduler_circuit_breaker_open == 1
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Circuit breaker is open"
-          description: "Circuit breaker for {{ $labels.service_name }} is open"
+| Alert | Condition | Duration | Description | Runbook |
+|-------|-----------|----------|-------------|---------|
+| **HighLatency** | P99 > 5s | 5m | User experience degradation | Optimize slow endpoints |
+| **MemoryUsageHigh** | Memory > 85% | 10m | Approaching memory limits | Investigate leaks, scale |
+| **CPUUsageHigh** | CPU > 80% | 10m | Processing capacity limited | Optimize or scale |
+| **QueueDepthWarning** | `queue_depth > 1000` | 10m | Message backlog building | Add consumers |
+| **RetryRateHigh** | Retry rate > 10% | 10m | Transient failures elevated | Check dependencies |
+| **SlowDatabaseQueries** | P95 > 1s | 5m | Database performance degraded | Add indexes, optimize |
+| **DatabaseConnectionPoolLow** | Available < 20% | 5m | Pool exhaustion approaching | Increase pool size |
+| **DiskUsageHigh** | Disk > 80% | 15m | Storage running low | Cleanup, expand |
+| **RequestRateAnomalyHigh** | Rate > 2x baseline | 10m | Unusual traffic spike | Investigate source |
+| **CacheHitRateLow** | Hit rate < 80% | 15m | Increased database load | Review cache strategy |
+| **ExternalAPISlowResponse** | P95 > 2s | 5m | Dependency slow | Consider caching |
 
-      # No active workers
-      - alert: NoActiveWorkers
-        expr: birthday_scheduler_active_workers == 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "No active workers"
-          description: "No active {{ $labels.worker_type }} workers detected"
+### SLO Alerts
 
-      # Database connection issues
-      - alert: NoDatabaseConnections
-        expr: birthday_scheduler_database_connections{state="active"} == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "No active database connections"
-          description: "Database pool {{ $labels.pool_name }} has no active connections"
+| Alert | Condition | Duration | Description | Runbook |
+|-------|-----------|----------|-------------|---------|
+| **MessageDeliveryRateLow** | Delivery rate < 99% | 15m | Below delivery SLO | Check email provider |
+| **APIAvailabilityLow** | Availability < 99.9% | 15m | Below availability SLO | Prioritize error fixes |
+| **ErrorBudgetExhausted** | Budget > 100% consumed | 5m | Monthly error budget depleted | Freeze non-critical changes |
+| **ErrorBudgetBurnRateHigh** | Burn rate > 14.4x | 5m | Budget exhausted in < 2 hours | Immediate investigation |
+| **LatencySLOViolation** | P99 > 2s | 10m | Latency target missed | Performance optimization |
+| **ThroughputSLOViolation** | Processing < 100/s | 15m | Capacity below target | Scale workers |
+| **SchedulerAccuracySLOViolation** | On-time < 95% | 30m | Scheduling delays | Check scheduler health |
+
+### Informational Alerts (P2) - Awareness
+
+| Alert | Condition | Duration | Description | Runbook |
+|-------|-----------|----------|-------------|---------|
+| **HighRequestRate** | Rate > 1.5x 7d avg | 30m | Elevated traffic | Monitor capacity |
+| **NewSecurityEvent** | Security event detected | 0m | Security activity | Review logs |
+| **RateLimitTriggered** | > 10 limited requests | 5m | Rate limiting active | Check client behavior |
+| **AuthFailureSpike** | Failures > 3x baseline | 10m | Auth anomaly | Security review |
+| **WorkerScalingNeeded** | Workers > 90% utilized | 15m | Workers at capacity | Plan scaling |
+| **CertificateExpiryWarning** | Expiry < 7 days | 1h | Certificate renewal needed | Renew certificate |
+| **NewVersionDeployed** | Build info changed | 0m | Deployment detected | Monitor for regressions |
+| **BirthdayMessageVolumeSpike** | Volume > 2x normal | 15m | High birthday volume | Monitor capacity |
+
+---
+
+## Troubleshooting Decision Trees
+
+### High Latency Investigation
+
 ```
+High API Latency Detected
+         |
+         v
++------------------+
+| Check DB Latency |
++------------------+
+         |
+    +----+----+
+    |         |
+   High      Normal
+    |         |
+    v         v
++--------+  +------------------+
+| DB     |  | Check Queue      |
+| Issues |  | Processing Time  |
++--------+  +------------------+
+    |              |
+    v         +----+----+
+- Index      |         |
+  missing   High     Normal
+- Slow       |         |
+  queries    v         v
+- Lock    +--------+  +----------------+
+  waits   | Queue  |  | Check External |
+          | Issues |  | API Latency    |
+          +--------+  +----------------+
+              |              |
+              v         +----+----+
+          - Scale      |         |
+            consumers High     Normal
+          - Check      |         |
+            prefetch   v         v
+                   +--------+  +--------+
+                   | Depend |  | Code   |
+                   | Issue  |  | Issue  |
+                   +--------+  +--------+
+```
+
+### High Error Rate Investigation
+
+```
+Error Rate > 5%
+      |
+      v
++---------------------+
+| Check Error Types   |
++---------------------+
+      |
+  +---+---+---+
+  |   |   |   |
+  v   v   v   v
+4xx 5xx DB  Ext
+  |   |   |   |
+  v   v   v   v
+Client Server DB  Dependency
+Errors Errors Down Issue
+  |     |     |     |
+  v     v     v     v
+Check  Check Check Check
+Rate   Logs  Pool  Circuit
+Limit  OOM   Conn  Breaker
+```
+
+### Queue Backup Investigation
+
+```
+Queue Depth > 1000
+        |
+        v
++-------------------+
+| Check Consumer    |
+| Count             |
++-------------------+
+        |
+   +----+----+
+   |         |
+   0       > 0
+   |         |
+   v         v
+Consumer  Check Processing
+Failure   Time per Message
+   |              |
+   v         +----+----+
+Restart    |         |
+Consumer  High     Normal
+   |       |         |
+   v       v         v
+Check    Scale    Check
+Logs     Workers  Publish
+         |        Rate
+         v         |
+      +------+     v
+      | Add  |  Traffic
+      | More |  Spike?
+      | Pods |     |
+      +------+     v
+              Rate Limit
+              or Scale
+```
+
+### DLQ Growth Investigation
+
+```
+DLQ Depth Increasing
+         |
+         v
++---------------------+
+| Sample DLQ Messages |
++---------------------+
+         |
+    +----+----+----+
+    |    |    |    |
+    v    v    v    v
+Malformed Data Timeout Retry
+Message   Issue Error  Exhausted
+    |       |     |        |
+    v       v     v        v
+Fix     Check   Increase Fix
+Schema  Source  Timeout  Root
+        Data    Config   Cause
+```
+
+### Memory Growth Investigation
+
+```
+Memory Usage > 85%
+        |
+        v
++-------------------+
+| Check Memory Type |
++-------------------+
+        |
+   +----+----+
+   |         |
+ Heap     External
+   |         |
+   v         v
++--------+ +------------+
+| Check  | | Check      |
+| GC     | | Buffer     |
+| Events | | Allocations|
++--------+ +------------+
+   |              |
+   v              v
+Frequent?    Large Payloads?
+   |              |
+   v              v
+Memory       Implement
+Leak?        Streaming
+   |
+   v
+Profile with
+--inspect
+```
+
+---
+
+## Grafana Query Examples
+
+### API Performance Queries
+
+```promql
+# Request rate (requests per second)
+sum(rate(birthday_scheduler_api_requests_total[5m]))
+
+# Error rate percentage
+100 * sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
+    / sum(rate(birthday_scheduler_api_requests_total[5m]))
+
+# P95 latency by endpoint
+histogram_quantile(0.95,
+  sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le, path)
+)
+
+# P99 latency overall
+histogram_quantile(0.99,
+  sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m])) by (le)
+)
+
+# Request rate by endpoint
+sum(rate(birthday_scheduler_api_requests_total[5m])) by (path)
+
+# Slow request count
+sum(increase(birthday_scheduler_api_slow_requests_total[1h])) by (endpoint)
+```
+
+### Queue Performance Queries
+
+```promql
+# Queue depth over time
+birthday_scheduler_queue_depth{queue_name="birthday_messages"}
+
+# Message processing rate
+sum(rate(birthday_scheduler_message_acks_total[5m]))
+
+# Consumer utilization
+birthday_scheduler_queue_consumer_utilization{queue="birthday_messages"}
+
+# Average message age
+avg(birthday_scheduler_message_age_seconds)
+
+# DLQ growth rate
+rate(birthday_scheduler_dlq_messages_added_total[1h])
+
+# Redelivery ratio
+rate(birthday_scheduler_message_redeliveries_total[5m])
+  / rate(birthday_scheduler_message_acks_total[5m])
+
+# Publisher confirm success rate
+sum(rate(birthday_scheduler_publisher_confirms_total{status="success"}[5m]))
+  / sum(rate(birthday_scheduler_publisher_confirms_total[5m]))
+
+# Queue wait time P95
+histogram_quantile(0.95,
+  sum(rate(birthday_scheduler_queue_wait_time_seconds_bucket[5m])) by (le)
+)
+```
+
+### Database Performance Queries
+
+```promql
+# Active connections
+birthday_scheduler_database_connections{state="active"}
+
+# Connection pool utilization
+(birthday_scheduler_database_pool_size - birthday_scheduler_database_pool_idle_connections)
+  / birthday_scheduler_database_pool_size * 100
+
+# Query duration P95
+histogram_quantile(0.95,
+  sum(rate(birthday_scheduler_database_query_duration_seconds_bucket[5m])) by (le)
+)
+
+# Slow query count
+sum(increase(birthday_scheduler_database_slow_queries_total[1h]))
+
+# Transaction rate
+sum(rate(birthday_scheduler_database_commits_total[5m]))
+
+# Index hit ratio
+birthday_scheduler_index_hit_ratio
+
+# Replication lag
+birthday_scheduler_replication_lag
+```
+
+### Business Metrics Queries
+
+```promql
+# Messages sent per hour
+sum(increase(birthday_scheduler_messages_sent_total[1h]))
+
+# Message delivery success rate
+sum(rate(birthday_scheduler_messages_sent_total{status_code="200"}[1h]))
+  / sum(rate(birthday_scheduler_messages_scheduled_total[1h])) * 100
+
+# Birthdays processed today
+sum(birthday_scheduler_birthdays_processed_total{status="success"})
+
+# Active users (DAU/WAU/MAU)
+birthday_scheduler_daily_active_users
+birthday_scheduler_weekly_active_users
+birthday_scheduler_monthly_active_users
+
+# User growth rate
+increase(birthday_scheduler_user_creations_total[24h])
+  - increase(birthday_scheduler_user_deletions_total[24h])
+
+# Message template popularity
+topk(5, sum(rate(birthday_scheduler_message_template_usage_total[24h])) by (template_name))
+```
+
+### System Health Queries
+
+```promql
+# Memory usage percentage
+(birthday_scheduler_memory_used_bytes / birthday_scheduler_memory_limit_bytes) * 100
+
+# CPU usage
+rate(birthday_scheduler_cpu_seconds_total[5m])
+
+# Event loop lag
+birthday_scheduler_node_event_loop_lag
+
+# GC pause time P99
+histogram_quantile(0.99,
+  sum(rate(birthday_scheduler_gc_pause_time_seconds_bucket[5m])) by (le)
+)
+
+# Open file descriptors utilization
+birthday_scheduler_process_open_file_descriptors
+  / birthday_scheduler_process_max_file_descriptors * 100
+
+# Cache hit rate
+sum(rate(birthday_scheduler_cache_hits_total[5m]))
+  / (sum(rate(birthday_scheduler_cache_hits_total[5m]))
+     + sum(rate(birthday_scheduler_cache_misses_total[5m]))) * 100
+```
+
+### SLO Tracking Queries
+
+```promql
+# API availability (30 day)
+sum(increase(birthday_scheduler_api_requests_total{status!~"5.."}[30d]))
+  / sum(increase(birthday_scheduler_api_requests_total[30d])) * 100
+
+# Error budget consumed (percentage of 0.1% budget)
+(1 - (
+  sum(increase(birthday_scheduler_api_requests_total{status!~"5.."}[30d]))
+  / sum(increase(birthday_scheduler_api_requests_total[30d]))
+)) / 0.001 * 100
+
+# Error budget burn rate (14.4 = will exhaust in 2h)
+(1 - (
+  sum(rate(birthday_scheduler_api_requests_total{status!~"5.."}[1h]))
+  / sum(rate(birthday_scheduler_api_requests_total[1h]))
+)) / (0.001 / 720)
+
+# Message delivery SLO (99% target)
+sum(rate(birthday_scheduler_messages_delivered_total[1h]))
+  / sum(rate(birthday_scheduler_messages_sent_total[1h])) * 100
+```
+
+### Alerting Condition Queries
+
+```promql
+# Circuit breaker status (returns services with open breakers)
+birthday_scheduler_circuit_breaker_state == 1
+
+# Workers at zero
+birthday_scheduler_active_workers == 0
+
+# Connection pool exhausted
+birthday_scheduler_database_pool_idle_connections == 0
+
+# Rate limiting active
+increase(birthday_scheduler_rate_limit_hits_total[5m]) > 0
+```
+
+---
 
 ## Usage Examples
 
 ### Recording Metrics in Code
 
 ```typescript
-import { metricsService } from './services/metrics.service.js';
+import { metricsService } from '@/services/metrics.service';
 
-// Record a scheduled message
-metricsService.recordMessageScheduled('BIRTHDAY', 'America/New_York');
+// Increment counter
+metricsService.messagesScheduledTotal.inc({ message_type: 'birthday' });
 
-// Record a sent message
-metricsService.recordMessageSent('BIRTHDAY', 200);
+// Set gauge value
+metricsService.queueDepth.set({ queue_name: 'messages' }, 42);
 
-// Record a failed message
-metricsService.recordMessageFailed('ANNIVERSARY', 'timeout', 1);
+// Observe histogram value
+metricsService.apiResponseTime.observe({ endpoint: '/api/users' }, 0.125);
 
-// Set queue depth
-metricsService.setQueueDepth('birthday_messages', 150);
-
-// Set active workers
-metricsService.setActiveWorkers('message_consumer', 5);
-
-// Record message delivery duration
-const startTime = Date.now();
-// ... send message ...
-const duration = (Date.now() - startTime) / 1000;
-metricsService.recordMessageDeliveryDuration('BIRTHDAY', 'success', duration);
-
-// Set circuit breaker status
-metricsService.setCircuitBreakerStatus('message_api', false);
+// Start/end timer (histogram)
+const end = metricsService.databaseQueryDuration.startTimer({ query_type: 'select' });
+// ... execute query ...
+end(); // Automatically records duration
 ```
 
-### Querying Metrics
+### Queue Metrics Instrumentation
 
-```bash
-# Get all metrics
-curl http://localhost:3000/metrics
+```typescript
+import { queueMetricsInstrumentation } from '@/services/queue/queue-metrics';
 
-# Get metrics summary (JSON)
-curl http://localhost:3000/metrics/summary | jq .
+// Initialize instrumentation
+await queueMetricsInstrumentation.initialize();
 
-# Query specific metrics (if Prometheus is running)
-curl 'http://localhost:9090/api/v1/query?query=birthday_scheduler_queue_depth'
+// Instrument publishing
+await queueMetricsInstrumentation.instrumentPublish(
+  () => publisher.publish(message),
+  'birthday-exchange',
+  'birthday.send',
+  messageId
+);
+
+// Instrument consumption
+await queueMetricsInstrumentation.instrumentConsume(
+  () => processMessage(msg),
+  msg,
+  'birthday_messages'
+);
+
+// Update queue depth manually
+queueMetricsInstrumentation.updateQueueDepth('birthday_messages', 42);
 ```
 
-## Monitoring Best Practices
+---
 
-1. **Set up alerts** for critical metrics (queue depth, error rate, circuit breaker)
-2. **Monitor trends** over time to identify patterns
-3. **Use dashboards** for real-time visibility
-4. **Track SLOs** (Service Level Objectives) based on metrics
-5. **Regular reviews** of metric data for optimization opportunities
+## Configuration
 
-## Performance Considerations
+### Environment Variables
 
-- Metrics are collected in-memory with minimal overhead
-- Histogram buckets are optimized for typical latencies
-- Default Node.js metrics are included for system monitoring
-- Metrics endpoint is lightweight and fast (< 100ms response time)
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `METRICS_ENABLED` | `true` | Enable/disable metrics collection |
+| `METRICS_PREFIX` | `birthday_scheduler_` | Metric name prefix |
+| `METRICS_DEFAULT_LABELS` | `{}` | Default labels for all metrics |
+| `METRICS_COLLECT_DEFAULT` | `true` | Collect Node.js default metrics |
 
-## Troubleshooting
+### Prometheus Configuration
 
-### High Memory Usage
-
-Check if metric cardinality is too high:
-```promql
-count(birthday_scheduler_messages_scheduled_total) by (__name__)
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'happy-bday-app'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['api:3000', 'worker:3001']
+    metrics_path: /metrics
 ```
 
-### Missing Metrics
+### Alert Manager Configuration
 
-1. Verify metrics endpoint is accessible: `curl http://localhost:3000/metrics`
-2. Check Prometheus targets: `http://localhost:9090/targets`
-3. Review application logs for metric recording errors
+```yaml
+# alertmanager.yml
+route:
+  group_by: ['alertname', 'severity']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'default'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+    - match:
+        severity: warning
+      receiver: 'slack-warnings'
 
-### Incorrect Metric Values
+receivers:
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: '<key>'
+  - name: 'slack-warnings'
+    slack_configs:
+      - channel: '#alerts'
+```
 
-1. Verify metric is being recorded in code
-2. Check metric labels match query
-3. Review metric type (counter vs gauge vs histogram)
+---
 
-## Future Enhancements
+## Instrumentation Status
 
-- [ ] Add custom SLO/SLI tracking
-- [ ] Implement distributed tracing integration
-- [ ] Add more granular error categorization
-- [ ] Create additional dashboards for specific use cases
-- [ ] Implement metric retention policies
-- [ ] Add metric federation for multi-instance deployments
+### Fully Instrumented
+
+- API routes and middleware
+- Message scheduling and delivery
+- Queue operations (RabbitMQ)
+- Worker health and processing
+- Circuit breaker events
+- Rate limiting
+- Authentication events
+- Connection management
+- Publisher confirms and acknowledgments
+
+### Partially Instrumented (Needs Enhancement)
+
+- Database operations (query-level metrics need interceptor)
+- Cache operations (hit/miss tracking)
+- External HTTP client calls
+- Batch processing details
+
+### Not Yet Instrumented
+
+- Individual query execution times (requires Drizzle interceptor)
+- Per-table operation counts
+- Connection pool wait times (requires driver hooks)
+
+---
+
+## References
+
+- [Prometheus Best Practices](https://prometheus.io/docs/practices/naming/)
+- [Node.js Metrics with prom-client](https://github.com/siimon/prom-client)
+- [Google SRE Book - Monitoring](https://sre.google/sre-book/monitoring-distributed-systems/)
+- [RED Method](https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/)
+- [Grafana Dashboard Design](../plan/07-monitoring/grafana-dashboards-research.md)
+- [Alert Rules](../grafana/alerts/)
+- [Queue Metrics Implementation](../src/services/queue/queue-metrics.ts)

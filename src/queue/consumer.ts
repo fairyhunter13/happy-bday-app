@@ -22,6 +22,7 @@ import { QUEUES, PREFETCH_COUNT, RETRY_CONFIG, calculateRetryDelay } from './con
 import { type MessageJob, messageJobSchema, type ConsumerOptions } from './types.js';
 import { logger } from '../utils/logger.js';
 import { metricsService } from '../services/metrics.service.js';
+import { queueMetricsInstrumentation } from '../services/queue/queue-metrics.js';
 
 export class MessageConsumer {
   private isConsuming = false;
@@ -118,11 +119,23 @@ export class MessageConsumer {
         retryCount,
       });
 
-      // Call message handler
-      await this.onMessage(job);
+      // Wrap message processing with metrics instrumentation
+      await queueMetricsInstrumentation.instrumentConsume(
+        async () => {
+          // Call message handler
+          await this.onMessage(job!);
+        },
+        msg,
+        QUEUES.BIRTHDAY_MESSAGES
+      );
 
-      // Acknowledge successful processing
-      channel.ack(msg);
+      // Instrumented acknowledgment
+      queueMetricsInstrumentation.instrumentAck(
+        channel,
+        msg,
+        QUEUES.BIRTHDAY_MESSAGES,
+        this.consumerTag || 'default'
+      );
       logger.info({ msg: 'Message processed successfully', messageId: job.messageId, retryCount });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -144,7 +157,7 @@ export class MessageConsumer {
         }
       }
 
-      // Handle retry logic
+      // Handle retry logic with instrumented ack/nack
       await this.handleMessageError(msg, channel, error);
     }
   }
@@ -168,8 +181,13 @@ export class MessageConsumer {
         maxRetries: RETRY_CONFIG.MAX_RETRIES,
       });
 
-      // Reject without requeue (goes to DLX -> DLQ)
-      channel.nack(msg, false, false);
+      // Reject without requeue (goes to DLX -> DLQ) - instrumented
+      queueMetricsInstrumentation.instrumentReject(
+        channel,
+        msg,
+        QUEUES.BIRTHDAY_MESSAGES,
+        'max_retries_exceeded'
+      );
       return;
     }
 
@@ -183,9 +201,14 @@ export class MessageConsumer {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      // Requeue message (simple approach - immediate requeue)
-      // For delayed retry, we would need a delayed exchange plugin
-      channel.nack(msg, false, true); // Requeue
+      // Requeue message with instrumented nack
+      queueMetricsInstrumentation.instrumentNack(
+        channel,
+        msg,
+        QUEUES.BIRTHDAY_MESSAGES,
+        true, // Requeue
+        'transient_error'
+      );
     } else {
       // Permanent errors: send to DLQ immediately
       logger.error({
@@ -193,8 +216,13 @@ export class MessageConsumer {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      // Reject without requeue (goes to DLX -> DLQ)
-      channel.nack(msg, false, false);
+      // Reject without requeue (goes to DLX -> DLQ) - instrumented
+      queueMetricsInstrumentation.instrumentReject(
+        channel,
+        msg,
+        QUEUES.BIRTHDAY_MESSAGES,
+        'permanent_error'
+      );
     }
   }
 

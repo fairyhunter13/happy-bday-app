@@ -20,6 +20,7 @@ import { EXCHANGES, ROUTING_KEYS, PUBLISHER_OPTIONS, QUEUE_TOPOLOGY } from './co
 import { type MessageJob, messageJobSchema } from './types.js';
 import { logger } from '../utils/logger.js';
 import { metricsService } from '../services/metrics.service.js';
+import { queueMetricsInstrumentation } from '../services/queue/queue-metrics.js';
 
 export class MessagePublisher {
   private isInitialized = false;
@@ -96,37 +97,35 @@ export class MessagePublisher {
     const rabbitMQ = getRabbitMQ();
     const channel = rabbitMQ.getPublisherChannel();
 
-    try {
-      // Serialize message
-      const messageBuffer = Buffer.from(JSON.stringify(validatedJob));
+    // Wrap publish operation with metrics instrumentation
+    await queueMetricsInstrumentation.instrumentPublish(
+      async () => {
+        // Serialize message
+        const messageBuffer = Buffer.from(JSON.stringify(validatedJob));
 
-      // Publish with confirmation
-      await channel.publish(EXCHANGES.BIRTHDAY_MESSAGES, actualRoutingKey, messageBuffer, {
-        ...PUBLISHER_OPTIONS,
-        timestamp: validatedJob.timestamp,
-        messageId: validatedJob.messageId,
-        headers: {
-          'x-retry-count': validatedJob.retryCount || 0,
-          'x-message-type': validatedJob.messageType,
-          'x-user-id': validatedJob.userId,
-        },
-      });
+        // Publish with confirmation
+        await channel.publish(EXCHANGES.BIRTHDAY_MESSAGES, actualRoutingKey, messageBuffer, {
+          ...PUBLISHER_OPTIONS,
+          timestamp: validatedJob.timestamp,
+          messageId: validatedJob.messageId,
+          headers: {
+            'x-retry-count': validatedJob.retryCount || 0,
+            'x-message-type': validatedJob.messageType,
+            'x-user-id': validatedJob.userId,
+          },
+        });
 
-      logger.info({
-        msg: 'Message published successfully',
-        messageId: validatedJob.messageId,
-        exchange: EXCHANGES.BIRTHDAY_MESSAGES,
-        routingKey: actualRoutingKey,
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error({
-        msg: 'Failed to publish message',
-        messageId: validatedJob.messageId,
-        error: errorMessage,
-      });
-      throw new Error(`Failed to publish message: ${errorMessage}`);
-    }
+        logger.info({
+          msg: 'Message published successfully',
+          messageId: validatedJob.messageId,
+          exchange: EXCHANGES.BIRTHDAY_MESSAGES,
+          routingKey: actualRoutingKey,
+        });
+      },
+      EXCHANGES.BIRTHDAY_MESSAGES,
+      actualRoutingKey,
+      validatedJob.messageId
+    );
   }
 
   /**
@@ -220,8 +219,10 @@ export class MessagePublisher {
     try {
       const result = await channel.checkQueue(queueName);
 
-      // Update metrics
+      // Update metrics via both direct service and instrumentation
       metricsService.setQueueDepth(queueName, result.messageCount);
+      queueMetricsInstrumentation.updateQueueDepth(queueName, result.messageCount);
+      queueMetricsInstrumentation.updateConsumerCount(queueName, result.consumerCount);
 
       return {
         messages: result.messageCount,

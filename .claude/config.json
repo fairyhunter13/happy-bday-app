@@ -1,5 +1,5 @@
 {
-  "version": "1.0",
+  "version": "2.0",
   "sparc": {
     "enabled": true,
     "modes": [
@@ -32,5 +32,26 @@
       "optimization",
       "maintenance"
     ]
+  },
+  "hive_mind": {
+    "enabled": true,
+    "config_file": ".claude/hive-mind-config.json",
+    "permanent_model_strategy": {
+      "coordinator_model": "opus",
+      "worker_intelligent_routing": true,
+      "enforce_across_sessions": true
+    },
+    "model_selection": {
+      "coordinator": {
+        "model": "opus",
+        "model_id": "claude-opus-4-5-20251101",
+        "always_use": true
+      },
+      "workers": {
+        "intelligent_routing": true,
+        "sonnet_threshold": 31,
+        "default_model": "sonnet"
+      }
+    }
   }
 }

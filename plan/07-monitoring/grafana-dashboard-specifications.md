@@ -1,5 +1,26 @@
 # Grafana Dashboard Specifications - Research Report
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Research Methodology](#research-methodology)
+3. [Dashboard 1: API Performance (api-performance.json)](#dashboard-1-api-performance-api-performancejson)
+4. [Dashboard 2: Message Processing (message-processing.json)](#dashboard-2-message-processing-message-processingjson)
+5. [Dashboard 3: Database Performance (database.json)](#dashboard-3-database-performance-databasejson)
+6. [Dashboard 4: Infrastructure Health (infrastructure.json)](#dashboard-4-infrastructure-health-infrastructurejson)
+7. [Cross-Dashboard Features](#cross-dashboard-features)
+8. [Metric Coverage Analysis](#metric-coverage-analysis)
+9. [Best Practices Implementation](#best-practices-implementation)
+10. [Dashboard Variables & Templating](#dashboard-variables-templating)
+11. [Prometheus Query Reference](#prometheus-query-reference)
+12. [Implementation Checklist](#implementation-checklist)
+13. [Performance & Scalability](#performance-scalability)
+14. [Troubleshooting Guide](#troubleshooting-guide)
+15. [References & Resources](#references-resources)
+16. [Conclusion](#conclusion)
+
+---
+
 **Date:** December 31, 2025
 **Status:** Complete - All 4 Dashboards Implemented
 **Analyzed By:** RESEARCHER Agent (Hive Mind)
@@ -23,6 +44,7 @@ This report provides comprehensive specifications and analysis for the 4 Grafana
 ## Research Methodology
 
 ### Analysis Approach
+
 1. Reviewed existing dashboard implementations (`overview-dashboard.json`)
 2. Analyzed metrics service (`src/services/metrics.service.ts`) for available metrics (100+ custom metrics)
 3. Researched Grafana best practices from official documentation
@@ -30,6 +52,7 @@ This report provides comprehensive specifications and analysis for the 4 Grafana
 5. Verified Prometheus query patterns and histogram quantiles
 
 ### Best Practices Applied
+
 Based on [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/):
 
 - **Key content in top-left corner** - Highest visibility panels placed first
@@ -172,6 +195,7 @@ Based on [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/lat
 - `$path` - Endpoint path filter for drill-down
 
 ### Integration with Alert Rules
+
 This dashboard integrates with existing alert rules:
 - **critical-alerts.yml:** HighErrorRate, APILatencyP99High
 - **warning-alerts.yml:** HighLatency, ErrorRateWarning
@@ -305,6 +329,7 @@ This dashboard integrates with existing alert rules:
 - `$error_type` - Filter by failure category
 
 ### Integration with Alert Rules
+
 This dashboard integrates with:
 - **critical-alerts.yml:** QueueDepthCritical, DLQMessagesPresent
 - **warning-alerts.yml:** HighMessageRetryRate, MessageProcessingSlow
@@ -443,6 +468,7 @@ This dashboard integrates with:
 - `$query_type` - Filter by operation type
 
 ### Database Monitoring Prerequisites
+
 This dashboard requires:
 1. **Application metrics:** From `src/services/metrics.service.ts`
 2. **PostgreSQL exporter:** For `pg_*` metrics
@@ -451,6 +477,7 @@ This dashboard requires:
 3. **Connection pool instrumentation:** Active/idle/waiting states tracked
 
 ### Integration with Alert Rules
+
 This dashboard integrates with:
 - **critical-alerts.yml:** DBConnectionPoolExhausted, DatabaseDown
 - **warning-alerts.yml:** DBConnectionPoolHigh, SlowQueries
@@ -611,12 +638,14 @@ This dashboard integrates with:
 - `$job_type` - Filter by scheduler job
 
 ### Infrastructure Monitoring Prerequisites
+
 This dashboard requires:
 1. **prom-client default metrics:** CPU, memory, GC, event loop
 2. **Custom application metrics:** Worker health, scheduler execution
 3. **Container metrics (optional):** cAdvisor/Kubelet for Kubernetes deployments
 
 ### Integration with Alert Rules
+
 This dashboard integrates with:
 - **critical-alerts.yml:** ServiceDown, MemoryExhausted
 - **warning-alerts.yml:** CPUUsageHigh, MemoryUsageHigh, EventLoopLagHigh
@@ -1020,7 +1049,7 @@ deriv(metric[1h])                # Rate of change over 1 hour
 ### Query Performance Tips
 
 1. **Use recording rules for expensive queries:**
-   ```yaml
+```
    # prometheus-rules.yml
    groups:
      - name: api_performance
@@ -1045,6 +1074,7 @@ deriv(metric[1h])                # Rate of change over 1 hour
 ## Implementation Checklist
 
 ### Phase 1: Verification (Completed)
+
 - [x] All 4 dashboards created in `/grafana/dashboards/`
 - [x] Panels follow best practices (61 total panels)
 - [x] Prometheus queries validated against metrics service
@@ -1076,7 +1106,9 @@ deriv(metric[1h])                # Rate of change over 1 hour
 
 **Prometheus Configuration:**
 ```yaml
+
 # prometheus.yml
+
 scrape_configs:
   - job_name: 'birthday-scheduler'
     static_configs:
@@ -1089,7 +1121,9 @@ scrape_configs:
 
 **Grafana Provisioning:**
 ```yaml
+
 # grafana/provisioning/dashboards/birthday-scheduler.yml
+
 apiVersion: 1
 providers:
   - name: 'Birthday Scheduler'
@@ -1105,7 +1139,9 @@ providers:
 
 **Alert Manager Integration:**
 ```yaml
+
 # alertmanager.yml
+
 route:
   group_by: ['alertname', 'severity']
   group_wait: 10s
@@ -1214,16 +1250,19 @@ route:
 ## References & Resources
 
 ### Official Documentation
+
 1. [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/)
 2. [Prometheus Query Functions](https://prometheus.io/docs/prometheus/latest/querying/functions/)
 3. [prom-client Node.js Library](https://github.com/siimon/prom-client)
 
 ### Best Practices Guides
+
 1. [RED Method (Tom Wilkie)](https://grafana.com/blog/2018/08/02/the-red-method-how-to-instrument-your-services/)
 2. [Four Golden Signals (Google SRE Book)](https://sre.google/sre-book/monitoring-distributed-systems/)
 3. [Prometheus Naming Conventions](https://prometheus.io/docs/practices/naming/)
 
 ### Related Files
+
 1. `src/services/metrics.service.ts` - Metrics implementation (100+ metrics)
 2. `grafana/alerts/critical-alerts.yml` - P0 alert rules (10 rules)
 3. `grafana/alerts/warning-alerts.yml` - P1 alert rules (12 rules)

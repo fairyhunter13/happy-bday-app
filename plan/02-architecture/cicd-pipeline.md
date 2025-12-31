@@ -723,14 +723,17 @@ jobs:
 ### Multi-Stage Dockerfile
 
 ```dockerfile
+
 # =========================================
 # Stage 1: Base Image
 # =========================================
+
 FROM node:20-alpine AS base
 
 WORKDIR /app
 
 # Install security updates
+
 RUN apk update && apk upgrade && \
     apk add --no-cache dumb-init && \
     rm -rf /var/cache/apk/*
@@ -738,75 +741,94 @@ RUN apk update && apk upgrade && \
 # =========================================
 # Stage 2: Dependencies
 # =========================================
+
 FROM base AS dependencies
 
 # Copy package files
+
 COPY package*.json ./
 
 # Install ALL dependencies (including devDependencies for build)
+
 RUN npm ci --ignore-scripts && \
     npm cache clean --force
 
 # =========================================
 # Stage 3: Build
 # =========================================
+
 FROM dependencies AS build
 
 # Copy source code
+
 COPY . .
 
 # Build TypeScript
+
 RUN npm run build && \
     npm prune --production
 
 # =========================================
 # Stage 4: Production
 # =========================================
+
 FROM base AS production
 
 # Set environment
+
 ENV NODE_ENV=production \
     PORT=3000
 
 # Create non-root user
+
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
 # Copy production dependencies
+
 COPY --from=build --chown=nodejs:nodejs /app/node_modules ./node_modules
 
 # Copy built application
+
 COPY --from=build --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=build --chown=nodejs:nodejs /app/package*.json ./
 
 # Switch to non-root user
+
 USER nodejs
 
 # Expose port
+
 EXPOSE 3000
 
 # Health check
+
 HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); });"
 
 # Start application with dumb-init
+
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/index.js"]
 
 # =========================================
 # Stage 5: Development
 # =========================================
+
 FROM dependencies AS development
 
 ENV NODE_ENV=development
 
 # Install development tools
+
 RUN npm install -g nodemon tsx
 
 # Copy source code
+
 COPY . .
 
 # Start with hot-reload
+
 CMD ["npm", "run", "dev"]
 ```
 

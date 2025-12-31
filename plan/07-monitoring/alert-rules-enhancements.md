@@ -1,5 +1,35 @@
 # Prometheus Alert Rules Enhancement Guide
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [1. keep_firing_for Clause Enhancement](#1-keep_firing_for-clause-enhancement)
+3. [2. Alertmanager Inhibition Rules](#2-alertmanager-inhibition-rules)
+4. [3. Alert Grouping Strategies](#3-alert-grouping-strategies)
+5. [4. Alert Fatigue Metrics and Targets](#4-alert-fatigue-metrics-and-targets)
+6. [5. Alert Routing and Notification Strategies](#5-alert-routing-and-notification-strategies)
+7. [6. Before/After Examples](#6-beforeafter-examples)
+8. [7. Implementation Priorities](#7-implementation-priorities)
+9. [8. Validation and Testing](#8-validation-and-testing)
+10. [9. Success Metrics and KPIs](#9-success-metrics-and-kpis)
+11. [Weekly Alert Quality Review - [Date]](#weekly-alert-quality-review---date)
+12. [10. References and Resources](#10-references-and-resources)
+13. [Appendix A: Complete Alertmanager Configuration Example](#appendix-a-complete-alertmanager-configuration-example)
+14. [Appendix B: Alert Label Standards](#appendix-b-alert-label-standards)
+15. [Appendix C: Runbook Template](#appendix-c-runbook-template)
+16. [Alert Details](#alert-details)
+17. [Description](#description)
+18. [Impact](#impact)
+19. [Triage Steps (< 5 minutes)](#triage-steps-5-minutes)
+20. [Investigation](#investigation)
+21. [Resolution](#resolution)
+22. [Escalation](#escalation)
+23. [Post-Incident](#post-incident)
+24. [Related Alerts](#related-alerts)
+25. [History](#history)
+
+---
+
 ## Executive Summary
 
 This document provides a comprehensive enhancement strategy for the birthday-scheduler Prometheus alert rules, focusing on reducing alert fatigue, improving signal-to-noise ratio, and implementing industry best practices from Google SRE and the Prometheus community.
@@ -36,8 +66,11 @@ According to Prometheus documentation, `keep_firing_for`:
 ### Implementation Examples
 
 #### Critical Alert: ServiceDown
+
 ```yaml
+
 # BEFORE
+
 - alert: ServiceDown
   expr: up{job="birthday-scheduler"} == 0
   for: 1m
@@ -45,6 +78,7 @@ According to Prometheus documentation, `keep_firing_for`:
     severity: critical
 
 # AFTER
+
 - alert: ServiceDown
   expr: up{job="birthday-scheduler"} == 0
   for: 1m
@@ -56,8 +90,11 @@ According to Prometheus documentation, `keep_firing_for`:
 **Rationale**: Service restarts or brief network blips can cause false recoveries. Keeping the alert firing for 3 minutes ensures the service is truly stable before clearing the alert.
 
 #### Warning Alert: HighLatency
+
 ```yaml
+
 # BEFORE
+
 - alert: HighLatency
   expr: histogram_quantile(0.99, ...) > 5
   for: 5m
@@ -65,6 +102,7 @@ According to Prometheus documentation, `keep_firing_for`:
     severity: warning
 
 # AFTER
+
 - alert: HighLatency
   expr: histogram_quantile(0.99, ...) > 5
   for: 5m
@@ -76,8 +114,11 @@ According to Prometheus documentation, `keep_firing_for`:
 **Rationale**: Latency can spike and recover quickly. The 10-minute keep_firing_for ensures latency improvements are sustained before clearing the alert.
 
 #### SLO Alert: ErrorBudgetBurnRateHigh
+
 ```yaml
+
 # BEFORE
+
 - alert: ErrorBudgetBurnRateHigh
   expr: (1 - (sum(rate(...)) / sum(rate(...)))) / (0.001 / 720) > 14.4
   for: 5m
@@ -85,6 +126,7 @@ According to Prometheus documentation, `keep_firing_for`:
     severity: critical
 
 # AFTER
+
 - alert: ErrorBudgetBurnRateHigh
   expr: (1 - (sum(rate(...)) / sum(rate(...)))) / (0.001 / 720) > 14.4
   for: 5m
@@ -112,7 +154,9 @@ According to industry best practices, users typically set up 3 levels of alerts 
 Create `/etc/alertmanager/alertmanager.yml`:
 
 ```yaml
+
 # Alertmanager Configuration with Inhibition Rules
+
 global:
   resolve_timeout: 5m
 
@@ -146,6 +190,7 @@ route:
       repeat_interval: 24h
 
 # Inhibition Rules - Critical suppresses Warning and Info
+
 inhibit_rules:
   # Rule 1: Critical alerts inhibit warnings for the same service
   - source_matchers:
@@ -376,7 +421,9 @@ According to Google SRE:
 Create a Prometheus recording rule to track alert metrics:
 
 ```yaml
+
 # Alert Fatigue Tracking Metrics
+
 groups:
   - name: alert-metrics
     interval: 5m
@@ -414,20 +461,26 @@ groups:
 ### Alert Fatigue Dashboard Queries
 
 ```promql
+
 # 1. Pages per shift (12-hour window)
+
 count(increase(ALERTS{severity="critical"}[12h]))
 
 # 2. Top 10 noisiest alerts
+
 topk(10, count_over_time(ALERTS{alertstate="firing"}[24h]))
 
 # 3. Alert resolution time (mean time to resolve)
+
 avg(ALERTS_FOR_STATE{alertstate="firing"}) by (alertname)
 
 # 4. Flapping alerts (fired >5 times in 24h)
+
 count(increase(ALERTS_FOR_STATE{alertstate="firing"}[24h]) > 5) by (alertname)
 
 # 5. Actionable rate (percentage requiring human intervention)
 # Note: Requires custom instrumentation to track acknowledged alerts
+
 sum(alert_acknowledged_total) / sum(alert_fired_total) * 100
 ```
 
@@ -539,7 +592,9 @@ receivers:
 ### Time-Based Routing (Business Hours vs After Hours)
 
 ```yaml
+
 # Use time_intervals to define business hours
+
 time_intervals:
   - name: business-hours
     time_intervals:
@@ -574,7 +629,9 @@ route:
 ### Escalation Policies
 
 ```yaml
+
 # Multi-stage escalation for critical alerts
+
 route:
   routes:
     - match:
@@ -614,7 +671,9 @@ route:
 
 **Alert Configuration**:
 ```yaml
+
 # Warning: Pool running low (gives time to respond)
+
 - alert: DatabaseConnectionPoolLow
   expr: |
     (birthday_scheduler_db_connections_available / birthday_scheduler_db_connections_max) * 100 < 15  # Lowered threshold
@@ -625,6 +684,7 @@ route:
     priority: P1
 
 # Critical: Pool exhausted (immediate action)
+
 - alert: DatabaseConnectionPoolExhausted
   expr: birthday_scheduler_db_connections_available == 0
   for: 1m                      # Reduced from 30s (faster critical response)
@@ -636,7 +696,9 @@ route:
 
 **Inhibition Rule**:
 ```yaml
+
 # Critical exhausted alert suppresses warning low alert
+
 - source_matchers:
     - alertname="DatabaseConnectionPoolExhausted"
   target_matchers:
@@ -679,7 +741,9 @@ route:
 
 **Alertmanager Configuration**:
 ```yaml
+
 # Grouping configuration
+
 route:
   group_by: ['alertname', 'service']
   group_wait: 30s              # Batch alerts for 30s
@@ -692,6 +756,7 @@ route:
       group_wait: 10s            # Faster for critical
 
 # Inhibition rules
+
 inhibit_rules:
   # HighErrorRate (root cause) inhibits HTTP5xxSpike (symptom)
   - source_matchers: [alertname="HighErrorRate"]
@@ -711,7 +776,9 @@ inhibit_rules:
 
 **Alert Label Enhancement**:
 ```yaml
+
 # Add component and impact labels
+
 labels:
   severity: critical
   component: api        # NEW: Identifies component
@@ -751,7 +818,9 @@ labels:
 
 **Alert Design**:
 ```yaml
+
 # Fast burn rate (2h to exhaust) - IMMEDIATE ACTION
+
 - alert: ErrorBudgetBurnRateCritical
   expr: burn_rate > 14.4  # 2-hour window
   for: 5m
@@ -763,6 +832,7 @@ labels:
     window: fast
 
 # Medium burn rate (5 days to exhaust) - PLAN ACTION
+
 - alert: ErrorBudgetBurnRateHigh
   expr: burn_rate > 6  # 6-hour window
   for: 15m
@@ -774,6 +844,7 @@ labels:
     window: medium
 
 # Slow burn rate (tracking only) - AWARENESS
+
 - alert: ErrorBudgetBurnRateSlow
   expr: burn_rate > 1
   for: 1h
@@ -786,17 +857,21 @@ labels:
 
 **Inhibition**:
 ```yaml
+
 # Fast burn inhibits medium and slow burn alerts
+
 - source_matchers: [alertname="ErrorBudgetBurnRateCritical"]
   target_matchers: [alertname=~"ErrorBudgetBurnRate(High|Slow)"]
   equal: ['slo']
 
 # Medium burn inhibits slow burn
+
 - source_matchers: [alertname="ErrorBudgetBurnRateHigh"]
   target_matchers: [alertname="ErrorBudgetBurnRateSlow"]
   equal: ['slo']
 
 # Burn rate alerts inhibit consumption percentage alerts
+
 - source_matchers: [alertname=~"ErrorBudgetBurnRate.*"]
   target_matchers: [alertname=~"ErrorBudget.*Consumed"]
   equal: ['slo']
@@ -946,8 +1021,11 @@ labels:
 Before deploying to production, validate alert enhancements in staging:
 
 #### Test 1: keep_firing_for Validation
+
 ```bash
+
 # Trigger alert
+
 curl -X POST http://localhost:9090/api/v1/admin/tsdb/delete_series?match[]=up{job="test"}
 
 # Verify alert fires after 'for' duration
@@ -955,32 +1033,43 @@ curl -X POST http://localhost:9090/api/v1/admin/tsdb/delete_series?match[]=up{jo
 
 # Verify alert continues firing for keep_firing_for duration
 # Alert should not resolve until keep_firing_for expires
+
 ```
 
 #### Test 2: Inhibition Rule Validation
+
 ```bash
+
 # Fire critical alert
 # Verify related warning alert is suppressed (check Alertmanager UI)
 # Verify inhibited alerts show in Alertmanager silences
 
 # Expected: Warning alert in Alertmanager but not sent to receivers
+
 ```
 
 #### Test 3: Grouping Validation
+
 ```bash
+
 # Fire 5 alerts with same service label within group_wait window
 # Verify single notification received
 # Verify notification contains all 5 alerts
 
 # Expected: 1 notification instead of 5
+
 ```
 
 #### Test 4: Alert Fatigue Metrics
+
 ```promql
+
 # Verify metrics are being recorded
+
 alert_fatigue:firing_alerts:by_severity
 
 # Check flapping detection
+
 alert_fatigue:flapping_alerts > 0
 ```
 
@@ -989,7 +1078,7 @@ alert_fatigue:flapping_alerts > 0
 If alert enhancements cause issues:
 
 1. **Immediate Rollback** (5 minutes)
-   ```bash
+```
    # Revert Alertmanager config
    kubectl rollout undo deployment/alertmanager
 
@@ -1035,25 +1124,30 @@ If alert enhancements cause issues:
 ### Weekly Review Template
 
 ```markdown
+
 ## Weekly Alert Quality Review - [Date]
 
 ### Metrics
+
 - Pages this week: X (target: <14 for 7 shifts)
 - Top 5 noisiest alerts: [list]
 - Flapping alerts: X (target: <3)
 - Actionable rate: X% (target: >40%)
 
 ### Actions
+
 - [ ] Adjust threshold for [alert name]: [old] → [new]
 - [ ] Add keep_firing_for to [alert name]: [duration]
 - [ ] Demote [alert] from warning to info
 - [ ] Remove [alert] (not actionable)
 
 ### Incidents
+
 - [Incident #1]: Alert behavior, improvements needed
 - [Incident #2]: Alert behavior, improvements needed
 
 ### On-call Feedback
+
 - Positive: [feedback]
 - Needs improvement: [feedback]
 ```
@@ -1063,32 +1157,38 @@ If alert enhancements cause issues:
 ## 10. References and Resources
 
 ### Prometheus and Alertmanager Documentation
+
 - [Alerting rules | Prometheus](https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/)
 - [Configuration | Prometheus](https://prometheus.io/docs/alerting/latest/configuration/)
 - [Alertmanager | Prometheus](https://prometheus.io/docs/alerting/latest/alertmanager/)
 
 ### Best Practices and Guides
+
 - [Effective Alerting with Prometheus Alertmanager | Better Stack Community](https://betterstack.com/community/guides/monitoring/prometheus-alertmanager/)
 - [Prometheus Alertmanager Best Practices | Sysdig](https://www.sysdig.com/blog/prometheus-alertmanager)
 - [Understanding Alertmanager's Core Concepts: Grouping, Routing, and Inhibition - DoHost](https://dohost.us/index.php/2025/09/28/understanding-alertmanagers-core-concepts-grouping-routing-and-inhibition/)
 - [Prometheus Best Practices: 8 Dos and Don'ts | Better Stack Community](https://betterstack.com/community/guides/monitoring/prometheus-best-practices/)
 
 ### Google SRE Resources
+
 - [Google SRE: What it Means Being On-Call?](https://sre.google/workbook/on-call/)
 - [Google SRE - Prometheus Alerting: Turn SLOs into Alerts](https://sre.google/workbook/alerting-on-slos/)
 - [Google SRE - On Call Engineer Best Practices](https://sre.google/sre-book/being-on-call/)
 
 ### Alert Fatigue and SRE Practices
+
 - [8 Effective Strategies from SRE's to Reduce Alert Fatigue](https://zenduty.com/blog/reduce-alert-fatigue/)
 - [Sensu | Alert Fatigue in SRE and DevOps: What It Is & How To Avoid It](https://sensu.io/blog/alert-fatigue-in-sre-and-devops)
 - [Rootly | Managing Alert Fatigue: What I Wish I Knew When Starting as an SRE](https://rootly.com/blog/managing-alert-fatigue-what-i-wish-i-knew-when-starting-as-an-sre)
 - [How to avoid alert fatigue | LeadDev](https://leaddev.com/productivity-eng-velocity/how-avoid-alert-fatigue)
 
 ### Grouping and Noise Reduction
+
 - [What are some best practices for defining alert rules and grouping alerts in prometheus?](https://www.linkedin.com/advice/3/what-some-best-practices-defining-alert-rules-grouping-alerts)
 - [Prometheus Alertmanager Noise-Reduction Deduplication Inhibition & Silence Rules Explained | Netdata](https://www.netdata.cloud/academy/prometheus-alert-manager/)
 
 ### Configuration Examples
+
 - [alertmanager/doc/examples/simple.yml at main · prometheus/alertmanager](https://github.com/prometheus/alertmanager/blob/main/doc/examples/simple.yml)
 
 ---
@@ -1096,6 +1196,7 @@ If alert enhancements cause issues:
 ## Appendix A: Complete Alertmanager Configuration Example
 
 ```yaml
+
 # /etc/alertmanager/alertmanager.yml
 # Complete production-ready Alertmanager configuration for birthday-scheduler
 
@@ -1105,10 +1206,12 @@ global:
   pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
 
 # Templates for notification formatting
+
 templates:
   - '/etc/alertmanager/templates/*.tmpl'
 
 # Main routing tree
+
 route:
   receiver: 'default-receiver'
   group_by: ['alertname', 'service', 'team']
@@ -1162,6 +1265,7 @@ route:
       repeat_interval: 4h
 
 # Inhibition rules: Suppress lower-severity alerts
+
 inhibit_rules:
   # Rule 1: Critical inhibits warning (same alert, same instance)
   - source_matchers:
@@ -1251,6 +1355,7 @@ inhibit_rules:
       - slo
 
 # Notification receivers
+
 receivers:
   - name: 'default-receiver'
     slack_configs:
@@ -1366,62 +1471,74 @@ labels:
 All critical and warning alerts should link to runbooks following this template:
 
 ```markdown
+
 # Runbook: [Alert Name]
 
 ## Alert Details
+
 - **Severity**: [Critical/Warning/Info]
 - **Priority**: [P0/P1/P2]
 - **Team**: [Platform/Database/Security]
 - **SLO Impact**: [Yes/No - which SLO affected]
 
 ## Description
+
 [What this alert means in business terms]
 
 ## Impact
+
 - **User Impact**: [How users are affected]
 - **SLO Impact**: [Which SLOs are at risk]
 - **Business Impact**: [Revenue, reputation, compliance]
 
 ## Triage Steps (< 5 minutes)
+
 1. Check Grafana dashboard: [link]
 2. Verify alert is not a false positive: [how]
 3. Assess scope: Single instance or all instances?
 4. Check recent changes: Deployments in last hour?
 
 ## Investigation
+
 1. **Step 1**: [Command or dashboard to check]
    ```bash
    # Example command
    kubectl logs -f deployment/birthday-scheduler
-   ```
+```
 2. **Step 2**: [Next investigation step]
 3. **Step 3**: [Continue investigation]
 
 ## Resolution
 ### Immediate Mitigation
+
 1. [Steps to stop user impact]
 2. [Temporary workarounds]
 
 ### Root Cause Fix
+
 1. [Steps to fix underlying issue]
 2. [Verification steps]
 
 ## Escalation
+
 - **L1 → L2**: After 15 minutes if no progress
 - **L2 → L3**: After 30 minutes or if architecture change needed
 - **L3 Contact**: [Name] - [Contact info]
 
 ## Post-Incident
+
 - [ ] File incident report
 - [ ] Update runbook with learnings
 - [ ] Review alert threshold if false positive
 - [ ] Schedule postmortem if P0 incident
 
 ## Related Alerts
+
 - [AlertName1]: Usually fires together, indicates [correlation]
 - [AlertName2]: May follow this alert, indicates [progression]
 
 ## History
+
 - Last fired: [Date] - [Resolution time] - [Root cause]
 - Frequency: [X times per month]
 - False positive rate: [X%]

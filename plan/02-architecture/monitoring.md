@@ -418,22 +418,29 @@ function textSummary(data, options) {
 ### Running Load Tests
 
 ```bash
+
 # Smoke test (quick validation)
+
 k6 run --config tests/performance/k6/configs/smoke.json tests/performance/k6/api-load.k6.ts
 
 # Load test (standard performance test)
+
 k6 run --config tests/performance/k6/configs/load.json tests/performance/k6/api-load.k6.ts
 
 # Stress test (find breaking point)
+
 k6 run --config tests/performance/k6/configs/stress.json tests/performance/k6/api-load.k6.ts
 
 # Spike test (sudden traffic surge)
+
 k6 run --config tests/performance/k6/configs/spike.json tests/performance/k6/api-load.k6.ts
 
 # Custom parameters
+
 k6 run --vus 1000 --duration 5m tests/performance/k6/api-load.k6.ts
 
 # With Grafana Cloud integration
+
 k6 run --out cloud tests/performance/k6/api-load.k6.ts
 ```
 
@@ -446,13 +453,17 @@ k6 run --out cloud tests/performance/k6/api-load.k6.ts
 **pgbench Configuration:**
 
 ```bash
+
 # Initialize test database with scale factor 50 (50 branches, 5M accounts)
+
 pgbench -i -s 50 -h localhost -U postgres -d birthday_app
 
 # Run benchmark: 10 clients, 2 worker threads, 10,000 transactions
+
 pgbench -c 10 -j 2 -t 10000 -h localhost -U postgres -d birthday_app
 
 # Custom SQL script for birthday queries
+
 cat > birthday-queries.sql <<EOF
 \set random_month random(1, 12)
 \set random_day random(1, 28)
@@ -617,16 +628,19 @@ global:
     environment: 'production'
 
 # Alertmanager configuration
+
 alerting:
   alertmanagers:
     - static_configs:
         - targets: ['alertmanager:9093']
 
 # Load rules
+
 rule_files:
   - '/etc/prometheus/rules/*.yml'
 
 # Scrape configurations
+
 scrape_configs:
   # API service metrics
   - job_name: 'birthday-api'

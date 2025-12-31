@@ -341,6 +341,7 @@ jobs:
       - unit-tests
       - integration-tests
       - e2e-tests
+      - coverage-report
       - security-scan
       - build
     runs-on: ubuntu-latest
@@ -353,6 +354,7 @@ jobs:
                 "${{ needs.unit-tests.result }}" != "success" ||
                 "${{ needs.integration-tests.result }}" != "success" ||
                 "${{ needs.e2e-tests.result }}" != "success" ||
+                "${{ needs.coverage-report.result }}" != "success" ||
                 "${{ needs.build.result }}" != "success" ]]; then
             echo "One or more required checks failed"
             exit 1

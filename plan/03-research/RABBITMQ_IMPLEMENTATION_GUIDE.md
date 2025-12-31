@@ -126,39 +126,47 @@ networks:
 ### config/rabbitmq.conf
 
 ```conf
+
 ## RabbitMQ Configuration for Birthday Scheduler
 
 ## Networking
+
 listeners.tcp.default = 5672
 management.tcp.port = 15672
 
 ## Clustering (for multi-node setup)
+
 cluster_formation.peer_discovery_backend = rabbit_peer_discovery_classic_config
 
 ## Memory Management
+
 vm_memory_high_watermark.relative = 0.6
 vm_memory_high_watermark_paging_ratio = 0.75
 
 ## Disk Space
+
 disk_free_limit.absolute = 2GB
 
 ## Performance
+
 channel_max = 2048
 heartbeat = 60
 frame_max = 131072
 
 ## Logging
+
 log.console = true
 log.console.level = info
 log.file.level = info
 
 ## Management Plugin
+
 management.load_definitions = /etc/rabbitmq/definitions.json
 ```
 
 ### config/enabled_plugins
 
-```
+```json
 [rabbitmq_management,rabbitmq_prometheus].
 ```
 
@@ -930,19 +938,25 @@ module.exports = RabbitMQMetrics;
 ### Monitoring Queries
 
 ```bash
+
 # Check queue depth
+
 rabbitmqctl list_queues name messages messages_ready messages_unacknowledged
 
 # Check consumers
+
 rabbitmqctl list_queues name consumers
 
 # Check node status
+
 rabbitmqctl cluster_status
 
 # Check memory
+
 rabbitmqctl status | grep memory
 
 # Export definitions (backup)
+
 rabbitmqctl export_definitions /backup/definitions-$(date +%Y%m%d).json
 ```
 
@@ -951,29 +965,39 @@ rabbitmqctl export_definitions /backup/definitions-$(date +%Y%m%d).json
 ## Quick Start Commands
 
 ```bash
+
 # Start RabbitMQ
+
 docker-compose up -d rabbitmq
 
 # Check logs
+
 docker-compose logs -f rabbitmq
 
 # Access management UI
+
 open http://localhost:15672
+
 # Login: admin / changeme
 
 # Run publisher
+
 npm run publisher
 
 # Run worker
+
 npm run worker
 
 # Scale workers
+
 docker-compose up -d --scale birthday-worker=5
 
 # Stop all services
+
 docker-compose down
 
 # Stop and remove volumes (CAUTION: deletes data)
+
 docker-compose down -v
 ```
 
@@ -984,44 +1008,57 @@ docker-compose down -v
 ### Connection Refused
 
 ```bash
+
 # Check if RabbitMQ is running
+
 docker-compose ps
 
 # Check RabbitMQ logs
+
 docker-compose logs rabbitmq
 
 # Test connection
+
 telnet localhost 5672
 ```
 
 ### Messages Not Being Consumed
 
 ```bash
+
 # Check consumers
+
 rabbitmqctl list_queues name consumers
 
 # Check if queue is paused
+
 rabbitmqctl list_queues name state
 ```
 
 ### High Memory Usage
 
 ```bash
+
 # Check memory breakdown
+
 rabbitmqctl status | grep memory
 
 # Force garbage collection
+
 rabbitmqctl eval 'garbage_collect().'
 ```
 
 ### Dead Letter Queue Filling Up
 
 ```bash
+
 # Check DLQ
+
 rabbitmqctl list_queues name messages | grep dlq
 
 # Inspect messages (via Management UI)
 # Navigate to Queues > birthday-dlq > Get Messages
+
 ```
 
 ---

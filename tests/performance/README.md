@@ -1,5 +1,23 @@
 # Performance Testing Guide
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Test Suite](#test-suite)
+3. [Running Tests](#running-tests)
+4. [Custom Configuration](#custom-configuration)
+5. [Understanding Results](#understanding-results)
+6. [Troubleshooting](#troubleshooting)
+7. [Best Practices](#best-practices)
+8. [Performance Targets](#performance-targets)
+9. [Load Test Matrix](#load-test-matrix)
+10. [Report Examples](#report-examples)
+11. [Contributing](#contributing)
+12. [Support](#support)
+13. [License](#license)
+
+---
+
 Comprehensive k6 performance testing suite for Birthday Message Scheduler.
 
 ## Overview
@@ -140,7 +158,7 @@ npm run perf:k6:e2e
 ### Prerequisites
 
 1. **Install k6:**
-   ```bash
+```
    # macOS
    brew install k6
 
@@ -152,7 +170,7 @@ npm run perf:k6:e2e
    ```
 
 2. **Start Services:**
-   ```bash
+```
    # Development
    docker-compose up -d
 
@@ -161,23 +179,28 @@ npm run perf:k6:e2e
    ```
 
 3. **Verify Health:**
-   ```bash
+```
    curl http://localhost:3000/health
    ```
 
 ### Run Individual Tests
 
 ```bash
+
 # API load test
+
 npm run perf:k6:api
 
 # Scheduler load test
+
 npm run perf:k6:scheduler
 
 # Worker throughput test
+
 npm run perf:k6:worker-throughput
 
 # End-to-end test
+
 npm run perf:k6:e2e
 ```
 
@@ -190,10 +213,13 @@ npm run perf:all
 ### Generate Report
 
 ```bash
+
 # Generate HTML report
+
 npm run perf:report:html
 
 # Open report
+
 open perf-results/performance-report.html
 ```
 
@@ -202,26 +228,34 @@ open perf-results/performance-report.html
 ### Environment Variables
 
 ```bash
+
 # Set custom API URL
+
 export API_URL=https://staging.example.com
 
 # Run test
+
 npm run perf:k6:api
 ```
 
 ### k6 CLI Options
 
 ```bash
+
 # Run with custom duration
+
 k6 run --duration 10m tests/performance/api-load.test.js
 
 # Run with custom VUs
+
 k6 run --vus 500 tests/performance/api-load.test.js
 
 # Save results to file
+
 k6 run --out json=results.json tests/performance/api-load.test.js
 
 # Run in cloud
+
 k6 cloud tests/performance/api-load.test.js
 ```
 
@@ -272,28 +306,35 @@ Red (FAIL): ✗
 
 **Error: Connection refused**
 ```bash
+
 # Check services are running
+
 docker-compose ps
 
 # Check API health
+
 curl http://localhost:3000/health
 ```
 
 **Error: Too many VUs**
 ```bash
+
 # Reduce concurrent users in test file
 # Or increase system resources
 
 # Check resource usage
+
 docker stats
 ```
 
 **Error: Timeout**
 ```bash
+
 # Increase timeouts in test file
 # Or optimize application performance
 
 # Check logs
+
 docker-compose logs -f api
 ```
 
@@ -322,34 +363,34 @@ docker-compose logs -f api
 ### Before Testing
 
 1. **Clean Database:**
-   ```bash
+```
    docker-compose exec postgres psql -U postgres -c "TRUNCATE users, message_logs CASCADE;"
    ```
 
 2. **Clear Queues:**
-   ```bash
+```
    docker-compose exec rabbitmq rabbitmqctl purge_queue birthday-messages
    ```
 
 3. **Reset Metrics:**
-   ```bash
+```
    curl -X POST http://localhost:9090/api/v1/admin/tsdb/delete_series
    ```
 
 ### During Testing
 
 1. Monitor resource usage:
-   ```bash
+```bash
    docker stats
    ```
 
 2. Watch logs:
-   ```bash
+```
    docker-compose logs -f api worker
    ```
 
 3. Check queue depth:
-   ```bash
+```
    docker-compose exec rabbitmq rabbitmqctl list_queues
    ```
 
@@ -364,16 +405,19 @@ docker-compose logs -f api
 ## Performance Targets
 
 ### Development
+
 - p95 < 1000ms
 - Error rate < 5%
 - Throughput > 10 req/s
 
 ### Staging
+
 - p95 < 500ms
 - Error rate < 2%
 - Throughput > 50 req/s
 
 ### Production
+
 - p95 < 500ms
 - p99 < 1000ms
 - Error rate < 1%
@@ -392,6 +436,7 @@ docker-compose logs -f api
 ## Report Examples
 
 ### Success Example
+
 ```
 === API Load Test Complete ===
 Duration: 45.23 minutes
@@ -404,6 +449,7 @@ Success Rate: 99.82%
 ```
 
 ### Metrics Example
+
 ```
 HTTP Request Duration:
   avg: 234.52ms

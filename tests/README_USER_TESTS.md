@@ -1,5 +1,23 @@
 # User API Test Suite Documentation
 
+## Table of Contents
+
+1. [Test Organization](#test-organization)
+2. [Test Files](#test-files)
+3. [Running Tests](#running-tests)
+4. [Test Patterns](#test-patterns)
+5. [Test Data](#test-data)
+6. [Error Testing](#error-testing)
+7. [Concurrency Testing](#concurrency-testing)
+8. [Coverage Goals](#coverage-goals)
+9. [Test Helpers](#test-helpers)
+10. [Debugging Tests](#debugging-tests)
+11. [Best Practices](#best-practices)
+12. [Common Issues](#common-issues)
+13. [Summary](#summary)
+
+---
+
 This document provides a comprehensive guide to the User API test suite.
 
 ## Test Organization
@@ -91,35 +109,47 @@ tests/
 ## Running Tests
 
 ### Run All Tests
+
 ```bash
 npm test
 ```
 
 ### Run by Type
+
 ```bash
+
 # Unit tests only
+
 npm run test:unit
 
 # Integration tests only
+
 npm run test:integration
 
 # E2E tests only
+
 npm run test:e2e
 ```
 
 ### Run Specific File
+
 ```bash
+
 # Repository tests
+
 npm run test:unit -- tests/unit/repositories/user.repository.test.ts
 
 # API tests
+
 npm run test:integration -- tests/integration/api/user.api.test.ts
 
 # E2E tests
+
 npm run test:e2e -- tests/e2e/user-lifecycle.test.ts
 ```
 
 ### Coverage Report
+
 ```bash
 npm run test:coverage
 ```
@@ -127,6 +157,7 @@ npm run test:coverage
 ## Test Patterns
 
 ### Unit Test Pattern
+
 ```typescript
 describe('UserRepository', () => {
   let repository: UserRepository;
@@ -154,6 +185,7 @@ describe('UserRepository', () => {
 ```
 
 ### Integration Test Pattern
+
 ```typescript
 describe('User API', () => {
   let app: FastifyInstance;
@@ -177,18 +209,19 @@ describe('User API', () => {
 ```
 
 ### E2E Test Pattern
+
 ```typescript
 describe('User Lifecycle', () => {
   it('should handle full CRUD flow', async () => {
     // Create
     const createResponse = await app.inject({ ... });
-    
+
     // Read
     const getResponse = await app.inject({ ... });
-    
+
     // Update
     const updateResponse = await app.inject({ ... });
-    
+
     // Delete
     const deleteResponse = await app.inject({ ... });
   });
@@ -198,6 +231,7 @@ describe('User Lifecycle', () => {
 ## Test Data
 
 ### Valid User Data
+
 ```typescript
 {
   firstName: 'John',
@@ -212,6 +246,7 @@ describe('User Lifecycle', () => {
 ```
 
 ### Invalid Scenarios
+
 ```typescript
 // Missing required fields
 { firstName: 'John' }  // Missing lastName, email, timezone
@@ -229,22 +264,26 @@ describe('User Lifecycle', () => {
 ## Error Testing
 
 ### 400 Bad Request
+
 - Missing required fields
 - Invalid email format
 - Invalid timezone
 - Invalid date format
 
 ### 404 Not Found
+
 - Non-existent user ID
 - Soft-deleted user
 
 ### 409 Conflict
+
 - Duplicate email on create
 - Duplicate email on update
 
 ## Concurrency Testing
 
 ### Race Condition Tests
+
 ```typescript
 // Test concurrent creation with same email
 const promises = Array(10).fill(null).map(() =>
@@ -268,6 +307,7 @@ expect(responses.filter(r => r.statusCode === 409)).toHaveLength(9);
 ## Test Helpers
 
 ### TestContainers
+
 ```typescript
 const pgContainer = new PostgresTestContainer();
 await pgContainer.start();
@@ -275,11 +315,13 @@ await pgContainer.runMigrations('./drizzle');
 ```
 
 ### Database Cleanup
+
 ```typescript
 await cleanDatabase(pool);
 ```
 
 ### Test Server
+
 ```typescript
 const app = await createTestServer();
 ```
@@ -287,11 +329,13 @@ const app = await createTestServer();
 ## Debugging Tests
 
 ### Enable Logging
+
 ```bash
 LOG_LEVEL=debug npm test
 ```
 
 ### Run Single Test
+
 ```typescript
 it.only('should test specific scenario', async () => {
   // ...
@@ -299,6 +343,7 @@ it.only('should test specific scenario', async () => {
 ```
 
 ### Skip Test
+
 ```typescript
 it.skip('should skip this test', async () => {
   // ...
@@ -319,22 +364,31 @@ it.skip('should skip this test', async () => {
 ## Common Issues
 
 ### Container Startup Timeout
+
 ```bash
+
 # Increase timeout
+
 beforeAll(async () => {
   // ...
 }, 120000); // 2 minutes
 ```
 
 ### Database Connection
+
 ```bash
+
 # Check DATABASE_URL in test setup
+
 process.env.DATABASE_URL = connectionString;
 ```
 
 ### Test Flakiness
+
 ```bash
+
 # Ensure proper cleanup
+
 beforeEach(async () => {
   await cleanDatabase(pool);
 });

@@ -1,12 +1,30 @@
 # Coverage Trends Implementation Plan
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [1. Current State Analysis](#1-current-state-analysis)
+3. [2. Technology Decisions](#2-technology-decisions)
+4. [3. Data Structure Design](#3-data-structure-design)
+5. [4. Implementation Plan](#4-implementation-plan)
+6. [Current Coverage](#current-coverage)
+7. [Trends](#trends)
+8. [5. Implementation Roadmap](#5-implementation-roadmap)
+9. [6. Success Metrics](#6-success-metrics)
+10. [7. Maintenance & Troubleshooting](#7-maintenance-troubleshooting)
+11. [8. Resources & References](#8-resources-references)
+12. [9. Conclusion](#9-conclusion)
+13. [Appendix: Quick Reference](#appendix-quick-reference)
+
+---
+
 ## Executive Summary
 
 This document provides a comprehensive technical design for implementing historical coverage trend tracking on GitHub Pages for the Happy Birthday App. The solution tracks coverage metrics over time, visualizes trends with interactive charts, and provides dynamic badges that update automatically via GitHub Actions.
 
-**Status**: Ready for Implementation  
-**Priority**: Medium  
-**Estimated Effort**: 6-8 hours  
+**Status**: Ready for Implementation
+**Priority**: Medium
+**Estimated Effort**: 6-8 hours
 **Dependencies**: GitHub Pages, GitHub Actions, existing test infrastructure
 
 ---
@@ -131,8 +149,8 @@ Badge URL: https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/h
 
 ### 3.1 JSON Schema - coverage-history.json
 
-**Version**: 1.0  
-**Location**: `docs/coverage-history.json`  
+**Version**: 1.0
+**Location**: `docs/coverage-history.json`
 **Max Entries**: 100 (configurable via metadata.maxDataPoints)
 
 ```json
@@ -191,8 +209,8 @@ Badge URL: https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/h
 
 #### Task 1.1: Enhance update-history.sh
 
-**File**: `scripts/coverage/update-history.sh`  
-**Current**: 126 lines, basic functionality  
+**File**: `scripts/coverage/update-history.sh`
+**Current**: 126 lines, basic functionality
 **Enhancements**:
 
 1. Add badge JSON generation
@@ -203,10 +221,13 @@ Badge URL: https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/h
 
 **Key Changes**:
 ```bash
+
 # Add third parameter for badge file
+
 BADGE_FILE="${3:-docs/coverage-badge.json}"
 
 # Calculate deltas
+
 if [ -f "$HISTORY_FILE" ] && [ "$(jq '.entries | length' "$HISTORY_FILE")" -gt 0 ]; then
     PREV_LINES=$(jq -r '.entries[0].coverage.lines.pct // 0' "$HISTORY_FILE")
     DELTA_LINES=$(echo "$LINES_PCT - $PREV_LINES" | bc -l | xargs printf "%.2f")
@@ -215,6 +236,7 @@ else
 fi
 
 # Generate badge JSON
+
 BADGE_COLOR="brightgreen"
 if (( $(echo "$COVERAGE_VALUE >= 80" | bc -l) )); then
     BADGE_COLOR="brightgreen"
@@ -240,25 +262,30 @@ EOF
 
 #### Task 1.2: Create generate-coverage-report.sh
 
-**File**: `scripts/coverage/generate-coverage-report.sh`  
+**File**: `scripts/coverage/generate-coverage-report.sh`
 **Purpose**: Generate markdown coverage report with trends
 
 **Implementation**:
 ```bash
+
 #!/bin/bash
 # Generate Coverage Report with Trends
+
 set -e
 
 HISTORY_FILE="${1:-docs/coverage-history.json}"
 OUTPUT_FILE="${2:-docs/COVERAGE_REPORT.md}"
 
 # Extract metrics
+
 LATEST=$(jq '.entries[0]' "$HISTORY_FILE")
 OLDEST=$(jq '.entries[-1]' "$HISTORY_FILE")
 TREND_LINES=$(jq -r '(.entries[0].coverage.lines.pct - .entries[-1].coverage.lines.pct)' "$HISTORY_FILE")
 
 # Generate report
+
 cat > "$OUTPUT_FILE" <<EOF
+
 # Coverage Trends Report
 
 **Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -303,12 +330,15 @@ EOF
 
 3. Update site creation (line 70-139):
 ```yaml
+
 # Copy coverage badge if it exists
+
 if [ -f docs/coverage-badge.json ]; then
   cp docs/coverage-badge.json _site/coverage-badge.json
 fi
 
 # Copy coverage report if it exists
+
 if [ -f docs/COVERAGE_REPORT.md ]; then
   cp docs/COVERAGE_REPORT.md _site/COVERAGE_REPORT.md
 fi
@@ -332,7 +362,7 @@ fi
 
 #### Task 3.1: Update README.md
 
-**File**: `README.md`  
+**File**: `README.md`
 **Change**: Replace Codecov badge (line 5) with Shields.io endpoint badge
 
 **Current**:
@@ -354,7 +384,7 @@ fi
 
 #### Task 4.1: Add Export Functionality
 
-**File**: `docs/coverage-trends.html`  
+**File**: `docs/coverage-trends.html`
 **Add to chart-controls** (around line 160):
 
 ```html
@@ -486,12 +516,14 @@ describe('Coverage History Scripts', () => {
 ## 5. Implementation Roadmap
 
 ### Week 1: Core Functionality
+
 - [ ] Day 1-2: Enhance update-history.sh
 - [ ] Day 2-3: Create generate-coverage-report.sh
 - [ ] Day 3-4: Update docs.yml workflow
 - [ ] Day 4-5: Test locally and fix issues
 
 ### Week 2: Deployment & Polish
+
 - [ ] Day 1: Update README.md with badge
 - [ ] Day 2: Deploy to GitHub and verify
 - [ ] Day 3: Add HTML export functionality
@@ -499,6 +531,7 @@ describe('Coverage History Scripts', () => {
 - [ ] Day 5: Final testing and documentation
 
 ### Week 3: Optional Enhancements
+
 - [ ] PR comment workflow
 - [ ] Advanced chart features
 - [ ] Unit tests for scripts
@@ -548,17 +581,22 @@ describe('Coverage History Scripts', () => {
 ### 7.2 Debug Commands
 
 ```bash
+
 # Validate JSON files
+
 jq '.' docs/coverage-history.json
 jq '.' docs/coverage-badge.json
 
 # Test badge URL
+
 curl -I "https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json"
 
 # Test GitHub Pages deployment
+
 curl -I "https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html"
 
 # Run scripts locally
+
 npm run test:coverage
 ./scripts/coverage/update-history.sh coverage/coverage-summary.json /tmp/history.json /tmp/badge.json
 cat /tmp/badge.json | jq
@@ -569,17 +607,20 @@ cat /tmp/badge.json | jq
 ## 8. Resources & References
 
 ### Documentation
+
 - [Chart.js Documentation](https://www.chartjs.org/docs/latest/)
 - [Shields.io Endpoint Badge](https://shields.io/badges/endpoint-badge)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Vitest Coverage](https://vitest.dev/guide/coverage.html)
 
 ### Research Sources
+
 - **Chart.js vs D3.js**: Slant.co, CreateWithData, Medium comparisons
 - **Dynamic Badges**: GitHub Marketplace, DEV.to tutorials
 - **Coverage Tracking**: Medium articles, devgem.io troubleshooting
 
 ### Tools
+
 | Tool | Version | Purpose |
 |------|---------|---------|
 | Chart.js | 4.4.1 | Data visualization |
@@ -609,9 +650,9 @@ This implementation plan provides a complete, self-hosted solution for coverage 
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2025-12-31  
-**Author**: RESEARCHER Agent (Hive Mind)  
+**Document Version**: 1.0
+**Last Updated**: 2025-12-31
+**Author**: RESEARCHER Agent (Hive Mind)
 **Status**: Ready for Implementation
 
 ---
@@ -619,23 +660,30 @@ This implementation plan provides a complete, self-hosted solution for coverage 
 ## Appendix: Quick Reference
 
 ### Commands
+
 ```bash
+
 # Run coverage and update history
+
 npm run test:coverage
 ./scripts/coverage/update-history.sh
 
 # Generate report
+
 ./scripts/coverage/generate-coverage-report.sh
 
 # View locally
+
 open docs/coverage-trends.html
 
 # Validate JSON
+
 jq '.' docs/coverage-history.json
 jq '.' docs/coverage-badge.json
 ```
 
 ### File Locations
+
 - History: `docs/coverage-history.json`
 - Badge: `docs/coverage-badge.json`
 - Report: `docs/COVERAGE_REPORT.md`
@@ -644,6 +692,7 @@ jq '.' docs/coverage-badge.json
 - Workflow: `.github/workflows/docs.yml`
 
 ### Badge Configuration
+
 - Good (green): >= 80%
 - Warning (yellow): 60-79%
 - Critical (red): < 60%

@@ -39,6 +39,7 @@ This master plan represents the collective intelligence of the Hive Mind swarm f
 Based on research from all agents and December 2025 best practices:
 
 ### Core Framework & Language
+
 - **Runtime:** Node.js 20+ (native TypeScript support with `--experimental-strip-types`)
 - **Language:** TypeScript 5.7+ (ESM modules, strict mode)
 - **Web Framework:** **Fastify 5.2+** (40,000+ req/s, built-in validation)
@@ -46,6 +47,7 @@ Based on research from all agents and December 2025 best practices:
   - *Rationale:* Perfect balance of performance, TypeScript support, and reliability
 
 ### Database Stack
+
 - **Primary Database:** **PostgreSQL 15+**
   - ACID compliance (prevent duplicate messages)
   - Native timezone support (TIMESTAMPTZ)
@@ -63,6 +65,7 @@ Based on research from all agents and December 2025 best practices:
   - Excellent TypeScript inference
 
 ### Job Scheduling
+
 - **Queue System:** **RabbitMQ 3.12+ (Quorum Queues)**
   - Zero data loss via Raft consensus
   - Native message persistence to disk
@@ -76,6 +79,7 @@ Based on research from all agents and December 2025 best practices:
   - Automatic reconnection handling
 
 ### Date/Time Handling
+
 - **Library:** **Luxon 3.5+**
   - *Consensus:* Chosen over moment.js (deprecated), date-fns (less timezone support)
   - Native IANA timezone support
@@ -83,6 +87,7 @@ Based on research from all agents and December 2025 best practices:
   - Chainable, immutable API
 
 ### HTTP Client & Resilience
+
 - **HTTP Client:** **Got 14+** with built-in retry
   - Native TypeScript support
   - Stream support
@@ -94,6 +99,7 @@ Based on research from all agents and December 2025 best practices:
   - Configurable thresholds
 
 ### Testing Framework
+
 - **Test Runner:** **Vitest 3.0+**
   - *Consensus:* Chosen over Jest (30-70% faster)
   - Native TypeScript support
@@ -106,6 +112,7 @@ Based on research from all agents and December 2025 best practices:
 - **Coverage:** NYC/Istanbul
 
 ### Development Tools
+
 - **Validation:** Zod 3.24+
 - **Logging:** Pino 9+ (structured logging)
 - **Linting:** ESLint 9+ (flat config)
@@ -846,6 +853,7 @@ jobs:
 ## 9. DELIVERABLES CHECKLIST
 
 ### Phase 1-2 (Weeks 1-2): MVP
+
 - [ ] Fastify API with POST/DELETE /user endpoints
 - [ ] PostgreSQL database with schema and migrations
 - [ ] BullMQ scheduler infrastructure
@@ -853,6 +861,7 @@ jobs:
 - [ ] Unit + integration tests (70%+ coverage)
 
 ### Phase 3-4 (Weeks 3-4): Production Features
+
 - [ ] External API integration with retry logic
 - [ ] Circuit breaker and distributed locks
 - [ ] Idempotency guarantees
@@ -861,6 +870,7 @@ jobs:
 - [ ] E2E tests (80%+ coverage)
 
 ### Phase 5-6 (Weeks 5-6): Performance & Deployment
+
 - [ ] k6 performance tests
 - [ ] 10,000 birthdays/day verified
 - [ ] GitHub Actions CI/CD pipeline
@@ -868,6 +878,7 @@ jobs:
 - [ ] API documentation (Swagger)
 
 ### Phase 7 (Week 7): Production Readiness
+
 - [ ] Security audit passed
 - [ ] 85%+ code coverage achieved
 - [ ] All tests passing in CI/CD
@@ -879,6 +890,7 @@ jobs:
 ## 10. FINAL RECOMMENDATIONS
 
 ### From Researcher Agent
+
 - Use **Luxon** (not moment.js) for timezone handling
 - Use **BullMQ** (not node-cron) for job persistence
 - Use **Got + Opossum** for HTTP resilience
@@ -886,6 +898,7 @@ jobs:
 - Implement **distributed locks** with Redlock
 
 ### From Analyst Agent
+
 - Use **hybrid CRON + queue architecture** for scalability
 - Store birthdays as **DATE** (not TIMESTAMPTZ)
 - Use **IANA timezone identifiers** (not offsets)
@@ -893,6 +906,7 @@ jobs:
 - Design for **horizontal scaling** from day one
 
 ### From Coder Agent
+
 - Use **Fastify** (best balance of speed + features)
 - Use **Drizzle** (lightweight, SQL-first)
 - Use **PostgreSQL + Redis** (proven, scalable)
@@ -900,6 +914,7 @@ jobs:
 - Follow **layered architecture** (controller/service/repository)
 
 ### From Tester Agent
+
 - Use **Vitest** (30-70% faster than Jest)
 - Use **Testcontainers** for integration tests
 - Use **k6** for performance testing

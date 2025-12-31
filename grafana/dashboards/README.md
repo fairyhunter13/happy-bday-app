@@ -270,12 +270,14 @@ Dashboards support URL parameters for sharing specific views:
 ### Common Variables (All Dashboards)
 
 #### 1. Datasource (`$datasource`)
+
 - **Type:** Datasource selector
 - **Purpose:** Select Prometheus datasource
 - **Default:** Prometheus
 - **Usage:** Automatically applied to all queries
 
 #### 2. Namespace (`$namespace`)
+
 - **Type:** Query-based dropdown
 - **Purpose:** Filter metrics by Kubernetes namespace
 - **Default:** production
@@ -283,6 +285,7 @@ Dashboards support URL parameters for sharing specific views:
 - **Example:** production, staging, development
 
 #### 3. Instance (`$instance`)
+
 - **Type:** Query-based multi-select
 - **Purpose:** Filter by specific pod/instance
 - **Default:** All
@@ -291,6 +294,7 @@ Dashboards support URL parameters for sharing specific views:
 - **Usage:** Select one or more instances for detailed investigation
 
 #### 4. Interval (`$interval`)
+
 - **Type:** Interval selector
 - **Purpose:** Set time aggregation window for rate() and histogram_quantile()
 - **Default:** 5m
@@ -302,24 +306,28 @@ Dashboards support URL parameters for sharing specific views:
 ### Dashboard-Specific Variables
 
 #### API Performance: Path (`$path`)
+
 - **Purpose:** Filter metrics by HTTP endpoint
 - **Type:** Multi-select
 - **Query:** `label_values(birthday_scheduler_api_requests_total{namespace="$namespace", instance=~"$instance"}, path)`
 - **Example:** /api/birthdays, /api/users, /health
 
 #### Message Processing: Queue (`$queue`)
+
 - **Purpose:** Filter by message queue name
 - **Type:** Multi-select
 - **Query:** `label_values(birthday_scheduler_queue_depth{namespace="$namespace", instance=~"$instance"}, queue_name)`
 - **Example:** birthday_notifications, email_queue, sms_queue
 
 #### Database: Table (`$table`)
+
 - **Purpose:** Filter by database table
 - **Type:** Multi-select
 - **Query:** `label_values(birthday_scheduler_database_query_duration_seconds_bucket{namespace="$namespace", instance=~"$instance"}, table)`
 - **Example:** users, birthdays, messages
 
 #### Infrastructure: Node (`$node`)
+
 - **Purpose:** Filter by server/node
 - **Type:** Multi-select
 - **Query:** `label_values(birthday_scheduler_process_cpu_seconds_total{namespace="$namespace"}, instance)`
@@ -394,26 +402,34 @@ All dashboards display alert annotations as vertical red markers on time-series 
 #### High Latency Investigation
 
 ```promql
+
 # Identify slowest endpoints (p95 > 500ms)
+
 topk(10, histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace="production"}[5m])) by (le, method, path))) > 0.5
 
 # Response time breakdown by endpoint
+
 histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace="production"}[5m])) by (le, path))
 
 # External API latency impact
+
 histogram_quantile(0.95, sum(rate(birthday_scheduler_external_api_latency_seconds_bucket[5m])) by (le, api_name))
 ```
 
 #### Error Rate Spike
 
 ```promql
+
 # 5xx errors by endpoint
+
 sum(rate(birthday_scheduler_api_requests_total{status=~"5..", namespace="production"}[5m])) by (method, path)
 
 # Error rate percentage
+
 (sum(rate(birthday_scheduler_api_requests_total{status=~"5..", namespace="production"}[5m])) / sum(rate(birthday_scheduler_api_requests_total{namespace="production"}[5m]))) * 100
 
 # Recent error burst (last 5m)
+
 sum(increase(birthday_scheduler_api_requests_total{status=~"5..", namespace="production"}[5m]))
 ```
 
@@ -422,29 +438,38 @@ sum(increase(birthday_scheduler_api_requests_total{status=~"5..", namespace="pro
 #### Queue Backlog Investigation
 
 ```promql
+
 # Queue depth by queue name
+
 birthday_scheduler_queue_depth{namespace="production"}
 
 # Queue growth rate
+
 deriv(birthday_scheduler_queue_depth{namespace="production"}[10m])
 
 # Message processing rate
+
 sum(rate(birthday_scheduler_messages_sent_total{namespace="production"}[5m]))
 
 # DLQ investigation
+
 birthday_scheduler_dlq_depth{namespace="production"} > 0
 ```
 
 #### Retry Pattern Analysis
 
 ```promql
+
 # Retry rate by reason
+
 sum(rate(birthday_scheduler_message_retries_total{namespace="production"}[5m])) by (retry_reason)
 
 # Retry percentage
+
 (sum(rate(birthday_scheduler_message_retries_total{namespace="production"}[5m])) / sum(rate(birthday_scheduler_messages_sent_total{namespace="production"}[5m]))) * 100
 
 # Failed messages by error type
+
 sum(increase(birthday_scheduler_messages_failed_total{namespace="production"}[1h])) by (error_type)
 ```
 
@@ -453,26 +478,34 @@ sum(increase(birthday_scheduler_messages_failed_total{namespace="production"}[1h
 #### Connection Pool Saturation
 
 ```promql
+
 # Pool utilization percentage
+
 (sum(birthday_scheduler_database_connections{state="active", namespace="production"}) / (sum(birthday_scheduler_database_connections{state="active", namespace="production"}) + sum(birthday_scheduler_database_connections{state="idle", namespace="production"}))) * 100
 
 # Waiting connections (critical indicator)
+
 sum(birthday_scheduler_database_connections{state="waiting", namespace="production"})
 
 # Connection pool health over time
+
 sum(birthday_scheduler_database_connections{namespace="production"}) by (state)
 ```
 
 #### Slow Query Detection
 
 ```promql
+
 # Slowest queries (p99 > 100ms)
+
 topk(10, histogram_quantile(0.99, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace="production"}[5m])) by (le, query_type, table))) > 0.1
 
 # Query latency by table
+
 histogram_quantile(0.95, sum(rate(birthday_scheduler_database_query_duration_seconds_bucket{namespace="production"}[5m])) by (le, table))
 
 # Average query duration by type
+
 avg(rate(birthday_scheduler_database_query_duration_seconds_sum{namespace="production"}[5m]) / rate(birthday_scheduler_database_query_duration_seconds_count{namespace="production"}[5m])) by (query_type)
 ```
 
@@ -481,43 +514,56 @@ avg(rate(birthday_scheduler_database_query_duration_seconds_sum{namespace="produ
 #### Memory Leak Detection
 
 ```promql
+
 # Heap growth rate
+
 deriv(birthday_scheduler_nodejs_heap_size_used_bytes{namespace="production"}[1h])
 
 # RSS memory trend
+
 birthday_scheduler_process_resident_memory_bytes{namespace="production"}
 
 # Heap utilization percentage
+
 (birthday_scheduler_nodejs_heap_size_used_bytes / birthday_scheduler_nodejs_heap_size_total_bytes) * 100
 
 # GC frequency (indicator of memory pressure)
+
 rate(birthday_scheduler_nodejs_gc_duration_seconds_count{kind="major", namespace="production"}[5m])
 ```
 
 #### Event Loop Lag Investigation
 
 ```promql
+
 # Current event loop lag
+
 birthday_scheduler_nodejs_eventloop_lag_seconds{namespace="production"}
 
 # Event loop lag p99
+
 birthday_scheduler_nodejs_eventloop_lag_p99_seconds{namespace="production"}
 
 # Lag spikes (>100ms)
+
 birthday_scheduler_nodejs_eventloop_lag_seconds{namespace="production"} > 0.1
 ```
 
 #### CPU Saturation
 
 ```promql
+
 # CPU usage by type
+
 rate(birthday_scheduler_process_cpu_user_seconds_total{namespace="production"}[5m]) * 100
 rate(birthday_scheduler_process_cpu_system_seconds_total{namespace="production"}[5m]) * 100
 
 # Total CPU usage
+
 rate(birthday_scheduler_process_cpu_seconds_total{namespace="production"}[5m]) * 100
 
 # CPU per instance
+
 rate(birthday_scheduler_process_cpu_seconds_total{namespace="production"}[5m]) * 100 by (instance)
 ```
 
@@ -530,7 +576,9 @@ rate(birthday_scheduler_process_cpu_seconds_total{namespace="production"}[5m]) *
 #### 1. Adding New Panels
 
 ```bash
+
 # 1. Create backup
+
 cp grafana/dashboards/[dashboard].json grafana/dashboards/backups/[dashboard]-$(date +%Y%m%d).json
 
 # 2. Edit dashboard JSON
@@ -541,12 +589,14 @@ cp grafana/dashboards/[dashboard].json grafana/dashboards/backups/[dashboard]-$(
 #   - "description" for documentation
 
 # 3. Validate JSON syntax
+
 python3 -m json.tool grafana/dashboards/[dashboard].json > /dev/null
 
 # 4. Test in Grafana UI
 # Import updated dashboard and verify panel rendering
 
 # 5. Commit changes
+
 git add grafana/dashboards/[dashboard].json
 git commit -m "feat(monitoring): add [panel name] to [dashboard name]"
 ```
@@ -587,24 +637,31 @@ Variables are defined in the `templating.list` array. When adding new variables:
 #### Backup Strategy
 
 ```bash
+
 # Automated daily backups (add to cron)
+
 0 2 * * * /path/to/backup-dashboards.sh
 
 # Manual backup before changes
+
 ./scripts/backup-dashboards.sh
 ```
 
 #### Rollback Procedure
 
 ```bash
+
 # 1. List available backups
+
 ls -la grafana/dashboards/backups/
 
 # 2. Restore specific dashboard
+
 cp grafana/dashboards/backups/api-performance-20251231.json grafana/dashboards/api-performance.json
 
 # 3. Reload Grafana
 # Dashboard will auto-reload on file change if provisioned
+
 ```
 
 ### Performance Optimization
@@ -617,7 +674,9 @@ cp grafana/dashboards/backups/api-performance-20251231.json grafana/dashboards/a
 
 1. **Use recording rules** for expensive queries:
 ```yaml
+
 # prometheus-rules.yml
+
 groups:
   - name: dashboard_rules
     interval: 30s
@@ -739,7 +798,9 @@ groups:
 **Define SLOs Before Building Dashboards:**
 
 ```yaml
+
 # Example SLOs
+
 api_availability:
   target: 99.9%
   measurement_window: 30d
@@ -786,13 +847,17 @@ message_success_rate:
 ### Common Variable Patterns
 
 ```
+
 # Namespace selector
+
 label_values(metric_name, namespace)
 
 # Instance selector (dependent on namespace)
+
 label_values(metric_name{namespace="$namespace"}, instance)
 
 # Path/endpoint selector
+
 label_values(metric_name{namespace="$namespace", instance=~"$instance"}, path)
 ```
 

@@ -451,7 +451,9 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 
 **Planned Integration:**
 ```yaml
+
 # .github/workflows/code-quality.yml
+
 - name: Check code duplication
   run: npx jscpd src/ --threshold 5
 ```
@@ -487,7 +489,7 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Reason:** Query performance degrades exponentially without partitions (10-100x slower)
 - **Effort:** Medium (2-3 days)
 - **Implementation:**
-  ```sql
+```
   -- Create partitioned table
   ALTER TABLE message_logs SET (
     PARTITION BY RANGE (scheduled_send_time)
@@ -530,7 +532,7 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Impact:** Maintains code quality, prevents DRY violations
 - **Effort:** Low (1 hour)
 - **Implementation:**
-  ```yaml
+```
   # Add to .github/workflows/code-quality.yml
   - name: Check code duplication
     run: npx jscpd src/ --threshold 5
@@ -551,7 +553,7 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Impact:** Reduces bandwidth usage by 60-80%
 - **Effort:** Low (1 hour)
 - **Implementation:**
-  ```typescript
+```
   // src/app.ts
   import compression from '@fastify/compress';
   app.register(compression);

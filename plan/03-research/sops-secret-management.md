@@ -119,13 +119,17 @@ This document provides a comprehensive guide for integrating **SOPS (Secrets OPe
 
 **Development**:
 ```bash
+
 # Store age private key in standard location
+
 ~/.config/sops/age/keys.txt
 ```
 
 **CI/CD**:
 ```bash
+
 # Store as GitHub Secret
+
 SOPS_AGE_KEY=<age-private-key>
 ```
 
@@ -139,7 +143,9 @@ SOPS_AGE_KEY=<age-private-key>
 **Best Practice**: Use at least 2 age keys in different locations/accounts.
 
 ```yaml
+
 # .sops.yaml
+
 creation_rules:
   - age: >-
       age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx,
@@ -158,7 +164,9 @@ creation_rules:
 **Strategy**: Only encrypt sensitive fields in YAML/JSON files.
 
 ```yaml
+
 # .sops.yaml
+
 creation_rules:
   - path_regex: \.env$
     age: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -251,6 +259,7 @@ birthday-message-scheduler/
 Create a `.sops.yaml` file in the project root:
 
 ```yaml
+
 # .sops.yaml - SOPS Configuration for Birthday Message Scheduler
 
 creation_rules:
@@ -282,41 +291,50 @@ creation_rules:
 ### .gitignore Updates
 
 ```gitignore
+
 # Environment files - CRITICAL: Never commit plaintext secrets
+
 .env
 .env.*
 !.env.example
 !.env.*.example
 
 # Allow encrypted files
+
 !*.enc
 
 # SOPS age keys - NEVER commit private keys
+
 secrets/age/keys.txt
 age/keys.txt
 ~/.config/sops/age/keys.txt
 
 # Temporary decrypted files
+
 *.dec
 *.decrypted
 tmp/
 
 # SOPS metadata
+
 .sops.pub
 ```
 
 ### Environment File Template (.env.example)
 
 ```bash
+
 # .env.example - Template for environment variables
 # Copy to .env and fill in values, or decrypt from secrets/.env.enc
 
 # Application
+
 NODE_ENV=development
 PORT=3000
 LOG_LEVEL=info
 
 # Database
+
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USERNAME=postgres
@@ -326,12 +344,14 @@ DATABASE_POOL_SIZE=20
 DATABASE_SSL=false
 
 # Redis
+
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
 REDIS_PASSWORD=<REPLACE_WITH_SECURE_PASSWORD>
 
 # RabbitMQ
+
 RABBITMQ_HOST=localhost
 RABBITMQ_PORT=5672
 RABBITMQ_USERNAME=admin
@@ -339,11 +359,13 @@ RABBITMQ_PASSWORD=<REPLACE_WITH_SECURE_PASSWORD>
 RABBITMQ_VHOST=/
 
 # Email Service
+
 EMAIL_SERVICE_URL=https://email-service.digitalenvision.com.au/send-email
 EMAIL_SERVICE_TIMEOUT=10000
 EMAIL_SERVICE_API_KEY=<REPLACE_WITH_API_KEY>
 
 # Queue Configuration
+
 QUEUE_NAME=birthday-messages
 QUEUE_CONCURRENCY=5
 QUEUE_MAX_RETRIES=5
@@ -351,6 +373,7 @@ QUEUE_BACKOFF_DELAY=2000
 QUEUE_BACKOFF_TYPE=exponential
 
 # Circuit Breaker
+
 CIRCUIT_BREAKER_TIMEOUT=10000
 CIRCUIT_BREAKER_ERROR_THRESHOLD=50
 CIRCUIT_BREAKER_RESET_TIMEOUT=30000
@@ -366,7 +389,9 @@ CIRCUIT_BREAKER_VOLUME_THRESHOLD=10
 Store the age private key as a GitHub Secret:
 
 ```bash
+
 # Get your age private key
+
 cat ~/.config/sops/age/keys.txt
 
 # Store in GitHub Secrets as SOPS_AGE_KEY
@@ -374,12 +399,15 @@ cat ~/.config/sops/age/keys.txt
 # Click "New repository secret"
 # Name: SOPS_AGE_KEY
 # Value: <paste-age-private-key-content>
+
 ```
 
 **Important**: The key should look like:
 ```
+
 # created: 2025-12-30T12:00:00Z
 # public key: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 AGE-SECRET-KEY-1YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
 ```
 
@@ -531,18 +559,21 @@ steps:
 **Recommendation**: Use separate age keys for each environment.
 
 #### Development Environment
+
 - **Key Storage**: Developer's local machine (`~/.config/sops/age/keys.txt`)
 - **Access**: All developers
 - **Rotation**: Every 90 days or when developer leaves team
 - **Risk Level**: Low (non-production data)
 
 #### Test/Staging Environment
+
 - **Key Storage**: GitHub Secrets (`SOPS_AGE_KEY_TEST`)
 - **Access**: CI/CD system, QA team
 - **Rotation**: Every 90 days
 - **Risk Level**: Medium
 
 #### Production Environment
+
 - **Key Storage**: GitHub Secrets (`SOPS_AGE_KEY_PROD`) + AWS Secrets Manager (backup)
 - **Access**: CI/CD system, DevOps team only
 - **Rotation**: Every 30-60 days
@@ -551,6 +582,7 @@ steps:
 ### .sops.yaml Multi-Environment Configuration
 
 ```yaml
+
 # .sops.yaml - Multi-environment configuration
 
 creation_rules:
@@ -579,6 +611,7 @@ creation_rules:
 ### Key Rotation Strategy
 
 ```bash
+
 #!/bin/bash
 # scripts/rotate-keys.sh - Rotate age keys for an environment
 
@@ -589,18 +622,22 @@ NEW_KEY_FILE="secrets/age/keys-${ENVIRONMENT}.txt"
 echo "🔄 Rotating age key for ${ENVIRONMENT} environment"
 
 # Generate new age key
+
 echo "1. Generating new age key..."
 age-keygen -o "${NEW_KEY_FILE}"
 
 # Extract public key
+
 NEW_PUBLIC_KEY=$(grep "public key:" "${NEW_KEY_FILE}" | cut -d: -f2 | tr -d ' ')
 echo "✅ New public key: ${NEW_PUBLIC_KEY}"
 
 # Update .sops.yaml
+
 echo "2. Update .sops.yaml with new public key"
 echo "   Replace old key with: ${NEW_PUBLIC_KEY}"
 
 # Re-encrypt all files for this environment
+
 echo "3. Re-encrypting secrets for ${ENVIRONMENT}..."
 for encrypted_file in secrets/.env.${ENVIRONMENT}.enc; do
   echo "   Re-encrypting ${encrypted_file}..."
@@ -623,17 +660,21 @@ echo "   3. Archive old key securely for 30 days before deletion"
 #### 1.1 Install SOPS and age
 
 ```bash
+
 # macOS
+
 brew install sops age
 
 # Linux
 # SOPS
+
 SOPS_VERSION=3.8.1
 curl -Lo sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
 chmod +x sops
 sudo mv sops /usr/local/bin/
 
 # age
+
 AGE_VERSION=1.1.1
 curl -Lo age.tar.gz "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
 tar xf age.tar.gz
@@ -641,6 +682,7 @@ sudo mv age/age /usr/local/bin/
 sudo mv age/age-keygen /usr/local/bin/
 
 # Verify installation
+
 sops --version
 age --version
 ```
@@ -648,14 +690,18 @@ age --version
 #### 1.2 Generate age Keys
 
 ```bash
+
 # Create age directory
+
 mkdir -p ~/.config/sops/age
 
 # Generate development key
+
 age-keygen -o ~/.config/sops/age/keys.txt
 
 # Output will show:
 # Public key: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 ```
 
 **Save the public key** - you'll need it for `.sops.yaml` configuration.
@@ -663,13 +709,17 @@ age-keygen -o ~/.config/sops/age/keys.txt
 #### 1.3 Create Project Structure
 
 ```bash
+
 # Create secrets directory
+
 mkdir -p secrets/age
 
 # Create .gitkeep to track directory
+
 touch secrets/age/.gitkeep
 
 # Create helper scripts directory
+
 mkdir -p scripts
 ```
 
@@ -680,10 +730,13 @@ See [File Structure and Configuration](#file-structure-and-configuration) sectio
 #### 1.5 Update .gitignore
 
 ```bash
+
 # Add to .gitignore
+
 cat >> .gitignore << 'EOF'
 
 # SOPS - Decrypted files
+
 .env
 .env.*
 !.env.example
@@ -691,6 +744,7 @@ cat >> .gitignore << 'EOF'
 !*.enc
 
 # SOPS - Private keys
+
 secrets/age/keys.txt
 age/keys.txt
 *.key
@@ -702,7 +756,9 @@ EOF
 #### 2.1 Backup Current .env Files
 
 ```bash
+
 # Create backup
+
 cp .env .env.backup
 cp .env.test .env.test.backup
 cp .env.development .env.development.backup
@@ -711,46 +767,59 @@ cp .env.development .env.development.backup
 #### 2.2 Encrypt Development Environment
 
 ```bash
+
 # Encrypt .env.development
+
 sops -e .env.development > secrets/.env.development.enc
 
 # Verify encryption
+
 sops -d secrets/.env.development.enc | head -n 5
 ```
 
 #### 2.3 Encrypt Test Environment
 
 ```bash
+
 # Encrypt .env.test
+
 sops -e .env.test > secrets/.env.test.enc
 
 # Verify
+
 sops -d secrets/.env.test.enc | head -n 5
 ```
 
 #### 2.4 Encrypt Production Environment
 
 ```bash
+
 # Generate production keys (separate from development)
+
 age-keygen -o secrets/age/keys-production.txt
 
 # Extract production public key
+
 PROD_PUBLIC_KEY=$(grep "public key:" secrets/age/keys-production.txt | cut -d: -f2 | tr -d ' ')
 
 # Update .sops.yaml with production key
 # Then encrypt
+
 SOPS_AGE_KEY_FILE=secrets/age/keys-production.txt sops -e .env.prod.example > secrets/.env.production.enc
 ```
 
 #### 2.5 Commit Encrypted Files
 
 ```bash
+
 # Add encrypted files to Git
+
 git add secrets/.env.*.enc
 git add .sops.yaml
 git add .gitignore
 
 # Commit
+
 git commit -m "feat: Add SOPS encrypted environment files
 
 - Add .sops.yaml configuration
@@ -758,16 +827,20 @@ git commit -m "feat: Add SOPS encrypted environment files
 - Update .gitignore to exclude plaintext secrets"
 
 # Push
+
 git push origin main
 ```
 
 #### 2.6 Remove Plaintext Files
 
 ```bash
+
 # CRITICAL: Only do this after confirming encrypted files work
+
 rm .env .env.development .env.test
 
 # Keep backups in a secure location (not in Git)
+
 mkdir -p ~/secure-backups/birthday-app
 mv .env*.backup ~/secure-backups/birthday-app/
 ```
@@ -777,8 +850,10 @@ mv .env*.backup ~/secure-backups/birthday-app/
 #### 3.1 Encryption Script
 
 ```bash
+
 # scripts/encrypt-env.sh
 #!/bin/bash
+
 set -e
 
 ENVIRONMENT=${1:-development}
@@ -800,8 +875,10 @@ echo "📝 Don't forget to delete ${SOURCE_FILE} and commit ${ENCRYPTED_FILE}"
 #### 3.2 Decryption Script
 
 ```bash
+
 # scripts/decrypt-env.sh
 #!/bin/bash
+
 set -e
 
 ENVIRONMENT=${1:-development}
@@ -855,22 +932,27 @@ Add to `package.json`:
 #### 5.1 Store Development Key
 
 ```bash
+
 # Get development age key
+
 cat ~/.config/sops/age/keys.txt
 
 # Store in GitHub Secrets:
 # Name: SOPS_AGE_KEY_DEV
 # Value: <paste-full-key-content-including-comments>
+
 ```
 
 #### 5.2 Store Test Key
 
 ```bash
+
 # If using same key as dev
 # Name: SOPS_AGE_KEY_TEST
 # Value: <same-as-dev>
 
 # If using separate test key
+
 cat secrets/age/keys-test.txt
 ```
 
@@ -882,6 +964,7 @@ cat secrets/age/keys-production.txt
 # Store in GitHub Secrets:
 # Name: SOPS_AGE_KEY_PROD
 # Value: <paste-production-key>
+
 ```
 
 ### Phase 6: Update CI/CD Workflows (Day 3)
@@ -893,9 +976,11 @@ See [GitHub Actions Integration](#github-actions-integration) section for comple
 #### 7.1 Create Developer Setup Guide
 
 ```markdown
+
 # Developer Setup for SOPS Encrypted Secrets
 
 ## Prerequisites
+
 - Install SOPS: `brew install sops` (macOS) or see installation docs
 - Install age: `brew install age` (macOS) or see installation docs
 
@@ -909,7 +994,7 @@ See [GitHub Actions Integration](#github-actions-integration) section for comple
    # Paste key content into:
    nano ~/.config/sops/age/keys.txt
    chmod 600 ~/.config/sops/age/keys.txt
-   ```
+```
 
 3. Clone repository and decrypt secrets:
    ```bash
@@ -917,12 +1002,12 @@ See [GitHub Actions Integration](#github-actions-integration) section for comple
    cd birthday-message-scheduler
    npm install
    npm run secrets:decrypt:dev
-   ```
+```
 
 4. Start development:
    ```bash
    npm run dev
-   ```
+```
 
 ## Daily Workflow
 
@@ -958,26 +1043,34 @@ See [GitHub Actions Integration](#github-actions-integration) section for comple
 #### 8.1 Test Encryption/Decryption
 
 ```bash
+
 # Create test file
+
 echo "TEST_SECRET=my-secret-value" > .env.test-validation
 
 # Encrypt
+
 sops -e .env.test-validation > .env.test-validation.enc
 
 # Decrypt
+
 sops -d .env.test-validation.enc
 
 # Compare
+
 diff .env.test-validation <(sops -d .env.test-validation.enc)
 
 # Clean up
+
 rm .env.test-validation .env.test-validation.enc
 ```
 
 #### 8.2 Test CI/CD Pipeline
 
 ```bash
+
 # Push a test PR
+
 git checkout -b test/sops-integration
 git push origin test/sops-integration
 
@@ -986,17 +1079,20 @@ git push origin test/sops-integration
 # - Secrets decrypt successfully
 # - Tests pass with decrypted secrets
 # - No secrets leaked in logs
+
 ```
 
 #### 8.3 Verify Secret Cleanup
 
 ```bash
+
 # In CI logs, check for cleanup step
 # Should see:
 # 🧹 Cleaned up decrypted secrets
 
 # Verify no plaintext secrets in artifacts
 # Download artifacts and check contents
+
 ```
 
 ### Phase 9: Documentation and Rollout (Day 7)
@@ -1006,6 +1102,7 @@ git push origin test/sops-integration
 Add section to `README.md`:
 
 ```markdown
+
 ## Secret Management with SOPS
 
 This project uses [SOPS](https://github.com/getsops/sops) with [age](https://github.com/FiloSottile/age) encryption for managing secrets.
@@ -1015,19 +1112,19 @@ This project uses [SOPS](https://github.com/getsops/sops) with [age](https://git
 1. Install dependencies:
    ```bash
    npm install
-   ```
+```
 
 2. Get age key from team lead and save to `~/.config/sops/age/keys.txt`
 
 3. Decrypt development secrets:
    ```bash
    npm run secrets:decrypt:dev
-   ```
+```
 
 4. Start development:
    ```bash
    npm run dev
-   ```
+```
 
 ### Available Commands
 
@@ -1088,10 +1185,13 @@ Production: Every 30-60 days
 #### 10.2 Audit Encrypted Files
 
 ```bash
+
 # Monthly audit: Check which files are encrypted
+
 find secrets -name "*.enc" -exec sops -d {} \; 2>&1 | grep -i "error"
 
 # Should return no errors
+
 ```
 
 #### 10.3 Monitor CI/CD Logs
@@ -1109,7 +1209,9 @@ find secrets -name "*.enc" -exec sops -d {} \; 2>&1 | grep -i "error"
 **CRITICAL**: Private age keys must NEVER be committed to Git.
 
 ```bash
+
 # Triple-check .gitignore includes:
+
 *.key
 keys.txt
 secrets/age/keys.txt
@@ -1118,10 +1220,13 @@ secrets/age/keys.txt
 
 **Verify**:
 ```bash
+
 # Check Git history for leaked keys
+
 git log --all --full-history --source -- "*keys*" "*age*" "*.key"
 
 # Should return no results
+
 ```
 
 ### 2. Use FIFOs to Avoid Disk Writes
@@ -1129,10 +1234,13 @@ git log --all --full-history --source -- "*keys*" "*age*" "*.key"
 SOPS uses FIFOs (named pipes) by default to keep decrypted secrets in memory:
 
 ```bash
+
 # This keeps secrets in memory (recommended)
+
 sops exec-env secrets/.env.production.enc 'npm start'
 
 # This writes to disk (avoid if possible)
+
 sops -d secrets/.env.production.enc > .env.production
 ```
 
@@ -1143,12 +1251,15 @@ sops -d secrets/.env.production.enc > .env.production
 **Always** clean up decrypted files:
 
 ```bash
+
 # Good: Use trap to ensure cleanup
+
 trap 'rm -f .env.production' EXIT
 sops -d secrets/.env.production.enc > .env.production
 npm start
 
 # Better: Use exec-env (automatic cleanup)
+
 sops exec-env secrets/.env.production.enc 'npm start'
 ```
 
@@ -1162,10 +1273,12 @@ sops exec-env secrets/.env.production.enc 'npm start'
 
 **Access Control**:
 ```yaml
+
 # Use GitHub Environment Secrets for production
 # Settings > Environments > production > Secrets
 # Add: SOPS_AGE_KEY_PROD
 # Configure protection rules: Require reviewers
+
 ```
 
 ### 5. Rotate Keys Regularly
@@ -1199,7 +1312,9 @@ creation_rules:
 
 **CI/CD Logs**:
 ```yaml
+
 # GitHub Actions: Mask secrets in logs
+
 - name: Decrypt secrets
   run: |
     sops -d secrets/.env.test.enc > .env.test
@@ -1278,34 +1393,45 @@ creation_rules:
 ### Initial Setup (One-Time)
 
 ```bash
+
 # 1. Install SOPS
+
 brew install sops  # macOS
+
 # or download from https://github.com/getsops/sops/releases
 
 # 2. Install age
+
 brew install age  # macOS
+
 # or download from https://github.com/FiloSottile/age/releases
 
 # 3. Verify installation
+
 sops --version
 age --version
 
 # 4. Create age directory
+
 mkdir -p ~/.config/sops/age
 
 # 5. Get team's age key from team lead (securely!)
 # Save to: ~/.config/sops/age/keys.txt
 # Set permissions:
+
 chmod 600 ~/.config/sops/age/keys.txt
 
 # 6. Clone repository
+
 git clone <repo-url>
 cd birthday-message-scheduler
 
 # 7. Install dependencies
+
 npm install
 
 # 8. Decrypt development secrets
+
 npm run secrets:decrypt:dev
 ```
 
@@ -1314,13 +1440,16 @@ npm run secrets:decrypt:dev
 #### Scenario 1: No Secret Changes (Most Common)
 
 ```bash
+
 # Start development (auto-decrypts if needed)
+
 npm run dev
 
 # Work on features
 # ...
 
 # Commit and push
+
 git add .
 git commit -m "feat: Add new feature"
 git push
@@ -1329,10 +1458,13 @@ git push
 #### Scenario 2: View Current Secrets
 
 ```bash
+
 # Decrypt and view
+
 sops secrets/.env.development.enc
 
 # Or decrypt to file
+
 npm run secrets:decrypt:dev
 cat .env.development
 ```
@@ -1340,31 +1472,40 @@ cat .env.development
 #### Scenario 3: Add New Secret
 
 ```bash
+
 # 1. Decrypt current secrets
+
 npm run secrets:decrypt:dev
 
 # 2. Edit .env.development
+
 echo "NEW_SECRET=my-new-value" >> .env.development
 
 # 3. Re-encrypt
+
 npm run secrets:encrypt:dev
 
 # 4. Commit encrypted file
+
 git add secrets/.env.development.enc
 git commit -m "chore: Add NEW_SECRET to development config"
 git push
 
 # 5. Clean up plaintext
+
 rm .env.development
 
 # 6. Notify team
 # Post in Slack: "Added NEW_SECRET, please run: npm run secrets:decrypt:dev"
+
 ```
 
 #### Scenario 4: Update Existing Secret
 
 ```bash
+
 # 1. Edit encrypted file directly with SOPS
+
 sops secrets/.env.development.enc
 
 # SOPS will open in your default editor (vim/nano)
@@ -1372,6 +1513,7 @@ sops secrets/.env.development.enc
 # 3. SOPS automatically re-encrypts
 
 # 4. Commit
+
 git add secrets/.env.development.enc
 git commit -m "chore: Update DATABASE_PASSWORD"
 git push
@@ -1380,15 +1522,19 @@ git push
 #### Scenario 5: Switch Environments
 
 ```bash
+
 # Development
+
 npm run secrets:decrypt:dev
 npm run dev
 
 # Test
+
 npm run secrets:decrypt:test
 npm run test
 
 # Production (rarely needed locally)
+
 npm run secrets:decrypt:prod
 ```
 
@@ -1397,11 +1543,14 @@ npm run secrets:decrypt:prod
 #### Reviewing PRs with Secret Changes
 
 ```bash
+
 # 1. Checkout PR branch
+
 git fetch origin pull/123/head:pr-123
 git checkout pr-123
 
 # 2. Decrypt and review secrets
+
 sops secrets/.env.development.enc | diff .env.development.backup -
 
 # 3. Check for sensitive data
@@ -1410,10 +1559,12 @@ sops secrets/.env.development.enc | diff .env.development.backup -
 # - No API keys from personal accounts
 
 # 4. Verify encryption
+
 sops secrets/.env.development.enc > /dev/null
 echo $?  # Should be 0 (success)
 
 # 5. Approve or request changes
+
 ```
 
 ### Troubleshooting Common Issues
@@ -1440,13 +1591,13 @@ Group 0: FAILED
 **Solutions**:
 
 1. **Check key file exists**:
-   ```bash
+```
    ls -la ~/.config/sops/age/keys.txt
    # Should show the file with 600 permissions
    ```
 
 2. **Check key file contents**:
-   ```bash
+```
    cat ~/.config/sops/age/keys.txt
    # Should show:
    # # created: 2025-12-30T12:00:00Z
@@ -1455,13 +1606,13 @@ Group 0: FAILED
    ```
 
 3. **Set SOPS_AGE_KEY_FILE environment variable**:
-   ```bash
+```
    export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
    sops -d secrets/.env.development.enc
    ```
 
 4. **Add to shell profile** (.bashrc, .zshrc):
-   ```bash
+```
    echo 'export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt' >> ~/.zshrc
    source ~/.zshrc
    ```
@@ -1478,7 +1629,7 @@ Failed to decrypt: MAC mismatch
 **Solutions**:
 
 1. **Verify you have the correct key**:
-   ```bash
+```
    # Extract public key from your private key
    grep "public key:" ~/.config/sops/age/keys.txt
 
@@ -1487,19 +1638,19 @@ Failed to decrypt: MAC mismatch
    ```
 
 2. **Try backup key** (if configured):
-   ```bash
+```
    # If .sops.yaml has multiple keys, try second key
    SOPS_AGE_KEY_FILE=~/.config/sops/age/keys-backup.txt sops -d secrets/.env.development.enc
    ```
 
 3. **Check file integrity**:
-   ```bash
+```
    # View file metadata
    sops -d --extract '["sops"]["age"]' secrets/.env.development.enc
    ```
 
 4. **Re-encrypt file**:
-   ```bash
+```
    # If you have access to plaintext version
    sops -e .env.development > secrets/.env.development.enc
    ```
@@ -1511,7 +1662,7 @@ Failed to decrypt: MAC mismatch
 **Solutions**:
 
 1. **Check in-place editing**:
-   ```bash
+```
    # Wrong (creates new file)
    sops secrets/.env.development.enc > secrets/.env.development.enc.new
 
@@ -1521,12 +1672,12 @@ Failed to decrypt: MAC mismatch
    ```
 
 2. **Use --in-place flag** for non-interactive:
-   ```bash
+```
    sops -d secrets/.env.development.enc | sed 's/OLD/NEW/' | sops -e --in-place secrets/.env.development.enc
    ```
 
 3. **Verify Git sees changes**:
-   ```bash
+```bash
    git status
    git diff secrets/.env.development.enc
    ```
@@ -1545,7 +1696,7 @@ Error: Failed to decrypt secrets
    - Verify `SOPS_AGE_KEY` or `SOPS_AGE_KEY_TEST` exists
 
 2. **Check secret format**:
-   ```yaml
+```
    # Should include comments and private key
    # created: 2025-12-30T12:00:00Z
    # public key: age1xxxxx...
@@ -1553,7 +1704,7 @@ Error: Failed to decrypt secrets
    ```
 
 3. **Check workflow uses secret correctly**:
-   ```yaml
+```
    - name: Setup age key
      run: |
        mkdir -p ~/.config/sops/age
@@ -1562,7 +1713,7 @@ Error: Failed to decrypt secrets
    ```
 
 4. **Debug: Print public key** (safe to log):
-   ```yaml
+```
    - name: Debug age key
      run: |
        grep "public key:" ~/.config/sops/age/keys.txt || echo "Key file issue"
@@ -1575,7 +1726,7 @@ Error: Failed to decrypt secrets
 **Solutions**:
 
 1. **Install SOPS**:
-   ```bash
+```
    # macOS
    brew install sops
 
@@ -1586,13 +1737,13 @@ Error: Failed to decrypt secrets
    ```
 
 2. **Verify installation**:
-   ```bash
+```
    which sops
    sops --version
    ```
 
 3. **Check PATH**:
-   ```bash
+```
    echo $PATH
    # Should include /usr/local/bin
    ```
@@ -1607,12 +1758,12 @@ permission denied: ~/.config/sops/age/keys.txt
 **Solutions**:
 
 1. **Fix permissions**:
-   ```bash
+```
    chmod 600 ~/.config/sops/age/keys.txt
    ```
 
 2. **Check ownership**:
-   ```bash
+```
    ls -la ~/.config/sops/age/keys.txt
    # Should be owned by you, not root
 
@@ -1627,7 +1778,7 @@ permission denied: ~/.config/sops/age/keys.txt
 **Solutions**:
 
 1. **Immediate action**:
-   ```bash
+```
    # Remove from latest commit
    git rm .env
    git commit --amend -m "Remove accidentally committed .env"
@@ -1635,7 +1786,7 @@ permission denied: ~/.config/sops/age/keys.txt
    ```
 
 2. **Remove from entire Git history**:
-   ```bash
+```
    # Use git-filter-repo (safer than filter-branch)
    pip install git-filter-repo
 
@@ -1644,7 +1795,7 @@ permission denied: ~/.config/sops/age/keys.txt
    ```
 
 3. **Rotate all secrets**:
-   ```bash
+```
    # All secrets in the committed file are now considered compromised
    # 1. Change all passwords, API keys, tokens
    # 2. Update encrypted files with new values
@@ -1658,17 +1809,17 @@ permission denied: ~/.config/sops/age/keys.txt
 **Solutions**:
 
 1. **Check which key you have**:
-   ```bash
+```
    grep "public key:" ~/.config/sops/age/keys.txt
    ```
 
 2. **Check which key is configured**:
-   ```bash
+```
    grep "age:" .sops.yaml
    ```
 
 3. **If keys don't match**:
-   ```bash
+```
    # Option A: Get correct key from team lead
    # Option B: Update .sops.yaml with your public key
    # Option C: Re-encrypt with your key (if you have plaintext)
@@ -1681,10 +1832,13 @@ permission denied: ~/.config/sops/age/keys.txt
 **Solution**:
 
 ```bash
+
 # Use --no-fifo flag
+
 sops -d --no-fifo secrets/.env.development.enc > .env.development
 
 # Ensure cleanup
+
 del .env.development
 ```
 
@@ -1697,12 +1851,12 @@ del .env.development
 **Solutions**:
 
 1. **Use binary format** for large files:
-   ```bash
+```
    sops -e --input-type binary --output-type binary large-file.bin > large-file.bin.enc
    ```
 
 2. **Split large config files**:
-   ```bash
+```
    # Instead of one huge .env, split by service
    secrets/.env.database.enc
    secrets/.env.rabbitmq.enc
@@ -1710,7 +1864,7 @@ del .env.development
    ```
 
 3. **Use encrypted-regex** to limit scope:
-   ```yaml
+```
    creation_rules:
      - encrypted_regex: '^(SECRET_|PASSWORD_|TOKEN_).*'
        # Only encrypts variables starting with SECRET_, PASSWORD_, TOKEN_
@@ -1768,14 +1922,18 @@ del .env.development
 ### Installation
 
 ```bash
+
 # macOS
+
 brew install sops age
 
 # Linux - SOPS
+
 curl -Lo sops https://github.com/getsops/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64
 chmod +x sops && sudo mv sops /usr/local/bin/
 
 # Linux - age
+
 curl -Lo age.tar.gz https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz
 tar xf age.tar.gz && sudo mv age/age* /usr/local/bin/
 ```
@@ -1783,39 +1941,51 @@ tar xf age.tar.gz && sudo mv age/age* /usr/local/bin/
 ### Key Generation
 
 ```bash
+
 # Generate new age key
+
 age-keygen -o ~/.config/sops/age/keys.txt
 
 # Generate post-quantum key
+
 age-keygen -pq -o ~/.config/sops/age/keys-pq.txt
 
 # View public key
+
 grep "public key:" ~/.config/sops/age/keys.txt
 ```
 
 ### Encryption/Decryption
 
 ```bash
+
 # Encrypt file
+
 sops -e .env > secrets/.env.enc
 
 # Decrypt file
+
 sops -d secrets/.env.enc > .env
 
 # Edit encrypted file in-place
+
 sops secrets/.env.enc
 
 # Decrypt to stdout
+
 sops -d secrets/.env.enc
 
 # Exec with decrypted env
+
 sops exec-env secrets/.env.enc 'npm start'
 ```
 
 ### Configuration
 
 ```bash
+
 # Create .sops.yaml
+
 cat > .sops.yaml << 'EOF'
 creation_rules:
   - path_regex: \.env\..*\.enc$
@@ -1824,19 +1994,24 @@ creation_rules:
 EOF
 
 # Update keys in encrypted file
+
 sops updatekeys secrets/.env.enc
 ```
 
 ### Verification
 
 ```bash
+
 # Verify encryption
+
 sops -d secrets/.env.enc > /dev/null && echo "✅ Valid" || echo "❌ Invalid"
 
 # Check which keys can decrypt
+
 sops -d --extract '["sops"]["age"]' secrets/.env.enc
 
 # Compare decrypted vs original
+
 diff <(sops -d secrets/.env.enc) .env.backup
 ```
 
@@ -1847,6 +2022,7 @@ diff <(sops -d secrets/.env.enc) .env.backup
 ### Sample .sops.yaml (Multi-Environment)
 
 ```yaml
+
 # .sops.yaml - Birthday Message Scheduler
 
 creation_rules:
@@ -1874,7 +2050,9 @@ creation_rules:
 ### Sample Encrypted .env File
 
 ```bash
+
 # After encryption with SOPS, file looks like:
+
 NODE_ENV=production
 PORT=3000
 DATABASE_HOST=ENC[AES256_GCM,data:abcd1234...,iv:xyz789...,tag:...==,type:str]
