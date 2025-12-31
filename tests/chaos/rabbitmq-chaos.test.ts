@@ -128,6 +128,9 @@ describe('RabbitMQ Chaos Tests', () => {
         },
       });
 
+      // Wait for channel to be ready
+      await newChannel.waitForConnect();
+
       // Check queue status
       const queueInfo = await newChannel.checkQueue('persistent_queue');
       expect(queueInfo.messageCount).toBe(messages.length);
@@ -247,9 +250,15 @@ describe('RabbitMQ Chaos Tests', () => {
       logger.info('Message requeued and eventually processed');
 
       // Cleanup
-      await channel.cancel('amq.ctag-*');
-      await channel.deleteQueue('retry_queue');
-      await connection.close();
+      await channel.cancel('amq.ctag-*').catch(() => {
+        /* Ignore cleanup errors */
+      });
+      await channel.deleteQueue('retry_queue').catch(() => {
+        /* Ignore cleanup errors */
+      });
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
     }, 20000);
   });
 
@@ -429,8 +438,12 @@ describe('RabbitMQ Chaos Tests', () => {
       expect(processed).toBe(20);
 
       // Cleanup
-      await channel.deleteQueue('backpressure_queue');
-      await connection.close();
+      await channel.deleteQueue('backpressure_queue').catch(() => {
+        /* Ignore cleanup errors */
+      });
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
     }, 30000);
   });
 
@@ -465,7 +478,8 @@ describe('RabbitMQ Chaos Tests', () => {
         } catch (error: any) {
           logger.debug(`Publish attempt ${i + 1} failed`, { error: error.message });
 
-          if (circuitOpen) {
+          // After threshold is reached, next attempt should see circuit open
+          if (i >= failureThreshold) {
             expect(error.message).toContain('Circuit breaker is OPEN');
             break;
           }
