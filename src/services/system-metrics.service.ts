@@ -271,6 +271,11 @@ export class SystemMetricsService {
       'Starting SystemMetricsService'
     );
 
+
+    // Initialize CPU usage tracking
+    this.previousCpuUsage = process.cpuUsage();
+    this.previousTimestamp = Date.now();
+
     // Initialize event loop utilization tracking
     if (this.config.enableEventLoopUtilization) {
       this.previousEventLoopUtilization = performance.eventLoopUtilization();

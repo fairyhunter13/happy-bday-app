@@ -439,10 +439,7 @@ describe('Timezone Boundaries - Comprehensive Edge Cases', () => {
       const timezone = 'UTC';
 
       // Mock checking if Feb 28 is the birthday in a non-leap year
-      const checkDate = DateTime.fromObject(
-        { year: 2025, month: 2, day: 28 },
-        { zone: timezone }
-      );
+      const checkDate = DateTime.fromObject({ year: 2025, month: 2, day: 28 }, { zone: timezone });
 
       const birthday = DateTime.fromJSDate(birthdayDate).setZone(timezone);
 
@@ -511,10 +508,7 @@ describe('Timezone Boundaries - Comprehensive Edge Cases', () => {
       const timezone = 'UTC';
 
       // Check if Mar 1 is considered the birthday
-      const checkDate = DateTime.fromObject(
-        { year: 2025, month: 3, day: 1 },
-        { zone: timezone }
-      );
+      const checkDate = DateTime.fromObject({ year: 2025, month: 3, day: 1 }, { zone: timezone });
 
       const birthday = DateTime.fromJSDate(birthdayDate).setZone(timezone);
 
