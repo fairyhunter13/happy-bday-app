@@ -71,6 +71,10 @@
           {
             "type": "command",
             "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true"
+          },
+          {
+            "type": "command",
+            "command": "/bin/bash -c 'FILE=$(cat | jq -r \".tool_input.file_path // .tool_input.path // empty\"); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx || \"$FILE\" == *.js || \"$FILE\" == *.jsx ]]; then echo \"🔍 Running ESLint on $FILE...\"; npx eslint --fix \"$FILE\" 2>/dev/null && echo \"✅ Linting passed\" || echo \"⚠️ Linting issues found (auto-fixed where possible)\"; fi'"
           }
         ]
       }
