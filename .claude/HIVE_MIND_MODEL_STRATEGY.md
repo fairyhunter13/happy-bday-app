@@ -119,7 +119,6 @@ Ask yourself before each spawn:
 ## Configuration Files
 
 - `.claude/hive-mind-config.json` - Main config (mode: coordinator_reasoning)
-- `.claude/model-selection-config.json` - Enforcement disabled
 - `.claude/config.json` - References full reasoning mode
 - `CLAUDE.md` - Model selection guidance for coordinator
 
@@ -127,6 +126,6 @@ Ask yourself before each spawn:
 
 ## Notes
 
-- The `intelligent-model-selector.cjs` tool still exists but is now **advisory only**
-- You can run it to see what the algorithm would suggest, but you're not bound by it
-- Trust your reasoning - you understand task nuance better than keyword matching
+- All algorithmic model selection files have been removed
+- You have full control over model selection for spawned agents
+- Trust your reasoning - you understand task nuance better than any algorithm
