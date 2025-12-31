@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DateTime } from 'luxon';
+import { DateTime, IANAZone } from 'luxon';
 
 /**
  * User validation schemas using Zod
@@ -8,13 +8,14 @@ import { DateTime } from 'luxon';
 
 /**
  * Custom validator for IANA timezone format
+ * Uses Luxon's IANAZone.isValidZone() for accurate validation
  */
 const timezoneSchema = z.string().refine(
   (tz) => {
     try {
-      // Validate using Luxon's timezone list
-      const dt = DateTime.now().setZone(tz);
-      return dt.isValid;
+      // Use IANAZone.isValidZone() for proper timezone validation
+      // This correctly rejects invalid timezones like "Invalid/Timezone"
+      return IANAZone.isValidZone(tz);
     } catch {
       return false;
     }

@@ -92,15 +92,31 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
     logger, // Disable logging in tests by default
     ajv: {
       customOptions: {
-        // Allow OpenAPI-specific keywords in JSON Schema
-        keywords: ['example'],
+        // Disable strict mode to allow OpenAPI-specific keywords like 'example'
+        strict: false,
       },
     },
   });
 
   // Global error handler (same as main app)
   app.setErrorHandler(async (error, request, reply) => {
-    const err = error as Error;
+    const err = error as Error & { validation?: unknown; statusCode?: number };
+
+    // Handle Fastify validation errors (from Ajv schema validation)
+    if (err.validation) {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: err.message,
+          details: err.validation,
+        },
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      };
+      await reply.status(400).send(errorResponse);
+      return;
+    }
+
     const errorResponse: ErrorResponse = {
       error: {
         code: error instanceof ApplicationError ? error.code : 'INTERNAL_SERVER_ERROR',
@@ -111,7 +127,7 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
       path: request.url,
     };
 
-    const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
+    const statusCode = error instanceof ApplicationError ? error.statusCode : err.statusCode || 500;
 
     await reply.status(statusCode).send(errorResponse);
   });

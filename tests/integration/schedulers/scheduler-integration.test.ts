@@ -117,7 +117,7 @@ describe('Scheduler Integration Tests', () => {
 
       await db.insert(users).values([
         {
-          id: 'user-1',
+          id: '11111111-1111-1111-1111-111111111111',
           firstName: 'John',
           lastName: 'Doe',
           email: 'john@example.com',
@@ -125,7 +125,7 @@ describe('Scheduler Integration Tests', () => {
           timezone: 'America/New_York',
         },
         {
-          id: 'user-2',
+          id: '22222222-2222-2222-2222-222222222222',
           firstName: 'Jane',
           lastName: 'Smith',
           email: 'jane@example.com',
@@ -153,7 +153,7 @@ describe('Scheduler Integration Tests', () => {
       const birthdayDate = today.startOf('day').toJSDate();
 
       await db.insert(users).values({
-        id: 'user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -193,7 +193,7 @@ describe('Scheduler Integration Tests', () => {
       const scheduledTime = new Date(now.getTime() + 30 * 60 * 1000);
 
       await db.insert(users).values({
-        id: 'user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -202,8 +202,8 @@ describe('Scheduler Integration Tests', () => {
       });
 
       await db.insert(messageLogs).values({
-        id: 'msg-1',
-        userId: 'user-1',
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        userId: '11111111-1111-1111-1111-111111111111',
         messageType: 'BIRTHDAY',
         messageContent: 'Happy Birthday!',
         scheduledSendTime: scheduledTime,
@@ -224,7 +224,7 @@ describe('Scheduler Integration Tests', () => {
         .where(eq(messageLogs.status, MessageStatus.QUEUED));
 
       expect(enqueuedMessages.length).toBe(1);
-      expect(enqueuedMessages[0]?.id).toBe('msg-1');
+      expect(enqueuedMessages[0]?.id).toBe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
     });
 
     it('should not enqueue messages scheduled beyond 1 hour', async () => {
@@ -233,7 +233,7 @@ describe('Scheduler Integration Tests', () => {
       const scheduledTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
       await db.insert(users).values({
-        id: 'user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -242,8 +242,8 @@ describe('Scheduler Integration Tests', () => {
       });
 
       await db.insert(messageLogs).values({
-        id: 'msg-1',
-        userId: 'user-1',
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        userId: '11111111-1111-1111-1111-111111111111',
         messageType: 'BIRTHDAY',
         messageContent: 'Happy Birthday!',
         scheduledSendTime: scheduledTime,
@@ -273,7 +273,7 @@ describe('Scheduler Integration Tests', () => {
       const pastTime = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
 
       await db.insert(users).values({
-        id: 'user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -282,8 +282,8 @@ describe('Scheduler Integration Tests', () => {
       });
 
       await db.insert(messageLogs).values({
-        id: 'msg-1',
-        userId: 'user-1',
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        userId: '11111111-1111-1111-1111-111111111111',
         messageType: 'BIRTHDAY',
         messageContent: 'Happy Birthday!',
         scheduledSendTime: pastTime,
@@ -299,7 +299,10 @@ describe('Scheduler Integration Tests', () => {
 
       // Message should still be SCHEDULED (ready for retry)
       // In real implementation, it would be re-queued
-      const messages = await db.select().from(messageLogs).where(eq(messageLogs.id, 'msg-1'));
+      const messages = await db
+        .select()
+        .from(messageLogs)
+        .where(eq(messageLogs.id, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
 
       expect(messages.length).toBe(1);
       expect(messages[0]?.status).toBe(MessageStatus.SCHEDULED);
@@ -309,7 +312,7 @@ describe('Scheduler Integration Tests', () => {
       const pastTime = new Date(Date.now() - 30 * 60 * 1000);
 
       await db.insert(users).values({
-        id: 'user-1',
+        id: '11111111-1111-1111-1111-111111111111',
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
@@ -318,8 +321,8 @@ describe('Scheduler Integration Tests', () => {
       });
 
       await db.insert(messageLogs).values({
-        id: 'msg-1',
-        userId: 'user-1',
+        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        userId: '11111111-1111-1111-1111-111111111111',
         messageType: 'BIRTHDAY',
         messageContent: 'Happy Birthday!',
         scheduledSendTime: pastTime,
@@ -334,7 +337,10 @@ describe('Scheduler Integration Tests', () => {
       await manager.triggerScheduler('recovery');
 
       // Message should be marked as FAILED
-      const messages = await db.select().from(messageLogs).where(eq(messageLogs.id, 'msg-1'));
+      const messages = await db
+        .select()
+        .from(messageLogs)
+        .where(eq(messageLogs.id, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
 
       expect(messages.length).toBe(1);
       expect(messages[0]?.status).toBe(MessageStatus.FAILED);

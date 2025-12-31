@@ -10,15 +10,28 @@
  */
 
 import { z } from 'zod';
+import { IANAZone } from 'luxon';
 import { MessageStatus, MessageType } from '../db/schema/message-logs.js';
 
 /**
  * IANA timezone validation
+ * Uses Luxon's IANAZone.isValidZone() for proper timezone validation
  * Common examples: "America/New_York", "Europe/London", "Asia/Tokyo"
  */
-const timezoneSchema = z
-  .string()
-  .regex(/^[A-Za-z]+\/[A-Za-z_]+$/, 'Invalid IANA timezone format (e.g., "America/New_York")');
+const timezoneSchema = z.string().refine(
+  (tz) => {
+    try {
+      // Use IANAZone.isValidZone() to properly validate IANA timezones
+      // This correctly rejects invalid timezones like "Invalid/Timezone"
+      return IANAZone.isValidZone(tz);
+    } catch {
+      return false;
+    }
+  },
+  {
+    message: 'Invalid IANA timezone format (e.g., "America/New_York", "Europe/London")',
+  }
+);
 
 /**
  * Email validation using RFC 5322 simplified regex
