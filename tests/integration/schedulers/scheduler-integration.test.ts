@@ -2,38 +2,56 @@
  * Integration tests for Schedulers
  *
  * Tests the complete flow of schedulers with mocked time
+ *
+ * IMPORTANT: Uses dynamic imports to ensure database connection
+ * uses the test container's connection string, not the default.
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { SchedulerManager } from '../../../src/schedulers/index.js';
-import { users, messageLogs } from '../../../src/db/schema/index.js';
 import { eq } from 'drizzle-orm';
-import { MessageStatus } from '../../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
-import { TestEnvironment, cleanDatabase } from '../../helpers/testcontainers.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
+
+// Import types only - no runtime dependencies on app modules
+import type { SchedulerManager as SchedulerManagerType } from '../../../src/schedulers/index.js';
+
+// Import test helpers and schema (these don't trigger DB connection)
+import { TestEnvironment, cleanDatabase } from '../../helpers/testcontainers.js';
 import * as schema from '../../../src/db/schema/index.js';
-import { RabbitMQConnection, initializeRabbitMQ } from '../../../src/queue/connection.js';
+import { users, messageLogs } from '../../../src/db/schema/index.js';
+import { MessageStatus } from '../../../src/db/schema/message-logs.js';
 
 describe('Scheduler Integration Tests', () => {
   let testEnv: TestEnvironment;
-  let manager: SchedulerManager;
+  let SchedulerManager: typeof SchedulerManagerType;
+  let manager: SchedulerManagerType;
   let db: ReturnType<typeof drizzle<typeof schema>>;
+  let initializeRabbitMQ: () => Promise<void>;
+  let RabbitMQConnection: { getInstance: () => { close: () => Promise<void> } };
 
   beforeAll(async () => {
     // Start full test environment with PostgreSQL, RabbitMQ, and Redis
     testEnv = new TestEnvironment();
     await testEnv.setup();
 
-    // Set environment variables for the app
+    // Set environment variables BEFORE importing app modules
     process.env.DATABASE_URL = testEnv.postgresConnectionString;
     process.env.RABBITMQ_URL = testEnv.rabbitmqConnectionString;
+    process.env.ENABLE_DB_METRICS = 'false'; // Disable metrics during tests
 
-    // Create drizzle instance for tests
+    // Create drizzle instance for tests (uses test container)
     db = drizzle(testEnv.getPostgresPool(), { schema });
 
     // Run migrations
     await testEnv.runMigrations('./drizzle');
+
+    // Now dynamically import app modules after env vars are set
+    const schedulerModule = await import('../../../src/schedulers/index.js');
+    SchedulerManager = schedulerModule.SchedulerManager;
+
+    const queueModule = await import('../../../src/queue/connection.js');
+    initializeRabbitMQ = queueModule.initializeRabbitMQ;
+    RabbitMQConnection = queueModule.RabbitMQConnection;
 
     // Initialize RabbitMQ connection for tests
     await initializeRabbitMQ();
