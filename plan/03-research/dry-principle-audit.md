@@ -322,7 +322,9 @@ api-2:
   build: ...
   environment:
     INSTANCE_ID: api-2
+
 # ... repeated 5 times
+
 ```
 
 **Severity**: MEDIUM
@@ -407,7 +409,9 @@ api-2:
 
 1. **Header/Boilerplate** (20 lines):
 ```bash
+
 #!/bin/bash
+
 set -e / set -euo pipefail
 PROJECT_ROOT="/Users/hafizputraludyanto/..."
 PLAN_DIR="$PROJECT_ROOT/plan"
@@ -450,6 +454,7 @@ echo -e "  Moved: $moved_count files"
 ```
 
 #### Differences (30%):
+
 - `post-phase-docs.sh`: Phase-specific detection and organization
 - `post-implementation-docs.sh`: More comprehensive, handles multiple doc types
 
@@ -626,10 +631,12 @@ runs:
 
 **File**: `.claude/hooks/lib/common.sh`
 ```bash
+
 #!/bin/bash
 # Shared utilities for Claude hooks
 
 # Color definitions
+
 export RED='\033[0;31m'
 export GREEN='\033[0;32m'
 export YELLOW='\033[1;33m'
@@ -637,11 +644,13 @@ export BLUE='\033[0;34m'
 export NC='\033[0m'
 
 # Project paths
+
 export SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export PROJECT_ROOT="/Users/hafizputraludyanto/git/github.com/fairyhunter13/happy-bday-app"
 export PLAN_DIR="$PROJECT_ROOT/plan"
 
 # Logging functions
+
 info() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -661,6 +670,7 @@ header() {
 }
 
 # Directory management
+
 ensure_directories() {
     mkdir -p "$PLAN_DIR/01-requirements"
     mkdir -p "$PLAN_DIR/02-architecture"
@@ -672,6 +682,7 @@ ensure_directories() {
 }
 
 # File pattern matching and moving
+
 move_files_by_pattern() {
     local pattern="$1"
     local target_dir="$2"
@@ -689,12 +700,14 @@ move_files_by_pattern() {
 }
 
 # INDEX.md generation
+
 generate_index() {
     local dir="$1"
     local title="$2"
     local index_file="$dir/INDEX.md"
 
     cat > "$index_file" << EOF
+
 # $title
 
 **Last Updated**: $(date '+%Y-%m-%d %H:%M:%S')
@@ -718,16 +731,20 @@ EOF
 
 **File**: `.claude/hooks/post-phase-docs.sh` (Refactored)
 ```bash
+
 #!/bin/bash
+
 set -euo pipefail
 
 # Load common utilities
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/lib/common.sh"
 
 header "Post-Phase Documentation Organization"
 
 # Detect current phase
+
 CURRENT_PHASE=""
 if ls $PROJECT_ROOT/PHASE*.md >/dev/null 2>&1; then
     PHASE_FILE=$(ls $PROJECT_ROOT/PHASE*.md | head -n 1 | xargs basename)
@@ -736,25 +753,30 @@ if ls $PROJECT_ROOT/PHASE*.md >/dev/null 2>&1; then
 fi
 
 # Ensure directories exist
+
 PHASE_DIR="$PLAN_DIR/06-phase-reports/phase${CURRENT_PHASE}"
 mkdir -p "$PHASE_DIR"
 
 # Move phase-specific files
+
 moved_count=0
 moved_count=$((moved_count + $(move_files_by_pattern "PHASE${CURRENT_PHASE}*.md" "$PHASE_DIR")))
 moved_count=$((moved_count + $(move_files_by_pattern "*AGENT*REPORT*.md" "$PHASE_DIR")))
 moved_count=$((moved_count + $(move_files_by_pattern "*COMPLETION*.md" "$PHASE_DIR")))
 
 # Handle phase 1 specific files
+
 if [ "$CURRENT_PHASE" = "1" ]; then
     moved_count=$((moved_count + $(move_files_by_pattern "SETUP.md" "$PHASE_DIR")))
     moved_count=$((moved_count + $(move_files_by_pattern "QUICKSTART.md" "$PHASE_DIR")))
 fi
 
 # Generate INDEX
+
 generate_index "$PHASE_DIR" "Phase ${CURRENT_PHASE} Documentation Index"
 
 # Summary
+
 echo ""
 header "Summary"
 info "Documentation organization complete"
@@ -1025,6 +1047,7 @@ describe('UserRepository', () => {
 
 **File**: `scripts/lib/docker-compose-helper.sh`
 ```bash
+
 #!/bin/bash
 
 # Docker Compose Helper Functions
@@ -1060,6 +1083,7 @@ compose_ps() {
 }
 
 # Main script logic
+
 case "${1:-}" in
     up)
         compose_up "${2:-dev}"
@@ -1096,11 +1120,13 @@ esac
 
 **File**: `.github/workflows/README.md`
 ```markdown
+
 # CI/CD Workflow Components
 
 ## Reusable Actions
 
 ### Setup SOPS
+
 Location: `.github/actions/setup-sops/action.yml`
 Usage:
 ```yaml
@@ -1111,6 +1137,7 @@ Usage:
 ```
 
 ### Setup Node App
+
 Location: `.github/actions/setup-node-app/action.yml`
 Usage:
 ```yaml
@@ -1122,6 +1149,7 @@ Usage:
 ## Standard Patterns
 
 ### Database Migration
+
 ```yaml
 - name: Run migrations
   run: npm run db:migrate
@@ -1134,6 +1162,7 @@ Usage:
 
 **File**: `scripts/sops/sops-manager.sh`
 ```bash
+
 #!/usr/bin/env bash
 
 # SOPS Manager - Unified script for encrypt/decrypt/edit/view
@@ -1141,6 +1170,7 @@ Usage:
 set -euo pipefail
 
 # Source common utilities
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$SCRIPT_DIR/../lib/common.sh" || {
     # Fallback if common.sh doesn't exist
@@ -1150,12 +1180,14 @@ source "$SCRIPT_DIR/../lib/common.sh" || {
 }
 
 # Functions for each operation
+
 do_encrypt() { ... }
 do_decrypt() { ... }
 do_edit() { ... }
 do_view() { ... }
 
 # Main
+
 ACTION="${1:-}"
 ENVIRONMENT="${2:-all}"
 
@@ -1179,15 +1211,18 @@ esac
 ### Phase 4: Polish & Documentation (Week 4) - 8 hours
 
 #### 4.1 DRY Guidelines Documentation (4 hours)
+
 - Create `docs/contributing/DRY-GUIDELINES.md`
 - Document all shared utilities
 - Create templates for common patterns
 
 #### 4.2 Code Review Checklist (2 hours)
+
 - Add DRY checks to PR template
 - Create automated linting rules
 
 #### 4.3 Monitoring & Metrics (2 hours)
+
 - Setup code duplication monitoring
 - Configure jscpd in CI
 - Set thresholds
@@ -1283,6 +1318,7 @@ sonar.tests=tests
 sonar.cpd.exclusions=**/*test.ts,**/*.spec.ts
 
 # Duplication thresholds
+
 sonar.cpd.minimumtokens=50
 sonar.duplications.minimum=5
 ```
@@ -1291,16 +1327,19 @@ sonar.duplications.minimum=5
 
 **File**: `docs/metrics/DRY-DASHBOARD.md`
 ```markdown
+
 # DRY Compliance Dashboard
 
 ## Current Status: 🔴 CRITICAL
 
 ### Overall Metrics
+
 - **Duplication Percentage**: 12.5% (Target: <5%)
 - **Duplicated Lines**: ~2,500 lines
 - **Duplicated Blocks**: 47 violations
 
 ### By Category
+
 | Category | Severity | Count | Lines |
 |----------|----------|-------|-------|
 | Workflows | HIGH | 12 | 500+ |
@@ -1310,9 +1349,11 @@ sonar.duplications.minimum=5
 | Vitest Configs | HIGH | 4 | 60 |
 
 ### Trend
+
 - Week 1: 15% → Week 2: 13% → Week 3: 12.5% (improving)
 
 ### Action Items
+
 1. Implement Phase 1 fixes (workflows + hooks)
 2. Refactor test setup utilities
 3. Consolidate Docker compose files
@@ -1323,10 +1364,13 @@ sonar.duplications.minimum=5
 #### Pre-commit Hook
 **File**: `.husky/pre-commit`
 ```bash
+
 #!/bin/sh
+
 . "$(dirname "$0")/_/husky.sh"
 
 # Run duplication check on staged files
+
 echo "Checking for code duplication..."
 npx jscpd --pattern "**/*.{ts,js,yml,yaml}" --threshold 10 --silent
 
@@ -1340,6 +1384,7 @@ fi
 #### PR Review Template
 **File**: `.github/PULL_REQUEST_TEMPLATE.md`
 ```markdown
+
 ## DRY Compliance Checklist
 
 - [ ] No duplicated code blocks (>5 lines)
@@ -1417,6 +1462,7 @@ Week 4 (8h): POLISH & ENFORCEMENT
 ### Success Criteria
 
 #### Metrics
+
 - [ ] Code duplication: <5% (currently ~12.5%)
 - [ ] Workflow LOC: -500 lines
 - [ ] Hook script LOC: -150 lines
@@ -1424,6 +1470,7 @@ Week 4 (8h): POLISH & ENFORCEMENT
 - [ ] Total LOC reduction: ~1,500+ lines
 
 #### Quality Gates
+
 - [ ] All workflows passing
 - [ ] All tests passing
 - [ ] No new duplication introduced
@@ -1485,6 +1532,7 @@ const user3 = createTestUser({ firstName: 'Bob' });
 **Pattern**: Base → Environment → Override
 
 ```yaml
+
 # ❌ BAD: Duplicated full configs
 # docker-compose.dev.yml - 100 lines
 # docker-compose.test.yml - 95 lines (mostly same)
@@ -1495,6 +1543,7 @@ const user3 = createTestUser({ firstName: 'Bob' });
 # docker-compose.dev.yml - extends base, dev overrides
 # docker-compose.test.yml - extends base, test overrides
 # docker-compose.prod.yml - extends base, prod overrides
+
 ```
 
 ### 4. Shared Test Utilities
@@ -1522,7 +1571,9 @@ const user3 = createTestUser({ firstName: 'Bob' });
 
 **Pattern**:
 ```yaml
+
 # .github/actions/
+
 ├── setup-sops/
 │   └── action.yml
 ├── setup-node-app/
@@ -1541,12 +1592,15 @@ const user3 = createTestUser({ firstName: 'Bob' });
 
 **Pattern**:
 ```bash
+
 # scripts/lib/
+
 ├── common.sh           # Shared utilities
 ├── logging.sh          # Logging functions
 └── docker-helpers.sh   # Docker utilities
 
 # Usage in scripts
+
 source "$(dirname $0)/../lib/common.sh"
 ```
 
@@ -1566,6 +1620,7 @@ source "$(dirname $0)/../lib/common.sh"
 
 **Pattern**:
 ```markdown
+
 # ❌ BAD: Copy-paste documentation
 # README.md - Setup instructions
 # docs/SETUP.md - Same setup instructions
@@ -1575,6 +1630,7 @@ source "$(dirname $0)/../lib/common.sh"
 # docs/SETUP.md - Definitive setup guide
 # README.md - Link to docs/SETUP.md
 # plan/phase1/ - Link to docs/SETUP.md
+
 ```
 
 ### 9. Automated Enforcement
@@ -1645,6 +1701,7 @@ if (process.platform === 'win32') {
 ### B. Tooling Configuration
 
 #### B.1 jscpd Configuration
+
 ```json
 {
   "threshold": 5,
@@ -1666,6 +1723,7 @@ if (process.platform === 'win32') {
 ```
 
 #### B.2 ESLint DRY Rules
+
 ```javascript
 module.exports = {
   rules: {
@@ -1686,7 +1744,9 @@ module.exports = {
 ### C. Migration Scripts
 
 #### C.1 Test File Migration Script
+
 ```bash
+
 #!/bin/bash
 # Migrate test files to use shared setup
 

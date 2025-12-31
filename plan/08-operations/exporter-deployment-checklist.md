@@ -28,20 +28,25 @@
 **Objective:** Confirm current metrics are working before adding exporters.
 
 ```bash
+
 # ✓ Check application metrics endpoint
+
 curl http://localhost:3000/metrics | head -20
 
 # Expected: Prometheus-formatted metrics starting with "birthday_scheduler_"
 
 # ✓ Verify metric count
+
 curl -s http://localhost:3000/metrics | grep -c "^birthday_scheduler"
 
 # Expected: ~128 metrics
 
 # ✓ Check Prometheus is running (if deployed)
+
 curl http://localhost:9090/-/healthy
 
 # Expected: HTTP 200 OK
+
 ```
 
 **Checklist:**
@@ -57,20 +62,25 @@ curl http://localhost:9090/-/healthy
 **Objective:** Ensure PostgreSQL is accessible and ready for exporter.
 
 ```bash
+
 # ✓ Test database connection
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "SELECT 1;"
 
 # Expected: Single row with value 1
 
 # ✓ Check PostgreSQL version
+
 docker exec birthday-app-postgres psql -U postgres -c "SELECT version();"
 
 # Expected: PostgreSQL 15.x
 
 # ✓ Verify pg_stat_statements extension
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "SELECT * FROM pg_extension WHERE extname = 'pg_stat_statements';"
 
 # If not present, install it:
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;"
 ```
 
@@ -88,25 +98,31 @@ docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "CREATE EX
 **Objective:** Ensure RabbitMQ is healthy and management plugin enabled.
 
 ```bash
+
 # ✓ Check RabbitMQ container status
+
 docker ps | grep rabbitmq
 
 # Expected: Container running
 
 # ✓ Verify RabbitMQ health
+
 docker exec birthday-app-rabbitmq rabbitmq-diagnostics ping
 
 # Expected: "Ping succeeded"
 
 # ✓ Check management plugin
+
 docker exec birthday-app-rabbitmq rabbitmq-plugins list | grep management
 
 # Expected: [E*] rabbitmq_management
 
 # ✓ Test management UI
+
 curl -u rabbitmq:rabbitmq_dev_password http://localhost:15672/api/overview
 
 # Expected: JSON response with RabbitMQ stats
+
 ```
 
 **Checklist:**
@@ -123,23 +139,29 @@ curl -u rabbitmq:rabbitmq_dev_password http://localhost:15672/api/overview
 **Objective:** Ensure sufficient resources for additional containers.
 
 ```bash
+
 # ✓ Check Docker resources
+
 docker system df
 
 # ✓ Check available disk space
+
 df -h | grep docker
 
 # Expected: At least 5GB free
 
 # ✓ Check memory usage
+
 docker stats --no-stream
 
 # Expected: Combined usage < 80% of available memory
 
 # ✓ Verify network connectivity
+
 docker network ls | grep birthday-app-network
 
 # Expected: Network exists
+
 ```
 
 **Checklist:**
@@ -156,20 +178,25 @@ docker network ls | grep birthday-app-network
 **Objective:** Create backups before making changes.
 
 ```bash
+
 # ✓ Backup docker-compose files
+
 cp docker-compose.yml docker-compose.yml.backup-$(date +%Y%m%d-%H%M%S)
 cp docker-compose.prod.yml docker-compose.prod.yml.backup-$(date +%Y%m%d-%H%M%S)
 
 # ✓ Backup RabbitMQ configuration
+
 cp scripts/rabbitmq.conf scripts/rabbitmq.conf.backup-$(date +%Y%m%d-%H%M%S)
 
 # ✓ Backup Prometheus configuration (if exists)
+
 if [ -f prometheus/prometheus.yml ]; then
   cp prometheus/prometheus.yml prometheus/prometheus.yml.backup-$(date +%Y%m%d-%H%M%S)
 fi
 
 # ✓ Export current Grafana dashboards (if applicable)
 # Manual step via Grafana UI: Settings > JSON Model > Copy
+
 ```
 
 **Checklist:**
@@ -190,10 +217,13 @@ fi
 **Objective:** Create read-only user for metrics collection.
 
 ```bash
+
 # ✓ Connect to PostgreSQL
+
 docker exec -it birthday-app-postgres psql -U postgres -d birthday_app
 
 # ✓ Run SQL commands
+
 ```
 
 ```sql
@@ -234,12 +264,17 @@ GRANT pg_read_all_stats TO metrics_user;
 **Objective:** Define application-specific metrics.
 
 ```bash
+
 # ✓ Create directory
+
 mkdir -p postgres_exporter
 
 # ✓ Create queries file
+
 cat > postgres_exporter/queries.yaml << 'EOF'
+
 # Custom queries for Birthday Scheduler
+
 pg_birthday_scheduler:
   query: |
     SELECT
@@ -277,6 +312,7 @@ pg_message_logs_stats:
 EOF
 
 # ✓ Verify file
+
 cat postgres_exporter/queries.yaml
 ```
 
@@ -293,7 +329,9 @@ cat postgres_exporter/queries.yaml
 **Objective:** Add postgres-exporter service.
 
 ```bash
+
 # ✓ Edit docker-compose.yml
+
 ```
 
 Add this service definition:
@@ -343,36 +381,45 @@ Add this service definition:
 **Objective:** Start the exporter and verify metrics.
 
 ```bash
+
 # ✓ Pull image
+
 docker-compose pull postgres-exporter
 
 # ✓ Start service
+
 docker-compose up -d postgres-exporter
 
 # ✓ Check logs
+
 docker logs birthday-postgres-exporter
 
 # Expected: "Listening on :9187"
 
 # ✓ Verify health
+
 docker ps | grep postgres-exporter
 
 # Expected: Status "healthy"
 
 # ✓ Test metrics endpoint
+
 curl http://localhost:9187/metrics | head -30
 
 # Expected: Metrics starting with "pg_"
 
 # ✓ Verify custom metrics
+
 curl http://localhost:9187/metrics | grep pg_birthday_scheduler
 
 # Expected: Custom metrics defined in queries.yaml
 
 # ✓ Check metric count
+
 curl -s http://localhost:9187/metrics | grep -c "^pg_"
 
 # Expected: ~50+ metrics
+
 ```
 
 **Checklist:**
@@ -392,7 +439,9 @@ curl -s http://localhost:9187/metrics | grep -c "^pg_"
 **Objective:** Deploy exporter for production cluster.
 
 ```yaml
+
 # Add for primary database
+
 postgres-exporter-primary:
   image: prometheuscommunity/postgres-exporter:v0.15.0
   container_name: birthday-postgres-exporter-primary
@@ -416,6 +465,7 @@ postgres-exporter-primary:
         memory: 128M
 
 # Add for replica database
+
 postgres-exporter-replica:
   image: prometheuscommunity/postgres-exporter:v0.15.0
   container_name: birthday-postgres-exporter-replica
@@ -458,24 +508,30 @@ postgres-exporter-replica:
 **Objective:** Enable Prometheus plugin in RabbitMQ.
 
 ```bash
+
 # ✓ Edit scripts/rabbitmq.conf
+
 ```
 
 Add to end of file:
 
 ```conf
+
 # ============================================
 # Prometheus Plugin Configuration
 # ============================================
 # Enable Prometheus metrics endpoint
+
 prometheus.tcp.port = 15692
 prometheus.path = /metrics
 
 # Return per-object metrics (queues, exchanges, connections, channels)
+
 prometheus.return_per_object_metrics = true
 
 # Metric aggregation settings
 # Possible values: basic, detailed, per_object
+
 prometheus.aggregation.level = detailed
 ```
 
@@ -492,12 +548,15 @@ prometheus.aggregation.level = detailed
 **Objective:** Enable plugin at container startup.
 
 ```bash
+
 # ✓ Create enabled_plugins file
+
 cat > scripts/enabled_plugins << 'EOF'
 [rabbitmq_management,rabbitmq_prometheus,rabbitmq_management_agent].
 EOF
 
 # ✓ Verify file
+
 cat scripts/enabled_plugins
 ```
 
@@ -545,31 +604,39 @@ rabbitmq:
 **Objective:** Restart RabbitMQ with Prometheus plugin.
 
 ```bash
+
 # ✓ Restart RabbitMQ container
+
 docker-compose restart rabbitmq
 
 # ✓ Wait for startup (30 seconds)
+
 sleep 30
 
 # ✓ Check plugin status
+
 docker exec birthday-app-rabbitmq rabbitmq-plugins list | grep prometheus
 
 # Expected: [E*] rabbitmq_prometheus
 
 # ✓ Verify metrics endpoint
+
 curl http://localhost:15692/metrics | head -30
 
 # Expected: Metrics starting with "rabbitmq_"
 
 # ✓ Test specific metrics
+
 curl http://localhost:15692/metrics | grep rabbitmq_queue_messages
 
 # Expected: Queue depth metrics
 
 # ✓ Check metric count
+
 curl -s http://localhost:15692/metrics | grep -c "^rabbitmq_"
 
 # Expected: ~60+ metrics
+
 ```
 
 **Checklist:**
@@ -590,7 +657,9 @@ curl -s http://localhost:15692/metrics | grep -c "^rabbitmq_"
 **Objective:** Enable plugin for all cluster nodes.
 
 ```yaml
+
 # Update RabbitMQ template
+
 x-rabbitmq-node: &rabbitmq-node
   image: rabbitmq:3.13-management-alpine
   restart: unless-stopped
@@ -641,11 +710,14 @@ services:
 ### Step 1: Create Prometheus Config Directory
 
 ```bash
+
 # ✓ Create directories
+
 mkdir -p prometheus
 mkdir -p prometheus/rules
 
 # ✓ Create prometheus.yml
+
 cat > prometheus/prometheus.yml << 'EOF'
 global:
   scrape_interval: 15s
@@ -737,26 +809,33 @@ volumes:
 ### Step 3: Deploy Prometheus
 
 ```bash
+
 # ✓ Pull image
+
 docker-compose pull prometheus
 
 # ✓ Start Prometheus
+
 docker-compose up -d prometheus
 
 # ✓ Check logs
+
 docker logs birthday-prometheus
 
 # Expected: "Server is ready to receive web requests"
 
 # ✓ Verify web UI
+
 curl http://localhost:9090/-/healthy
 
 # Expected: HTTP 200 OK
 
 # ✓ Check targets
+
 curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'
 
 # Expected: All targets "up"
+
 ```
 
 **Checklist:**
@@ -774,19 +853,27 @@ curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .l
 **Objective:** Confirm all metric sources are working.
 
 ```bash
+
 # ✓ Test application metrics
+
 curl -s http://localhost:3000/metrics | grep -c "birthday_scheduler"
+
 # Expected: ~128
 
 # ✓ Test PostgreSQL metrics
+
 curl -s http://localhost:9187/metrics | grep -c "^pg_"
+
 # Expected: ~50
 
 # ✓ Test RabbitMQ metrics
+
 curl -s http://localhost:15692/metrics | grep -c "^rabbitmq_"
+
 # Expected: ~60
 
 # ✓ Calculate total unique metrics
+
 echo "Total metrics: $((128 + 50 + 60)) = 238"
 ```
 
@@ -803,7 +890,9 @@ echo "Total metrics: $((128 + 50 + 60)) = 238"
 **Objective:** Confirm Prometheus is collecting metrics.
 
 ```bash
+
 # ✓ Check Prometheus targets
+
 curl -s http://localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | "\(.labels.job): \(.health)"'
 
 # Expected output:
@@ -812,6 +901,7 @@ curl -s http://localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | "\
 # rabbitmq: up
 
 # ✓ Query application metric
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=birthday_scheduler_messages_scheduled_total' \
   | jq -r '.data.result[0].value[1]'
@@ -819,6 +909,7 @@ curl -G http://localhost:9090/api/v1/query \
 # Expected: Numeric value
 
 # ✓ Query PostgreSQL metric
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=pg_up' \
   | jq -r '.data.result[0].value[1]'
@@ -826,11 +917,13 @@ curl -G http://localhost:9090/api/v1/query \
 # Expected: "1" (database is up)
 
 # ✓ Query RabbitMQ metric
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=rabbitmq_queue_messages' \
   | jq -r '.data.result[0].value[1]'
 
 # Expected: Numeric value
+
 ```
 
 **Checklist:**
@@ -847,7 +940,9 @@ curl -G http://localhost:9090/api/v1/query \
 **Objective:** Ensure metrics have correct labels and values.
 
 ```bash
+
 # ✓ Check application metric labels
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=birthday_scheduler_api_requests_total' \
   | jq -r '.data.result[0].metric'
@@ -855,6 +950,7 @@ curl -G http://localhost:9090/api/v1/query \
 # Expected: Labels like {method="GET", path="/api/users", status="200"}
 
 # ✓ Check PostgreSQL database size
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=pg_database_size_bytes{datname="birthday_app"}' \
   | jq -r '.data.result[0].value[1]'
@@ -862,6 +958,7 @@ curl -G http://localhost:9090/api/v1/query \
 # Expected: Positive number in bytes
 
 # ✓ Check RabbitMQ queue depth
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=rabbitmq_queue_messages{queue="birthday_notifications"}' \
   | jq -r '.data.result[0].value[1]'
@@ -869,10 +966,12 @@ curl -G http://localhost:9090/api/v1/query \
 # Expected: Numeric value
 
 # ✓ Verify custom PostgreSQL metrics
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=pg_birthday_scheduler_birthdays_today'
 
 # Expected: Valid response with birthday count
+
 ```
 
 **Checklist:**
@@ -889,19 +988,24 @@ curl -G http://localhost:9090/api/v1/query \
 **Objective:** Verify complex queries work correctly.
 
 ```bash
+
 # ✓ Test rate calculation
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=rate(birthday_scheduler_api_requests_total[5m])'
 
 # ✓ Test aggregation
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=sum(rabbitmq_queue_messages) by (queue)'
 
 # ✓ Test histogram percentile
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=histogram_quantile(0.95, rate(birthday_scheduler_api_response_time_seconds_bucket[5m]))'
 
 # ✓ Test PostgreSQL cache hit ratio
+
 curl -G http://localhost:9090/api/v1/query \
   --data-urlencode 'query=(sum(rate(pg_stat_database_blks_hit[5m])) / (sum(rate(pg_stat_database_blks_hit[5m])) + sum(rate(pg_stat_database_blks_read[5m])))) * 100'
 ```
@@ -919,12 +1023,15 @@ curl -G http://localhost:9090/api/v1/query \
 **Objective:** Ensure exporters don't impact system performance.
 
 ```bash
+
 # ✓ Check exporter resource usage
+
 docker stats --no-stream birthday-postgres-exporter birthday-app-rabbitmq
 
 # Expected: < 50MB memory each, < 5% CPU
 
 # ✓ Check database impact
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "
   SELECT count(*) as active_metrics_queries
   FROM pg_stat_activity
@@ -935,16 +1042,19 @@ docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "
 # Expected: 0-1 (queries are fast)
 
 # ✓ Check RabbitMQ memory
+
 docker exec birthday-app-rabbitmq rabbitmqctl status | grep -A5 memory
 
 # Expected: Minimal increase from baseline
 
 # ✓ Measure scrape duration
+
 curl -s http://localhost:9090/api/v1/query \
   --data-urlencode 'query=scrape_duration_seconds' \
   | jq -r '.data.result[] | "\(.metric.job): \(.value[1])s"'
 
 # Expected: All < 5 seconds
+
 ```
 
 **Checklist:**
@@ -967,25 +1077,32 @@ curl -s http://localhost:9090/api/v1/query \
 **Solutions:**
 
 ```bash
+
 # 1. Check if exporter is running
+
 docker ps | grep exporter
 
 # 2. Check exporter logs
+
 docker logs birthday-postgres-exporter
 docker logs birthday-app-rabbitmq | grep prometheus
 
 # 3. Test endpoint directly
+
 curl http://localhost:9187/metrics  # PostgreSQL
 curl http://localhost:15692/metrics # RabbitMQ
 
 # 4. Verify network connectivity
+
 docker exec birthday-prometheus ping postgres-exporter
 docker exec birthday-prometheus ping rabbitmq
 
 # 5. Check Prometheus config
+
 docker exec birthday-prometheus cat /etc/prometheus/prometheus.yml
 
 # 6. Reload Prometheus config
+
 curl -X POST http://localhost:9090/-/reload
 ```
 
@@ -1004,13 +1121,17 @@ curl -X POST http://localhost:9090/-/reload
 
 **PostgreSQL Exporter:**
 ```bash
+
 # Check database connection
+
 docker exec birthday-postgres-exporter sh -c 'echo $DATA_SOURCE_NAME'
 
 # Test connection manually
+
 docker exec birthday-app-postgres psql -U metrics_user -d birthday_app -c "SELECT 1;"
 
 # Check permissions
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "
   SELECT grantee, privilege_type
   FROM information_schema.role_table_grants
@@ -1019,19 +1140,24 @@ docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "
 "
 
 # Verify pg_stat_statements
+
 docker exec birthday-app-postgres psql -U metrics_user -d birthday_app -c "SELECT COUNT(*) FROM pg_stat_statements;"
 ```
 
 **RabbitMQ Plugin:**
 ```bash
+
 # Check plugin status
+
 docker exec birthday-app-rabbitmq rabbitmq-plugins list | grep prometheus
 
 # Re-enable plugin
+
 docker exec birthday-app-rabbitmq rabbitmq-plugins disable rabbitmq_prometheus
 docker exec birthday-app-rabbitmq rabbitmq-plugins enable rabbitmq_prometheus
 
 # Restart RabbitMQ
+
 docker-compose restart rabbitmq
 ```
 
@@ -1050,7 +1176,9 @@ docker-compose restart rabbitmq
 **Solutions:**
 
 ```bash
+
 # Check metric cardinality
+
 curl http://localhost:9090/api/v1/status/tsdb | jq '.data.seriesCountByMetricName[] | select(.value > 10000)'
 
 # For PostgreSQL: Reduce custom queries
@@ -1058,10 +1186,12 @@ curl http://localhost:9090/api/v1/status/tsdb | jq '.data.seriesCountByMetricNam
 
 # For RabbitMQ: Reduce aggregation
 # Edit scripts/rabbitmq.conf:
+
 prometheus.return_per_object_metrics = false
 prometheus.aggregation.level = basic
 
 # Add metric relabeling in prometheus.yml
+
 metric_relabel_configs:
   - source_labels: [queue]
     regex: 'temp_.*'
@@ -1083,18 +1213,22 @@ metric_relabel_configs:
 **Solutions:**
 
 ```bash
+
 # Check scrape duration per target
+
 curl http://localhost:9090/api/v1/query \
   --data-urlencode 'query=scrape_duration_seconds' | jq
 
 # Increase scrape interval for slow targets
 # Edit prometheus.yml:
+
 scrape_interval: 30s  # Instead of 15s
 
 # For PostgreSQL: Optimize queries
 # Add indexes, reduce query complexity
 
 # For RabbitMQ: Reduce detail level
+
 prometheus.aggregation.level = basic
 ```
 
@@ -1113,25 +1247,31 @@ prometheus.aggregation.level = basic
 **When:** Exporter causing issues or not needed
 
 ```bash
+
 # 1. Stop and remove exporter
+
 docker-compose stop postgres-exporter
 docker-compose rm -f postgres-exporter
 
 # 2. Restore original docker-compose.yml
+
 cp docker-compose.yml.backup-TIMESTAMP docker-compose.yml
 
 # 3. Remove Prometheus scrape config
 # Edit prometheus/prometheus.yml and remove postgres job
 
 # 4. Reload Prometheus
+
 curl -X POST http://localhost:9090/-/reload
 
 # 5. Clean up database user (optional)
+
 docker exec birthday-app-postgres psql -U postgres -d birthday_app -c "
   DROP USER IF EXISTS metrics_user;
 "
 
 # 6. Remove custom queries
+
 rm -rf postgres_exporter/
 ```
 
@@ -1149,26 +1289,33 @@ rm -rf postgres_exporter/
 **When:** Plugin causing performance issues
 
 ```bash
+
 # 1. Disable plugin
+
 docker exec birthday-app-rabbitmq rabbitmq-plugins disable rabbitmq_prometheus
 
 # 2. Restore original configuration
+
 cp scripts/rabbitmq.conf.backup-TIMESTAMP scripts/rabbitmq.conf
 cp scripts/enabled_plugins.backup-TIMESTAMP scripts/enabled_plugins
 
 # 3. Restore docker-compose.yml
+
 cp docker-compose.yml.backup-TIMESTAMP docker-compose.yml
 
 # 4. Restart RabbitMQ
+
 docker-compose restart rabbitmq
 
 # 5. Remove Prometheus scrape config
 # Edit prometheus/prometheus.yml and remove rabbitmq job
 
 # 6. Reload Prometheus
+
 curl -X POST http://localhost:9090/-/reload
 
 # 7. Verify RabbitMQ health
+
 docker exec birthday-app-rabbitmq rabbitmq-diagnostics ping
 ```
 
@@ -1187,24 +1334,30 @@ docker exec birthday-app-rabbitmq rabbitmq-diagnostics ping
 **When:** Rolling back entire exporter deployment
 
 ```bash
+
 # 1. Stop all new services
+
 docker-compose stop postgres-exporter prometheus
 
 # 2. Restore all backup files
+
 for f in *.backup-*; do
   original="${f%.backup-*}"
   cp "$f" "$original"
 done
 
 # 3. Restart affected services
+
 docker-compose restart rabbitmq
 docker-compose up -d
 
 # 4. Verify application still works
+
 curl http://localhost:3000/health
 curl http://localhost:3000/metrics | grep birthday_scheduler
 
 # 5. Clean up
+
 docker-compose down --remove-orphans
 docker-compose up -d
 ```

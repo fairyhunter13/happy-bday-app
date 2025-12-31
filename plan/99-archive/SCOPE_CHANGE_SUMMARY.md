@@ -1,5 +1,25 @@
 # Project Scope Change Summary
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Files Modified](#files-modified)
+3. [Completed Changes](#completed-changes)
+4. [Pending Changes](#pending-changes)
+5. [Docker Compose Clarifications](#docker-compose-clarifications)
+6. [GitHub Actions Workflow Status](#github-actions-workflow-status)
+7. [Performance Testing Philosophy](#performance-testing-philosophy)
+8. [Monitoring Stack Status](#monitoring-stack-status)
+9. [Impact Assessment](#impact-assessment)
+10. [Next Steps](#next-steps)
+11. [Files Created](#files-created)
+12. [Files Renamed](#files-renamed)
+13. [Files Completely Rewritten](#files-completely-rewritten)
+14. [Verification Checklist](#verification-checklist)
+15. [Summary](#summary)
+
+---
+
 **Date:** 2025-12-31
 **Agent:** ARCHITECT
 **Change:** Updated project scope to Local Development + CI/CD Testing Only
@@ -193,6 +213,7 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 ## GitHub Actions Workflow Status
 
 ### ✅ No Changes Needed
+
 - `ci.yml` - Unit/integration/E2E tests in CI/CD
 - `code-quality.yml` - Linting, type checking
 - `security.yml` - Security scanning
@@ -202,6 +223,7 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 - `openapi-validation.yml` - API spec validation
 
 ### ⏳ Needs Updates
+
 - `release.yml` - Remove production deployment jobs
 
 ---
@@ -235,6 +257,7 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 ## Monitoring Stack Status
 
 ### Implemented (For Local Use)
+
 - ✅ Prometheus (metrics collection)
 - ✅ Grafana (dashboards)
 - ✅ 128+ custom metrics
@@ -242,6 +265,7 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 - ✅ 46 alert rules
 
 ### Purpose Clarification
+
 - Used for local development debugging
 - Used for performance test visualization
 - NOT used for production monitoring (no production exists)
@@ -252,18 +276,21 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 ## Impact Assessment
 
 ### No Impact Areas
+
 - Code quality: No changes to application code
 - Testing: All tests continue to work
 - CI/CD: Workflows continue to run
 - Local development: No workflow changes
 
 ### Clarity Improvements
+
 - Scope is now explicitly documented
 - Expectations are clearly set
 - Documentation is consistent
 - No confusion about production deployment
 
 ### Future Considerations
+
 - Migration path to production documented (if ever needed)
 - Architecture remains production-grade
 - Easy to deploy if requirements change
@@ -273,18 +300,21 @@ This project will **NOT** be deployed to production/staging servers. All infrast
 ## Next Steps
 
 ### High Priority (Recommended)
+
 1. ✅ Update `docs/RUNBOOK.md` for local troubleshooting
 2. ✅ Update `.github/workflows/release.yml` - remove production deployment
 3. ✅ Update `plan/GAP_ANALYSIS_REPORT.md` - clarify scope
 4. ✅ Update `README.md` - add scope clarification
 
 ### Medium Priority (Optional)
+
 1. ⚠️ Rename `.env.production.enc` → `.env.ci.enc`
 2. ⚠️ Rename `.env.prod.example` → `.env.ci.example`
 3. ⚠️ Update phase reports in `plan/` directory
 4. ⚠️ Rename `docker-compose.prod.yml` → `docker-compose.ci.yml`
 
 ### Low Priority (Nice to Have)
+
 1. Add scope badge to README.md
 2. Create `docs/LOCAL_VS_PRODUCTION.md` comparison guide
 3. Add section to architecture docs explaining scope decision

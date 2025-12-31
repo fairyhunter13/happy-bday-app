@@ -678,7 +678,9 @@ const cacheMetrics = {
 ### 8.2 Alert Rules
 
 ```yaml
+
 # grafana/alerts/cache-alerts.yaml
+
 groups:
   - name: cache-alerts
     rules:

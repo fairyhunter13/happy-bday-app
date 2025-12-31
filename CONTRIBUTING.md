@@ -26,12 +26,12 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
-   ```bash
+```bash
    git clone https://github.com/YOUR-USERNAME/happy-bday-app.git
    cd happy-bday-app
    ```
 3. **Add upstream remote**:
-   ```bash
+```bash
    git remote add upstream https://github.com/fairyhunter13/happy-bday-app.git
    ```
 
@@ -47,33 +47,33 @@ By participating in this project, you agree to maintain a respectful and inclusi
 ### Setup Steps
 
 1. **Install dependencies**:
-   ```bash
+```bash
    npm install
    ```
 
 2. **Setup SOPS** (for secrets management):
-   ```bash
+```
    # See docs/DEVELOPER_SETUP.md for detailed instructions
    age-keygen -o ~/.config/sops/age/keys.txt
    ```
 
 3. **Decrypt development secrets**:
-   ```bash
+```bash
    npm run secrets:decrypt:dev
    ```
 
 4. **Start development environment**:
-   ```bash
+```
    docker-compose -f docker-compose.dev.yml up -d
    ```
 
 5. **Run database migrations**:
-   ```bash
+```bash
    npm run db:migrate
    ```
 
 6. **Start the development server**:
-   ```bash
+```bash
    npm run dev
    ```
 
@@ -123,21 +123,21 @@ test(edge-cases): add leap year birthday tests
 ## Pull Request Process
 
 1. **Sync with upstream**:
-   ```bash
+```bash
    git fetch upstream
    git checkout main
    git merge upstream/main
    ```
 
 2. **Create a feature branch**:
-   ```bash
+```bash
    git checkout -b feature/your-feature
    ```
 
 3. **Make your changes** and commit with meaningful messages
 
 4. **Run tests locally**:
-   ```bash
+```bash
    npm run lint
    npm run typecheck
    npm run test:unit
@@ -145,7 +145,7 @@ test(edge-cases): add leap year birthday tests
    ```
 
 5. **Push to your fork**:
-   ```bash
+```bash
    git push origin feature/your-feature
    ```
 

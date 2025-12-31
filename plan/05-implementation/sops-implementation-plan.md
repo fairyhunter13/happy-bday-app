@@ -53,6 +53,7 @@ This implementation plan provides step-by-step instructions for integrating SOPS
 ## Prerequisites
 
 ### Required Knowledge
+
 - [ ] Basic understanding of environment variables
 - [ ] Familiarity with Git and GitHub
 - [ ] Command-line proficiency (bash/zsh)
@@ -60,11 +61,13 @@ This implementation plan provides step-by-step instructions for integrating SOPS
 - [ ] GitHub Actions workflow basics
 
 ### Required Access
+
 - [ ] Repository admin access (for creating GitHub Secrets)
 - [ ] Ability to install software on local machine
 - [ ] Access to existing `.env` files (or ability to recreate them)
 
 ### Required Tools
+
 Tools will be installed in Phase 0, but you should verify you can install:
 - [ ] Package manager (homebrew on macOS, apt/yum on Linux)
 - [ ] GitHub CLI (`gh`) - optional but recommended for Phase 5
@@ -83,6 +86,7 @@ Tools will be installed in Phase 0, but you should verify you can install:
 **Risk Level:** Low
 
 ### Objectives
+
 - Install SOPS and age encryption tools
 - Verify installations
 - Understand tool capabilities
@@ -91,34 +95,48 @@ Tools will be installed in Phase 0, but you should verify you can install:
 
 **macOS:**
 ```bash
+
 # Using Homebrew
+
 brew install sops
 
 # Verify installation
+
 sops --version
+
 # Expected output: sops 3.8.1 (or later)
+
 ```
 
 **Linux (Ubuntu/Debian):**
 ```bash
+
 # Download SOPS binary
+
 SOPS_VERSION=3.8.1
 curl -Lo sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
 
 # Make executable
+
 chmod +x sops
 
 # Move to system path
+
 sudo mv sops /usr/local/bin/
 
 # Verify installation
+
 sops --version
+
 # Expected output: sops 3.8.1
+
 ```
 
 **Linux (RHEL/CentOS):**
 ```bash
+
 # Same as Ubuntu/Debian above
+
 SOPS_VERSION=3.8.1
 curl -Lo sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
 chmod +x sops
@@ -133,44 +151,59 @@ sops 3.8.1 (latest)
 
 **Validation:**
 ```bash
+
 # Test SOPS is accessible
+
 which sops
+
 # Expected: /usr/local/bin/sops (or /opt/homebrew/bin/sops on macOS)
 
 # Test version
+
 sops --version
+
 # Should show version >= 3.8.1
+
 ```
 
 ### Step 0.2: Install age Encryption
 
 **macOS:**
 ```bash
+
 # Using Homebrew
+
 brew install age
 
 # Verify installation
+
 age --version
 age-keygen --version
 ```
 
 **Linux:**
 ```bash
+
 # Download age binary
+
 AGE_VERSION=1.1.1
 curl -Lo age.tar.gz "https://github.com/FiloSottile/age/releases/download/v${AGE_VERSION}/age-v${AGE_VERSION}-linux-amd64.tar.gz"
 
 # Extract
+
 tar xf age.tar.gz
 
 # Move to system path
+
 sudo mv age/age /usr/local/bin/
 sudo mv age/age-keygen /usr/local/bin/
 
 # Clean up
+
 rm -rf age age.tar.gz
 
 # Verify installation
+
 age --version
 age-keygen --version
 ```
@@ -182,11 +215,14 @@ v1.1.1
 
 **Validation:**
 ```bash
+
 # Test age commands
+
 which age
 which age-keygen
 
 # Both should return paths like /usr/local/bin/age
+
 ```
 
 ### Step 0.3: Install GitHub CLI (Optional)
@@ -200,7 +236,9 @@ brew install gh
 
 **Linux:**
 ```bash
+
 # Ubuntu/Debian
+
 type -p curl >/dev/null || sudo apt install curl -y
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -212,39 +250,52 @@ sudo apt install gh -y
 **Verify:**
 ```bash
 gh --version
+
 # gh version 2.40.0 (or later)
+
 ```
 
 **Authenticate:**
 ```bash
 gh auth login
+
 # Follow prompts to authenticate with GitHub
+
 ```
 
 ### Rollback Procedure
+
 If installations fail or cause issues:
 
 ```bash
+
 # Uninstall SOPS (macOS)
+
 brew uninstall sops
 
 # Uninstall SOPS (Linux)
+
 sudo rm /usr/local/bin/sops
 
 # Uninstall age (macOS)
+
 brew uninstall age
 
 # Uninstall age (Linux)
+
 sudo rm /usr/local/bin/age /usr/local/bin/age-keygen
 
 # Uninstall gh (macOS)
+
 brew uninstall gh
 
 # Uninstall gh (Linux)
+
 sudo apt remove gh -y
 ```
 
 ### Time Estimate
+
 - macOS: 5-10 minutes
 - Linux: 10-15 minutes
 - Windows (WSL2): 15-20 minutes
@@ -258,6 +309,7 @@ sudo apt remove gh -y
 **Risk Level:** Low
 
 ### Objectives
+
 - Generate age encryption keys
 - Create project directory structure
 - Set up age key storage location
@@ -265,10 +317,13 @@ sudo apt remove gh -y
 ### Step 1.1: Create age Directory Structure
 
 ```bash
+
 # Create SOPS age key directory (standard location)
+
 mkdir -p ~/.config/sops/age
 
 # Verify directory created
+
 ls -la ~/.config/sops/age
 ```
 
@@ -281,39 +336,51 @@ drwxr-xr-x  3 user  staff  96 Dec 30 10:00 ..
 ### Step 1.2: Generate Development age Key
 
 ```bash
+
 # Generate age key for development environment
+
 age-keygen -o ~/.config/sops/age/keys.txt
 
 # Expected output:
 # Public key: age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 ```
 
 **IMPORTANT:** Copy the public key from the output. You'll need it in Phase 2.
 
 **Example Output:**
 ```
+
 # created: 2025-12-30T10:30:45+08:00
 # public key: age1abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr
+
 ```
 
 **Validation:**
 ```bash
+
 # Verify key file created
+
 ls -la ~/.config/sops/age/keys.txt
 
 # Check file permissions (should be 600)
+
 stat -c "%a %n" ~/.config/sops/age/keys.txt  # Linux
 stat -f "%OLp %N" ~/.config/sops/age/keys.txt  # macOS
 
 # Expected: 600 (rw-------)
+
 ```
 
 **Security Check:**
 ```bash
+
 # Set correct permissions if not already 600
+
 chmod 600 ~/.config/sops/age/keys.txt
 
 # View key content (save public key for later)
+
 cat ~/.config/sops/age/keys.txt
 ```
 
@@ -325,29 +392,39 @@ cat ~/.config/sops/age/keys.txt
 ### Step 1.3: Create Project Directory Structure
 
 ```bash
+
 # Navigate to project root
+
 cd /Users/hafizputraludyanto/git/github.com/fairyhunter13/happy-bday-app
 
 # Create secrets directory
+
 mkdir -p secrets/age
 
 # Create .gitkeep to track empty directory
+
 touch secrets/age/.gitkeep
 
 # Create scripts directory (if not exists)
+
 mkdir -p scripts
 
 # Verify structure
+
 tree secrets -a
+
 # Expected:
 # secrets
 # └── age
 #     └── .gitkeep
+
 ```
 
 **Validation:**
 ```bash
+
 # Check directories exist
+
 test -d secrets && echo "✅ secrets/ exists" || echo "❌ secrets/ missing"
 test -d secrets/age && echo "✅ secrets/age/ exists" || echo "❌ secrets/age/ missing"
 test -d scripts && echo "✅ scripts/ exists" || echo "❌ scripts/ missing"
@@ -358,16 +435,20 @@ test -d scripts && echo "✅ scripts/ exists" || echo "❌ scripts/ missing"
 **CRITICAL:** Before proceeding, backup all existing `.env` files.
 
 ```bash
+
 # Create secure backup directory (outside Git repository)
+
 mkdir -p ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)
 
 # Backup all .env files
+
 cp .env ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/env.backup 2>/dev/null || echo "No .env found"
 cp .env.development ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/env.development.backup 2>/dev/null || echo "No .env.development found"
 cp .env.test ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/env.test.backup 2>/dev/null || echo "No .env.test found"
 cp .env.production ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/env.production.backup 2>/dev/null || echo "No .env.production found"
 
 # List backups
+
 ls -la ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/
 ```
 
@@ -381,15 +462,19 @@ ls -la ~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)/
 ### Rollback Procedure
 
 ```bash
+
 # If setup fails, remove created directories
+
 rm -rf secrets/age
 rm -rf ~/secure-backups/happy-bday-app-sops-*
 
 # Remove age key if needed to start over
+
 rm ~/.config/sops/age/keys.txt
 ```
 
 ### Time Estimate
+
 - 10-15 minutes
 
 ---
@@ -401,6 +486,7 @@ rm ~/.config/sops/age/keys.txt
 **Risk Level:** Low
 
 ### Objectives
+
 - Create `.sops.yaml` configuration file
 - Define encryption rules for different environments
 - Configure encrypted-regex for selective encryption
@@ -410,11 +496,15 @@ rm ~/.config/sops/age/keys.txt
 **IMPORTANT:** Replace `age1xxxxx...` with YOUR actual public key from Phase 1.
 
 ```bash
+
 # Navigate to project root
+
 cd /Users/hafizputraludyanto/git/github.com/fairyhunter13/happy-bday-app
 
 # Create .sops.yaml configuration
+
 cat > .sops.yaml << 'EOF'
+
 # .sops.yaml - SOPS Configuration for Birthday Message Scheduler
 # This file defines encryption rules for different environment files
 
@@ -452,22 +542,29 @@ EOF
 
 **Get your public key:**
 ```bash
+
 # Extract public key from your age key file
+
 grep "public key:" ~/.config/sops/age/keys.txt | cut -d: -f2 | tr -d ' '
 
 # This will output something like:
 # age1abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmnopqr
+
 ```
 
 **Replace placeholder in .sops.yaml:**
 ```bash
+
 # Save your public key to variable
+
 YOUR_PUBLIC_KEY=$(grep "public key:" ~/.config/sops/age/keys.txt | cut -d: -f2 | tr -d ' ')
 
 # Replace all placeholders with your actual public key
+
 sed -i.bak "s/age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/${YOUR_PUBLIC_KEY}/g" .sops.yaml
 
 # Verify replacement
+
 grep "age:" .sops.yaml
 ```
 
@@ -479,10 +576,13 @@ grep "age:" .sops.yaml
 ### Step 2.3: Validate .sops.yaml Configuration
 
 ```bash
+
 # Check syntax (YAML validation)
+
 cat .sops.yaml
 
 # Verify no placeholder keys remain
+
 if grep -q "age1xxxx" .sops.yaml; then
   echo "❌ ERROR: Placeholder keys still present in .sops.yaml"
   echo "Please replace with your actual age public key"
@@ -503,7 +603,7 @@ fi
 2. **age**: age public key(s) used for encryption
    - Single key: `age: age1xxxxx...`
    - Multiple keys:
-     ```yaml
+```
      age: >-
        age1key1...,
        age1key2...
@@ -523,10 +623,13 @@ fi
 ### Step 2.5: Commit .sops.yaml to Git
 
 ```bash
+
 # Add .sops.yaml to Git
+
 git add .sops.yaml
 
 # Commit (don't push yet - we'll do full commit after encryption)
+
 git commit -m "feat: Add SOPS configuration for secret management
 
 - Configure age encryption for dev, test, and production
@@ -534,17 +637,21 @@ git commit -m "feat: Add SOPS configuration for secret management
 - Prepare for encrypted .env file migration"
 
 # DO NOT PUSH YET - we'll push after all phases complete
+
 ```
 
 ### Rollback Procedure
 
 ```bash
+
 # Remove .sops.yaml if configuration is incorrect
+
 git reset HEAD .sops.yaml
 rm .sops.yaml .sops.yaml.bak
 ```
 
 ### Time Estimate
+
 - 10-15 minutes
 
 ---
@@ -556,6 +663,7 @@ rm .sops.yaml .sops.yaml.bak
 **Risk Level:** Medium
 
 ### Objectives
+
 - Encrypt all existing `.env` files
 - Verify encryption works correctly
 - Store encrypted files in `secrets/` directory
@@ -563,20 +671,26 @@ rm .sops.yaml .sops.yaml.bak
 ### Step 3.1: Verify Environment Files Exist
 
 ```bash
+
 # Check which .env files exist
+
 ls -la .env* 2>/dev/null || echo "No .env files found in root"
 
 # If no files exist, create from .env.example or reference documentation
+
 ```
 
 **If you need to create .env files from scratch:**
 
 ```bash
+
 # Copy from example (if exists)
+
 cp .env.example .env.development
 cp .env.example .env.test
 
 # Or create minimal files for testing
+
 cat > .env.development << 'EOF'
 NODE_ENV=development
 PORT=3000
@@ -601,18 +715,24 @@ EOF
 ### Step 3.2: Encrypt Development Environment
 
 ```bash
+
 # Encrypt .env.development
+
 sops -e .env.development > secrets/.env.development.enc
 
 # Expected: No output if successful
+
 ```
 
 **Verify Encryption:**
 ```bash
+
 # Check encrypted file exists
+
 ls -la secrets/.env.development.enc
 
 # View encrypted content (should see ENC[...] for sensitive values)
+
 cat secrets/.env.development.enc
 ```
 
@@ -623,6 +743,7 @@ PORT=3000
 DATABASE_PASSWORD=ENC[AES256_GCM,data:Hj4k8...,iv:xyz789...,tag:abc123==,type:str]
 DATABASE_URL=ENC[AES256_GCM,data:8kHj4...,iv:789xyz...,tag:123abc==,type:str]
 REDIS_PASSWORD=ENC[AES256_GCM,data:9kHj5...,iv:890abc...,tag:234def==,type:str]
+
 # ... more encrypted values ...
 
 sops:
@@ -645,36 +766,49 @@ sops:
 
 **Validate Decryption:**
 ```bash
+
 # Test decryption (should output original content)
+
 sops -d secrets/.env.development.enc
 
 # Compare with original
+
 diff <(sops -d secrets/.env.development.enc) .env.development
+
 # Expected: No output (files are identical)
+
 ```
 
 ### Step 3.3: Encrypt Test Environment
 
 ```bash
+
 # Encrypt .env.test
+
 sops -e .env.test > secrets/.env.test.enc
 
 # Verify
+
 ls -la secrets/.env.test.enc
 ```
 
 **Validate:**
 ```bash
+
 # Test decryption
+
 sops -d secrets/.env.test.enc | head -n 5
 
 # Should show decrypted content
+
 ```
 
 ### Step 3.4: Encrypt Production Environment (if exists)
 
 ```bash
+
 # Check if production .env exists
+
 if [ -f .env.production ]; then
   # Encrypt production environment
   sops -e .env.production > secrets/.env.production.enc
@@ -697,18 +831,23 @@ fi
 ### Step 3.5: Verify All Encrypted Files
 
 ```bash
+
 # List all encrypted files
+
 ls -la secrets/
 
 # Expected output:
 # -rw-r--r--  1 user  staff  2134 Dec 30 11:00 .env.development.enc
 # -rw-r--r--  1 user  staff  2245 Dec 30 11:01 .env.test.enc
 # drwxr-xr-x  2 user  staff    64 Dec 30 10:30 age/
+
 ```
 
 **Validate Each File:**
 ```bash
+
 # Function to validate encrypted file
+
 validate_encrypted_file() {
   local file=$1
   echo "Validating ${file}..."
@@ -742,21 +881,26 @@ validate_encrypted_file() {
 }
 
 # Validate all encrypted files
+
 validate_encrypted_file "secrets/.env.development.enc"
 validate_encrypted_file "secrets/.env.test.enc"
 
 # Optional: validate production if it exists
+
 [ -f "secrets/.env.production.enc" ] && validate_encrypted_file "secrets/.env.production.enc"
 ```
 
 ### Step 3.6: Test In-Place Editing
 
 ```bash
+
 # Test editing encrypted file directly with SOPS
+
 echo "Testing in-place editing..."
 
 # Edit .env.development.enc (will open in default editor)
 # SOPS will decrypt, let you edit, then re-encrypt on save
+
 sops secrets/.env.development.enc
 
 # In editor, you can:
@@ -766,27 +910,34 @@ sops secrets/.env.development.enc
 # Save and quit - SOPS auto-encrypts
 
 # After saving, verify file still decrypts
+
 sops -d secrets/.env.development.enc > /dev/null && echo "✅ In-place edit successful"
 ```
 
 **Note:** Default editor is usually vim or nano. Set your preference:
 ```bash
+
 # Set default editor (optional)
+
 export EDITOR=nano  # or vim, code, etc.
 
 # Make permanent by adding to ~/.bashrc or ~/.zshrc
+
 echo 'export EDITOR=nano' >> ~/.zshrc
 ```
 
 ### Step 3.7: Commit Encrypted Files
 
 ```bash
+
 # Add encrypted files to Git
+
 git add secrets/.env.development.enc
 git add secrets/.env.test.enc
 git add secrets/age/.gitkeep
 
 # Commit (don't push yet)
+
 git commit -m "feat: Add encrypted environment files
 
 - Encrypt .env.development with SOPS + age
@@ -798,21 +949,26 @@ git commit -m "feat: Add encrypted environment files
 ### Rollback Procedure
 
 ```bash
+
 # If encryption fails or files are corrupted
 # Restore from backups created in Phase 1
+
 BACKUP_DIR=~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)
 cp ${BACKUP_DIR}/env.development.backup .env.development
 cp ${BACKUP_DIR}/env.test.backup .env.test
 
 # Remove encrypted files
+
 rm secrets/.env.development.enc
 rm secrets/.env.test.enc
 
 # Uncommit if needed
+
 git reset HEAD secrets/
 ```
 
 ### Time Estimate
+
 - 15-20 minutes
 
 ---
@@ -824,6 +980,7 @@ git reset HEAD secrets/
 **Risk Level:** Low
 
 ### Objectives
+
 - Create shell scripts for encryption/decryption
 - Add npm scripts for convenience
 - Create key rotation script
@@ -832,8 +989,11 @@ git reset HEAD secrets/
 ### Step 4.1: Create Encryption Helper Script
 
 ```bash
+
 # Create scripts/encrypt-env.sh
+
 cat > scripts/encrypt-env.sh << 'EOF'
+
 #!/bin/bash
 # scripts/encrypt-env.sh
 # Encrypts environment file using SOPS + age
@@ -842,19 +1002,23 @@ set -e  # Exit on error
 set -u  # Exit on undefined variable
 
 # Color codes for output
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default environment
+
 ENVIRONMENT=${1:-development}
 
 # File paths
+
 SOURCE_FILE=".env.${ENVIRONMENT}"
 ENCRYPTED_FILE="secrets/.env.${ENVIRONMENT}.enc"
 
 # Print usage
+
 usage() {
   echo "Usage: $0 [environment]"
   echo ""
@@ -872,11 +1036,13 @@ usage() {
 }
 
 # Check for help flag
+
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
   usage
 fi
 
 # Validate source file exists
+
 if [ ! -f "${SOURCE_FILE}" ]; then
   echo -e "${RED}❌ Error: Source file ${SOURCE_FILE} not found${NC}"
   echo ""
@@ -886,6 +1052,7 @@ if [ ! -f "${SOURCE_FILE}" ]; then
 fi
 
 # Check SOPS is installed
+
 if ! command -v sops &> /dev/null; then
   echo -e "${RED}❌ Error: SOPS is not installed${NC}"
   echo "Install with: brew install sops"
@@ -893,6 +1060,7 @@ if ! command -v sops &> /dev/null; then
 fi
 
 # Check .sops.yaml exists
+
 if [ ! -f ".sops.yaml" ]; then
   echo -e "${RED}❌ Error: .sops.yaml configuration not found${NC}"
   echo "Create .sops.yaml before encrypting files"
@@ -900,12 +1068,15 @@ if [ ! -f ".sops.yaml" ]; then
 fi
 
 # Encrypt file
+
 echo -e "${YELLOW}🔒 Encrypting ${SOURCE_FILE} → ${ENCRYPTED_FILE}${NC}"
 
 # Create secrets directory if it doesn't exist
+
 mkdir -p secrets
 
 # Perform encryption
+
 if sops -e "${SOURCE_FILE}" > "${ENCRYPTED_FILE}"; then
   echo -e "${GREEN}✅ Encryption complete${NC}"
   echo ""
@@ -924,9 +1095,11 @@ fi
 EOF
 
 # Make executable
+
 chmod +x scripts/encrypt-env.sh
 
 # Test script
+
 ./scripts/encrypt-env.sh --help
 ```
 
@@ -941,8 +1114,11 @@ Encrypts environment file using SOPS + age
 ### Step 4.2: Create Decryption Helper Script
 
 ```bash
+
 # Create scripts/decrypt-env.sh
+
 cat > scripts/decrypt-env.sh << 'EOF'
+
 #!/bin/bash
 # scripts/decrypt-env.sh
 # Decrypts SOPS-encrypted environment file
@@ -951,19 +1127,23 @@ set -e  # Exit on error
 set -u  # Exit on undefined variable
 
 # Color codes
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Default environment
+
 ENVIRONMENT=${1:-development}
 
 # File paths
+
 ENCRYPTED_FILE="secrets/.env.${ENVIRONMENT}.enc"
 OUTPUT_FILE=".env.${ENVIRONMENT}"
 
 # Print usage
+
 usage() {
   echo "Usage: $0 [environment]"
   echo ""
@@ -981,11 +1161,13 @@ usage() {
 }
 
 # Check for help flag
+
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
   usage
 fi
 
 # Validate encrypted file exists
+
 if [ ! -f "${ENCRYPTED_FILE}" ]; then
   echo -e "${RED}❌ Error: Encrypted file ${ENCRYPTED_FILE} not found${NC}"
   echo ""
@@ -995,6 +1177,7 @@ if [ ! -f "${ENCRYPTED_FILE}" ]; then
 fi
 
 # Check SOPS is installed
+
 if ! command -v sops &> /dev/null; then
   echo -e "${RED}❌ Error: SOPS is not installed${NC}"
   echo "Install with: brew install sops"
@@ -1002,6 +1185,7 @@ if ! command -v sops &> /dev/null; then
 fi
 
 # Check age key exists
+
 if [ ! -f ~/.config/sops/age/keys.txt ]; then
   echo -e "${RED}❌ Error: age private key not found${NC}"
   echo "Expected location: ~/.config/sops/age/keys.txt"
@@ -1012,6 +1196,7 @@ if [ ! -f ~/.config/sops/age/keys.txt ]; then
 fi
 
 # Decrypt file
+
 echo -e "${YELLOW}🔓 Decrypting ${ENCRYPTED_FILE} → ${OUTPUT_FILE}${NC}"
 
 if sops -d "${ENCRYPTED_FILE}" > "${OUTPUT_FILE}"; then
@@ -1036,17 +1221,22 @@ fi
 EOF
 
 # Make executable
+
 chmod +x scripts/decrypt-env.sh
 
 # Test script
+
 ./scripts/decrypt-env.sh --help
 ```
 
 ### Step 4.3: Create Key Rotation Script
 
 ```bash
+
 # Create scripts/rotate-age-key.sh
+
 cat > scripts/rotate-age-key.sh << 'EOF'
+
 #!/bin/bash
 # scripts/rotate-age-key.sh
 # Rotates age encryption key for an environment
@@ -1054,6 +1244,7 @@ cat > scripts/rotate-age-key.sh << 'EOF'
 set -e
 
 # Color codes
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -1084,6 +1275,7 @@ if [ -z "${ENVIRONMENT}" ]; then
 fi
 
 # Validate environment
+
 if [[ ! "${ENVIRONMENT}" =~ ^(development|test|production)$ ]]; then
   echo -e "${RED}❌ Error: Invalid environment '${ENVIRONMENT}'${NC}"
   echo "Valid options: development, test, production"
@@ -1094,6 +1286,7 @@ echo -e "${BLUE}🔄 Starting age key rotation for ${ENVIRONMENT} environment${N
 echo ""
 
 # Backup old key
+
 OLD_KEY_FILE=~/.config/sops/age/keys-${ENVIRONMENT}-old-$(date +%Y%m%d).txt
 if [ -f ~/.config/sops/age/keys.txt ]; then
   cp ~/.config/sops/age/keys.txt "${OLD_KEY_FILE}"
@@ -1101,17 +1294,20 @@ if [ -f ~/.config/sops/age/keys.txt ]; then
 fi
 
 # Generate new age key
+
 NEW_KEY_FILE=~/.config/sops/age/keys-${ENVIRONMENT}.txt
 echo ""
 echo -e "${YELLOW}1. Generating new age key...${NC}"
 age-keygen -o "${NEW_KEY_FILE}"
 
 # Extract public key
+
 NEW_PUBLIC_KEY=$(grep "public key:" "${NEW_KEY_FILE}" | cut -d: -f2 | tr -d ' ')
 echo ""
 echo -e "${GREEN}✅ New public key: ${NEW_PUBLIC_KEY}${NC}"
 
 # Instructions for manual update
+
 echo ""
 echo -e "${YELLOW}2. Update .sops.yaml with new public key${NC}"
 echo ""
@@ -1121,10 +1317,12 @@ echo ""
 read -p "Press ENTER after updating .sops.yaml..."
 
 # Re-encrypt files
+
 echo ""
 echo -e "${YELLOW}3. Re-encrypting files for ${ENVIRONMENT}...${NC}"
 
 # Use new key for re-encryption
+
 export SOPS_AGE_KEY_FILE="${NEW_KEY_FILE}"
 
 for encrypted_file in secrets/.env.${ENVIRONMENT}.enc; do
@@ -1159,9 +1357,11 @@ echo "   git push"
 EOF
 
 # Make executable
+
 chmod +x scripts/rotate-age-key.sh
 
 # Test script
+
 ./scripts/rotate-age-key.sh
 ```
 
@@ -1174,7 +1374,9 @@ Usage: ./scripts/rotate-age-key.sh <environment>
 ### Step 4.4: Add npm Scripts
 
 ```bash
+
 # Backup package.json
+
 cp package.json package.json.backup
 
 # Add scripts to package.json
@@ -1182,6 +1384,7 @@ cp package.json package.json.backup
 # Adjust the jq command if your package.json structure is different
 
 # Check if jq is installed
+
 if ! command -v jq &> /dev/null; then
   echo "⚠️  jq not found - adding scripts manually"
   echo ""
@@ -1242,7 +1445,9 @@ Edit `package.json` and add to the `"scripts"` section:
 ### Step 4.5: Test npm Scripts
 
 ```bash
+
 # Test decryption script
+
 npm run secrets:decrypt:dev
 
 # Expected output:
@@ -1251,9 +1456,11 @@ npm run secrets:decrypt:dev
 # ...
 
 # Verify .env.development was created
+
 ls -la .env.development
 
 # Test encryption script (re-encrypt)
+
 npm run secrets:encrypt:dev
 
 # Expected output:
@@ -1262,19 +1469,23 @@ npm run secrets:encrypt:dev
 # ...
 
 # Clean up test file
+
 rm .env.development
 ```
 
 ### Step 4.6: Commit Helper Scripts
 
 ```bash
+
 # Add scripts to Git
+
 git add scripts/encrypt-env.sh
 git add scripts/decrypt-env.sh
 git add scripts/rotate-age-key.sh
 git add package.json
 
 # Commit
+
 git commit -m "feat: Add SOPS helper scripts and npm commands
 
 - Add encrypt-env.sh for encrypting environment files
@@ -1290,19 +1501,24 @@ git commit -m "feat: Add SOPS helper scripts and npm commands
 ### Rollback Procedure
 
 ```bash
+
 # Restore package.json
+
 cp package.json.backup package.json
 
 # Remove scripts
+
 rm scripts/encrypt-env.sh
 rm scripts/decrypt-env.sh
 rm scripts/rotate-age-key.sh
 
 # Uncommit
+
 git reset HEAD scripts/ package.json
 ```
 
 ### Time Estimate
+
 - 20-30 minutes
 
 ---
@@ -1314,6 +1530,7 @@ git reset HEAD scripts/ package.json
 **Risk Level:** Medium (handling secrets)
 
 ### Objectives
+
 - Store age private key in GitHub Secrets
 - Configure separate secrets for different environments
 - Verify secrets are accessible in GitHub Actions
@@ -1321,13 +1538,16 @@ git reset HEAD scripts/ package.json
 ### Step 5.1: Get age Private Key
 
 ```bash
+
 # Display your age private key
+
 cat ~/.config/sops/age/keys.txt
 
 # Expected output:
 # # created: 2025-12-30T10:30:45+08:00
 # # public key: age1xxxxx...
 # AGE-SECRET-KEY-1YYYYYY...
+
 ```
 
 **IMPORTANT:** Copy the **entire content** including comments. You'll paste this into GitHub Secrets.
@@ -1337,7 +1557,7 @@ cat ~/.config/sops/age/keys.txt
 **Steps:**
 
 1. Navigate to your repository on GitHub:
-   ```
+```
    https://github.com/fairyhunter13/happy-bday-app
    ```
 
@@ -1367,40 +1587,52 @@ cat ~/.config/sops/age/keys.txt
 **Prerequisites:** GitHub CLI installed and authenticated (from Phase 0)
 
 ```bash
+
 # Verify gh CLI is authenticated
+
 gh auth status
 
 # Expected output:
 # ✓ Logged in to github.com as fairyhunter13 (...)
+
 ```
 
 **Store development/test age key:**
 
 ```bash
+
 # Read age key and store as GitHub Secret
+
 gh secret set SOPS_AGE_KEY_DEV < ~/.config/sops/age/keys.txt
 
 # Expected output:
 # ✓ Set secret SOPS_AGE_KEY_DEV for fairyhunter13/happy-bday-app
+
 ```
 
 **Verify secret was created:**
 
 ```bash
+
 # List all secrets
+
 gh secret list
 
 # Expected output:
 # SOPS_AGE_KEY_DEV    Updated 2025-12-30
+
 ```
 
 **Store production age key (if separate):**
 
 ```bash
+
 # If you have a separate production key file
+
 gh secret set SOPS_AGE_KEY_PROD < ~/path/to/production-keys.txt
 
 # Or use the same key for now (can rotate later)
+
 gh secret set SOPS_AGE_KEY_PROD < ~/.config/sops/age/keys.txt
 ```
 
@@ -1434,7 +1666,9 @@ For better security, use **GitHub Environment Secrets** for production:
 Create a test workflow to verify secrets work:
 
 ```bash
+
 # Create test workflow
+
 mkdir -p .github/workflows
 
 cat > .github/workflows/test-sops.yml << 'EOF'
@@ -1480,6 +1714,7 @@ jobs:
 EOF
 
 # Commit test workflow
+
 git add .github/workflows/test-sops.yml
 git commit -m "ci: Add SOPS decryption test workflow"
 git push origin main
@@ -1518,13 +1753,18 @@ git push origin main
 **Remove GitHub Secrets (if needed):**
 
 ```bash
+
 # Via GitHub CLI
+
 gh secret delete SOPS_AGE_KEY_DEV
 gh secret delete SOPS_AGE_KEY_PROD
 
 # Verify deletion
+
 gh secret list
+
 # Should not show deleted secrets
+
 ```
 
 **Via Web UI:**
@@ -1532,6 +1772,7 @@ gh secret list
 2. Click secret name → **Delete secret**
 
 ### Time Estimate
+
 - 15-20 minutes
 
 ---
@@ -1543,6 +1784,7 @@ gh secret list
 **Risk Level:** Medium
 
 ### Objectives
+
 - Update existing GitHub Actions workflows
 - Add SOPS decryption steps to CI/CD
 - Ensure secrets are cleaned up after use
@@ -1551,13 +1793,16 @@ gh secret list
 ### Step 6.1: Identify Existing Workflows
 
 ```bash
+
 # List all workflow files
+
 find .github/workflows -name "*.yml" -o -name "*.yaml"
 
 # Expected output (may vary):
 # .github/workflows/ci.yml
 # .github/workflows/cd.yml
 # .github/workflows/test.yml
+
 ```
 
 **For this example, we'll update a typical CI workflow. Adapt for your actual workflows.**
@@ -1565,10 +1810,13 @@ find .github/workflows -name "*.yml" -o -name "*.yaml"
 ### Step 6.2: Backup Existing Workflows
 
 ```bash
+
 # Create backup directory
+
 mkdir -p .github/workflows-backup
 
 # Backup all workflows
+
 cp .github/workflows/*.yml .github/workflows-backup/ 2>/dev/null || true
 cp .github/workflows/*.yaml .github/workflows-backup/ 2>/dev/null || true
 
@@ -1809,11 +2057,14 @@ echo "✅ Created .github/workflows/deploy.yml with production secret handling"
 **For enhanced security, use `sops exec-env` to keep secrets in memory:**
 
 ```yaml
+
 # Instead of decrypting to file:
+
 - name: Decrypt and run tests
   run: sops -d secrets/.env.test.enc > .env.test && npm test
 
 # Use exec-env (secrets never touch disk):
+
 - name: Run tests with encrypted secrets
   run: |
     sops exec-env secrets/.env.test.enc 'npm test'
@@ -1925,10 +2176,13 @@ echo "✅ Created .github/workflows/validate-secrets.yml"
 ### Step 6.7: Commit Updated Workflows
 
 ```bash
+
 # Add all workflow files
+
 git add .github/workflows/
 
 # Commit
+
 git commit -m "ci: Integrate SOPS secret decryption in workflows
 
 - Add SOPS and age installation to CI workflow
@@ -1939,6 +2193,7 @@ git commit -m "ci: Integrate SOPS secret decryption in workflows
 - Add production deployment workflow with encrypted secrets"
 
 # Push to trigger workflows
+
 git push origin main
 ```
 
@@ -1972,16 +2227,20 @@ git push origin main
 ### Rollback Procedure
 
 ```bash
+
 # Restore original workflows
+
 cp .github/workflows-backup/* .github/workflows/
 
 # Commit rollback
+
 git add .github/workflows/
 git commit -m "revert: Rollback workflow changes"
 git push origin main
 ```
 
 ### Time Estimate
+
 - 30-45 minutes
 
 ---
@@ -1993,6 +2252,7 @@ git push origin main
 **Risk Level:** Low
 
 ### Objectives
+
 - Update README with SOPS instructions
 - Create developer setup guide
 - Document troubleshooting steps
@@ -2003,16 +2263,20 @@ git push origin main
 Add SOPS section to project README:
 
 ```bash
+
 # Backup README
+
 cp README.md README.md.backup
 
 # Add SOPS section to README
 # Note: Adjust insertion point based on your README structure
+
 ```
 
 **Add this section to README.md** (manually edit or use script):
 
 ```markdown
+
 ## 🔒 Secret Management
 
 This project uses [SOPS (Secrets OPerationS)](https://github.com/getsops/sops) with [age encryption](https://github.com/FiloSottile/age) for secure secret management.
@@ -2026,22 +2290,22 @@ This project uses [SOPS (Secrets OPerationS)](https://github.com/getsops/sops) w
 
    # Linux
    # See docs/DEVELOPER_SETUP.md for installation instructions
-   ```
+```
 
 2. **Get age private key** from team lead and save to:
    ```bash
    ~/.config/sops/age/keys.txt
-   ```
+```
 
 3. **Decrypt secrets:**
    ```bash
    npm run secrets:decrypt:dev
-   ```
+```
 
 4. **Start development:**
    ```bash
    npm run dev
-   ```
+```
 
 ### Available Commands
 
@@ -2075,11 +2339,15 @@ This project uses [SOPS (Secrets OPerationS)](https://github.com/getsops/sops) w
 ### Step 7.2: Create Developer Setup Guide
 
 ```bash
+
 # Create docs directory if not exists
+
 mkdir -p docs
 
 # Create developer setup guide
+
 cat > docs/DEVELOPER_SETUP.md << 'EOF'
+
 # Developer Setup Guide - SOPS Secret Management
 
 This guide will help you set up SOPS (Secrets OPerationS) for local development.
@@ -2111,7 +2379,9 @@ sudo mv sops /usr/local/bin/
 **Verify:**
 ```bash
 sops --version
+
 # Expected: sops 3.8.1 (or later)
+
 ```
 
 ### Step 2: Install age
@@ -2134,7 +2404,9 @@ rm -rf age age.tar.gz
 **Verify:**
 ```bash
 age --version
+
 # Expected: v1.1.1 (or later)
+
 ```
 
 ### Step 3: Get age Private Key
@@ -2144,13 +2416,17 @@ age --version
 ### Step 4: Configure age Key
 
 ```bash
+
 # Create SOPS age directory
+
 mkdir -p ~/.config/sops/age
 
 # Paste the age private key into this file:
+
 nano ~/.config/sops/age/keys.txt
 
 # Set correct permissions
+
 chmod 600 ~/.config/sops/age/keys.txt
 ```
 
@@ -2162,29 +2438,37 @@ cat ~/.config/sops/age/keys.txt
 # # created: 2025-12-30T10:30:45+08:00
 # # public key: age1xxxxx...
 # AGE-SECRET-KEY-1YYYYY...
+
 ```
 
 ### Step 5: Clone Repository and Decrypt Secrets
 
 ```bash
+
 # Clone repository
+
 git clone https://github.com/fairyhunter13/happy-bday-app.git
 cd happy-bday-app
 
 # Install dependencies
+
 npm install
 
 # Decrypt development secrets
+
 npm run secrets:decrypt:dev
 
 # Verify .env.development was created
+
 ls -la .env.development
 ```
 
 ### Step 6: Start Development
 
 ```bash
+
 # Start development server
+
 npm run dev
 ```
 
@@ -2193,41 +2477,56 @@ npm run dev
 ### Scenario: No Secret Changes (Most Common)
 
 ```bash
+
 # Just start development
+
 npm run dev
+
 # (Secrets are auto-decrypted if needed)
+
 ```
 
 ### Scenario: View Secrets
 
 ```bash
+
 # Decrypt secrets
+
 npm run secrets:decrypt:dev
 
 # View file
+
 cat .env.development
 ```
 
 ### Scenario: Add/Update Secret
 
 ```bash
+
 # Method 1: Edit encrypted file directly (recommended)
+
 sops secrets/.env.development.enc
+
 # Edit in your default editor, save, quit
 # SOPS automatically re-encrypts
 
 # Method 2: Edit decrypted file
+
 npm run secrets:decrypt:dev
 nano .env.development
+
 # Make changes
+
 npm run secrets:encrypt:dev
 
 # Commit
+
 git add secrets/.env.development.enc
 git commit -m "chore: Update DATABASE_PASSWORD"
 git push
 
 # Clean up plaintext
+
 rm .env.development
 ```
 
@@ -2239,11 +2538,14 @@ rm .env.development
 
 **Solution:**
 ```bash
+
 # Verify key file exists
+
 ls -la ~/.config/sops/age/keys.txt
 
 # If missing, contact team lead for key
 # Save key to ~/.config/sops/age/keys.txt
+
 ```
 
 ### "failed to decrypt" Error
@@ -2252,11 +2554,14 @@ ls -la ~/.config/sops/age/keys.txt
 
 **Solution:**
 ```bash
+
 # Verify your public key matches .sops.yaml
+
 grep "public key:" ~/.config/sops/age/keys.txt
 grep "age:" .sops.yaml
 
 # If keys don't match, contact team lead for correct key
+
 ```
 
 ### Decrypted File Not Working
@@ -2265,13 +2570,17 @@ grep "age:" .sops.yaml
 
 **Solution:**
 ```bash
+
 # Verify file exists
+
 ls -la .env.development
 
 # Check file content
+
 head .env.development
 
 # Re-decrypt if needed
+
 rm .env.development
 npm run secrets:decrypt:dev
 ```
@@ -2306,6 +2615,7 @@ echo "✅ Created docs/DEVELOPER_SETUP.md"
 
 ```bash
 cat > docs/SOPS_TROUBLESHOOTING.md << 'EOF'
+
 # SOPS Troubleshooting Guide
 
 Common issues and solutions when working with SOPS encrypted secrets.
@@ -2329,16 +2639,21 @@ Group 0: FAILED
 **Solutions:**
 
 ```bash
+
 # 1. Check key file exists
+
 ls -la ~/.config/sops/age/keys.txt
 
 # 2. Check file permissions (should be 600)
+
 chmod 600 ~/.config/sops/age/keys.txt
 
 # 3. Set SOPS_AGE_KEY_FILE environment variable
+
 export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt
 
 # 4. Add to shell profile for permanent fix
+
 echo 'export SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt' >> ~/.zshrc
 source ~/.zshrc
 ```
@@ -2353,11 +2668,14 @@ source ~/.zshrc
 **Solutions:**
 
 ```bash
+
 # 1. Verify your public key matches .sops.yaml
 # Extract your public key:
+
 grep "public key:" ~/.config/sops/age/keys.txt
 
 # Check .sops.yaml:
+
 grep "age:" .sops.yaml
 
 # Keys should match!
@@ -2365,8 +2683,11 @@ grep "age:" .sops.yaml
 # 2. If keys don't match, get correct key from team lead
 
 # 3. Check file integrity
+
 git status secrets/
+
 # If file shows as modified, restore:
+
 git checkout secrets/.env.development.enc
 ```
 
@@ -2379,16 +2700,20 @@ git checkout secrets/.env.development.enc
 **Solutions:**
 
 ```bash
+
 # macOS
+
 brew install sops
 
 # Linux
+
 SOPS_VERSION=3.8.1
 curl -Lo sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
 chmod +x sops
 sudo mv sops /usr/local/bin/
 
 # Verify installation
+
 which sops
 sops --version
 ```
@@ -2403,17 +2728,22 @@ sops --version
 **Solutions:**
 
 ```bash
+
 # 1. Decrypt secrets
+
 npm run secrets:decrypt:dev
 
 # 2. Verify file exists
+
 ls -la .env.development
 
 # 3. Check file content
+
 head -5 .env.development
 
 # 4. Ensure application loads correct env file
 # Check your app's dotenv configuration
+
 ```
 
 ## Error: CI/CD decryption fails
@@ -2426,14 +2756,19 @@ head -5 .env.development
 **Solutions:**
 
 ```bash
+
 # 1. Verify GitHub Secret exists
+
 gh secret list
+
 # Should show: SOPS_AGE_KEY_DEV
 
 # 2. Update secret if needed
+
 cat ~/.config/sops/age/keys.txt | gh secret set SOPS_AGE_KEY_DEV
 
 # 3. Check workflow uses correct secret name
+
 grep "secrets.SOPS_AGE_KEY" .github/workflows/*.yml
 ```
 
@@ -2442,34 +2777,44 @@ grep "secrets.SOPS_AGE_KEY" .github/workflows/*.yml
 **Immediate Actions:**
 
 ```bash
+
 # 1. Remove from latest commit (if not pushed)
+
 git reset HEAD .env
 git commit --amend --no-edit
 
 # 2. If already pushed, remove and force push
+
 git rm .env
 git commit -m "security: Remove accidentally committed .env"
 git push --force
 
 # 3. If in Git history, use git-filter-repo
+
 pip install git-filter-repo
 git filter-repo --path .env --invert-paths
 git push --force --all
 
 # 4. IMPORTANT: Rotate all secrets in that file
 # All passwords, API keys, tokens are now considered compromised
+
 ```
 
 **Prevention:**
 
 ```bash
+
 # Ensure .gitignore is correct
+
 grep "^\.env$" .gitignore || echo ".env" >> .gitignore
 grep "^\.env\.\*$" .gitignore || echo ".env.*" >> .gitignore
 
 # Verify ignored
+
 git check-ignore .env .env.development
+
 # Should output: .env and .env.development
+
 ```
 
 ## Issue: Lost age private key
@@ -2477,16 +2822,21 @@ git check-ignore .env .env.development
 **Actions:**
 
 ```bash
+
 # 1. Check backups
+
 ls ~/secure-backups/
 
 # 2. If no backup, contact team lead immediately
 # They should have backup of team key
 
 # 3. If team key is lost, generate new key and re-encrypt:
+
 age-keygen -o ~/.config/sops/age/keys.txt
+
 # Update .sops.yaml with new public key
 # Re-encrypt all files:
+
 npm run secrets:encrypt:dev
 npm run secrets:encrypt:test
 ```
@@ -2496,7 +2846,9 @@ npm run secrets:encrypt:test
 **Process:**
 
 ```bash
+
 # 1. Use rotation script
+
 npm run secrets:rotate development
 
 # 2. Follow on-screen instructions:
@@ -2505,6 +2857,7 @@ npm run secrets:rotate development
 #    - Notify team members
 
 # 3. Test new key
+
 sops -d secrets/.env.development.enc
 ```
 
@@ -2513,12 +2866,15 @@ sops -d secrets/.env.development.enc
 **Solutions:**
 
 ```bash
+
 # 1. Use encrypted_regex to limit encrypted fields
 # Edit .sops.yaml:
+
 encrypted_regex: '^(.*_PASSWORD|.*_SECRET|.*_KEY).*'
 
 # 2. Split large config files into smaller files
 # Instead of one huge .env:
+
 secrets/.env.database.enc
 secrets/.env.redis.enc
 secrets/.env.rabbitmq.enc
@@ -2532,13 +2888,13 @@ If issues persist:
    ```bash
    # Run with debug output
    SOPS_DEBUG=1 sops -d secrets/.env.development.enc
-   ```
+```
 
 2. **Validate .sops.yaml:**
    ```bash
    cat .sops.yaml
    # Check for syntax errors
-   ```
+```
 
 3. **Contact team:**
    - Slack: #engineering
@@ -2556,6 +2912,7 @@ echo "✅ Created docs/SOPS_TROUBLESHOOTING.md"
 
 ```bash
 cat > docs/TEAM_ONBOARDING.md << 'EOF'
+
 # Team Onboarding - SOPS Secret Management
 
 Checklist for onboarding new team members to SOPS-encrypted secret management.
@@ -2602,13 +2959,13 @@ Complete these steps on your first day:
   ```bash
   brew install sops  # macOS
   sops --version     # Verify
-  ```
+```
 
 - [ ] **Install age**
   ```bash
   brew install age   # macOS
   age --version      # Verify
-  ```
+```
 
 - [ ] **Get age Private Key**
   - Request from team lead
@@ -2619,29 +2976,29 @@ Complete these steps on your first day:
   mkdir -p ~/.config/sops/age
   nano ~/.config/sops/age/keys.txt  # Paste key
   chmod 600 ~/.config/sops/age/keys.txt
-  ```
+```
 
 - [ ] **Clone Repository**
   ```bash
   git clone https://github.com/fairyhunter13/happy-bday-app.git
   cd happy-bday-app
-  ```
+```
 
 - [ ] **Install Dependencies**
   ```bash
   npm install
-  ```
+```
 
 - [ ] **Decrypt Secrets**
   ```bash
   npm run secrets:decrypt:dev
-  ```
+```
 
 - [ ] **Verify Setup**
   ```bash
   ls -la .env.development  # Should exist
   npm run dev              # Should start successfully
-  ```
+```
 
 ### First Week Tasks
 
@@ -2711,7 +3068,9 @@ echo "✅ Created docs/TEAM_ONBOARDING.md"
 ### Step 7.5: Update .gitignore (Final Check)
 
 ```bash
+
 # Ensure .gitignore has comprehensive secret exclusions
+
 cat >> .gitignore << 'EOF'
 
 # ==============================================
@@ -2719,15 +3078,18 @@ cat >> .gitignore << 'EOF'
 # ==============================================
 
 # Decrypted environment files (NEVER COMMIT)
+
 .env
 .env.*
 !.env.example
 !.env.*.example
 
 # EXCEPT: Allow encrypted files
+
 !*.enc
 
 # SOPS age private keys (NEVER COMMIT)
+
 secrets/age/keys.txt
 secrets/age/*.txt
 !secrets/age/.gitkeep
@@ -2735,18 +3097,22 @@ age/keys.txt
 *.key
 
 # Temporary decrypted files
+
 *.dec
 *.decrypted
 tmp/
 
 # SOPS metadata
+
 .sops.pub
 
 # Backup files
+
 *.backup
 EOF
 
 # Remove duplicates from .gitignore
+
 sort .gitignore | uniq > .gitignore.tmp
 mv .gitignore.tmp .gitignore
 
@@ -2756,7 +3122,9 @@ echo "✅ Updated .gitignore with SOPS exclusions"
 ### Step 7.6: Commit Documentation
 
 ```bash
+
 # Add all documentation
+
 git add README.md
 git add docs/DEVELOPER_SETUP.md
 git add docs/SOPS_TROUBLESHOOTING.md
@@ -2764,6 +3132,7 @@ git add docs/TEAM_ONBOARDING.md
 git add .gitignore
 
 # Commit
+
 git commit -m "docs: Add comprehensive SOPS documentation
 
 - Update README with SOPS quick start guide
@@ -2773,25 +3142,31 @@ git commit -m "docs: Add comprehensive SOPS documentation
 - Update .gitignore with comprehensive secret exclusions"
 
 # Push
+
 git push origin main
 ```
 
 ### Rollback Procedure
 
 ```bash
+
 # Restore original documentation
+
 cp README.md.backup README.md
 
 # Remove new documentation
+
 rm docs/DEVELOPER_SETUP.md
 rm docs/SOPS_TROUBLESHOOTING.md
 rm docs/TEAM_ONBOARDING.md
 
 # Uncommit
+
 git reset HEAD README.md docs/ .gitignore
 ```
 
 ### Time Estimate
+
 - 30-40 minutes
 
 ---
@@ -2803,6 +3178,7 @@ git reset HEAD README.md docs/ .gitignore
 **Risk Level:** Low
 
 ### Objectives
+
 - Validate encryption/decryption works correctly
 - Test CI/CD pipeline end-to-end
 - Verify no secrets leaked in Git history or logs
@@ -2811,14 +3187,18 @@ git reset HEAD README.md docs/ .gitignore
 ### Step 8.1: Test Local Encryption/Decryption
 
 ```bash
+
 # Navigate to project root
+
 cd /Users/hafizputraludyanto/git/github.com/fairyhunter13/happy-bday-app
 
 # Test 1: Decrypt development secrets
+
 echo "Test 1: Decrypting development secrets..."
 npm run secrets:decrypt:dev
 
 # Verify .env.development exists
+
 if [ -f .env.development ]; then
   echo "✅ .env.development created successfully"
   echo "File size: $(wc -c < .env.development) bytes"
@@ -2828,6 +3208,7 @@ else
 fi
 
 # Test 2: Verify decrypted content
+
 echo ""
 echo "Test 2: Verifying decrypted content..."
 if grep -q "NODE_ENV" .env.development && grep -q "DATABASE_URL" .env.development; then
@@ -2838,11 +3219,13 @@ else
 fi
 
 # Test 3: Re-encrypt
+
 echo ""
 echo "Test 3: Re-encrypting secrets..."
 npm run secrets:encrypt:dev
 
 # Verify encrypted file updated
+
 if [ -f secrets/.env.development.enc ]; then
   echo "✅ Re-encryption successful"
 else
@@ -2851,6 +3234,7 @@ else
 fi
 
 # Test 4: Compare decryption with original
+
 echo ""
 echo "Test 4: Comparing decrypted vs original..."
 sops -d secrets/.env.development.enc > .env.development.test
@@ -2863,6 +3247,7 @@ else
 fi
 
 # Cleanup test files
+
 rm .env.development .env.development.test
 
 echo ""
@@ -2894,21 +3279,26 @@ echo "Test 5: Testing in-place editing..."
 
 # Edit encrypted file (will open in editor)
 # For automated testing, we'll use printf to simulate editing
+
 echo ""
 echo "Simulating in-place edit (adding test variable)..."
 
 # Get current content
+
 CURRENT_CONTENT=$(sops -d secrets/.env.development.enc)
 
 # Add test variable
+
 echo "${CURRENT_CONTENT}" > .env.development.tmp
 echo "TEST_VARIABLE=test_value_$(date +%s)" >> .env.development.tmp
 
 # Re-encrypt with updated content
+
 sops -e .env.development.tmp > secrets/.env.development.enc
 rm .env.development.tmp
 
 # Verify test variable exists
+
 if sops -d secrets/.env.development.enc | grep -q "TEST_VARIABLE"; then
   echo "✅ In-place edit successful - new variable added"
 else
@@ -2917,6 +3307,7 @@ else
 fi
 
 # Remove test variable (cleanup)
+
 CLEAN_CONTENT=$(sops -d secrets/.env.development.enc | grep -v "TEST_VARIABLE")
 echo "${CLEAN_CONTENT}" | sops -e /dev/stdin > secrets/.env.development.enc
 
@@ -2930,6 +3321,7 @@ echo ""
 echo "Test 6: Testing npm scripts..."
 
 # Test decrypt:dev
+
 npm run secrets:decrypt:dev > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   echo "✅ npm run secrets:decrypt:dev works"
@@ -2939,6 +3331,7 @@ else
 fi
 
 # Test encrypt:dev
+
 npm run secrets:encrypt:dev > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   echo "✅ npm run secrets:encrypt:dev works"
@@ -2948,6 +3341,7 @@ else
 fi
 
 # Test decrypt:test
+
 npm run secrets:decrypt:test > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   echo "✅ npm run secrets:decrypt:test works"
@@ -2957,6 +3351,7 @@ else
 fi
 
 # Cleanup
+
 rm .env.development .env.test 2>/dev/null
 
 echo "✅ All npm scripts working correctly"
@@ -2969,12 +3364,15 @@ echo ""
 echo "Test 7: Testing CI/CD pipeline..."
 
 # Create test branch
+
 git checkout -b test/sops-integration-$(date +%s)
 
 # Make a trivial change to trigger CI
+
 echo "# SOPS Integration Test - $(date)" >> README.md
 
 # Commit and push
+
 git add README.md
 git commit -m "test: Trigger CI for SOPS integration test"
 git push origin HEAD
@@ -2994,6 +3392,7 @@ echo ""
 read -p "Press ENTER after verifying CI workflow passed..."
 
 # Clean up test branch
+
 git checkout main
 git branch -D test/sops-integration-*
 git push origin --delete test/sops-integration-* 2>/dev/null || true
@@ -3008,6 +3407,7 @@ echo ""
 echo "Test 8: Checking for secrets in Git history..."
 
 # Check for plaintext .env files in Git history
+
 if git log --all --full-history -- ".env" 2>/dev/null | grep -q "^commit"; then
   echo "⚠️  WARNING: .env file found in Git history"
   echo "This should be investigated and removed if it contains secrets"
@@ -3016,6 +3416,7 @@ else
 fi
 
 # Check for age private keys in Git history
+
 if git log --all --full-history -- "*keys.txt" "*age*" "*.key" 2>/dev/null | grep -q "^commit"; then
   echo "⚠️  WARNING: Potential private key found in Git history"
   echo "This should be investigated immediately"
@@ -3024,10 +3425,12 @@ else
 fi
 
 # Check current repository for plaintext secrets
+
 echo ""
 echo "Checking current repository for plaintext secrets..."
 
 # List all tracked .env files (excluding .example and .enc)
+
 PLAINTEXT_ENV=$(git ls-files | grep -E '^\.env(\.|$)' | grep -v '\.example$' | grep -v '\.enc$' || true)
 
 if [ -n "$PLAINTEXT_ENV" ]; then
@@ -3049,6 +3452,7 @@ echo ""
 echo "Test 9: Validating encrypted file integrity..."
 
 # Function to validate file
+
 validate_file() {
   local file=$1
 
@@ -3081,10 +3485,12 @@ validate_file() {
 }
 
 # Validate all encrypted files
+
 validate_file "secrets/.env.development.enc"
 validate_file "secrets/.env.test.enc"
 
 # Optional: validate production if exists
+
 [ -f "secrets/.env.production.enc" ] && validate_file "secrets/.env.production.enc"
 
 echo "✅ All encrypted files validated"
@@ -3097,6 +3503,7 @@ echo ""
 echo "Test 10: Testing error handling..."
 
 # Test 1: Missing source file
+
 echo "Testing encrypt with missing source file..."
 if npm run secrets:encrypt:dev 2>&1 | grep -q "not found"; then
   echo "✅ Correctly handles missing source file"
@@ -3105,6 +3512,7 @@ else
 fi
 
 # Test 2: Missing encrypted file
+
 echo "Testing decrypt with missing encrypted file..."
 mv secrets/.env.development.enc secrets/.env.development.enc.backup
 if npm run secrets:decrypt:dev 2>&1 | grep -q "not found"; then
@@ -3115,6 +3523,7 @@ fi
 mv secrets/.env.development.enc.backup secrets/.env.development.enc
 
 # Test 3: Verify cleanup on error (in CI)
+
 echo "✅ Error handling tests complete"
 ```
 
@@ -3125,16 +3534,19 @@ echo ""
 echo "Test 11: Performance testing..."
 
 # Time encryption
+
 echo "Testing encryption speed..."
 time npm run secrets:encrypt:dev > /dev/null 2>&1
 ENCRYPT_TIME=$?
 
 # Time decryption
+
 echo "Testing decryption speed..."
 time npm run secrets:decrypt:dev > /dev/null 2>&1
 DECRYPT_TIME=$?
 
 # Cleanup
+
 rm .env.development 2>/dev/null
 
 if [ $ENCRYPT_TIME -eq 0 ] && [ $DECRYPT_TIME -eq 0 ]; then
@@ -3178,22 +3590,27 @@ echo "======================================================================"
 If tests fail:
 
 ```bash
+
 # Restore from backups
+
 BACKUP_DIR=~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)
 cp ${BACKUP_DIR}/env.development.backup .env.development
 cp ${BACKUP_DIR}/env.test.backup .env.test
 
 # Re-encrypt with correct settings
+
 npm run secrets:encrypt:dev
 npm run secrets:encrypt:test
 
 # Commit fixes
+
 git add secrets/
 git commit -m "fix: Correct SOPS encryption issues"
 git push
 ```
 
 ### Time Estimate
+
 - 30-40 minutes
 
 ---
@@ -3205,6 +3622,7 @@ git push
 **Risk Level:** High (deleting files)
 
 ### Objectives
+
 - Remove plaintext `.env` files from repository and working directory
 - Verify `.gitignore` prevents future commits
 - Archive backups securely
@@ -3219,6 +3637,7 @@ echo "Step 1: Verifying all encrypted files exist..."
 echo ""
 
 # Check encrypted files
+
 REQUIRED_FILES=(
   "secrets/.env.development.enc"
   "secrets/.env.test.enc"
@@ -3260,10 +3679,12 @@ echo ""
 echo "Step 2: Creating final backup before cleanup..."
 
 # Create final backup directory
+
 FINAL_BACKUP_DIR=~/secure-backups/happy-bday-app-final-$(date +%Y%m%d-%H%M%S)
 mkdir -p "$FINAL_BACKUP_DIR"
 
 # Backup all .env files one last time
+
 for env_file in .env .env.* ; do
   if [ -f "$env_file" ] && [[ ! "$env_file" =~ \.enc$ ]]; then
     cp "$env_file" "$FINAL_BACKUP_DIR/" 2>/dev/null || true
@@ -3272,6 +3693,7 @@ for env_file in .env .env.* ; do
 done
 
 # List backups
+
 echo ""
 echo "Final backups stored in:"
 echo "$FINAL_BACKUP_DIR"
@@ -3289,6 +3711,7 @@ echo ""
 echo "Step 3: Removing plaintext .env files from working directory..."
 
 # List files to be deleted
+
 echo "Files to be deleted:"
 ls -la .env .env.* 2>/dev/null | grep -v "\.example" | grep -v "\.enc" || echo "No plaintext .env files found"
 
@@ -3322,6 +3745,7 @@ echo ""
 echo "Step 4: Checking Git history for plaintext secrets..."
 
 # Check if .env files are in Git history
+
 if git log --all --full-history -- ".env" ".env.*" 2>/dev/null | grep -q "^commit"; then
   echo "⚠️  WARNING: .env files found in Git history"
   echo ""
@@ -3370,6 +3794,7 @@ echo ""
 echo "Step 5: Verifying .gitignore configuration..."
 
 # Verify .gitignore contains required patterns
+
 REQUIRED_PATTERNS=(
   "^\.env$"
   "^\.env\.\*$"
@@ -3395,6 +3820,7 @@ if [ ${#MISSING_PATTERNS[@]} -gt 0 ]; then
   cat >> .gitignore << 'EOF'
 
 # SOPS - Ensure no plaintext secrets committed
+
 .env
 .env.*
 !.env.example
@@ -3408,14 +3834,17 @@ else
 fi
 
 # Test .gitignore
+
 echo ""
 echo "Testing .gitignore patterns..."
 
 # Create test files
+
 touch .env.test-ignore
 touch .env.development.test-ignore
 
 # Check if ignored
+
 if git check-ignore .env.test-ignore .env.development.test-ignore > /dev/null 2>&1; then
   echo "✅ .gitignore correctly ignores .env files"
 else
@@ -3424,6 +3853,7 @@ else
 fi
 
 # Cleanup test files
+
 rm .env.test-ignore .env.development.test-ignore
 ```
 
@@ -3434,6 +3864,7 @@ echo ""
 echo "Step 6: Verifying encrypted files are tracked by Git..."
 
 # Check encrypted files are NOT ignored
+
 ENCRYPTED_FILES=(
   "secrets/.env.development.enc"
   "secrets/.env.test.enc"
@@ -3450,6 +3881,7 @@ for file in "${ENCRYPTED_FILES[@]}"; do
 done
 
 # Check encrypted files are committed
+
 echo ""
 echo "Checking if encrypted files are committed..."
 git ls-files secrets/*.enc | while read file; do
@@ -3464,12 +3896,14 @@ echo ""
 echo "Step 7: Cleaning up temporary files..."
 
 # Remove backup files
+
 rm -f .env*.backup
 rm -f .sops.yaml.bak
 rm -f package.json.backup
 rm -f README.md.backup
 
 # Remove test files
+
 rm -f .env.test-*
 rm -f .env.development.tmp
 
@@ -3487,6 +3921,7 @@ echo "Step 8: Running final security audit..."
 echo ""
 
 # Check 1: No plaintext .env files
+
 echo "1. Checking for plaintext .env files..."
 if find . -name ".env*" -type f ! -name "*.example" ! -name "*.enc" | grep -q .; then
   echo "❌ Found plaintext .env files:"
@@ -3497,6 +3932,7 @@ else
 fi
 
 # Check 2: All encrypted files exist
+
 echo "2. Checking encrypted files..."
 for file in secrets/*.enc; do
   if [ -f "$file" ]; then
@@ -3505,6 +3941,7 @@ for file in secrets/*.enc; do
 done
 
 # Check 3: No age keys committed
+
 echo "3. Checking for committed age keys..."
 if git ls-files | grep -q "keys.txt"; then
   echo "❌ Found age key in repository!"
@@ -3515,6 +3952,7 @@ else
 fi
 
 # Check 4: .gitignore works
+
 echo "4. Verifying .gitignore..."
 touch .env.audit-test
 if git check-ignore .env.audit-test > /dev/null; then
@@ -3526,6 +3964,7 @@ fi
 rm .env.audit-test
 
 # Check 5: GitHub Secrets configured
+
 echo "5. Checking GitHub Secrets..."
 if gh secret list 2>/dev/null | grep -q "SOPS_AGE_KEY"; then
   echo "✅ GitHub Secrets configured"
@@ -3544,10 +3983,12 @@ echo ""
 echo "Step 9: Final commit and push..."
 
 # Stage any remaining changes
+
 git add .gitignore
 git add secrets/
 
 # Check if there are changes to commit
+
 if git diff --staged --quiet; then
   echo "ℹ️  No changes to commit"
 else
@@ -3566,6 +4007,7 @@ Use 'npm run secrets:decrypt:dev' to decrypt for local development."
 fi
 
 # Push to remote
+
 echo ""
 read -p "Push to remote repository? (yes/no): " PUSH_CONFIRM
 
@@ -3621,11 +4063,14 @@ echo "======================================================================"
 **If you need to restore plaintext files:**
 
 ```bash
+
 # Restore from final backup
+
 FINAL_BACKUP_DIR=~/secure-backups/happy-bday-app-final-*
 cp ${FINAL_BACKUP_DIR}/.env* .
 
 # Verify restoration
+
 ls -la .env*
 
 echo "⚠️  Plaintext files restored from backup"
@@ -3633,6 +4078,7 @@ echo "Remember to delete again after resolving issues"
 ```
 
 ### Time Estimate
+
 - 20-30 minutes
 
 ---
@@ -3686,27 +4132,33 @@ Use this checklist to verify security best practices are followed:
 ### Validate Locally
 
 ```bash
+
 # 1. Decrypt secrets
+
 npm run secrets:decrypt:dev
 
 # 2. Verify file exists and has content
+
 ls -lh .env.development
 cat .env.development | head -5
 
 # 3. Re-encrypt
+
 npm run secrets:encrypt:dev
 
 # 4. Verify encryption
+
 sops -d secrets/.env.development.enc | head -5
 
 # 5. Cleanup
+
 rm .env.development
 ```
 
 ### Validate in CI/CD
 
 1. **Push a test commit:**
-   ```bash
+```bash
    git checkout -b test/sops-validation
    echo "# Test" >> README.md
    git add README.md
@@ -3732,22 +4184,32 @@ rm .env.development
 ### Validate Security
 
 ```bash
+
 # 1. No plaintext secrets in repository
+
 git ls-files | grep -E '^\.env(\.|$)' | grep -v '\.example$' | grep -v '\.enc$'
+
 # Should return: nothing
 
 # 2. No age keys in repository
+
 git ls-files | grep -i "key"
+
 # Should not show: keys.txt or age private keys
 
 # 3. Encrypted files are tracked
+
 git ls-files secrets/*.enc
+
 # Should show: all encrypted .env files
 
 # 4. .gitignore works
+
 touch .env.test-validation
 git check-ignore .env.test-validation
+
 # Should return: .env.test-validation (file is ignored)
+
 rm .env.test-validation
 ```
 
@@ -3760,44 +4222,56 @@ rm .env.test-validation
 If you need to completely roll back the SOPS migration:
 
 ```bash
+
 # 1. Restore plaintext .env files from backups
+
 BACKUP_DIR=~/secure-backups/happy-bday-app-sops-$(date +%Y%m%d)
 cp ${BACKUP_DIR}/* .
 
 # 2. Remove encrypted files
+
 rm -rf secrets/
 
 # 3. Remove SOPS configuration
+
 rm .sops.yaml
 
 # 4. Remove helper scripts
+
 rm scripts/encrypt-env.sh
 rm scripts/decrypt-env.sh
 rm scripts/rotate-age-key.sh
 
 # 5. Restore original package.json
+
 cp package.json.backup package.json
 
 # 6. Restore original workflows
+
 cp .github/workflows-backup/* .github/workflows/
 
 # 7. Restore original documentation
+
 cp README.md.backup README.md
 rm docs/DEVELOPER_SETUP.md
 rm docs/SOPS_TROUBLESHOOTING.md
 rm docs/TEAM_ONBOARDING.md
 
 # 8. Uncommit all SOPS changes
+
 git reset --hard <commit-before-sops>
 
 # 9. Force push (if already pushed)
+
 git push --force origin main
 
 # 10. Delete GitHub Secrets
+
 gh secret delete SOPS_AGE_KEY_DEV
 gh secret delete SOPS_AGE_KEY_PROD
 
 # 11. Notify team of rollback
+
 echo "⚠️  SOPS migration rolled back"
 echo "Using plaintext .env files again"
 ```
@@ -3823,15 +4297,19 @@ git push
 
 **Rollback encryption (use plaintext again):**
 ```bash
+
 # Decrypt all files
+
 npm run secrets:decrypt:dev
 npm run secrets:decrypt:test
 
 # Keep plaintext files, remove encrypted
+
 rm secrets/.env.*.enc
 
 # Update .gitignore to allow .env files
 # (NOT RECOMMENDED - security risk)
+
 ```
 
 ---
@@ -3841,7 +4319,7 @@ rm secrets/.env.*.enc
 ### Immediate Actions (Day 1)
 
 1. **Announce to Team:**
-   ```
+```
    Subject: 🔒 SOPS Secret Management Now Active
 
    Hi Team,

@@ -25,12 +25,14 @@
 ## Executive Summary
 
 ### Current State
+
 - **Monitoring Stack:** Prometheus + Grafana (operational)
 - **Coverage:** ~60% of critical metrics implemented
 - **Gaps:** User activity, message patterns, external API, cache, security, cost tracking
 - **Alert Coverage:** Basic alerts defined, missing SLI/SLO framework
 
 ### Target State
+
 - **Coverage:** 100% of application, business, infrastructure, and security metrics
 - **Observability:** RED + USE + Golden Signals implemented
 - **Alerting:** SLI/SLO-based alerts with runbooks
@@ -38,6 +40,7 @@
 - **Log Aggregation:** Structured logs with correlation IDs
 
 ### Key Recommendations
+
 1. **Immediate:** Add missing business metrics (user activity, message patterns)
 2. **Short-term:** Implement OpenTelemetry for distributed tracing
 3. **Medium-term:** Add log aggregation (Loki) and security metrics
@@ -50,6 +53,7 @@
 ### ✅ Currently Monitored Metrics
 
 #### 1. HTTP/API Metrics (via `metrics.middleware.ts`)
+
 ```typescript
 // Implemented in metricsService
 - birthday_scheduler_api_requests_total (Counter)
@@ -63,6 +67,7 @@
 **Coverage:** ✅ Request rate, latency (P50/P95/P99), status codes
 
 #### 2. Business Metrics (via `metrics.service.ts`)
+
 ```typescript
 // Message lifecycle tracking
 - birthday_scheduler_messages_scheduled_total (Counter)
@@ -86,6 +91,7 @@
 **Coverage:** ✅ Messages scheduled, sent, failed (by type)
 
 #### 3. Queue Metrics (partial)
+
 ```typescript
 - birthday_scheduler_queue_depth (Gauge)
   Labels: queue_name
@@ -94,6 +100,7 @@
 **Coverage:** ⚠️ Queue depth only - missing: processing time, DLQ, consumer health
 
 #### 4. Worker Metrics (partial)
+
 ```typescript
 - birthday_scheduler_active_workers (Gauge)
   Labels: worker_type
@@ -102,6 +109,7 @@
 **Coverage:** ⚠️ Active workers only - missing: utilization, task completion time
 
 #### 5. Scheduler Metrics
+
 ```typescript
 - birthday_scheduler_execution_duration_seconds (Histogram)
   Labels: job_type, status
@@ -111,6 +119,7 @@
 **Coverage:** ✅ CRON execution time and status
 
 #### 6. Circuit Breaker Metrics
+
 ```typescript
 - birthday_scheduler_circuit_breaker_open (Gauge)
   Labels: service_name
@@ -119,6 +128,7 @@
 **Coverage:** ✅ Circuit breaker state (open/closed)
 
 #### 7. Database Metrics (partial)
+
 ```typescript
 - birthday_scheduler_database_connections (Gauge)
   Labels: pool_name, state (active/idle)
@@ -127,6 +137,7 @@
 **Coverage:** ⚠️ Connection pool only - missing: query time, slow queries, deadlocks
 
 #### 8. Resource Metrics (Node.js defaults)
+
 ```typescript
 // Collected via collectDefaultMetrics()
 - process_cpu_user_seconds_total
@@ -161,6 +172,7 @@
 **RED = Rate, Errors, Duration**
 
 #### HTTP/API Layer
+
 ```typescript
 // ✅ IMPLEMENTED
 - birthday_scheduler_api_requests_total
@@ -200,6 +212,7 @@
 ### Category 2: Business Metrics
 
 #### Message Lifecycle
+
 ```typescript
 // ✅ IMPLEMENTED
 - birthday_scheduler_messages_scheduled_total
@@ -237,6 +250,7 @@
 ```
 
 #### User Activity
+
 ```typescript
 // 🔴 MISSING - All user metrics
 - birthday_scheduler_users_created_total
@@ -913,7 +927,9 @@ async executeJob(jobName: string): Promise<void> {
 
 **Scrape Configuration:**
 ```yaml
+
 # prometheus.yml
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -981,7 +997,9 @@ scrape_configs:
 
 **Recording Rules (for pre-aggregation):**
 ```yaml
+
 # rules.yml
+
 groups:
   - name: birthday_scheduler_aggregations
     interval: 30s
@@ -1091,7 +1109,9 @@ logger.info({
 
 **Deployment:**
 ```yaml
+
 # loki-config.yaml
+
 auth_enabled: false
 
 server:
@@ -1139,7 +1159,9 @@ table_manager:
 
 **Promtail Configuration:**
 ```yaml
+
 # promtail-config.yaml
+
 server:
   http_listen_port: 9080
   grpc_listen_port: 0
@@ -1246,33 +1268,42 @@ export const logger = pino({
 
 **PromQL Queries:**
 ```promql
+
 # Total Messages Today
+
 sum(increase(birthday_scheduler_messages_sent_total[24h]))
 
 # Success Rate %
+
 (sum(rate(birthday_scheduler_messages_sent_total[5m])) /
  (sum(rate(birthday_scheduler_messages_sent_total[5m])) +
   sum(rate(birthday_scheduler_messages_failed_total[5m])))) * 100
 
 # Active Users
+
 sum(birthday_scheduler_users_active_total)
 
 # API Uptime %
+
 avg(up{job="birthday-scheduler-api"}) * 100
 
 # Messages by Type
+
 sum by (message_type) (rate(birthday_scheduler_messages_sent_total[5m]))
 
 # Error Rate
+
 sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) /
 sum(rate(birthday_scheduler_api_requests_total[5m])) * 100
 
 # Response Time P95
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m]))
   by (le))
 
 # Queue Depth
+
 birthday_scheduler_queue_depth{queue_name="birthday-messages"}
 ```
 
@@ -1306,22 +1337,28 @@ birthday_scheduler_queue_depth{queue_name="birthday-messages"}
 
 **PromQL Queries:**
 ```promql
+
 # Requests per Second
+
 sum(rate(birthday_scheduler_api_requests_total[1m])) by (path)
 
 # Error Rate by Endpoint
+
 sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m])) by (path) /
 sum(rate(birthday_scheduler_api_requests_total[5m])) by (path) * 100
 
 # P95 Latency by Endpoint
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_response_time_seconds_bucket[5m]))
   by (path, le))
 
 # Concurrent Requests
+
 birthday_scheduler_api_concurrent_requests
 
 # Request Size Distribution
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_api_request_size_bytes_bucket[5m]))
   by (le))
@@ -1361,37 +1398,47 @@ histogram_quantile(0.95,
 
 **PromQL Queries:**
 ```promql
+
 # Messages Scheduled (rate)
+
 sum(rate(birthday_scheduler_messages_scheduled_total[5m])) by (message_type)
 
 # Messages Sent (rate)
+
 sum(rate(birthday_scheduler_messages_sent_total[5m])) by (message_type)
 
 # Messages Failed (rate)
+
 sum(rate(birthday_scheduler_messages_failed_total[5m])) by (error_type)
 
 # Success Rate
+
 (sum(rate(birthday_scheduler_messages_sent_total[5m])) /
  (sum(rate(birthday_scheduler_messages_sent_total[5m])) +
   sum(rate(birthday_scheduler_messages_failed_total[5m])))) * 100
 
 # Time to Delivery P95
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_message_time_to_delivery_seconds_bucket[5m]))
   by (message_type, le))
 
 # Queue Depth
+
 birthday_scheduler_queue_depth{queue_name="birthday-messages"}
 
 # DLQ Depth
+
 birthday_scheduler_queue_dlq_messages{dlq_name="birthday-dlq"}
 
 # Processing vs Production Rate
+
 sum(rate(birthday_scheduler_queue_messages_consumed_total{status="ack"}[1m]))
 -
 sum(rate(birthday_scheduler_queue_messages_published_total[1m]))
 
 # Worker Utilization
+
 avg(birthday_scheduler_worker_utilization_percent)
 ```
 
@@ -1429,28 +1476,35 @@ avg(birthday_scheduler_worker_utilization_percent)
 
 **PromQL Queries:**
 ```promql
+
 # Active Connections
+
 birthday_scheduler_database_connections{state="active"}
 
 # Connection Pool Usage %
+
 (sum(birthday_scheduler_database_connections{state="active"}) /
  (sum(birthday_scheduler_database_connections{state="active"}) +
   sum(birthday_scheduler_database_connections{state="idle"}))) * 100
 
 # Query Duration P95
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_database_query_duration_seconds_bucket[5m]))
   by (table, le))
 
 # Slow Queries
+
 sum(rate(birthday_scheduler_database_slow_queries_total[5m])) by (table)
 
 # Transaction Duration P95
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_database_transaction_duration_seconds_bucket[5m]))
   by (operation, le))
 
 # Deadlocks
+
 rate(birthday_scheduler_database_deadlocks_total[5m])
 ```
 
@@ -1487,26 +1541,34 @@ rate(birthday_scheduler_database_deadlocks_total[5m])
 
 **PromQL Queries:**
 ```promql
+
 # CPU Usage %
+
 rate(process_cpu_user_seconds_total[5m]) * 100
 
 # Memory Usage (RSS)
+
 process_resident_memory_bytes / 1024 / 1024  # MB
 
 # Heap Usage
+
 process_heap_bytes / 1024 / 1024  # MB
 
 # Event Loop Lag
+
 nodejs_eventloop_lag_seconds
 
 # GC Pause Time
+
 rate(nodejs_gc_duration_seconds_sum[5m])
 
 # Queue Saturation (depth vs capacity)
+
 birthday_scheduler_queue_depth{queue_name="birthday-messages"} /
 5000 * 100  # Assuming 5000 capacity
 
 # Connection Pool Saturation
+
 sum(birthday_scheduler_database_connections{state="active"}) /
 20 * 100  # Assuming max 20 connections
 ```
@@ -1544,25 +1606,32 @@ sum(birthday_scheduler_database_connections{state="active"}) /
 
 **PromQL Queries:**
 ```promql
+
 # External API Response Time P95
+
 histogram_quantile(0.95,
   sum(rate(birthday_scheduler_external_api_response_time_seconds_bucket[5m]))
   by (vendor, le))
 
 # External API Error Rate
+
 sum(rate(birthday_scheduler_external_api_errors_total[5m])) by (vendor) /
 sum(rate(birthday_scheduler_external_api_requests_total[5m])) by (vendor) * 100
 
 # Circuit Breaker State
+
 birthday_scheduler_external_api_circuit_breaker_state
 
 # RabbitMQ Queue Depth (from exporter)
+
 rabbitmq_queue_messages{queue="birthday_messages"}
 
 # RabbitMQ Consumer Count
+
 rabbitmq_queue_consumers{queue="birthday_messages"}
 
 # Message Rate Comparison
+
 sum(rate(rabbitmq_queue_messages_published_total{queue="birthday_messages"}[1m])) -
 sum(rate(rabbitmq_queue_messages_consumed_total{queue="birthday_messages"}[1m]))
 ```
@@ -1875,7 +1944,9 @@ sum(rate(rabbitmq_queue_messages_consumed_total{queue="birthday_messages"}[1m]))
 ### Alert Notification Routing
 
 ```yaml
+
 # alertmanager.yml
+
 route:
   receiver: 'email-default'
   group_by: ['alertname', 'cluster', 'service']
@@ -2224,7 +2295,9 @@ export const logger = pino({
 #### Step 7: Deploy OpenTelemetry Collector
 
 ```yaml
+
 # otel-collector-config.yaml
+
 receivers:
   otlp:
     protocols:
@@ -2287,7 +2360,9 @@ service:
 ```
 
 ```yaml
+
 # docker-compose.prod.yml (add services)
+
 services:
   # ... existing services ...
 
@@ -2335,7 +2410,9 @@ const sdk = new NodeSDK({
 
 **Tail-based Sampling (at collector):**
 ```yaml
+
 # otel-collector-config.yaml
+
 processors:
   tail_sampling:
     decision_wait: 10s
@@ -2365,7 +2442,9 @@ processors:
 
 **Add Jaeger Data Source:**
 ```yaml
+
 # grafana/datasources/jaeger.yaml
+
 apiVersion: 1
 datasources:
   - name: Jaeger
@@ -2377,7 +2456,9 @@ datasources:
 
 **Link Traces from Metrics:**
 ```yaml
+
 # In Grafana dashboard panel
+
 "links": [
   {
     "title": "View Trace",
@@ -2395,6 +2476,7 @@ datasources:
 **Goal:** Add critical missing metrics and improve existing dashboards
 
 #### Tasks:
+
 1. **Add Business Metrics (4-6 hours)**
    - User activity metrics (created, active, by timezone)
    - Message pattern metrics (time-to-delivery, retry distribution)
@@ -2433,6 +2515,7 @@ datasources:
 **Goal:** Add distributed tracing and improve database monitoring
 
 #### Tasks:
+
 1. **OpenTelemetry Integration (8-12 hours)**
    - Install and configure OTel SDK
    - Add auto-instrumentation
@@ -2475,6 +2558,7 @@ datasources:
 **Goal:** Add security monitoring and log aggregation
 
 #### Tasks:
+
 1. **Security Metrics (4-6 hours)**
    - Rate limit violation tracking
    - Authentication failure monitoring
@@ -2517,6 +2601,7 @@ datasources:
 **Goal:** Optimize monitoring stack and add cost visibility
 
 #### Tasks:
+
 1. **Monitoring Optimization (6-8 hours)**
    - Optimize Prometheus retention
    - Implement recording rules
@@ -2677,36 +2762,45 @@ Examples:
 Every alert should have a runbook:
 
 ```markdown
+
 # Alert: [Alert Name]
 
 ## Severity
+
 [Critical/Warning/Info]
 
 ## Description
+
 [What does this alert mean?]
 
 ## Impact
+
 [How does this affect users/business?]
 
 ## Diagnosis
+
 1. Check [dashboard link]
 2. Run query: `[PromQL query]`
 3. Check logs: `{app="birthday-scheduler"} |= "error"`
 
 ## Resolution
+
 1. [Step 1]
 2. [Step 2]
 3. [Step 3]
 
 ## Escalation
+
 If unable to resolve in 30 minutes:
 - Contact: [team/person]
 - Slack channel: [#channel]
 
 ## Prevention
+
 [How to prevent this in future]
 
 ## Related
+
 - SLO: [link]
 - Dashboard: [link]
 - Incident history: [link]
@@ -2751,17 +2845,22 @@ monitoring/
 
 **Track monitoring system health:**
 ```promql
+
 # Prometheus scrape failures
+
 up{job="birthday-scheduler-api"} == 0
 
 # Prometheus storage usage
+
 prometheus_tsdb_storage_blocks_bytes /
 prometheus_tsdb_retention_limit_bytes * 100
 
 # Alert manager notification failures
+
 rate(alertmanager_notifications_failed_total[5m]) > 0
 
 # Grafana dashboard errors
+
 grafana_api_response_status_total{code=~"5.."}
 ```
 

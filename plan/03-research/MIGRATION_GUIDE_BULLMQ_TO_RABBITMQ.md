@@ -397,13 +397,17 @@ channel.consume('queue', async (msg) => {
 **1.1 Deploy RabbitMQ**
 
 ```bash
+
 # Create Docker Compose file (see RABBITMQ_IMPLEMENTATION_GUIDE.md)
+
 docker-compose up -d rabbitmq
 
 # Verify RabbitMQ is running
+
 docker-compose logs rabbitmq
 
 # Access management UI
+
 open http://localhost:15672
 ```
 
@@ -471,10 +475,13 @@ async function scheduleBirthdayMessage(user) {
 **2.2 Run Separate Consumers**
 
 ```bash
+
 # Terminal 1: BullMQ worker (existing)
+
 QUEUE_TYPE=bullmq npm run worker
 
 # Terminal 2: RabbitMQ worker (new)
+
 QUEUE_TYPE=rabbitmq npm run worker
 ```
 
@@ -536,20 +543,26 @@ setInterval(() => {
 **3.2 Performance Testing**
 
 ```bash
+
 # Load test RabbitMQ
+
 npm run load-test -- --queue rabbitmq --messages 100000
 
 # Compare latency
+
 npm run benchmark -- --compare
 ```
 
 **3.3 Failure Scenarios**
 
 ```bash
+
 # Test RabbitMQ restart
+
 docker-compose restart rabbitmq
 
 # Verify messages are not lost
+
 npm run verify-persistence
 ```
 
@@ -587,23 +600,30 @@ console.log('BullMQ job counts:', counts);
 **4.3 Shutdown BullMQ Workers**
 
 ```bash
+
 # Stop BullMQ workers
+
 pkill -f "worker-bullmq"
 
 # Or via Docker
+
 docker-compose stop birthday-worker-bullmq
 ```
 
 **4.4 Decommission Redis (Optional)**
 
 ```bash
+
 # Backup Redis data (just in case)
+
 docker exec redis redis-cli BGSAVE
 
 # Stop Redis
+
 docker-compose stop redis
 
 # Remove Redis after 1 week of successful RabbitMQ operation
+
 docker-compose rm redis
 ```
 
@@ -660,13 +680,17 @@ module.exports = {
 **Immediate Rollback (< 5 minutes):**
 
 ```bash
+
 # 1. Stop RabbitMQ publishers
+
 export QUEUE_TYPE=bullmq
 
 # 2. Restart BullMQ workers
+
 docker-compose up -d birthday-worker-bullmq
 
 # 3. Verify BullMQ is processing
+
 npm run check-bullmq-health
 ```
 

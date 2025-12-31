@@ -1,5 +1,20 @@
 # Mutation Testing Guide
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Quick Start](#quick-start)
+3. [Configuration](#configuration)
+4. [Reports](#reports)
+5. [CI/CD Integration](#cicd-integration)
+6. [Incremental Mode](#incremental-mode)
+7. [Interpreting Results](#interpreting-results)
+8. [Performance Tips](#performance-tips)
+9. [Troubleshooting](#troubleshooting)
+10. [Resources](#resources)
+
+---
+
 This document describes the mutation testing setup for the Birthday Message Scheduler project using [Stryker Mutator](https://stryker-mutator.io/).
 
 ## Overview
@@ -9,10 +24,13 @@ Mutation testing is a technique that evaluates the quality of your test suite by
 ## Quick Start
 
 ```bash
+
 # Run mutation testing (full run)
+
 npm run test:mutation
 
 # Run mutation testing with incremental mode (faster for subsequent runs)
+
 npm run test:mutation:incremental
 ```
 
@@ -179,7 +197,9 @@ mutate: ['src/services/specific-service.ts'],
 ### Out of Memory
 
 ```bash
+
 # Increase Node.js memory
+
 NODE_OPTIONS="--max-old-space-size=4096" npm run test:mutation
 ```
 

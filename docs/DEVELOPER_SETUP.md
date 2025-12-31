@@ -28,13 +28,17 @@ This guide will help you set up your local development environment for the Birth
 #### macOS
 
 ```bash
+
 # Install SOPS
+
 brew install sops
 
 # Install age
+
 brew install age
 
 # Verify installations
+
 sops --version
 age --version
 ```
@@ -42,20 +46,26 @@ age --version
 #### Linux
 
 ```bash
+
 # Install SOPS
+
 wget https://github.com/getsops/sops/releases/download/v3.8.1/sops-v3.8.1.linux.amd64
 sudo mv sops-v3.8.1.linux.amd64 /usr/local/bin/sops
 sudo chmod +x /usr/local/bin/sops
 
 # Install age
+
 sudo apt install age  # Debian/Ubuntu
+
 # OR
+
 wget https://github.com/FiloSottile/age/releases/download/v1.1.1/age-v1.1.1-linux-amd64.tar.gz
 tar xzf age-v1.1.1-linux-amd64.tar.gz
 sudo mv age/age /usr/local/bin/
 sudo mv age/age-keygen /usr/local/bin/
 
 # Verify installations
+
 sops --version
 age --version
 ```
@@ -86,12 +96,15 @@ You have two options:
 Contact your team lead to get the `SOPS_AGE_KEY`. Then:
 
 ```bash
+
 # Create SOPS config directory
+
 mkdir -p ~/.config/sops/age
 
 # Save the key provided by your team lead
 # The key should be saved to ~/.config/sops/age/keys.txt
 # IMPORTANT: Ensure proper permissions
+
 chmod 600 ~/.config/sops/age/keys.txt
 ```
 
@@ -100,16 +113,21 @@ chmod 600 ~/.config/sops/age/keys.txt
 ⚠️ **WARNING**: Only do this if you're setting up a new project or rotating keys!
 
 ```bash
+
 # Create SOPS config directory
+
 mkdir -p ~/.config/sops/age
 
 # Generate new age key pair
+
 age-keygen -o ~/.config/sops/age/keys.txt
 
 # Display the public key (needed for .sops.yaml)
+
 grep '^# public key:' ~/.config/sops/age/keys.txt
 
 # Set proper permissions
+
 chmod 600 ~/.config/sops/age/keys.txt
 ```
 
@@ -141,23 +159,30 @@ npm run secrets:decrypt
 #### Decrypt Specific Environment
 
 ```bash
+
 # Development
+
 npm run secrets:decrypt:dev
 
 # Test
+
 npm run secrets:decrypt:test
 
 # Production
+
 npm run secrets:decrypt:prod
 ```
 
 Or use the script directly:
 
 ```bash
+
 # Decrypt all
+
 ./scripts/sops/decrypt.sh
 
 # Decrypt specific environment
+
 ./scripts/sops/decrypt.sh development
 ./scripts/sops/decrypt.sh test
 ./scripts/sops/decrypt.sh production
@@ -168,13 +193,17 @@ Or use the script directly:
 View decrypted secrets without creating a file:
 
 ```bash
+
 # View development secrets
+
 npm run secrets:view development
 
 # View test secrets
+
 npm run secrets:view test
 
 # View production secrets
+
 npm run secrets:view production
 ```
 
@@ -183,13 +212,17 @@ npm run secrets:view production
 To edit secrets securely (auto-encrypt on save):
 
 ```bash
+
 # Edit development secrets
+
 npm run secrets:edit development
 
 # Edit test secrets
+
 npm run secrets:edit test
 
 # Edit production secrets
+
 npm run secrets:edit production
 ```
 
@@ -204,10 +237,13 @@ This will:
 After making changes to plaintext `.env` files:
 
 ```bash
+
 # Encrypt all environments
+
 npm run secrets:encrypt
 
 # Encrypt specific environment
+
 npm run secrets:encrypt:dev
 npm run secrets:encrypt:test
 npm run secrets:encrypt:prod
@@ -233,7 +269,9 @@ npm run secrets:decrypt:dev
 ### 2. Start Infrastructure Services
 
 ```bash
+
 # Start PostgreSQL, RabbitMQ, Redis
+
 docker-compose -f docker-compose.test.yml up -d
 ```
 
@@ -246,10 +284,13 @@ npm run db:migrate
 ### 4. Start the Application
 
 ```bash
+
 # Development mode with hot reload
+
 npm run dev
 
 # Or start API, scheduler, and worker separately:
+
 npm run dev                    # API server
 npm run scheduler              # CRON scheduler
 npm run worker                 # Message queue worker
@@ -275,19 +316,25 @@ npm run secrets:decrypt:test
 ### Run Tests
 
 ```bash
+
 # All tests
+
 npm test
 
 # Unit tests only
+
 npm run test:unit
 
 # Integration tests
+
 npm run test:integration
 
 # E2E tests
+
 npm run test:e2e
 
 # With coverage
+
 npm run test:coverage
 ```
 
@@ -300,10 +347,13 @@ npm run test:coverage
 Install k6:
 
 ```bash
+
 # macOS
+
 brew install k6
 
 # Linux
+
 sudo gpg -k
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
 echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
@@ -314,19 +364,25 @@ sudo apt-get install k6
 ### Run Performance Tests
 
 ```bash
+
 # API load test
+
 npm run perf:k6:api
 
 # Scheduler load test
+
 npm run perf:k6:scheduler
 
 # Worker throughput test
+
 npm run perf:k6:worker-throughput
 
 # E2E load test
+
 npm run perf:k6:e2e
 
 # All performance tests
+
 npm run perf:all
 ```
 
@@ -340,11 +396,11 @@ npm run perf:all
 
 **Solution**:
 1. Verify age keys are present:
-   ```bash
+```
    ls -la ~/.config/sops/age/keys.txt
    ```
 2. Check file permissions:
-   ```bash
+```
    chmod 600 ~/.config/sops/age/keys.txt
    ```
 3. Verify you have the correct key (ask your team lead)
@@ -355,13 +411,13 @@ npm run perf:all
 
 **Solution**:
 1. Create the directory:
-   ```bash
+```
    mkdir -p ~/.config/sops/age
    ```
 2. Request the SOPS_AGE_KEY from your team lead
 3. Save it to `~/.config/sops/age/keys.txt`
 4. Set permissions:
-   ```bash
+```
    chmod 600 ~/.config/sops/age/keys.txt
    ```
 
@@ -371,17 +427,17 @@ npm run perf:all
 
 **Solution**:
 1. Ensure Docker services are running:
-   ```bash
+```
    docker-compose -f docker-compose.test.yml ps
    ```
 2. Check if ports are already in use:
-   ```bash
+```
    lsof -i :5432  # PostgreSQL
    lsof -i :5672  # RabbitMQ
    lsof -i :6379  # Redis
    ```
 3. Restart services:
-   ```bash
+```
    docker-compose -f docker-compose.test.yml down -v
    docker-compose -f docker-compose.test.yml up -d
    ```
@@ -392,15 +448,15 @@ npm run perf:all
 
 **Solution**:
 1. Decrypt the appropriate environment file:
-   ```bash
+```bash
    npm run secrets:decrypt:dev
    ```
 2. Verify the file exists:
-   ```bash
+```
    ls -la .env.development
    ```
 3. Check NODE_ENV matches the environment:
-   ```bash
+```
    echo $NODE_ENV
    ```
 
@@ -456,25 +512,33 @@ npm run perf:all
 ### Common Commands
 
 ```bash
+
 # Decrypt development secrets
+
 npm run secrets:decrypt:dev
 
 # View secrets (read-only)
+
 npm run secrets:view development
 
 # Edit secrets (auto-encrypts)
+
 npm run secrets:edit development
 
 # Encrypt secrets after manual changes
+
 npm run secrets:encrypt:dev
 
 # Start local development
+
 npm run dev
 
 # Run tests
+
 npm test
 
 # Run performance tests
+
 npm run perf:all
 ```
 

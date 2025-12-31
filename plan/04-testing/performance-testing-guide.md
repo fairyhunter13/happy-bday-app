@@ -37,10 +37,13 @@ This document provides complete performance testing strategies to validate the s
 ### 1.1 Installation
 
 ```bash
+
 # macOS
+
 brew install k6
 
 # Ubuntu/Debian
+
 sudo gpg -k
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
   --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
@@ -50,6 +53,7 @@ sudo apt-get update
 sudo apt-get install k6
 
 # Docker
+
 docker pull grafana/k6:latest
 ```
 
@@ -305,16 +309,21 @@ export function deleteUser() {
 ### 1.4 Run k6 Tests
 
 ```bash
+
 # Run basic API load test
+
 k6 run tests/performance/k6/api-user-creation.js
 
 # Run with custom settings
+
 k6 run --vus 100 --duration 10m tests/performance/k6/api-user-creation.js
 
 # Run with output to InfluxDB (for Grafana visualization)
+
 k6 run --out influxdb=http://localhost:8086/k6 tests/performance/k6/api-user-creation.js
 
 # Run in Docker
+
 docker run --rm -i \
   --network=host \
   -v $(pwd)/tests/performance:/scripts \
@@ -571,10 +580,13 @@ main();
 ### 2.2 Run Database Benchmark
 
 ```bash
+
 # Compile TypeScript
+
 npx tsc tests/performance/database-benchmark.ts
 
 # Run benchmark
+
 node tests/performance/database-benchmark.js
 
 # Expected output:
@@ -582,6 +594,7 @@ node tests/performance/database-benchmark.js
 # SELECT: ~5000-10000 queries/sec (indexed lookups)
 # UPDATE: ~800-1500 records/sec
 # DELETE: ~800-1500 records/sec
+
 ```
 
 ---
@@ -1020,6 +1033,7 @@ main();
 ### 5.1 1M Messages/Day Simulation
 
 ```bash
+
 #!/bin/bash
 # tests/performance/simulate-1m-per-day.sh
 
@@ -1029,12 +1043,15 @@ echo ""
 
 # Calculate sustained load
 # 1M messages / 86400 seconds = 11.5 msg/sec sustained
+
 SUSTAINED_RATE=12
 
 # Calculate peak load (10x factor)
+
 PEAK_RATE=120
 
 # Duration
+
 DURATION_MINUTES=10
 
 echo "Configuration:"
@@ -1044,26 +1061,32 @@ echo "  Duration: ${DURATION_MINUTES} minutes"
 echo ""
 
 # Start monitoring
+
 echo "📊 Starting resource monitoring..."
 docker stats --no-stream > performance-stats-before.txt
 
 # Phase 1: Warm-up (1 minute at 10% capacity)
+
 echo "🔥 Phase 1: Warm-up (1 min)"
 k6 run --vus 5 --duration 1m tests/performance/k6/api-user-creation.js
 
 # Phase 2: Sustained load (5 minutes)
+
 echo "📈 Phase 2: Sustained load (${SUSTAINED_RATE} msg/sec, 5 min)"
 k6 run --vus 12 --duration 5m tests/performance/k6/api-user-creation.js
 
 # Phase 3: Peak load (2 minutes)
+
 echo "🔥 Phase 3: Peak load (${PEAK_RATE} msg/sec, 2 min)"
 k6 run --vus 120 --duration 2m tests/performance/k6/api-user-creation.js
 
 # Phase 4: Cool-down (2 minutes at 50% capacity)
+
 echo "📉 Phase 4: Cool-down (2 min)"
 k6 run --vus 6 --duration 2m tests/performance/k6/api-user-creation.js
 
 # Capture final stats
+
 docker stats --no-stream > performance-stats-after.txt
 
 echo ""
@@ -1078,6 +1101,7 @@ echo "  - Grafana dashboard: http://localhost:3001"
 ### 5.2 Resource Monitoring Script
 
 ```bash
+
 #!/bin/bash
 # tests/performance/monitor-resources.sh
 
@@ -1157,7 +1181,9 @@ done
 ### 7.1 CI/CD Integration (GitHub Actions)
 
 ```yaml
+
 # .github/workflows/performance-tests.yml
+
 name: Performance Regression Tests
 
 on:

@@ -1,5 +1,21 @@
 # DRY Compliance Officer - Agent Assignment
 
+## Table of Contents
+
+1. [Agent Mission](#agent-mission)
+2. [Core Responsibilities](#core-responsibilities)
+3. [Tools & Access](#tools-access)
+4. [Standard Operating Procedures](#standard-operating-procedures)
+5. [DRY Compliance Review](#dry-compliance-review)
+6. [Escalation Procedures](#escalation-procedures)
+7. [Success Metrics](#success-metrics)
+8. [Resources & Support](#resources-support)
+9. [Agent Configuration](#agent-configuration)
+10. [Appendix](#appendix)
+11. [DRY Violation: [Short Description]](#dry-violation-short-description)
+
+---
+
 **Agent Type**: Quality Assurance & Code Standards Enforcement
 **Created**: 2025-12-30
 **Status**: ACTIVE
@@ -160,17 +176,17 @@ For every pull request, verify:
 
 **Steps**:
 1. Run jscpd scan on repository
-   ```bash
+```
    npx jscpd src/ tests/ .github/ --format json --output reports/daily-scan.json
    ```
 
 2. Generate metrics
-   ```bash
+```
    node scripts/duplication-metrics.js reports/daily-scan.json
    ```
 
 3. Check for new violations
-   ```bash
+```bash
    git diff main -- reports/violations.json
    ```
 
@@ -180,7 +196,7 @@ For every pull request, verify:
    - Add to weekly report
 
 5. Update dashboard
-   ```bash
+```
    node scripts/update-dashboard.js
    ```
 
@@ -214,7 +230,7 @@ For every pull request, verify:
      - Note any good DRY practices used
 
 4. Update PR checklist
-   ```markdown
+```
    ## DRY Compliance Review
    - [x] Code duplication: 2.1% (threshold: 5%)
    - [x] Used shared utilities
@@ -242,7 +258,7 @@ For every pull request, verify:
    - Critical violations
 
 2. **Metrics Dashboard**
-   ```
+```
    Current Status: 🟢 GOOD (4.2% duplication)
 
    Trend: ↓ Improving (from 5.1% last week)
@@ -446,24 +462,28 @@ For every pull request, verify:
 ## Resources & Support
 
 ### Documentation
+
 - [DRY Principle Audit Report](./dry-principle-audit.md)
 - [DRY Guidelines](../../docs/contributing/DRY-GUIDELINES.md)
 - [Shared Utilities Index](../../docs/utilities/INDEX.md)
 - [Refactoring Patterns](../../docs/patterns/REFACTORING.md)
 
 ### Tools & Scripts
+
 - `.jscpd.json` - Duplication detection config
 - `scripts/duplication-metrics.js` - Metrics generator
 - `scripts/update-dashboard.js` - Dashboard updater
 - `.github/actions/check-duplication/` - CI integration
 
 ### Communication Channels
+
 - **Slack**: #dry-compliance
 - **Email**: dry-officer@team.local
 - **GitHub**: @dry-compliance-officer
 - **Weekly sync**: Fridays 3:00 PM
 
 ### Support Requests
+
 For questions or assistance:
 1. Check DRY Guidelines documentation
 2. Search previous issues/PRs for examples
@@ -595,13 +615,16 @@ beforeAll(async () => {
 
 **Pattern 2: Workflow Step Duplication**
 ```yaml
+
 # ❌ VIOLATION
+
 - name: Install SOPS
   run: |
     sudo wget -qO /usr/local/bin/sops ...
     sudo chmod +x /usr/local/bin/sops
 
 # ✅ FIX
+
 - uses: ./.github/actions/setup-sops
   with:
     age-key: ${{ secrets.SOPS_AGE_KEY }}
@@ -630,28 +653,36 @@ export default mergeConfig(baseConfig, defineConfig({
 ### B. Quick Reference Commands
 
 ```bash
+
 # Daily scan
+
 npx jscpd src/ --format json --output reports/daily.json
 
 # Check specific files
+
 npx jscpd path/to/file1.ts path/to/file2.ts
 
 # Generate HTML report
+
 npx jscpd src/ --format html --output reports/html
 
 # Check with threshold
+
 npx jscpd src/ --threshold 5 --exitCode 1
 
 # Ignore specific patterns
+
 npx jscpd src/ --ignore "**/fixtures/**"
 
 # Check specific formats
+
 npx jscpd . --format typescript,javascript,yaml
 ```
 
 ### C. Template: Violation Issue
 
 ```markdown
+
 ## DRY Violation: [Short Description]
 
 **Severity**: [CRITICAL/HIGH/MEDIUM/LOW]
@@ -660,19 +691,23 @@ npx jscpd . --format typescript,javascript,yaml
 **Duplication**: XX.X%
 
 ### Location
+
 - File 1: `path/to/file1.ts` (lines XX-YY)
 - File 2: `path/to/file2.ts` (lines XX-YY)
 - File 3: `path/to/file3.ts` (lines XX-YY)
 
 ### Description
+
 [Brief description of what's duplicated and why it's a problem]
 
 ### Duplicated Code
+
 ```[language]
 [Code snippet showing the duplication]
 ```
 
 ### Recommended Fix
+
 [Specific refactoring approach]
 
 **Example**:
@@ -681,6 +716,7 @@ npx jscpd . --format typescript,javascript,yaml
 ```
 
 ### Shared Utility
+
 - [ ] Create shared utility at: `path/to/utility.ts`
 - [ ] Update File 1
 - [ ] Update File 2
@@ -694,6 +730,7 @@ npx jscpd . --format typescript,javascript,yaml
 **Due Date**: YYYY-MM-DD
 
 ### Related
+
 - Related to #XXX
 - Blocks #YYY
 - Part of [Remediation Plan Phase X]

@@ -1,5 +1,22 @@
 # GitHub Configuration
 
+## Table of Contents
+
+1. [📁 Structure](#-structure)
+2. [🚀 Workflows](#-workflows)
+3. [📝 Templates](#-templates)
+4. [🔄 Dependabot](#-dependabot)
+5. [🛡️ Branch Protection](#-branch-protection)
+6. [📚 Documentation](#-documentation)
+7. [🔑 Required Secrets](#-required-secrets)
+8. [🌍 Environments](#-environments)
+9. [🎯 Quick Start](#-quick-start)
+10. [📊 Monitoring](#-monitoring)
+11. [🔧 Maintenance](#-maintenance)
+12. [📞 Support](#-support)
+
+---
+
 This directory contains all GitHub-specific configuration for the Birthday Message Scheduler project.
 
 ## 📁 Structure
@@ -151,10 +168,12 @@ Comprehensive guide covering:
 Configure in repository settings → Secrets and variables → Actions:
 
 ### Essential
+
 - `GITHUB_TOKEN` - Auto-provided by GitHub
 - `CODECOV_TOKEN` - For coverage reporting
 
 ### Security Scanning
+
 - `SNYK_TOKEN` - Vulnerability scanning (required)
 - `SONAR_TOKEN` - Code quality (optional)
 
@@ -163,11 +182,13 @@ Configure in repository settings → Secrets and variables → Actions:
 Create in repository settings → Environments:
 
 ### staging
+
 - URL: https://staging.birthday-scheduler.example.com
 - Deployment: Automatic on release
 - Reviewers: None required
 
 ### production
+
 - URL: https://birthday-scheduler.example.com
 - Deployment: Manual approval required
 - Reviewers: 1+ required
@@ -191,16 +212,19 @@ Create in repository settings → Environments:
 ## 📊 Monitoring
 
 ### Workflow Status
+
 - Actions tab → All workflows
 - Workflow badges (add to README)
 - Email notifications (configure in GitHub settings)
 
 ### Security
+
 - Security tab → Dependabot alerts
 - Security tab → Code scanning alerts
 - Weekly security scan results
 
 ### Performance
+
 - Weekly performance test artifacts
 - Baseline comparison results
 

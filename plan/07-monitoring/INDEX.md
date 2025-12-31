@@ -11,6 +11,7 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 ## Quick Navigation
 
 ### Start Here
+
 - **Metrics Strategy:** [`metrics-strategy-research.md`](./metrics-strategy-research.md)
 - **Implementation Plan:** [`metrics-implementation-plan.md`](./metrics-implementation-plan.md)
 - **Grafana Dashboards:** [`grafana-dashboards-research.md`](./grafana-dashboards-research.md)
@@ -54,12 +55,14 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 ## Key Features
 
 ### Metrics Coverage
+
 - **100+ Prometheus metrics** across all system components
 - Real-time performance tracking
 - Business metrics (messages sent, birthdays processed)
 - Technical metrics (latency, throughput, errors)
 
 ### Grafana Dashboards
+
 - **6 comprehensive dashboards:**
   1. API Performance
   2. Database Monitoring
@@ -69,6 +72,7 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
   6. Business Metrics
 
 ### Alert Rules
+
 - **4 severity levels:** Critical, Warning, Info, SLO
 - Coverage: API, Database, Queue, Workers, Infrastructure
 - Integration with Prometheus Alertmanager
@@ -78,11 +82,15 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 ## Quick Start
 
 ### View Metrics
+
 ```bash
+
 # Access Prometheus
+
 open http://localhost:9090
 
 # Access Grafana
+
 open http://localhost:3000
 ```
 
@@ -108,6 +116,7 @@ open http://localhost:3000
 ## Monitoring Stack
 
 ### Components
+
 - **Prometheus:** Metrics collection and storage
 - **Grafana:** Visualization and dashboards
 - **Node Exporter:** System metrics
@@ -116,6 +125,7 @@ open http://localhost:3000
 - **Custom Exporters:** Application metrics
 
 ### Architecture
+
 ```
 Application → Prometheus → Grafana
      ↓           ↓
@@ -127,13 +137,16 @@ Application → Prometheus → Grafana
 ## Related Documentation
 
 ### Architecture
+
 - [`../02-architecture/monitoring.md`](../02-architecture/monitoring.md)
 
 ### Operations
+
 - [`../08-operations/postgres-exporter-deployment.md`](../08-operations/postgres-exporter-deployment.md)
 - [`../08-operations/rabbitmq-prometheus-deployment.md`](../08-operations/rabbitmq-prometheus-deployment.md)
 
 ### Testing
+
 - [`../04-testing/performance-testing-guide.md`](../04-testing/performance-testing-guide.md)
 
 ---
@@ -141,12 +154,14 @@ Application → Prometheus → Grafana
 ## Maintenance
 
 ### Regular Tasks
+
 - Review dashboard accuracy weekly
 - Update alert thresholds monthly
 - Archive old metrics data quarterly
 - Update documentation as system evolves
 
 ### Performance Tuning
+
 - Monitor Prometheus storage usage
 - Optimize query performance
 - Adjust scrape intervals as needed
@@ -157,11 +172,13 @@ Application → Prometheus → Grafana
 ## Support
 
 ### Documentation
+
 - Metrics Strategy: [`metrics-strategy-research.md`](./metrics-strategy-research.md)
 - Implementation: [`metrics-implementation-plan.md`](./metrics-implementation-plan.md)
 - Dashboards: [`grafana-dashboards-research.md`](./grafana-dashboards-research.md)
 
 ### External Resources
+
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Documentation](https://grafana.com/docs/)
 - [Node Exporter](https://github.com/prometheus/node_exporter)

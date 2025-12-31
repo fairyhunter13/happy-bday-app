@@ -91,6 +91,7 @@ From GAP Analysis Report (lines 202-213):
 ### Three-Layer Verification
 
 #### Layer 1: Existence Check
+
 - ✅ Fast (< 1 second)
 - ✅ No API rate limits
 - ⚠️ Cannot detect invalid secrets
@@ -100,6 +101,7 @@ gh secret list | grep -q "^SECRET_NAME"
 ```
 
 #### Layer 2: Format Validation
+
 - ✅ Detects malformed secrets
 - ✅ Fast (< 1 second)
 - ⚠️ Cannot detect revoked/expired tokens
@@ -115,6 +117,7 @@ gh secret list | grep -q "^SECRET_NAME"
 ```
 
 #### Layer 3: Functional Validation
+
 - ✅ Verifies secret actually works
 - ⚠️ Slower (1-5 seconds)
 - ⚠️ Subject to API rate limits
@@ -127,8 +130,10 @@ gh secret list | grep -q "^SECRET_NAME"
 
 **Expected Format**:
 ```
+
 # created: 2025-09-27T11:06:50+07:00
 # public key: age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+
 AGE-SECRET-KEY-1C4G73H4Z0KJLAFQN726VCPRNMGUD07WAJUMANX5SN5PHZXR5ZGZSNU2TW0
 ```
 
@@ -336,7 +341,9 @@ jobs:
 ### Strategy 3: Dependency Graph Integration
 
 ```yaml
+
 # .github/workflows/ci.yml
+
 jobs:
   # Secrets validation runs first
   validate-secrets:
@@ -373,6 +380,7 @@ jobs:
 **New comprehensive validation script**:
 
 ```bash
+
 #!/bin/bash
 # GitHub Secrets Format Validation Script
 # Purpose: Validate secret format before CI/CD usage
@@ -385,12 +393,14 @@ SECRET_TYPE="$1"
 SECRET_INPUT="$2"
 
 # Colors
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
 # Read secret from file or stdin
+
 read_secret() {
     if [ -f "$SECRET_INPUT" ]; then
         cat "$SECRET_INPUT"
@@ -402,6 +412,7 @@ read_secret() {
 }
 
 # Validate age key format
+
 validate_age_key() {
     local key="$1"
     local errors=0
@@ -463,6 +474,7 @@ validate_age_key() {
 }
 
 # Validate UUID format (Codecov, Snyk)
+
 validate_uuid() {
     local token="$1"
     local name="$2"
@@ -501,6 +513,7 @@ validate_uuid() {
 }
 
 # Main validation logic
+
 main() {
     if [ -z "$SECRET_TYPE" ]; then
         echo "Usage: $0 <age|codecov|snyk> [secret-value-or-file]"
@@ -545,6 +558,7 @@ chmod +x scripts/validate-secrets.sh
 **Enhance existing script with format validation**:
 
 ```bash
+
 #!/bin/bash
 # GitHub Secrets Verification Script (Enhanced)
 # Purpose: Verify GitHub secrets exist AND have valid format
@@ -554,6 +568,7 @@ chmod +x scripts/validate-secrets.sh
 set -e
 
 # Color output
+
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
@@ -561,6 +576,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 # Track issues
+
 MISSING_REQUIRED=()
 INVALID_FORMAT=()
 MISSING_OPTIONAL=()
@@ -571,11 +587,13 @@ echo "=========================================="
 echo ""
 
 # Function to check if running in CI
+
 is_ci() {
     [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]
 }
 
 # Function to check secret existence
+
 check_secret_exists() {
     local secret_name=$1
     if is_ci; then
@@ -593,6 +611,7 @@ check_secret_exists() {
 }
 
 # Function to validate secret format in CI
+
 validate_secret_format() {
     local secret_name=$1
     local secret_value="$2"
@@ -614,6 +633,7 @@ validate_secret_format() {
 }
 
 # Function to check and validate secret
+
 check_secret() {
     local secret_name=$1
     local required=$2
@@ -654,6 +674,7 @@ check_secret() {
 }
 
 # Main verification
+
 main() {
     # Check prerequisites (only locally)
     if ! is_ci; then
@@ -725,6 +746,7 @@ main() {
 }
 
 # Run main
+
 main
 ```
 
@@ -783,14 +805,17 @@ jobs:
           case "$SECRET" in
             SOPS_AGE_KEY)
               cat >> remediation.md <<'EOF'
+
 ## Steps to Fix SOPS_AGE_KEY
 
 ### 1. Verify age key exists locally
+
 ```bash
 cat ~/.config/sops/age/keys.txt
 ```
 
 ### 2. If missing, generate new key
+
 ```bash
 brew install age
 mkdir -p ~/.config/sops/age
@@ -799,22 +824,28 @@ chmod 600 ~/.config/sops/age/keys.txt
 ```
 
 ### 3. Update GitHub secret
+
 ```bash
 gh secret set SOPS_AGE_KEY < ~/.config/sops/age/keys.txt
 ```
 
 ### 4. Update .sops.yaml with new public key
+
 ```bash
 cat ~/.config/sops/age/keys.txt | grep "public key:" | awk '{print $NF}'
+
 # Update .sops.yaml with this public key
+
 ```
 
 ### 5. Re-encrypt all .env files
+
 ```bash
 bash scripts/sops/encrypt-all.sh
 ```
 
 ### 6. Verify
+
 ```bash
 ./scripts/verify-github-secrets.sh
 ```
@@ -823,9 +854,11 @@ EOF
 
             CODECOV_TOKEN)
               cat >> remediation.md <<'EOF'
+
 ## Steps to Fix CODECOV_TOKEN
 
 ### 1. Get token from Codecov
+
 1. Go to https://codecov.io/
 2. Login with GitHub
 3. Select repository: fairyhunter13/happy-bday-app
@@ -833,38 +866,49 @@ EOF
 5. Copy "Repository Upload Token"
 
 ### 2. Set GitHub secret
+
 ```bash
 gh secret set CODECOV_TOKEN
+
 # Paste token when prompted
+
 ```
 
 ### 3. Verify
+
 ```bash
 ./scripts/verify-github-secrets.sh
 ```
 
 ### 4. Test in CI
+
 Push a commit and verify coverage upload succeeds.
 EOF
               ;;
 
             SNYK_TOKEN)
               cat >> remediation.md <<'EOF'
+
 ## Steps to Fix SNYK_TOKEN (Optional)
 
 ### 1. Get token from Snyk
+
 1. Go to https://snyk.io/
 2. Login/sign up
 3. Go to Account Settings
 4. Copy API Token
 
 ### 2. Set GitHub secret
+
 ```bash
 gh secret set SNYK_TOKEN
+
 # Paste token when prompted
+
 ```
 
 ### 3. Verify
+
 ```bash
 ./scripts/verify-github-secrets.sh
 ```
@@ -990,16 +1034,21 @@ ${oldSecrets.split('\n').map(s => `- \`${s}\``).join('\n')}
 
 ✅ **Rotate secrets every 90 days**
 ```bash
+
 # Set calendar reminder
 # Use automated health check workflow
+
 ```
 
 ✅ **Use separate secrets for different environments**
 ```yaml
+
 # Development
+
 SOPS_AGE_KEY_DEV
 
 # Production
+
 SOPS_AGE_KEY_PROD
 ```
 
@@ -1029,10 +1078,13 @@ permissions:
 
 ❌ **Never log secret values**
 ```yaml
+
 # BAD
+
 - run: echo "${{ secrets.SOPS_AGE_KEY }}"
 
 # GOOD
+
 - run: |
     if [ -z "${{ secrets.SOPS_AGE_KEY }}" ]; then
       echo "Secret missing"
@@ -1059,7 +1111,7 @@ permissions:
 #### Tasks
 
 1. **Create validation script** ✅
-   ```bash
+```
    # Create scripts/validate-secrets.sh
    # Implement format validation for all secret types
    # Add functional tests (SOPS decrypt, API calls)
@@ -1068,7 +1120,7 @@ permissions:
    - **Testing**: Test with valid/invalid secrets locally
 
 2. **Update verification script** ✅
-   ```bash
+```
    # Enhance scripts/verify-github-secrets.sh
    # Add format validation integration
    # Improve error messages
@@ -1077,7 +1129,7 @@ permissions:
    - **Testing**: Run in local environment
 
 3. **Update setup script** ✅
-   ```bash
+```
    # Update scripts/setup-github-secrets.sh
    # Add validation step after setting secrets
    ```
@@ -1101,7 +1153,7 @@ permissions:
 #### Tasks
 
 1. **Create secret validation workflow** ✅
-   ```yaml
+```
    # Create .github/workflows/secret-validation.yml
    # Daily scheduled validation
    # Pre-flight checks before test runs
@@ -1110,7 +1162,7 @@ permissions:
    - **Testing**: Trigger workflow manually
 
 2. **Update existing workflows** ✅
-   ```yaml
+```
    # Add validation job to ci.yml
    # Make test jobs depend on validation
    # Add fail-fast strategy
@@ -1119,7 +1171,7 @@ permissions:
    - **Testing**: Verify dependency graph works
 
 3. **Add secret health monitoring** ✅
-   ```yaml
+```
    # Create .github/workflows/secret-health.yml
    # Weekly secret age checks
    # Auto-create rotation reminder issues
@@ -1144,7 +1196,7 @@ permissions:
 #### Tasks
 
 1. **Create remediation workflow** ✅
-   ```yaml
+```
    # Create .github/workflows/secret-remediation.yml
    # Interactive workflow for guided fixes
    # Generate remediation guides
@@ -1153,7 +1205,7 @@ permissions:
    - **Testing**: Test all remediation scenarios
 
 2. **Create remediation documentation** ✅
-   ```markdown
+```
    # Update this document with remediation steps
    # Add troubleshooting guides
    # Include common error scenarios
@@ -1178,7 +1230,7 @@ permissions:
 #### Tasks
 
 1. **Update documentation** ✅
-   ```markdown
+```
    # Update README.md with secret validation info
    # Update DEVELOPER_SETUP.md
    # Create SECURITY.md if missing
@@ -1187,7 +1239,7 @@ permissions:
    - **Testing**: New developer onboarding test
 
 2. **Create runbook** ✅
-   ```markdown
+```
    # Secret rotation procedures
    # Incident response for compromised secrets
    # Emergency recovery procedures
@@ -1212,7 +1264,7 @@ permissions:
 #### Tasks
 
 1. **Remove deprecated secrets** ✅
-   ```bash
+```
    # Delete SLACK_WEBHOOK_URL if exists
    gh secret delete SLACK_WEBHOOK_URL
 
@@ -1223,7 +1275,7 @@ permissions:
    - **Testing**: Verify no broken workflows
 
 2. **Audit secret usage** ✅
-   ```bash
+```
    # Verify all secrets are used
    # Remove unused secrets
    # Document secret purposes
@@ -1243,12 +1295,14 @@ permissions:
 ## Implementation Checklist
 
 ### Prerequisites
+
 - [ ] gh CLI installed and authenticated
 - [ ] SOPS and age installed locally
 - [ ] Access to GitHub repository settings
 - [ ] Test environment for validation
 
 ### Week 1: Core Implementation
+
 - [ ] Create `scripts/validate-secrets.sh`
 - [ ] Test validation script with all secret types
 - [ ] Update `scripts/verify-github-secrets.sh`
@@ -1259,6 +1313,7 @@ permissions:
 - [ ] Test all workflows in CI environment
 
 ### Week 2: Automation & Documentation
+
 - [ ] Create `.github/workflows/secret-remediation.yml`
 - [ ] Test remediation workflow for all scenarios
 - [ ] Update README.md
@@ -1269,6 +1324,7 @@ permissions:
 - [ ] Final testing and verification
 
 ### Validation
+
 - [ ] All tests pass with valid secrets
 - [ ] Invalid secrets trigger clear error messages
 - [ ] Remediation workflows generate correct guides
@@ -1282,52 +1338,68 @@ permissions:
 ### Validation Commands
 
 ```bash
+
 # Validate age key
+
 ./scripts/validate-secrets.sh age ~/.config/sops/age/keys.txt
 
 # Validate Codecov token
+
 echo "12345678-1234-1234-1234-123456789abc" | ./scripts/validate-secrets.sh codecov
 
 # Verify all secrets
+
 ./scripts/verify-github-secrets.sh
 
 # Setup all secrets
+
 ./scripts/setup-github-secrets.sh
 ```
 
 ### Secret Setup Commands
 
 ```bash
+
 # SOPS_AGE_KEY
+
 gh secret set SOPS_AGE_KEY < ~/.config/sops/age/keys.txt
 
 # CODECOV_TOKEN
+
 gh secret set CODECOV_TOKEN  # Interactive prompt
 
 # SNYK_TOKEN
+
 gh secret set SNYK_TOKEN  # Interactive prompt
 
 # List secrets
+
 gh secret list
 
 # Delete secret
+
 gh secret delete SECRET_NAME
 ```
 
 ### Troubleshooting Commands
 
 ```bash
+
 # Check secret exists
+
 gh secret list | grep SOPS_AGE_KEY
 
 # Test SOPS decryption
+
 sops --decrypt .env.test.enc > /tmp/test.env
 rm /tmp/test.env
 
 # Test Codecov API
+
 curl -H "Authorization: token YOUR_TOKEN" https://codecov.io/api/gh/USER/REPO
 
 # Run remediation workflow
+
 gh workflow run secret-remediation.yml
 ```
 
@@ -1346,14 +1418,17 @@ gh workflow run secret-remediation.yml
 ## Official Documentation
 
 ### GitHub
+
 - [Encrypted Secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
 - [gh secret command](https://cli.github.com/manual/gh_secret)
 
 ### SOPS
+
 - [SOPS GitHub](https://github.com/getsops/sops)
 - [age encryption](https://github.com/FiloSottile/age)
 
 ### Third-Party Services
+
 - [Codecov Tokens](https://docs.codecov.com/docs/quick-start)
 - [Snyk API](https://docs.snyk.io/snyk-api-info/authentication-for-api)
 

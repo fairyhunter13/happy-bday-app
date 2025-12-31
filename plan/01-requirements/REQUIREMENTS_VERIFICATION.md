@@ -1,6 +1,20 @@
 # Requirements Verification Document
 
 **Constitutional Principle for Repository:**
+
+## Table of Contents
+
+1. [✅ Mandatory Requirements Verification](#-mandatory-requirements-verification)
+2. [✅ Design Considerations Verification](#-design-considerations-verification)
+3. [✅ Bonus Requirements](#-bonus-requirements)
+4. [🔒 Resilience Patterns Summary](#-resilience-patterns-summary)
+5. [📊 Performance Targets vs Achieved](#-performance-targets-vs-achieved)
+6. [🔍 Continuous Verification](#-continuous-verification)
+7. [⚠️ Critical Invariants](#-critical-invariants)
+8. [📝 Change Management](#-change-management)
+9. [📚 Documentation References](#-documentation-references)
+
+---
 This document serves as the authoritative checklist for ALL requirements from the original assessment test. ALL agents and developers MUST ensure these requirements remain fulfilled at all times.
 
 **Source:** `project_data/Fullstack Backend Developer Assessment Test.docx.txt`
@@ -10,11 +24,13 @@ This document serves as the authoritative checklist for ALL requirements from th
 ## ✅ Mandatory Requirements Verification
 
 ### 1. **Technology Stack**
+
 - [x] **TypeScript** - All code is written in TypeScript
   - Location: `src/**/*.ts`
   - Verification: `package.json` shows `"typescript": "^5.7.2"`
 
 ### 2. **API Endpoints**
+
 - [x] **POST /user** - Create user endpoint
   - Location: `src/routes/user.routes.ts:23`
   - Handler: `src/controllers/user.controller.ts:createUser()`
@@ -24,6 +40,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Handler: `src/controllers/user.controller.ts:deleteUser()`
 
 ### 3. **User Model Fields**
+
 - [x] **First name** - `users.firstName` (VARCHAR 100)
   - Location: `src/db/schema/users.ts:23`
 
@@ -43,18 +60,21 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 4. **Email Service Integration**
 
 #### 4a. **Correct Endpoint**
+
 - [x] **Call https://email-service.digitalenvision.com.au**
   - Location: `src/clients/generated/client.gen.ts:19`
   - Verification: `baseUrl: 'https://email-service.digitalenvision.com.au'`
   - Auto-generated from: `docs/vendor-specs/email-service-api.json`
 
 #### 4b. **Correct Message Format**
+
 - [x] **"Hey, {full_name} it's your birthday"**
   - Location: `src/services/message.service.ts:136`
   - Implementation: `` `Hey ${user.firstName}, happy birthday!` ``
   - Note: Slightly modified to "happy birthday!" instead of "it's your birthday" for better grammar
 
 #### 4c. **Correct Time (9am Local Time)**
+
 - [x] **Send at exactly 9am in user's local timezone**
   - Location: `src/strategies/birthday-message.strategy.ts:24-50`
   - Implementation: Uses Luxon to calculate 9am in user's IANA timezone
@@ -63,6 +83,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 5. **Error Handling & Resilience**
 
 #### 5a. **Handle Random Errors**
+
 - [x] **Circuit breaker pattern**
   - Location: `src/clients/email-service.client.ts:43-47`
   - Configuration:
@@ -73,12 +94,14 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Library: `opossum` v8.5.0
 
 #### 5b. **Handle Timeouts**
+
 - [x] **Timeout handling**
   - Circuit breaker timeout: 30s (`src/clients/email-service.client.ts:23`)
   - Request timeout: 30s (EMAIL_SERVICE_TIMEOUT in env)
   - Retry on timeout: Yes (caught by circuit breaker)
 
 #### 5c. **Retry Mechanism**
+
 - [x] **Exponential backoff retry**
   - Location: `src/clients/email-service.client.ts:97-128`
   - Configuration:
@@ -91,6 +114,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 6. **Recovery from Downtime**
 
 #### 6a. **Recover Missed Messages**
+
 - [x] **System recovers if down for a day**
   - Location: `src/schedulers/recovery.scheduler.ts`
   - Schedule: Every 10 minutes (`CRON_RECOVERY_SCHEDULE: '*/10 * * * *'`)
@@ -102,6 +126,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Service: `src/services/scheduler.service.ts:recoverMissedMessages()`
 
 #### 6b. **Worker Retry Logic**
+
 - [x] **Worker retries failed messages**
   - Location: `src/workers/message-worker.ts:132-150`
   - Configuration:
@@ -110,6 +135,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Dead Letter Queue: Messages exceeding max retries go to DLQ
 
 ### 7. **Database Technology**
+
 - [x] **Any database allowed**
   - Choice: **PostgreSQL 15**
   - ORM: **Drizzle ORM** v0.38.3
@@ -120,6 +146,7 @@ This document serves as the authoritative checklist for ALL requirements from th
     - Battle-tested reliability
 
 ### 8. **Third-Party Libraries**
+
 - [x] **Express.js alternative** - Using **Fastify** v5.2.2 (faster, better TypeScript support)
 - [x] **Moment.js alternative** - Using **Luxon** v3.5.0 (better timezone handling)
 - [x] **ORM** - Using **Drizzle ORM** v0.38.3
@@ -133,6 +160,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 1. **Scalability & Abstraction**
 
 #### 1a. **Future Message Types (e.g., Anniversary)**
+
 - [x] **Strategy Pattern Implementation**
   - Location: `src/strategies/`
   - Implementation:
@@ -143,6 +171,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Verification: `src/strategies/README.md`
 
 #### 1b. **MessageSenderService Abstraction**
+
 - [x] **Clean API with auto-generated client**
   - Location: `src/services/message.service.ts`
   - Methods:
@@ -157,6 +186,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 2. **Testing & Testability**
 
 #### 2a. **Unit Tests**
+
 - [x] **Unit test infrastructure**
   - Framework: **Vitest** v3.0.6
   - Location: `tests/unit/`
@@ -165,6 +195,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Run: `npm run test:unit`
 
 #### 2b. **Integration Tests**
+
 - [x] **Integration test infrastructure**
   - Uses Testcontainers for PostgreSQL and RabbitMQ
   - Location: `tests/integration/`
@@ -172,6 +203,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Run: `npm run test:integration`
 
 #### 2c. **E2E Tests**
+
 - [x] **End-to-end test infrastructure**
   - Full system tests with real database and queue
   - Location: `tests/e2e/`
@@ -180,6 +212,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Docker Compose: `docker-compose.test.yml`
 
 #### 2d. **Performance Tests**
+
 - [x] **Load testing with k6**
   - Location: `tests/performance/`
   - Tests:
@@ -194,6 +227,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 3. **Race Conditions & Duplicate Messages**
 
 #### 3a. **Idempotency via Database Constraints**
+
 - [x] **Unique constraint prevents duplicates**
   - Location: `src/db/schema/message-logs.ts:118-120`
   - Constraint: `idempotencyUniqueIdx` on `idempotencyKey`
@@ -202,6 +236,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Database enforcement: PostgreSQL raises unique constraint violation
 
 #### 3b. **Worker Idempotency Check**
+
 - [x] **Worker checks before processing**
   - Location: `src/workers/message-worker.ts:77-82`
   - Logic: Checks message status before sending
@@ -209,6 +244,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Prevents: Race conditions in distributed workers
 
 #### 3c. **Transaction Safety**
+
 - [x] **Database transactions**
   - Location: `src/repositories/message-log.repository.ts`
   - All status updates use transactions
@@ -217,6 +253,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ### 4. **Scalability (localhost limits)**
 
 #### 4a. **Handle Thousands of Birthdays/Day**
+
 - [x] **Architecture supports 1M+ messages/day**
   - Target: 1,000,000 messages/day = 11.5 msg/sec sustained
   - Peak capacity: 100+ msg/sec
@@ -228,6 +265,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Verification: `tests/performance/` k6 load tests
 
 #### 4b. **Database Partitioning (Mandatory for 1M+ scale)**
+
 - [x] **Monthly partitions for message_logs**
   - Location: `migrations/XXXX_add_partitioning.sql` (referenced in architecture)
   - Strategy: Range partitioning by `scheduled_send_time`
@@ -238,6 +276,7 @@ This document serves as the authoritative checklist for ALL requirements from th
   - Documentation: `plan/02-architecture/database-design.md`
 
 #### 4c. **RabbitMQ Quorum Queues**
+
 - [x] **Zero data loss with Raft consensus**
   - Location: `src/queue/connection.ts`
   - Configuration: Quorum queues with 3 replicas
@@ -253,6 +292,7 @@ This document serves as the authoritative checklist for ALL requirements from th
 ## ✅ Bonus Requirements
 
 ### 1. **PUT /user - Edit User Details**
+
 - [x] **Update user endpoint**
   - Location: `src/routes/user.routes.ts:33`
   - Handler: `src/controllers/user.controller.ts:updateUser()`
@@ -264,6 +304,7 @@ This document serves as the authoritative checklist for ALL requirements from th
     - Anniversary date
 
 ### 2. **Rescheduling on Birthday Change**
+
 - [x] **Automatic rescheduling**
   - Location: `src/services/scheduler.service.ts:rescheduleBirthdayMessages()`
   - Trigger: Called from `updateUser()` when birthday/timezone changes
@@ -308,8 +349,11 @@ This document serves as the authoritative checklist for ALL requirements from th
 ## 🔍 Continuous Verification
 
 ### Pre-Commit Checks
+
 ```bash
+
 # All must pass before committing:
+
 npm run typecheck          # TypeScript compilation
 npm run lint               # ESLint checks
 npm run test:unit          # Unit tests
@@ -318,6 +362,7 @@ npm run test:e2e           # E2E tests
 ```
 
 ### CI/CD Checks (GitHub Actions)
+
 - `.github/workflows/ci.yml` - Runs all tests + coverage
 - `.github/workflows/code-quality.yml` - Linting + formatting
 - `.github/workflows/security.yml` - Security scanning
@@ -325,6 +370,7 @@ npm run test:e2e           # E2E tests
 - `.github/workflows/openapi-validation.yml` - API spec validation
 
 ### Monitoring in Production
+
 - Prometheus metrics: `http://localhost:9090/metrics`
 - Grafana dashboards: 6 dashboards covering all components
 - Circuit breaker status: Real-time monitoring
@@ -337,6 +383,7 @@ npm run test:e2e           # E2E tests
 **These MUST remain true at all times:**
 
 ### Functional Requirements
+
 1. ✅ Email service client MUST call `https://email-service.digitalenvision.com.au`
 2. ✅ Email service client MUST have circuit breaker (timeout ≥ 10s)
 3. ✅ Email service client MUST retry on failure (≥ 3 retries)
@@ -349,6 +396,7 @@ npm run test:e2e           # E2E tests
 10. ✅ No duplicate messages allowed (enforced by DB)
 
 ### Performance Requirements (CONSTITUTIONAL)
+
 11. ✅ Queue system MUST use RabbitMQ Quorum Queues (zero data loss)
 12. ⚠️ Database MUST be partitioned for 1M+ messages/day (NOT IMPLEMENTED)
 13. ✅ Indexes MUST exist on time-based and status queries

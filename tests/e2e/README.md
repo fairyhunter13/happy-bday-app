@@ -1,5 +1,22 @@
 # E2E Tests - Birthday Message Scheduler
 
+## Table of Contents
+
+1. [Test Coverage](#test-coverage)
+2. [Test Infrastructure](#test-infrastructure)
+3. [Running Tests](#running-tests)
+4. [Test Configuration](#test-configuration)
+5. [Test Helpers](#test-helpers)
+6. [Performance Reports](#performance-reports)
+7. [Debugging Tests](#debugging-tests)
+8. [CI/CD Integration](#cicd-integration)
+9. [Best Practices](#best-practices)
+10. [Troubleshooting](#troubleshooting)
+11. [Coverage Goals](#coverage-goals)
+12. [Future Improvements](#future-improvements)
+
+---
+
 Comprehensive end-to-end tests for the birthday message scheduling system.
 
 ## Test Coverage
@@ -211,13 +228,17 @@ export default defineConfig({
 Tests use environment variables for configuration:
 
 ```bash
+
 # Database (provided by Testcontainers)
+
 DATABASE_URL=postgresql://test:test@localhost:5432/test_db
 
 # RabbitMQ (provided by Testcontainers)
+
 RABBITMQ_URL=amqp://test:test@localhost:5672
 
 # Mock Email Server (dynamic port)
+
 MESSAGE_API_URL=http://localhost:DYNAMIC_PORT/api/messages
 ```
 

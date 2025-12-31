@@ -1,5 +1,21 @@
 # Branch Protection Rules
 
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Protected Branches](#protected-branches)
+3. [Setting Up Branch Protection Rules](#setting-up-branch-protection-rules)
+4. [CODEOWNERS File](#codeowners-file)
+5. [Workflow Status Checks](#workflow-status-checks)
+6. [Bypass Scenarios](#bypass-scenarios)
+7. [Best Practices](#best-practices)
+8. [Monitoring and Maintenance](#monitoring-and-maintenance)
+9. [Troubleshooting](#troubleshooting)
+10. [Additional Resources](#additional-resources)
+11. [Support](#support)
+
+---
+
 This document outlines the recommended branch protection rules for the Birthday Message Scheduler repository to maintain code quality, security, and stability.
 
 ## Overview
@@ -119,14 +135,17 @@ If using a development branch for integration before production:
 ### Via GitHub CLI
 
 ```bash
+
 # Install GitHub CLI if not already installed
 # brew install gh (macOS)
 # or download from https://cli.github.com/
 
 # Authenticate
+
 gh auth login
 
 # Create branch protection rule for main
+
 gh api repos/{owner}/{repo}/branches/main/protection \
   --method PUT \
   --field required_status_checks='{"strict":true,"contexts":["lint-and-type-check","unit-tests","integration-tests","e2e-tests","build","security-scan"]}' \
@@ -180,19 +199,24 @@ resource "github_branch_protection" "main" {
 Create a `.github/CODEOWNERS` file to automatically assign reviewers:
 
 ```
+
 # Default owners for everything in the repo
+
 *       @fairyhunter13
 
 # Specific owners for different areas
+
 /src/           @fairyhunter13
 /tests/         @fairyhunter13
 /.github/       @fairyhunter13
 /docs/          @fairyhunter13
 
 # Database migrations require extra scrutiny
+
 /src/db/migrations/  @fairyhunter13
 
 # CI/CD pipelines
+
 /.github/workflows/  @fairyhunter13
 ```
 

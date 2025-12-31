@@ -1,5 +1,17 @@
 # Birthday Message Scheduler - Detailed System Flows
 **ANALYST Agent - Supplementary Documentation**
+
+## Table of Contents
+
+1. [1. Complete Birthday Message Flow (Sequence Diagram)](#1-complete-birthday-message-flow-sequence-diagram)
+2. [2. Race Condition Prevention](#2-race-condition-prevention)
+3. [3. Timezone Conversion Examples](#3-timezone-conversion-examples)
+4. [4. Idempotency Key Generation](#4-idempotency-key-generation)
+5. [5. Performance Optimization Strategies](#5-performance-optimization-strategies)
+6. [6. Monitoring & Alerting Points](#6-monitoring-alerting-points)
+7. [7. Disaster Recovery Scenarios](#7-disaster-recovery-scenarios)
+
+---
 **Date:** 2025-12-30
 
 ---
@@ -520,7 +532,7 @@ Result:
 
 ### Format
 
-```
+```json
 {userId}:{messageType}:{date}
 
 Examples:

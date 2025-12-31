@@ -255,11 +255,13 @@ await app.register(swagger, {
     info: {
       title: 'Birthday Message Scheduler API',
       description: `
+
 # Birthday Message Scheduler API
 
 Timezone-aware birthday message scheduler with support for multiple message types.
 
 ## Features
+
 - **Timezone-aware scheduling** - Uses IANA timezone identifiers
 - **Multiple message types** - Birthday and anniversary messages
 - **Exactly-once delivery** - Idempotent message handling
@@ -268,11 +270,13 @@ Timezone-aware birthday message scheduler with support for multiple message type
 - **Soft delete support** - Email reuse after deletion
 
 ## Rate Limiting
+
 - **User endpoints:** 10-100 requests/minute
 - **Health endpoints:** Unlimited
 - **Metrics endpoints:** Unlimited
 
 ## Authentication
+
 Authentication coming soon. Currently all endpoints are public.
       `,
       version: '1.0.0',
@@ -398,7 +402,7 @@ await app.register(swaggerUi, {
    - Use `prefixItems` for tuple validation
 
 2. **Webhooks Support** (for future)
-   ```yaml
+```
    webhooks:
      messageDelivered:
        post:
@@ -418,16 +422,21 @@ await app.register(swaggerUi, {
 #### Test 1.1: Verify OpenAPI 3.1 Specification
 
 ```bash
+
 # Start the application
+
 npm run dev
 
 # Export OpenAPI spec
+
 curl http://localhost:3000/docs/json > openapi.json
 
 # Verify version
+
 grep '"openapi": "3.1.0"' openapi.json
 
 # Validate spec
+
 npm install -g @apidevtools/swagger-cli
 swagger-cli validate openapi.json
 ```
@@ -440,7 +449,9 @@ swagger-cli validate openapi.json
 #### Test 1.2: Verify Swagger UI Enhancements
 
 ```bash
+
 # Open browser
+
 open http://localhost:3000/docs
 
 # Verify UI features:
@@ -449,6 +460,7 @@ open http://localhost:3000/docs
 # - "Try it out" enabled by default
 # - Syntax highlighting active
 # - External docs links present
+
 ```
 
 **Expected Result:**
@@ -1091,7 +1103,9 @@ export const prometheusMetricsSchema = {
   type: 'string',
   description: 'Prometheus exposition format (text/plain)',
   example: `# HELP http_request_duration_seconds HTTP request duration
+
 # TYPE http_request_duration_seconds histogram
+
 http_request_duration_seconds_bucket{le="0.05",method="GET",route="/api/v1/users/:id",status_code="200"} 100
 http_request_duration_seconds_bucket{le="0.1",method="GET",route="/api/v1/users/:id",status_code="200"} 150
 http_request_duration_seconds_sum{method="GET",route="/api/v1/users/:id",status_code="200"} 12.5
@@ -1099,11 +1113,13 @@ http_request_duration_seconds_count{method="GET",route="/api/v1/users/:id",statu
 
 # HELP messages_sent_total Total messages sent
 # TYPE messages_sent_total counter
+
 messages_sent_total{message_type="birthday"} 1500
 messages_sent_total{message_type="anniversary"} 800
 
 # HELP messages_failed_total Total messages failed
 # TYPE messages_failed_total counter
+
 messages_failed_total{message_type="birthday",reason="rate_limit"} 10
 messages_failed_total{message_type="birthday",reason="timeout"} 5`,
 } as const;
@@ -1449,7 +1465,9 @@ await app.register(swagger, {
 #### Test 2.1: Verify Schema Files Created
 
 ```bash
+
 # Check directory structure
+
 ls -la src/schemas/
 
 # Expected files:
@@ -1459,6 +1477,7 @@ ls -la src/schemas/
 # - health.schemas.ts
 # - metrics.schemas.ts
 # - components.ts
+
 ```
 
 #### Test 2.2: Verify TypeScript Compilation
@@ -1468,23 +1487,31 @@ npm run build
 
 # Should compile without errors
 # Check dist/schemas/ directory created
+
 ```
 
 #### Test 2.3: Verify Schema Registration
 
 ```bash
+
 # Start application
+
 npm run dev
 
 # Export OpenAPI spec
+
 curl http://localhost:3000/docs/json > openapi.json
 
 # Verify components registered
+
 jq '.components.schemas | keys' openapi.json
+
 # Should show: User, CreateUserRequest, ErrorResponse, etc.
 
 jq '.components.responses | keys' openapi.json
+
 # Should show: BadRequest, NotFound, Conflict, etc.
+
 ```
 
 ### Deliverables
@@ -2277,10 +2304,13 @@ Soft delete user (marks as deleted without removing from database).
 #### Test 3.1: Verify Examples in Swagger UI
 
 ```bash
+
 # Start application
+
 npm run dev
 
 # Open Swagger UI
+
 open http://localhost:3000/docs
 
 # Test for each endpoint:
@@ -2289,6 +2319,7 @@ open http://localhost:3000/docs
 # 3. Select different examples from dropdown
 # 4. Verify example data populates correctly
 # 5. Execute request and verify response matches examples
+
 ```
 
 **Expected Result:**
@@ -2340,23 +2371,30 @@ This phase is already complete from Phase 2 and Phase 3:
 #### Verify 4.1: RFC 9457 Compliance
 
 ```bash
+
 # Export OpenAPI spec
+
 curl http://localhost:3000/docs/json > openapi.json
 
 # Check error response structure
+
 jq '.components.schemas.ErrorResponse' openapi.json
 
 # Verify required fields: error, timestamp
 # Verify error object has: code, message, details
+
 ```
 
 #### Verify 4.2: Error Examples Present
 
 ```bash
+
 # Check error examples in spec
+
 jq '.components.responses.BadRequest.content."application/json".examples' openapi.json
 
 # Should show multiple error examples per error type
+
 ```
 
 ### Time Estimate
@@ -2385,13 +2423,16 @@ jq '.components.responses.BadRequest.content."application/json".examples' openap
 #### Step 5.1: Install Validation Tools
 
 ```bash
+
 # Install OpenAPI validation tools
+
 npm install --save-dev @apidevtools/swagger-cli
 npm install --save-dev @stoplight/spectral-cli
 npm install --save-dev husky
 npm install --save-dev lint-staged
 
 # Initialize husky
+
 npx husky-init && npm install
 ```
 
@@ -2514,6 +2555,7 @@ rules:
   oas3-unused-component: warn
 
 # Custom rule definitions
+
 overrides:
   - files:
       - '**#/components/schemas/**'
@@ -2654,13 +2696,17 @@ jobs:
 **File:** `.husky/pre-commit`
 
 ```bash
+
 #!/bin/sh
+
 . "$(dirname "$0")/_/husky.sh"
 
 # Run lint-staged
+
 npx lint-staged
 
 # Validate OpenAPI spec if routes or schemas changed
+
 if git diff --cached --name-only | grep -qE '^src/(routes|schemas)/'; then
   echo "🔍 Validating OpenAPI spec..."
   npm run openapi:check || {
@@ -2683,56 +2729,76 @@ chmod +x .husky/pre-commit
 #### Test 5.1: Verify NPM Scripts
 
 ```bash
+
 # Test export
+
 npm run openapi:export
+
 # Should create dist/openapi.json
 
 # Test validation
+
 npm run openapi:validate
+
 # Should pass with no errors
 
 # Test linting
+
 npm run openapi:lint
+
 # Should pass Spectral rules
 
 # Test full check
+
 npm run openapi:check
+
 # Should run all validations
+
 ```
 
 #### Test 5.2: Test Pre-Commit Hook
 
 ```bash
+
 # Make change to route file
+
 echo "// test comment" >> src/routes/user.routes.ts
 
 # Stage change
+
 git add src/routes/user.routes.ts
 
 # Attempt commit
+
 git commit -m "test: verify pre-commit hook"
 
 # Should trigger OpenAPI validation
 # Restore file after test
+
 git restore src/routes/user.routes.ts
 ```
 
 #### Test 5.3: Verify GitHub Actions Workflow
 
 ```bash
+
 # Create test branch
+
 git checkout -b test/openapi-validation
 
 # Make change to schema
+
 echo "// test change" >> src/schemas/user.schemas.ts
 
 # Commit and push
+
 git add .
 git commit -m "test: verify GitHub Actions"
 git push origin test/openapi-validation
 
 # Create PR on GitHub
 # Verify workflow runs successfully
+
 ```
 
 ### Deliverables
@@ -3311,10 +3377,13 @@ await app.register(docsRoutes);
 #### Test 6.1: Verify Enhanced UI
 
 ```bash
+
 # Start application
+
 npm run dev
 
 # Open Swagger UI
+
 open http://localhost:3000/docs
 
 # Verify enhancements:
@@ -3323,12 +3392,15 @@ open http://localhost:3000/docs
 # - Request snippets available
 # - Syntax highlighting works
 # - Navigation smooth
+
 ```
 
 #### Test 6.2: Test Landing Page
 
 ```bash
+
 # Open landing page
+
 open http://localhost:3000/api-docs
 
 # Verify:
@@ -3336,6 +3408,7 @@ open http://localhost:3000/api-docs
 # - All links work
 # - Stats display correctly
 # - Endpoints list complete
+
 ```
 
 ### Deliverables

@@ -1,5 +1,19 @@
 # Birthday Message Scheduler - Technical Specifications
 **ANALYST Agent - Implementation Guide**
+
+## Table of Contents
+
+1. [1. Technology Stack Specifications](#1-technology-stack-specifications)
+2. [2. Database Schema Implementation](#2-database-schema-implementation)
+3. [3. API Endpoint Specifications](#3-api-endpoint-specifications)
+4. [4. Configuration Specifications](#4-configuration-specifications)
+5. [5. Service Implementation Specifications](#5-service-implementation-specifications)
+6. [6. Queue Worker Implementation](#6-queue-worker-implementation)
+7. [7. CRON Job Specifications](#7-cron-job-specifications)
+8. [8. Testing Specifications](#8-testing-specifications)
+9. [9. Performance Benchmarks](#9-performance-benchmarks)
+
+---
 **Date:** 2025-12-30
 **Version:** 1.0
 
@@ -717,13 +731,16 @@ GET /metrics HTTP/1.1
 ### 4.1 Environment Variables
 
 ```bash
+
 # .env
 # Application
+
 NODE_ENV=production
 PORT=3000
 LOG_LEVEL=info
 
 # Database
+
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USERNAME=postgres
@@ -733,16 +750,19 @@ DATABASE_POOL_SIZE=20
 DATABASE_SSL=false
 
 # Redis
+
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_DB=0
 REDIS_PASSWORD=
 
 # Email Service
+
 EMAIL_SERVICE_URL=https://email-service.digitalenvision.com.au/send-email
 EMAIL_SERVICE_TIMEOUT=10000
 
 # Queue Configuration
+
 QUEUE_NAME=birthday-messages
 QUEUE_CONCURRENCY=5
 QUEUE_MAX_RETRIES=5
@@ -750,17 +770,20 @@ QUEUE_BACKOFF_DELAY=2000
 QUEUE_BACKOFF_TYPE=exponential
 
 # CRON Schedules
+
 CRON_DAILY_SCHEDULE=0 0 * * *          # Daily at midnight UTC
 CRON_MINUTE_SCHEDULE=* * * * *         # Every minute
 CRON_RECOVERY_SCHEDULE=*/10 * * * *    # Every 10 minutes
 
 # Circuit Breaker
+
 CIRCUIT_BREAKER_TIMEOUT=10000
 CIRCUIT_BREAKER_ERROR_THRESHOLD=50
 CIRCUIT_BREAKER_RESET_TIMEOUT=30000
 CIRCUIT_BREAKER_VOLUME_THRESHOLD=10
 
 # Rate Limiting
+
 RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100
 ```
@@ -1265,7 +1288,9 @@ describe('TimezoneService', () => {
 ### 9.2 Load Testing Scenario
 
 ```yaml
+
 # artillery-config.yml
+
 config:
   target: 'http://localhost:3000'
   phases:

@@ -564,7 +564,9 @@ export default defineConfig({
 #### Step 1.3: Update .gitignore
 
 ```gitignore
+
 # Generated API clients (regenerate from spec)
+
 src/clients/generated/
 ```
 
@@ -1147,7 +1149,9 @@ describe('EmailServiceClient Integration', () => {
 **Implementation:**
 
 ```gitignore
+
 # .gitignore
+
 src/clients/generated/
 ```
 
@@ -1183,14 +1187,18 @@ src/clients/generated/
 **Implementation:**
 
 ```gitignore
+
 # .gitignore (don't ignore generated)
 # src/clients/generated/  ← commented out
+
 ```
 
 **Add CI check:**
 
 ```yaml
+
 # Ensure generated code is committed
+
 - name: Check generated code is up to date
   run: |
     npm run generate:client
@@ -1229,7 +1237,9 @@ npm install --save-dev oasdiff
 **GitHub Action Integration:**
 
 ```yaml
+
 # .github/workflows/openapi-validation.yml
+
 - name: Check for breaking changes
   uses: oasdiff/oasdiff-action/breaking@v0.0.15
   with:
@@ -1448,13 +1458,17 @@ export class MessageSenderService {
 **Testing:**
 
 ```bash
+
 # Test old implementation
+
 npm run test:integration
 
 # Test new implementation
+
 USE_GENERATED_CLIENT=true npm run test:integration
 
 # Both should pass
+
 ```
 
 #### Phase 2: Canary Deployment (Week 2)
@@ -1519,15 +1533,19 @@ export class MessageSenderService {
 **Cleanup:**
 
 ```bash
+
 # Remove old HTTP client code
+
 git rm src/services/message.service.old.ts
 
 # Update tests
+
 git mv tests/unit/services/message.service.v2.test.ts \
        tests/unit/services/message.service.test.ts
 
 # Remove feature flag
 # Remove USE_GENERATED_CLIENT from .env
+
 ```
 
 #### Phase 4: Validation & Optimization (Week 4)
@@ -1568,17 +1586,22 @@ git mv tests/unit/services/message.service.v2.test.ts \
 **Rollback Steps:**
 
 ```bash
+
 # 1. Revert feature flag
+
 export USE_GENERATED_CLIENT=false
 
 # 2. Restart services
+
 npm run docker:prod:down
 npm run docker:prod:up
 
 # 3. Monitor recovery
+
 npm run docker:prod:logs
 
 # 4. If needed, revert code
+
 git revert <commit-hash>
 ```
 
@@ -1886,7 +1909,9 @@ async function sendEmailWithValidation(email: string, message: string) {
 **File**: `scripts/generate-and-validate-client.sh`
 
 ```bash
+
 #!/bin/bash
+
 set -e
 
 echo "🔍 Validating OpenAPI specification..."

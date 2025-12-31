@@ -105,7 +105,9 @@ At **1M+ messages/day**, the queue system becomes the critical bottleneck. Here'
 ### 1.3 Redpanda Configuration for 1M msg/day
 
 ```yaml
+
 # docker-compose.yml - Redpanda cluster
+
 version: '3.8'
 services:
   redpanda-1:
@@ -278,7 +280,9 @@ export const topicConfig = {
 ### 2.1 Complete Production-Ready Stack
 
 ```yaml
+
 # docker-compose.production.yml
+
 version: '3.8'
 
 services:
@@ -653,7 +657,9 @@ networks:
 ### 2.2 Nginx Load Balancer Configuration
 
 ```nginx
+
 # nginx/nginx.conf
+
 events {
     worker_connections 4096;
     use epoll;
@@ -1191,7 +1197,9 @@ testDatabaseLoad();
 ### 6.1 Reduced Docker Compose for Development
 
 ```yaml
+
 # docker-compose.dev.yml
+
 version: '3.8'
 
 services:

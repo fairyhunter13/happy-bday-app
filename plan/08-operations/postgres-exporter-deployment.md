@@ -199,7 +199,9 @@ Best for: Kubernetes production deployments with high availability.
 #### Step 1: Create Secret for Database Credentials
 
 ```yaml
+
 # postgres-exporter-secret.yaml
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -218,7 +220,9 @@ kubectl apply -f postgres-exporter-secret.yaml
 #### Step 2: Deploy as DaemonSet
 
 ```yaml
+
 # postgres-exporter-daemonset.yaml
+
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -282,7 +286,9 @@ kubectl apply -f postgres-exporter-daemonset.yaml
 #### Step 3: Create Service
 
 ```yaml
+
 # postgres-exporter-service.yaml
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -322,15 +328,19 @@ Best for: Bare-metal deployments or testing environments.
 #### Step 1: Download Binary
 
 ```bash
+
 # Download latest release
+
 VERSION="0.15.0"
 wget https://github.com/prometheus-community/postgres_exporter/releases/download/v${VERSION}/postgres_exporter-${VERSION}.linux-amd64.tar.gz
 
 # Extract
+
 tar -xzf postgres_exporter-${VERSION}.linux-amd64.tar.gz
 cd postgres_exporter-${VERSION}.linux-amd64/
 
 # Move to system path
+
 sudo mv postgres_exporter /usr/local/bin/
 sudo chmod +x /usr/local/bin/postgres_exporter
 ```
@@ -344,7 +354,9 @@ sudo useradd --no-create-home --shell /bin/false postgres_exporter
 #### Step 3: Create Systemd Service
 
 ```ini
+
 # /etc/systemd/system/postgres_exporter.service
+
 [Unit]
 Description=PostgreSQL Exporter for Prometheus
 Wants=network-online.target
@@ -437,19 +449,25 @@ postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
 **Examples:**
 
 ```bash
+
 # Local development (no SSL)
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@localhost:5432/birthday_app?sslmode=disable"
 
 # Production with SSL
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres.example.com:5432/birthday_app?sslmode=require"
 
 # Using environment variable password (secure)
+
 DATA_SOURCE_NAME="postgresql://metrics_user:${POSTGRES_PASSWORD}@postgres:5432/birthday_app?sslmode=require"
 
 # Multiple databases (use multiple exporter instances)
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app,template1?sslmode=disable"
 
 # Connection pooling settings
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?pool_max_conns=10&pool_min_conns=2"
 ```
 
@@ -472,7 +490,9 @@ DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?
 Create `postgres_exporter/queries.yaml` for application-specific metrics:
 
 ```yaml
+
 # Custom queries for Birthday Scheduler application
+
 pg_birthday_scheduler:
   query: |
     SELECT
@@ -665,16 +685,21 @@ scrape_configs:
 After deployment, verify metrics are being scraped:
 
 ```bash
+
 # Check exporter health
+
 curl http://localhost:9187/
 
 # View metrics endpoint
+
 curl http://localhost:9187/metrics
 
 # Verify Prometheus target
+
 curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="postgres")'
 
 # Query a metric
+
 curl -G http://localhost:9090/api/v1/query --data-urlencode 'query=pg_up'
 ```
 
@@ -685,23 +710,30 @@ curl -G http://localhost:9090/api/v1/query --data-urlencode 'query=pg_up'
 ### Database Availability
 
 ```promql
+
 # Database up status (1=up, 0=down)
+
 pg_up{instance="postgres-primary"}
 
 # Database uptime percentage (last 24 hours)
+
 avg_over_time(pg_up{instance="postgres-primary"}[24h]) * 100
 ```
 
 ### Database Size Monitoring
 
 ```promql
+
 # Database size in GB
+
 pg_database_size_bytes{datname="birthday_app"} / 1024 / 1024 / 1024
 
 # Database growth rate (bytes per second)
+
 rate(pg_database_size_bytes{datname="birthday_app"}[1h])
 
 # Database size growth percentage (last 24 hours)
+
 (
   pg_database_size_bytes{datname="birthday_app"}
   - pg_database_size_bytes{datname="birthday_app"} offset 24h
@@ -711,41 +743,52 @@ rate(pg_database_size_bytes{datname="birthday_app"}[1h])
 ### Query Performance
 
 ```promql
+
 # Top 10 slowest queries by total execution time
+
 topk(10,
   rate(pg_stat_statements_total_exec_time{datname="birthday_app"}[5m])
 )
 
 # Queries with mean execution time > 100ms
+
 pg_stat_statements_mean_exec_time{datname="birthday_app"} > 100
 
 # Query call rate (queries per second)
+
 rate(pg_stat_statements_calls{datname="birthday_app"}[5m])
 ```
 
 ### Connection Pool Metrics
 
 ```promql
+
 # Active connections by state
+
 pg_stat_activity_count{datname="birthday_app"}
 
 # Connection utilization percentage
+
 (
   pg_stat_activity_count{datname="birthday_app",state="active"}
   / pg_settings_max_connections
 ) * 100
 
 # Idle connections
+
 pg_stat_activity_count{datname="birthday_app",state="idle"}
 
 # Long-running queries (> 5 minutes)
+
 pg_stat_activity_max_tx_duration{datname="birthday_app",state="active"} > 300
 ```
 
 ### Cache Hit Ratio
 
 ```promql
+
 # Buffer cache hit ratio (should be > 99%)
+
 (
   sum(rate(pg_stat_database_blks_hit{datname="birthday_app"}[5m]))
   /
@@ -756,6 +799,7 @@ pg_stat_activity_max_tx_duration{datname="birthday_app",state="active"} > 300
 ) * 100
 
 # Index hit ratio (should be > 99%)
+
 (
   sum(rate(pg_stat_user_tables_idx_blks_hit[5m]))
   /
@@ -769,26 +813,34 @@ pg_stat_activity_max_tx_duration{datname="birthday_app",state="active"} > 300
 ### Replication Lag
 
 ```promql
+
 # Replication lag in seconds
+
 pg_replication_lag{application_name="postgres-replica"}
 
 # Alert if replication lag > 10 seconds
+
 pg_replication_lag{application_name="postgres-replica"} > 10
 ```
 
 ### Table Statistics
 
 ```promql
+
 # Table sizes in GB
+
 pg_stat_user_tables_size_bytes / 1024 / 1024 / 1024
 
 # Sequential scans (high values may indicate missing indexes)
+
 rate(pg_stat_user_tables_seq_scan[5m])
 
 # Dead tuples (high values indicate autovacuum issues)
+
 pg_stat_user_tables_n_dead_tup
 
 # Table bloat percentage
+
 (
   pg_stat_user_tables_n_dead_tup
   / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)
@@ -798,24 +850,31 @@ pg_stat_user_tables_n_dead_tup
 ### Lock Monitoring
 
 ```promql
+
 # Lock count by mode
+
 pg_locks_count
 
 # Blocked queries
+
 pg_stat_activity_count{wait_event_type="Lock"}
 
 # Deadlock count
+
 rate(pg_stat_database_deadlocks{datname="birthday_app"}[5m])
 ```
 
 ### Transaction Metrics
 
 ```promql
+
 # Transaction rate (commits + rollbacks per second)
+
 rate(pg_stat_database_xact_commit{datname="birthday_app"}[5m])
 + rate(pg_stat_database_xact_rollback{datname="birthday_app"}[5m])
 
 # Rollback ratio (should be < 1%)
+
 (
   rate(pg_stat_database_xact_rollback{datname="birthday_app"}[5m])
   /
@@ -848,14 +907,18 @@ Store credentials securely:
 
 **Docker Compose:**
 ```yaml
+
 # Use environment variables
+
 environment:
   DATA_SOURCE_NAME: "postgresql://metrics_user:${METRICS_PASSWORD}@postgres:5432/birthday_app?sslmode=require"
 ```
 
 **Kubernetes:**
 ```yaml
+
 # Use secrets
+
 env:
   - name: DATA_SOURCE_NAME
     valueFrom:
@@ -866,7 +929,9 @@ env:
 
 **Systemd:**
 ```ini
+
 # Use environment file
+
 EnvironmentFile=/etc/postgres_exporter/environment
 ```
 
@@ -875,10 +940,13 @@ EnvironmentFile=/etc/postgres_exporter/environment
 Always use SSL in production:
 
 ```bash
+
 # Require SSL
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?sslmode=require"
 
 # Verify certificate
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?sslmode=verify-full&sslrootcert=/etc/ssl/certs/ca-cert.pem"
 ```
 
@@ -895,7 +963,9 @@ networks:
 
 **Kubernetes:**
 ```yaml
+
 # Use NetworkPolicy
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -919,10 +989,13 @@ spec:
 Rotate credentials periodically:
 
 ```bash
+
 # Change password
+
 psql -U postgres -d birthday_app -c "ALTER USER metrics_user WITH PASSWORD 'NEW_PASSWORD';"
 
 # Update connection string
+
 docker-compose restart postgres-exporter
 ```
 
@@ -951,20 +1024,26 @@ SELECT pg_reload_conf();
 **Solutions:**
 
 ```bash
+
 # Check logs
+
 docker logs birthday-postgres-exporter
 
 # Common issues:
 # 1. Invalid connection string
+
 docker exec birthday-postgres-exporter sh -c 'echo $DATA_SOURCE_NAME'
 
 # 2. Database not reachable
+
 docker exec birthday-postgres-exporter ping postgres
 
 # 3. Wrong credentials
+
 docker exec -it postgres psql -U metrics_user -d birthday_app
 
 # 4. Port already in use
+
 netstat -tulpn | grep 9187
 ```
 
@@ -975,16 +1054,21 @@ netstat -tulpn | grep 9187
 **Solutions:**
 
 ```bash
+
 # Verify exporter is running
+
 curl http://localhost:9187/
 
 # Check metrics endpoint
+
 curl http://localhost:9187/metrics | head -20
 
 # Verify database connection
+
 docker exec birthday-postgres-exporter wget -O- http://localhost:9187/metrics | grep pg_up
 
 # Check Prometheus targets
+
 curl http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | select(.labels.job=="postgres")'
 ```
 
@@ -1015,14 +1099,18 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO metrics_user;
 **Solutions:**
 
 ```bash
+
 # Disable high-cardinality metrics
+
 docker run -e PG_EXPORTER_DISABLE_SETTINGS_METRICS=true ...
 
 # Exclude specific databases
+
 docker run -e PG_EXPORTER_EXCLUDE_DATABASES=template0,template1 ...
 
 # Limit query results
 # Edit queries.yaml to add LIMIT clauses
+
 ```
 
 ### Slow Query Performance
@@ -1050,13 +1138,17 @@ SELECT pg_stat_statements_reset();
 **Solutions:**
 
 ```bash
+
 # Check PostgreSQL SSL configuration
+
 docker exec postgres grep ssl /var/lib/postgresql/data/postgresql.conf
 
 # Enable SSL in connection string
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?sslmode=require"
 
 # Disable SSL for testing (NOT for production)
+
 DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?sslmode=disable"
 ```
 
@@ -1067,16 +1159,20 @@ DATA_SOURCE_NAME="postgresql://metrics_user:password@postgres:5432/birthday_app?
 **Solutions:**
 
 ```yaml
+
 # Set resource limits (Docker Compose)
+
 deploy:
   resources:
     limits:
       memory: 128M
 
 # Reduce scrape frequency
+
 scrape_interval: 60s  # Instead of 30s
 
 # Disable unused metrics
+
 environment:
   PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
   PG_EXPORTER_DISABLE_SETTINGS_METRICS: "true"
@@ -1089,16 +1185,21 @@ environment:
 **Solutions:**
 
 ```bash
+
 # Verify YAML syntax
+
 yamllint postgres_exporter/queries.yaml
 
 # Check file is mounted
+
 docker exec birthday-postgres-exporter cat /etc/postgres_exporter/queries.yaml
 
 # Test query manually
+
 docker exec postgres psql -U metrics_user -d birthday_app -c "SELECT COUNT(*) FROM users;"
 
 # Check exporter logs
+
 docker logs birthday-postgres-exporter 2>&1 | grep -i error
 ```
 

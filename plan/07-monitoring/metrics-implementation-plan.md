@@ -1,5 +1,25 @@
 # Metrics Implementation Plan - 100+ Metrics Achievement
 
+## Table of Contents
+
+1. [Executive Summary](#executive-summary)
+2. [Implementation Strategy](#implementation-strategy)
+3. [Metric Naming Conventions](#metric-naming-conventions)
+4. [Integration Points Summary](#integration-points-summary)
+5. [Implementation Priorities](#implementation-priorities)
+6. [Testing Strategy](#testing-strategy)
+7. [Monitoring & Validation](#monitoring-validation)
+8. [Documentation Updates](#documentation-updates)
+9. [Metrics Catalog](#metrics-catalog)
+10. [Sample Code Snippets](#sample-code-snippets)
+11. [Rollout Plan](#rollout-plan)
+12. [Success Criteria](#success-criteria)
+13. [Risk Mitigation](#risk-mitigation)
+14. [Appendix: Complete Metrics List](#appendix-complete-metrics-list)
+15. [Conclusion](#conclusion)
+
+---
+
 **Status**: Implementation Design
 **Current Metrics**: ~100 metrics declared (analyzed from metrics.service.ts)
 **Target**: 100+ metrics actively collecting data
@@ -1004,27 +1024,34 @@ export const databaseStatsService = new DatabaseStatsService();
 Following **Prometheus best practices**:
 
 ### Format
+
 ```
 <namespace>_<subsystem>_<metric_name>_<unit>
 ```
 
 ### Examples
+
 ```
+
 # Counters (total suffix)
+
 birthday_scheduler_messages_sent_total
 birthday_scheduler_user_creations_total
 birthday_scheduler_http_requests_total
 
 # Gauges (current value)
+
 birthday_scheduler_queue_depth
 birthday_scheduler_active_workers
 birthday_scheduler_cache_hit_rate
 
 # Histograms (with _bucket, _sum, _count)
+
 birthday_scheduler_api_response_time_seconds
 birthday_scheduler_database_query_duration_seconds
 
 # Summaries (with quantiles)
+
 birthday_scheduler_message_processing_quantiles
 ```
 
@@ -1045,6 +1072,7 @@ birthday_scheduler_message_processing_quantiles
 - Full URLs
 
 ### Label Limits
+
 - **Maximum labels per metric**: 10
 - **Maximum label cardinality**: 1000 values
 - **Total unique time series**: < 10,000
@@ -1268,16 +1296,21 @@ count({__name__=~"birthday_scheduler_.*", __name__!~".*process_.*|.*nodejs_.*"})
 
 **Metric Categories**:
 ```promql
+
 # Counters
+
 count({__name__=~"birthday_scheduler_.*_total"})
 
 # Gauges
+
 count({__name__=~"birthday_scheduler_.*", __name__!~".*_total|.*_seconds.*"})
 
 # Histograms
+
 count({__name__=~"birthday_scheduler_.*_seconds_bucket"})
 
 # Summaries
+
 count({__name__=~"birthday_scheduler_.*_quantiles"})
 ```
 
@@ -1336,9 +1369,11 @@ async getMetricsHealth(): Promise<{
 ### Metrics Catalog Template
 
 ```markdown
+
 ## Metrics Catalog
 
 ### HTTP/API Metrics (10 metrics)
+
 | Metric Name | Type | Labels | Description |
 |-------------|------|--------|-------------|
 | `birthday_scheduler_api_requests_total` | Counter | method, path, status | Total API requests |
@@ -1346,9 +1381,11 @@ async getMetricsHealth(): Promise<{
 ...
 
 ### Database Metrics (20 metrics)
+
 ...
 
 ### Queue Metrics (15 metrics)
+
 ...
 ```
 
@@ -1357,6 +1394,7 @@ async getMetricsHealth(): Promise<{
 ## Sample Code Snippets
 
 ### 1. Fastify Plugin for Metrics
+
 ```typescript
 // src/plugins/metrics.plugin.ts
 
@@ -1386,6 +1424,7 @@ export default fp(metricsPlugin, {
 ```
 
 ### 2. Database Transaction Wrapper
+
 ```typescript
 // src/db/transaction.ts
 
@@ -1417,6 +1456,7 @@ export async function withTransaction<T>(
 ```
 
 ### 3. Queue Health Monitor
+
 ```typescript
 // src/queue/health-monitor.ts
 
@@ -1462,6 +1502,7 @@ export class QueueHealthMonitor {
 ## Rollout Plan
 
 ### Week 1: P0 Implementation
+
 - **Monday-Tuesday**: Database metrics interceptor
 - **Wednesday-Thursday**: Queue metrics (consumer + publisher)
 - **Friday**: HTTP metrics enhancements + testing
@@ -1469,6 +1510,7 @@ export class QueueHealthMonitor {
 **Deliverable**: 35+ metrics actively collecting
 
 ### Week 2: P1 Implementation
+
 - **Monday**: User lifecycle metrics
 - **Tuesday**: Birthday processing metrics
 - **Wednesday**: System/runtime metrics
@@ -1478,6 +1520,7 @@ export class QueueHealthMonitor {
 **Deliverable**: 73+ total metrics actively collecting
 
 ### Week 3: P2 + Finalization
+
 - **Monday**: Security metrics
 - **Tuesday**: Advanced database stats
 - **Wednesday**: Complete testing suite
@@ -1491,6 +1534,7 @@ export class QueueHealthMonitor {
 ## Success Criteria
 
 ### Quantitative
+
 - ✅ 100+ custom metrics declared in MetricsService
 - ✅ 90+ metrics actively collecting data
 - ✅ All metrics follow Prometheus naming conventions
@@ -1499,6 +1543,7 @@ export class QueueHealthMonitor {
 - ✅ Test coverage > 80% for metrics code
 
 ### Qualitative
+
 - ✅ Comprehensive observability across all system components
 - ✅ Clear metric descriptions and documentation
 - ✅ Grafana dashboards showing all key metrics
@@ -1538,6 +1583,7 @@ export class QueueHealthMonitor {
 ## Appendix: Complete Metrics List
 
 ### Already Implemented (10)
+
 1. ✅ `birthday_scheduler_messages_scheduled_total`
 2. ✅ `birthday_scheduler_messages_sent_total`
 3. ✅ `birthday_scheduler_messages_failed_total`
