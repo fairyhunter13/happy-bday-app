@@ -377,7 +377,16 @@ jobs:
           sleep 15
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: test
+          DATABASE_PASSWORD: test
+          DATABASE_NAME: test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: test
+          RABBITMQ_PASSWORD: test
           REDIS_URL: redis://localhost:6379
           PORT: 3000
           NODE_ENV: test
@@ -476,7 +485,16 @@ jobs:
           sleep 15
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: test
+          DATABASE_PASSWORD: test
+          DATABASE_NAME: test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: test
+          RABBITMQ_PASSWORD: test
           REDIS_URL: redis://localhost:6379
           PORT: 3000
           NODE_ENV: test
