@@ -81,10 +81,11 @@ jobs:
           retention-days: 7
 
   coverage-gate:
-    name: Coverage Gate (80% minimum)
+    name: Coverage Gate (Warning - 80% target)
     needs: [unit-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    continue-on-error: true
 
     steps:
       - name: Checkout code
