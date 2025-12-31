@@ -74,12 +74,18 @@ describe('Database Integration', () => {
       const retrieved = await findUserByEmail(pool, user.email);
       expect(retrieved?.birthdayDate).toBeDefined();
 
+      // PostgreSQL DATE type stores date-only values without time component
+      // The pg driver may parse DATE values as local midnight, which can cause
+      // timezone shifts when converting to UTC. To properly compare date-only values,
+      // we extract the local date components from both dates.
       const originalDate = new Date(user.birthdayDate);
       const retrievedDate = new Date(retrieved!.birthdayDate);
 
-      expect(retrievedDate.getUTCFullYear()).toBe(originalDate.getUTCFullYear());
-      expect(retrievedDate.getUTCMonth()).toBe(originalDate.getUTCMonth());
-      expect(retrievedDate.getUTCDate()).toBe(originalDate.getUTCDate());
+      // Use getFullYear/getMonth/getDate (local timezone) for comparison
+      // This ensures we're comparing the date portion as stored in PostgreSQL
+      expect(retrievedDate.getFullYear()).toBe(originalDate.getUTCFullYear());
+      expect(retrievedDate.getMonth()).toBe(originalDate.getUTCMonth());
+      expect(retrievedDate.getDate()).toBe(originalDate.getUTCDate());
     });
 
     it('should handle null anniversary dates', async () => {
