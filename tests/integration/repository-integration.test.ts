@@ -15,7 +15,7 @@ import postgres from 'postgres';
 import { UserRepository } from '../../src/repositories/user.repository.js';
 import { MessageLogRepository } from '../../src/repositories/message-log.repository.js';
 import { MessageStatus } from '../../src/db/schema/message-logs.js';
-import { PostgresTestContainer, cleanDatabase } from '../helpers/testcontainers.js';
+import { PostgresTestContainer, cleanDatabase, isCI } from '../helpers/testcontainers.js';
 import type { CreateUserDto, CreateMessageLogDto } from '../../src/types/dto.js';
 import { DateTime } from 'luxon';
 
@@ -31,7 +31,12 @@ describe('Repository Integration Tests', () => {
     const { connectionString } = await testContainer.start();
     await testContainer.runMigrations('./drizzle');
 
-    queryClient = postgres(connectionString);
+    // Use limited connection pool in CI to prevent exhaustion
+    queryClient = postgres(connectionString, {
+      max: isCI() ? 2 : 10,
+      idle_timeout: 10,
+      connect_timeout: 10,
+    });
     db = drizzle(queryClient);
     userRepository = new UserRepository(db);
     messageLogRepository = new MessageLogRepository(db);

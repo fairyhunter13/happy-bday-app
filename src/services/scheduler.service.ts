@@ -283,6 +283,7 @@ export class SchedulerService {
 
         // Record metrics for scheduled message
         metricsService.recordMessageScheduled(messageType, user.timezone);
+        metricsService.recordBirthdayScheduledToday(user.timezone, messageType);
 
         stats.scheduled++;
       } catch (error) {
