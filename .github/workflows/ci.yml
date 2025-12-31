@@ -102,8 +102,33 @@ jobs:
       - name: Merge and check coverage
         run: |
           mkdir -p coverage
-          npx nyc merge coverage-artifacts/ coverage/coverage.json
-          npx nyc report --reporter=json-summary --reporter=text
+
+          # Merge V8 coverage files from all shards using a simple Node script
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          // Find all coverage-final.json files
+          const artifactsDir = 'coverage-artifacts';
+          const merged = {};
+
+          const dirs = fs.readdirSync(artifactsDir);
+          for (const dir of dirs) {
+            const coverageFile = path.join(artifactsDir, dir, 'coverage-final.json');
+            if (fs.existsSync(coverageFile)) {
+              const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
+              Object.assign(merged, coverage);
+            }
+          }
+
+          fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
+          console.log('Merged', Object.keys(merged).length, 'files');
+          "
+
+          # Generate coverage reports using c8 (V8-native tool)
+          npx c8 report --reporter=json-summary --reporter=text --temp-directory=coverage --reports-dir=coverage
+
+          # Check coverage thresholds
           bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
 
   integration-tests:
@@ -556,8 +581,70 @@ jobs:
       - name: Merge coverage reports
         run: |
           mkdir -p coverage
-          npx nyc merge coverage-artifacts/ coverage/coverage.json
-          npx nyc report --reporter=lcov --reporter=text --reporter=html --reporter=json-summary
+
+          # Merge V8 coverage files from all test types using a simple Node script
+          node -e "
+          const fs = require('fs');
+          const path = require('path');
+
+          // Find all coverage-final.json files recursively
+          function findCoverageFiles(dir) {
+            const files = [];
+            try {
+              const entries = fs.readdirSync(dir, { withFileTypes: true });
+              for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                  files.push(...findCoverageFiles(fullPath));
+                } else if (entry.name === 'coverage-final.json') {
+                  files.push(fullPath);
+                }
+              }
+            } catch (e) { /* ignore */ }
+            return files;
+          }
+
+          const merged = {};
+          const coverageFiles = findCoverageFiles('coverage-artifacts');
+
+          for (const file of coverageFiles) {
+            try {
+              const coverage = JSON.parse(fs.readFileSync(file, 'utf8'));
+              // Merge coverage data, preferring higher coverage counts
+              for (const [filePath, data] of Object.entries(coverage)) {
+                if (!merged[filePath]) {
+                  merged[filePath] = data;
+                } else {
+                  // Merge statement, function, and branch counts
+                  const existing = merged[filePath];
+                  if (data.s) {
+                    for (const key of Object.keys(data.s)) {
+                      existing.s[key] = Math.max(existing.s[key] || 0, data.s[key] || 0);
+                    }
+                  }
+                  if (data.f) {
+                    for (const key of Object.keys(data.f)) {
+                      existing.f[key] = Math.max(existing.f[key] || 0, data.f[key] || 0);
+                    }
+                  }
+                  if (data.b) {
+                    for (const key of Object.keys(data.b)) {
+                      existing.b[key] = existing.b[key].map((v, i) => Math.max(v, data.b[key][i] || 0));
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Error processing', file, e.message);
+            }
+          }
+
+          fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
+          console.log('Merged', Object.keys(merged).length, 'files from', coverageFiles.length, 'reports');
+          "
+
+          # Generate coverage reports using c8 (V8-native tool)
+          npx c8 report --reporter=lcov --reporter=text --reporter=html --reporter=json-summary --temp-directory=coverage --reports-dir=coverage
 
       - name: Check coverage threshold
         run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json

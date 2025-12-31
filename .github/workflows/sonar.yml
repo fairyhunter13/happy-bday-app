@@ -37,7 +37,7 @@ jobs:
         run: npm ci
 
       - name: Run unit tests with coverage
-        run: npm run test:unit -- --coverage
+        run: npm run test:unit -- --config vitest.config.unit-ci.ts --coverage
         env:
           CI: true
 
