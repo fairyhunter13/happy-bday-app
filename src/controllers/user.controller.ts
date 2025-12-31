@@ -9,7 +9,10 @@
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { UserRepository } from '../repositories/user.repository.js';
+import {
+  type CachedUserRepository,
+  cachedUserRepository,
+} from '../repositories/cached-user.repository.js';
 import { MessageRescheduleService } from '../services/message-reschedule.service.js';
 import { createUserSchema, updateUserSchema } from '../types/dto.js';
 import { createSuccessResponse } from '../utils/response.js';
@@ -46,10 +49,15 @@ interface DeleteUserRequest {
 /**
  * User Controller class
  * Handles all user-related HTTP requests
+ *
+ * Uses CachedUserRepository for all operations which handles:
+ * - Cache warming after creation
+ * - Cache invalidation after updates/deletes
+ * - Eventual consistency for read operations
  */
 export class UserController {
   constructor(
-    private readonly _userRepository: UserRepository,
+    private readonly _cachedUserRepository: CachedUserRepository = cachedUserRepository,
     private readonly _messageRescheduleService: MessageRescheduleService = new MessageRescheduleService()
   ) {}
 
@@ -77,8 +85,8 @@ export class UserController {
 
     logger.info({ email: userData.email }, 'Creating new user');
 
-    // Create user via repository
-    const user = await this._userRepository.create(userData);
+    // Create user via cached repository (handles cache warming)
+    const user = await this._cachedUserRepository.create(userData);
 
     logger.info({ userId: user.id, email: user.email }, 'User created successfully');
 
@@ -93,6 +101,8 @@ export class UserController {
    * Get user by ID
    * GET /api/v1/users/:id
    *
+   * Uses cached repository for better performance (eventual consistency OK for reads).
+   *
    * @param request - Fastify request with user ID in params
    * @param reply - Fastify reply
    * @returns 200 OK with user data
@@ -103,7 +113,8 @@ export class UserController {
 
     logger.debug({ userId: id }, 'Fetching user by ID');
 
-    const user = await this._userRepository.findById(id);
+    // Use cached repository for read operations
+    const user = await this._cachedUserRepository.findById(id);
 
     if (!user) {
       await reply.status(404).send({
@@ -123,6 +134,8 @@ export class UserController {
   /**
    * Update user by ID
    * PUT /api/v1/users/:id
+   *
+   * Uses cached repository which handles cache invalidation after update.
    *
    * @param request - Fastify request with user ID in params and update data in body
    * @param reply - Fastify reply
@@ -147,8 +160,8 @@ export class UserController {
 
     logger.info({ userId: id, updates: Object.keys(updateData) }, 'Updating user');
 
-    // Update user via repository
-    const updatedUser = await this._userRepository.update(id, updateData);
+    // Update user via cached repository (handles cache invalidation)
+    const updatedUser = await this._cachedUserRepository.update(id, updateData);
 
     logger.info({ userId: id }, 'User updated successfully');
 
@@ -208,6 +221,8 @@ export class UserController {
    * Soft delete user by ID
    * DELETE /api/v1/users/:id
    *
+   * Uses cached repository which handles cache invalidation after deletion.
+   *
    * @param request - Fastify request with user ID in params
    * @param reply - Fastify reply
    * @returns 200 OK with success message
@@ -218,8 +233,8 @@ export class UserController {
 
     logger.info({ userId: id }, 'Soft deleting user');
 
-    // Soft delete user via repository
-    await this._userRepository.delete(id);
+    // Soft delete user via cached repository (handles cache invalidation)
+    await this._cachedUserRepository.delete(id);
 
     logger.info({ userId: id }, 'User deleted successfully');
 
@@ -236,5 +251,5 @@ export class UserController {
   }
 }
 
-// Export singleton instance
-export const userController = new UserController(new UserRepository());
+// Export singleton instance (uses default cachedUserRepository)
+export const userController = new UserController();
