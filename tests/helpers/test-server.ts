@@ -20,6 +20,66 @@ export interface TestServerOptions {
 }
 
 /**
+ * Create user routes with fresh database connection
+ * This avoids module caching issues where the singleton db is created
+ * before the test sets DATABASE_URL
+ */
+async function createUserRoutes(): Promise<
+  (fastify: FastifyInstance, options: Record<string, unknown>) => Promise<void>
+> {
+  // Dynamically import and create fresh instances
+  const { UserController } = await import('../../src/controllers/user.controller.js');
+  const { UserRepository } = await import('../../src/repositories/user.repository.js');
+  const { drizzle } = await import('drizzle-orm/postgres-js');
+  const postgres = (await import('postgres')).default;
+  const schema = await import('../../src/db/schema/index.js');
+
+  // Create fresh database connection using current DATABASE_URL
+  const databaseUrl = process.env.DATABASE_URL || 'postgres://localhost:5432/test';
+  const queryClient = postgres(databaseUrl);
+  const db = drizzle(queryClient, { schema });
+
+  // Create fresh repository and controller with the test database
+  const userRepository = new UserRepository(db);
+  const userController = new UserController(userRepository);
+
+  // Import schema definitions
+  const {
+    CreateUserRouteSchema,
+    GetUserRouteSchema,
+    UpdateUserRouteSchema,
+    DeleteUserRouteSchema,
+  } = await import('../../src/schemas/index.js');
+
+  // Return the routes function
+  return async function userRoutes(fastify: FastifyInstance): Promise<void> {
+    fastify.post(
+      '/users',
+      { schema: CreateUserRouteSchema },
+      userController.create.bind(userController)
+    );
+
+    fastify.get(
+      '/users/:id',
+      { schema: GetUserRouteSchema },
+      userController.getById.bind(userController)
+    );
+
+    fastify.put(
+      '/users/:id',
+      { schema: UpdateUserRouteSchema },
+      userController.update.bind(userController)
+    );
+
+    fastify.delete(
+      '/users/:id',
+      { schema: DeleteUserRouteSchema },
+      userController.delete.bind(userController)
+    );
+  };
+}
+
+/**
  * Create a test server instance
  * Uses a minimal configuration for unit testing
  *
@@ -69,8 +129,9 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
   await app.register(metricsRoutes);
 
   // Register user routes if requested (requires database connection)
+  // Use fresh database connection to avoid module caching issues
   if (includeUserRoutes) {
-    const { userRoutes } = await import('../../src/routes/user.routes.js');
+    const userRoutes = await createUserRoutes();
     await app.register(userRoutes, { prefix: '/api/v1' });
   }
 
