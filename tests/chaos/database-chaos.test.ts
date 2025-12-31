@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { users } from '../../src/db/schema';
+import { users } from '../../src/db/schema/index.js';
 import { logger } from '../helpers/logger';
 
 describe('Database Chaos Tests', () => {
