@@ -103,7 +103,7 @@ jobs:
         run: |
           mkdir -p coverage
 
-          # Merge V8 coverage files from all shards using a simple Node script
+          # Merge V8/Istanbul coverage files and generate summary
           node -e "
           const fs = require('fs');
           const path = require('path');
@@ -123,10 +123,61 @@ jobs:
 
           fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
           console.log('Merged', Object.keys(merged).length, 'files');
-          "
 
-          # Generate coverage reports using c8 (V8-native tool)
-          npx c8 report --reporter=json-summary --reporter=text --temp-directory=coverage --reports-dir=coverage
+          // Generate coverage-summary.json from Istanbul format data
+          let totalStatements = 0, coveredStatements = 0;
+          let totalBranches = 0, coveredBranches = 0;
+          let totalFunctions = 0, coveredFunctions = 0;
+          let totalLines = 0, coveredLines = 0;
+
+          for (const [filePath, data] of Object.entries(merged)) {
+            // Count statements
+            if (data.s) {
+              for (const [key, count] of Object.entries(data.s)) {
+                totalStatements++;
+                if (count > 0) coveredStatements++;
+              }
+            }
+            // Count branches
+            if (data.b) {
+              for (const [key, counts] of Object.entries(data.b)) {
+                for (const count of counts) {
+                  totalBranches++;
+                  if (count > 0) coveredBranches++;
+                }
+              }
+            }
+            // Count functions
+            if (data.f) {
+              for (const [key, count] of Object.entries(data.f)) {
+                totalFunctions++;
+                if (count > 0) coveredFunctions++;
+              }
+            }
+          }
+
+          // Lines are typically same as statements in V8 coverage
+          totalLines = totalStatements;
+          coveredLines = coveredStatements;
+
+          const pct = (covered, total) => total === 0 ? 100 : Math.round((covered / total) * 10000) / 100;
+
+          const summary = {
+            total: {
+              lines: { total: totalLines, covered: coveredLines, skipped: 0, pct: pct(coveredLines, totalLines) },
+              statements: { total: totalStatements, covered: coveredStatements, skipped: 0, pct: pct(coveredStatements, totalStatements) },
+              functions: { total: totalFunctions, covered: coveredFunctions, skipped: 0, pct: pct(coveredFunctions, totalFunctions) },
+              branches: { total: totalBranches, covered: coveredBranches, skipped: 0, pct: pct(coveredBranches, totalBranches) }
+            }
+          };
+
+          fs.writeFileSync('coverage/coverage-summary.json', JSON.stringify(summary, null, 2));
+          console.log('Coverage Summary:');
+          console.log('  Lines:', summary.total.lines.pct + '%');
+          console.log('  Statements:', summary.total.statements.pct + '%');
+          console.log('  Functions:', summary.total.functions.pct + '%');
+          console.log('  Branches:', summary.total.branches.pct + '%');
+          "
 
           # Check coverage thresholds
           bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
@@ -641,10 +692,48 @@ jobs:
 
           fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
           console.log('Merged', Object.keys(merged).length, 'files from', coverageFiles.length, 'reports');
-          "
 
-          # Generate coverage reports using c8 (V8-native tool)
-          npx c8 report --reporter=lcov --reporter=text --reporter=html --reporter=json-summary --temp-directory=coverage --reports-dir=coverage
+          // Generate coverage-summary.json from Istanbul format data
+          let totalStatements = 0, coveredStatements = 0;
+          let totalBranches = 0, coveredBranches = 0;
+          let totalFunctions = 0, coveredFunctions = 0;
+
+          for (const [filePath, data] of Object.entries(merged)) {
+            if (data.s) {
+              for (const [key, count] of Object.entries(data.s)) {
+                totalStatements++;
+                if (count > 0) coveredStatements++;
+              }
+            }
+            if (data.b) {
+              for (const [key, counts] of Object.entries(data.b)) {
+                for (const count of counts) {
+                  totalBranches++;
+                  if (count > 0) coveredBranches++;
+                }
+              }
+            }
+            if (data.f) {
+              for (const [key, count] of Object.entries(data.f)) {
+                totalFunctions++;
+                if (count > 0) coveredFunctions++;
+              }
+            }
+          }
+
+          const pct = (c, t) => t === 0 ? 100 : Math.round((c / t) * 10000) / 100;
+          const summary = {
+            total: {
+              lines: { total: totalStatements, covered: coveredStatements, skipped: 0, pct: pct(coveredStatements, totalStatements) },
+              statements: { total: totalStatements, covered: coveredStatements, skipped: 0, pct: pct(coveredStatements, totalStatements) },
+              functions: { total: totalFunctions, covered: coveredFunctions, skipped: 0, pct: pct(coveredFunctions, totalFunctions) },
+              branches: { total: totalBranches, covered: coveredBranches, skipped: 0, pct: pct(coveredBranches, totalBranches) }
+            }
+          };
+
+          fs.writeFileSync('coverage/coverage-summary.json', JSON.stringify(summary, null, 2));
+          console.log('Coverage:', summary.total.statements.pct + '% statements,', summary.total.functions.pct + '% functions,', summary.total.branches.pct + '% branches');
+          "
 
       - name: Check coverage threshold
         run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
