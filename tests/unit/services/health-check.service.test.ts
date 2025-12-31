@@ -59,6 +59,14 @@ describe('HealthCheckService', () => {
 
     // Default mock for database
     (db.execute as any).mockResolvedValue([{ health_check: 1 }]);
+
+    // Default mock for circuit breaker - must be reset after resetAllMocks
+    (messageSenderService.getCircuitBreakerStats as any).mockReturnValue({
+      state: 'closed',
+      isOpen: false,
+      failures: 0,
+      successes: 10,
+    });
   });
 
   afterEach(() => {

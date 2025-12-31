@@ -78,8 +78,17 @@ jobs:
 
       - name: Check TypeScript strict mode
         run: |
-          # Verify tsconfig has strict mode enabled
-          STRICT_MODE=$(cat tsconfig.json | jq -r '.compilerOptions.strict')
+          # Verify tsconfig has strict mode enabled (strip comments first for JSONC)
+          # Use sed to remove // comments and /* */ blocks, then parse with jq
+          STRICT_MODE=$(sed 's#//.*##g; s#/\*.*\*/##g' tsconfig.json | jq -r '.compilerOptions.strict // empty')
+          if [ -z "$STRICT_MODE" ]; then
+            # Alternative: check for "strict": true in the file directly
+            if grep -q '"strict":\s*true' tsconfig.json; then
+              STRICT_MODE="true"
+            else
+              STRICT_MODE="false"
+            fi
+          fi
           if [ "$STRICT_MODE" != "true" ]; then
             echo "::error::TypeScript strict mode is not enabled"
             exit 1

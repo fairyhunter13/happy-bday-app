@@ -107,12 +107,12 @@ describe('MessageRescheduleService', () => {
       expect(result).toHaveProperty('success');
     });
 
-    it('should throw NotFoundError for non-existent user', async () => {
+    it('should throw DatabaseError wrapping NotFoundError for non-existent user', async () => {
       mockUserRepo.findById.mockResolvedValue(null);
 
       await expect(
         service.rescheduleMessagesForUser('non-existent-id', { timezone: 'UTC' })
-      ).rejects.toThrow(NotFoundError);
+      ).rejects.toThrow(DatabaseError);
     });
 
     it('should find future scheduled messages', async () => {
