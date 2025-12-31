@@ -210,6 +210,37 @@ jobs:
             cp docs/MUTATION_TESTING.md _site/MUTATION_TESTING.md
           fi
 
+          # Copy additional documentation files
+          if [ -f docs/RUNBOOK.md ]; then
+            cp docs/RUNBOOK.md _site/RUNBOOK.md
+          fi
+
+          if [ -f docs/METRICS.md ]; then
+            cp docs/METRICS.md _site/METRICS.md
+          fi
+
+          if [ -f docs/DEPLOYMENT_GUIDE.md ]; then
+            cp docs/DEPLOYMENT_GUIDE.md _site/DEPLOYMENT_GUIDE.md
+          fi
+
+          if [ -f docs/DEVELOPER_SETUP.md ]; then
+            cp docs/DEVELOPER_SETUP.md _site/DEVELOPER_SETUP.md
+          fi
+
+          if [ -f docs/ARCHITECTURE_SCOPE.md ]; then
+            cp docs/ARCHITECTURE_SCOPE.md _site/ARCHITECTURE_SCOPE.md
+          fi
+
+          if [ -f docs/README.md ]; then
+            cp docs/README.md _site/DOCS_README.md
+          fi
+
+          # Copy Grafana dashboard README
+          if [ -f grafana/dashboards/README.md ]; then
+            mkdir -p _site/grafana/dashboards
+            cp grafana/dashboards/README.md _site/grafana/dashboards/README.md
+          fi
+
           # Create 404 page
           cat > _site/404.html << 'EOF'
           <!DOCTYPE html>
