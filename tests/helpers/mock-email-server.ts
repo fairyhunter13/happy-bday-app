@@ -27,7 +27,8 @@ export type ResponseMode =
   | 'error-400'
   | 'timeout'
   | 'slow'
-  | 'random';
+  | 'random'
+  | 'probabilistic-failure';
 
 /**
  * Request data captured by mock server
@@ -62,6 +63,7 @@ export class MockEmailServer {
   private errorCount: number = 0;
   private currentErrors: number = 0;
   private requestDelay: number = 0;
+  private probabilisticFailureRate: number = 0.1; // 10% default
 
   constructor(config: MockServerConfig = {}) {
     this.port = config.port || 0; // 0 = random available port
@@ -191,6 +193,15 @@ export class MockEmailServer {
         }
         break;
 
+      case 'probabilistic-failure':
+        if (Math.random() < this.probabilisticFailureRate) {
+          // Fail with configured probability
+          this.sendError(res, 500, 'Probabilistic failure (simulating ~10% API failure rate)');
+        } else {
+          this.sendSuccess(res, body);
+        }
+        break;
+
       default:
         this.sendSuccess(res, body);
     }
@@ -280,6 +291,18 @@ export class MockEmailServer {
    */
   setRequestDelay(ms: number): void {
     this.requestDelay = ms;
+  }
+
+  /**
+   * Set probabilistic failure rate (0.0 to 1.0)
+   * For example: 0.1 = 10% failure rate
+   */
+  setProbabilisticFailureRate(rate: number): void {
+    if (rate < 0 || rate > 1) {
+      throw new Error('Failure rate must be between 0.0 and 1.0');
+    }
+    this.probabilisticFailureRate = rate;
+    logger.debug({ rate }, 'Probabilistic failure rate set');
   }
 
   /**

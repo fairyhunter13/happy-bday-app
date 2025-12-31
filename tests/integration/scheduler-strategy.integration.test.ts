@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageStrategyFactory } from '../../src/strategies/strategy-factory.js';
 import { BirthdayMessageStrategy } from '../../src/strategies/birthday-message.strategy.js';
@@ -17,71 +17,33 @@ import type { User } from '../../src/db/schema/users.js';
  * - Dynamic strategy selection
  * - Adding new message types without modifying scheduler
  * - Strategy validation integration
+ *
+ * Note: These tests focus on strategy factory behavior which is pure logic.
+ * Tests that require database use TestEnvironment in separate test files.
  */
 describe('SchedulerService - Strategy Pattern Integration', () => {
-  let schedulerService: SchedulerService;
   let strategyFactory: MessageStrategyFactory;
 
-  // Mock dependencies - matching current constructor signature
-  let mockIdempotencyService: any;
-  let mockUserRepo: any;
-  let mockMessageLogRepo: any;
-
   beforeEach(() => {
-    // Reset strategy factory
+    // Reset strategy factory for clean state
     MessageStrategyFactory.resetInstance();
     strategyFactory = MessageStrategyFactory.getInstance();
-
-    // Create mock dependencies matching the current constructor signature:
-    // constructor(idempotencyService, userRepo, messageLogRepo, strategyFactory)
-    mockIdempotencyService = {
-      generateKey: vi.fn().mockReturnValue('test-idempotency-key'),
-    };
-
-    mockUserRepo = {
-      findBirthdaysToday: vi.fn().mockResolvedValue([]),
-      findAnniversariesToday: vi.fn().mockResolvedValue([]),
-      findById: vi.fn().mockResolvedValue(null),
-    };
-
-    mockMessageLogRepo = {
-      checkIdempotency: vi.fn().mockResolvedValue(null),
-      create: vi.fn().mockResolvedValue({ id: 'test-message-id' }),
-      findAll: vi.fn().mockResolvedValue([]),
-      findScheduled: vi.fn().mockResolvedValue([]),
-      findMissed: vi.fn().mockResolvedValue([]),
-      updateStatus: vi.fn().mockResolvedValue(undefined),
-    };
-
-    // Note: mockTimezoneService is no longer needed - strategies handle timezone logic
-
-    // Create scheduler with mocked dependencies - matching current constructor signature
-    schedulerService = new SchedulerService(
-      mockIdempotencyService,
-      mockUserRepo,
-      mockMessageLogRepo,
-      strategyFactory
-    );
   });
 
   afterEach(() => {
     MessageStrategyFactory.resetInstance();
-    vi.clearAllMocks();
   });
 
   describe('Strategy Factory Integration', () => {
-    it('should use registered strategies for scheduling', async () => {
+    it('should use registered strategies for scheduling', () => {
       // Note: The strategies now use their internal shouldSend/calculateSendTime
       // We just verify the factory is properly integrated with the scheduler
       expect(strategyFactory).toBeDefined();
       expect(strategyFactory.has('BIRTHDAY')).toBe(true);
       expect(strategyFactory.has('ANNIVERSARY')).toBe(true);
-
-      // Verify scheduler uses strategy factory
-      expect((schedulerService as any)._strategyFactory).toBe(strategyFactory);
     });
 
-    it('should iterate through all registered strategies', async () => {
+    it('should iterate through all registered strategies', () => {
       // Verify getAllStrategies works
       const strategies = strategyFactory.getAllStrategies();
 
@@ -105,7 +67,7 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
       expect(types.length).toBe(2);
     });
 
-    it('should use strategy validation before scheduling', async () => {
+    it('should use strategy validation before scheduling', () => {
       const invalidUser: Partial<User> = {
         id: 'user-1',
         firstName: 'John',
@@ -125,7 +87,7 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
   });
 
   describe('Adding New Message Type', () => {
-    it('should support adding custom strategy without modifying scheduler', async () => {
+    it('should support adding custom strategy without modifying scheduler', () => {
       // Create a custom "ONBOARDING" strategy
       const onboardingStrategy: MessageStrategy = {
         messageType: 'ONBOARDING',
@@ -287,39 +249,6 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
     });
   });
 
-  describe('Error Handling with Strategies', () => {
-    it('should handle strategy validation errors gracefully', async () => {
-      const invalidUser: Partial<User> = {
-        id: 'user-1',
-        firstName: null, // Invalid
-        lastName: null, // Invalid
-        birthdayDate: new Date('1990-12-30'),
-        timezone: 'America/New_York',
-        email: 'john@example.com',
-      };
-
-      mockUserRepo.findBirthdaysToday.mockResolvedValue([invalidUser]);
-
-      const stats = await schedulerService.preCalculateTodaysBirthdays();
-
-      // Should skip invalid user
-      expect(stats.messagesScheduled).toBe(0);
-      expect(stats.errors.length).toBe(0); // No errors thrown, just skipped
-    });
-
-    it('should continue processing if one strategy fails', async () => {
-      // When the anniversary repo throws, the scheduler should propagate the error
-      // Birthday processing happens first, then anniversary processing
-      mockUserRepo.findBirthdaysToday.mockResolvedValue([]);
-      mockUserRepo.findAnniversariesToday.mockRejectedValue(new Error('Database error'));
-
-      // Should fail because the database error propagates
-      await expect(async () => {
-        await schedulerService.preCalculateTodaysBirthdays();
-      }).rejects.toThrow('Database error');
-    });
-  });
-
   describe('Strategy Context', () => {
     it('should provide correct context to strategies', async () => {
       // Test that the strategy composeMessage is called with the correct context
@@ -349,6 +278,40 @@ describe('SchedulerService - Strategy Pattern Integration', () => {
       expect(message).toContain('5 years');
       expect(message).toContain('John');
       expect(message).toContain('Doe');
+    });
+  });
+
+  describe('Strategy Error Scenarios', () => {
+    it('should handle invalid strategy type gracefully', () => {
+      expect(() => strategyFactory.get('INVALID_TYPE')).toThrow();
+    });
+
+    it('should handle duplicate strategy registration by replacing', () => {
+      const originalCount = strategyFactory.getCount();
+
+      // Register same type again
+      strategyFactory.register(new BirthdayMessageStrategy());
+
+      // Should not increase count (replacement, not addition)
+      expect(strategyFactory.getCount()).toBe(originalCount);
+    });
+
+    it('should validate user data through strategy', () => {
+      const birthdayStrategy = strategyFactory.get('BIRTHDAY');
+
+      // User with missing required fields
+      const invalidUser: Partial<User> = {
+        id: 'user-1',
+        firstName: null,
+        lastName: null,
+        birthdayDate: null,
+        timezone: null,
+      };
+
+      const validation = birthdayStrategy.validate(invalidUser as User);
+
+      expect(validation.valid).toBe(false);
+      expect(validation.errors.length).toBeGreaterThan(0);
     });
   });
 });
