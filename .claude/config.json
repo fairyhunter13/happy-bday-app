@@ -36,22 +36,14 @@
   "hive_mind": {
     "enabled": true,
     "config_file": ".claude/hive-mind-config.json",
-    "permanent_model_strategy": {
-      "coordinator_model": "opus",
-      "worker_intelligent_routing": true,
-      "enforce_across_sessions": true
-    },
+    "model_selection_mode": "coordinator_reasoning",
     "model_selection": {
-      "coordinator": {
-        "model": "opus",
-        "model_id": "claude-opus-4-5-20251101",
-        "always_use": true
-      },
-      "workers": {
-        "intelligent_routing": true,
-        "sonnet_threshold": 31,
-        "default_model": "sonnet"
-      }
+      "mode": "full_reasoning",
+      "description": "Coordinator (Opus 4.5) decides all model selections using reasoning judgment",
+      "algorithmic_enforcement": false,
+      "coordinator_has_full_control": true,
+      "default_recommendation": "sonnet",
+      "guidance": "See CLAUDE.md for model selection guidelines"
     }
   }
 }
