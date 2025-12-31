@@ -43,6 +43,32 @@
 | DB Connections | 5-15 | >80% pool | >90% pool |
 | Memory Usage | <1GB | >1.5GB | >2GB |
 
+### Coverage Enforcement
+
+The CI/CD pipeline enforces code coverage thresholds through automated checks:
+
+**Coverage Scripts:**
+- `scripts/coverage/check-thresholds.sh` - Validates coverage meets minimum requirements
+- `scripts/coverage/update-history.sh` - Updates coverage history tracking (main branch only)
+
+**CI/CD Integration:**
+- Each unit test shard collects coverage with `--coverage` flag
+- Coverage thresholds are checked immediately after unit tests
+- Coverage reports are merged in the coverage-report job
+- Coverage history is automatically tracked on push to main branch
+
+**Local Usage:**
+```bash
+# Run unit tests with coverage
+npm run test:unit -- --coverage
+
+# Check coverage thresholds
+npm run test:coverage:check
+
+# Generate full coverage report
+npm run test:coverage
+```
+
 ---
 
 ## Deployment Procedures
