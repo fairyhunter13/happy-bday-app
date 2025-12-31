@@ -97,7 +97,7 @@ describe('Message Scheduling', () => {
   });
 
   describe('minute-level enqueuing', () => {
-    it('should enqueue messages scheduled for current minute', () => {
+    it('should enqueue messages scheduled for current minute or past', () => {
       const now = DateTime.now().setZone('UTC');
       const currentMinute = now.startOf('minute');
 
@@ -123,8 +123,10 @@ describe('Message Scheduling', () => {
         shouldEnqueueNow(msg.scheduledSendTime, now.toJSDate())
       );
 
-      expect(toEnqueue).toHaveLength(1);
-      expect(toEnqueue[0].id).toBe('1');
+      // Should enqueue both current minute (id=1) and past (id=3)
+      // Future messages (id=2) should not be enqueued
+      expect(toEnqueue).toHaveLength(2);
+      expect(toEnqueue.map((m) => m.id)).toEqual(['1', '3']);
     });
 
     it('should not enqueue already sent messages', () => {
@@ -161,14 +163,19 @@ describe('Message Scheduling', () => {
       expect(shouldEnqueue).toBe(true);
     });
 
-    it('should enqueue messages within 1-minute window', () => {
-      const now = DateTime.now().setZone('UTC');
+    it('should enqueue messages based on minute boundary comparison', () => {
+      // Use a fixed time at the start of a minute for predictable testing
+      const now = DateTime.fromObject(
+        { year: 2025, month: 12, day: 30, hour: 9, minute: 0, second: 0 },
+        { zone: 'UTC' }
+      );
       const testCases = [
-        { offset: 0, shouldEnqueue: true }, // Exact minute
-        { offset: 30, shouldEnqueue: true }, // 30 seconds later
-        { offset: 59, shouldEnqueue: true }, // 59 seconds later
-        { offset: 60, shouldEnqueue: false }, // Next minute
-        { offset: -1, shouldEnqueue: false }, // Previous minute
+        { offset: 0, shouldEnqueue: true }, // Exact minute start
+        { offset: 30, shouldEnqueue: true }, // 30 seconds later (same minute)
+        { offset: 59, shouldEnqueue: true }, // 59 seconds later (same minute)
+        { offset: 60, shouldEnqueue: false }, // Next minute (09:01)
+        { offset: -1, shouldEnqueue: true }, // 1 second before (previous minute, should be enqueued)
+        { offset: -60, shouldEnqueue: true }, // Previous minute (should be enqueued for recovery)
       ];
 
       testCases.forEach(({ offset, shouldEnqueue: expected }) => {
@@ -304,8 +311,20 @@ function hasBirthdayToday(birthdayDate: Date, today: Date, timezone: string): bo
 }
 
 function calculateSendTime(timezone: string, date: Date): Date {
-  const dt = DateTime.fromJSDate(date).setZone(timezone);
-  return dt.set({ hour: 9, minute: 0, second: 0, millisecond: 0 }).toJSDate();
+  // Use the UTC date components to avoid timezone shift issues
+  const dt = DateTime.fromObject(
+    {
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(),
+      hour: 9,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    },
+    { zone: timezone }
+  );
+  return dt.toJSDate();
 }
 
 function batchByHour(
@@ -314,7 +333,10 @@ function batchByHour(
   const batches = new Map();
 
   messages.forEach((msg) => {
-    const hour = DateTime.fromJSDate(msg.scheduledSendTime).toFormat("yyyy-MM-dd'T'HH");
+    // Use UTC timezone to ensure consistent hour keys
+    const hour = DateTime.fromJSDate(msg.scheduledSendTime)
+      .setZone('UTC')
+      .toFormat("yyyy-MM-dd'T'HH");
     if (!batches.has(hour)) {
       batches.set(hour, []);
     }

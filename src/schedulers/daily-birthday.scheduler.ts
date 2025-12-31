@@ -53,7 +53,7 @@ export class DailyBirthdayScheduler {
       },
       {
         timezone: 'UTC',
-      } as any
+      } as { timezone: string }
     );
 
     logger.info('DailyBirthdayScheduler started successfully');

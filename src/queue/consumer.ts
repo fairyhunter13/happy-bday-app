@@ -28,8 +28,8 @@ export class MessageConsumer {
   private isShuttingDown = false;
   private consumerTag: string | null = null;
   private prefetch: number;
-  private onMessage: (job: MessageJob) => Promise<void>;
-  private onError?: (error: Error, job?: MessageJob) => void | Promise<void>;
+  private onMessage: (_job: MessageJob) => Promise<void>;
+  private onError?: (_error: Error, _job?: MessageJob) => void | Promise<void>;
 
   constructor(options: ConsumerOptions) {
     this.prefetch = options.prefetch || PREFETCH_COUNT;

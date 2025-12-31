@@ -165,7 +165,7 @@ export class CronScheduler {
       },
       {
         timezone: 'UTC',
-      } as any
+      } as { timezone: string }
     );
 
     logger.info({ job: key, schedule: config.schedule }, 'CRON job started');

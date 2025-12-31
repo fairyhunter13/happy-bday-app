@@ -17,8 +17,8 @@ import {
   messageLogRepository,
   type MessageLogRepository,
 } from '../repositories/message-log.repository.js';
-import type { TimezoneService } from './timezone.service.js';
-import type { IdempotencyService } from './idempotency.service.js';
+import { timezoneService, type TimezoneService } from './timezone.service.js';
+import { idempotencyService, type IdempotencyService } from './idempotency.service.js';
 import { MessageStatus } from '../db/schema/message-logs.js';
 import type { CreateMessageLogDto } from '../types/dto.js';
 import { DatabaseError, NotFoundError } from '../utils/errors.js';
@@ -55,12 +55,17 @@ export interface RescheduleResult {
  * });
  */
 export class MessageRescheduleService {
+  private readonly _timezoneService: TimezoneService;
+  private readonly _idempotencyService: IdempotencyService;
+
   constructor(
-    private readonly userRepo: UserRepository = userRepository,
-    private readonly messageLogRepo: MessageLogRepository = messageLogRepository,
-    private readonly timezoneService: TimezoneService = timezoneService,
-    private readonly idempotencyService: IdempotencyService = idempotencyService
+    private readonly _userRepo: UserRepository = userRepository,
+    private readonly _messageLogRepo: MessageLogRepository = messageLogRepository,
+    tzService: TimezoneService = timezoneService,
+    idempService: IdempotencyService = idempotencyService
   ) {
+    this._timezoneService = tzService;
+    this._idempotencyService = idempService;
     logger.debug('MessageRescheduleService initialized');
   }
 
@@ -98,7 +103,7 @@ export class MessageRescheduleService {
 
     try {
       // 1. Get user with updated data
-      const user = await this.userRepo.findById(userId);
+      const user = await this._userRepo.findById(userId);
 
       if (!user) {
         throw new NotFoundError(`User with ID ${userId} not found`);
@@ -106,7 +111,7 @@ export class MessageRescheduleService {
 
       // 2. Find all future scheduled messages for this user
       const now = new Date();
-      const futureMessages = await this.messageLogRepo.findAll({
+      const futureMessages = await this._messageLogRepo.findAll({
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
@@ -129,7 +134,7 @@ export class MessageRescheduleService {
       for (const message of futureMessages) {
         try {
           // Update status to FAILED instead of deleting (soft delete)
-          await this.messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
+          await this._messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
           result.deletedMessages++;
 
           logger.debug(
@@ -162,11 +167,11 @@ export class MessageRescheduleService {
 
         try {
           // Check if today is birthday in new timezone
-          const isBirthdayToday = this.timezoneService.isBirthdayToday(birthdayDate, timezone);
+          const isBirthdayToday = this._timezoneService.isBirthdayToday(birthdayDate, timezone);
 
           if (isBirthdayToday) {
             // Calculate new send time with updated timezone
-            const sendTime = this.timezoneService.calculateSendTime(birthdayDate, timezone);
+            const sendTime = this._timezoneService.calculateSendTime(birthdayDate, timezone);
 
             // Only reschedule if send time is in the future
             if (sendTime > now) {
@@ -208,14 +213,14 @@ export class MessageRescheduleService {
 
         try {
           // Check if today is anniversary in new timezone
-          const isAnniversaryToday = this.timezoneService.isBirthdayToday(
+          const isAnniversaryToday = this._timezoneService.isBirthdayToday(
             anniversaryDate,
             timezone
           );
 
           if (isAnniversaryToday) {
             // Calculate new send time with updated timezone
-            const sendTime = this.timezoneService.calculateSendTime(anniversaryDate, timezone);
+            const sendTime = this._timezoneService.calculateSendTime(anniversaryDate, timezone);
 
             // Only reschedule if send time is in the future
             if (sendTime > now) {
@@ -290,7 +295,7 @@ export class MessageRescheduleService {
     messageContent: string
   ): Promise<void> {
     // Generate idempotency key
-    const idempotencyKey = this.idempotencyService.generateKey(
+    const idempotencyKey = this._idempotencyService.generateKey(
       userId,
       messageType,
       sendTime,
@@ -298,7 +303,7 @@ export class MessageRescheduleService {
     );
 
     // Check if message already exists (shouldn't happen, but safety check)
-    const existing = await this.messageLogRepo.checkIdempotency(idempotencyKey);
+    const existing = await this._messageLogRepo.checkIdempotency(idempotencyKey);
 
     if (existing) {
       logger.warn(
@@ -319,7 +324,7 @@ export class MessageRescheduleService {
       retryCount: 0,
     };
 
-    await this.messageLogRepo.create(messageData);
+    await this._messageLogRepo.create(messageData);
 
     logger.info(
       {
@@ -345,7 +350,7 @@ export class MessageRescheduleService {
 
     try {
       const now = new Date();
-      const futureMessages = await this.messageLogRepo.findAll({
+      const futureMessages = await this._messageLogRepo.findAll({
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,
@@ -358,7 +363,7 @@ export class MessageRescheduleService {
       for (const message of futureMessages) {
         try {
           // Update status to FAILED instead of deleting (soft delete)
-          await this.messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
+          await this._messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
           deleted++;
         } catch (error) {
           logger.error(
@@ -401,7 +406,7 @@ export class MessageRescheduleService {
   }> {
     try {
       const now = new Date();
-      const futureMessages = await this.messageLogRepo.findAll({
+      const futureMessages = await this._messageLogRepo.findAll({
         userId,
         status: MessageStatus.SCHEDULED,
         scheduledAfter: now,

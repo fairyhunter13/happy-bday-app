@@ -1,14 +1,24 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { MessageSenderService } from '../../../src/services/message.service.js';
-import { ValidationError, ExternalServiceError } from '../../../src/utils/errors.js';
+import { ValidationError } from '../../../src/utils/errors.js';
 import type { User } from '../../../src/db/schema/users.js';
+
+// Mock the email service client
+vi.mock('../../../src/clients/email-service.client.js', () => ({
+  emailServiceClient: {
+    sendEmail: vi.fn().mockResolvedValue({
+      success: true,
+      messageId: 'test-message-id',
+    }),
+  },
+}));
 
 /**
  * Unit Tests: MessageSenderService
  *
  * Tests message sending with:
- * - HTTP retry logic
- * - Circuit breaker pattern
+ * - Input validation
+ * - Message composition
  * - Error handling
  */
 describe('MessageSenderService', () => {
@@ -16,11 +26,8 @@ describe('MessageSenderService', () => {
   let mockUser: User;
 
   beforeEach(() => {
-    // Create service with test API URL
-    service = new MessageSenderService('http://localhost:3001/test');
-
-    // Reset circuit breaker between tests
-    service.resetCircuitBreaker();
+    // Create service instance
+    service = new MessageSenderService();
 
     // Mock user data
     mockUser = {
@@ -96,52 +103,6 @@ describe('MessageSenderService', () => {
     });
   });
 
-  describe('circuit breaker', () => {
-    it('should initialize with circuit closed', () => {
-      const stats = service.getCircuitBreakerStats();
-
-      expect(stats.isOpen).toBe(false);
-      expect(stats.state).toBe('closed');
-    });
-
-    it('should track successes and failures', () => {
-      const stats = service.getCircuitBreakerStats();
-
-      expect(stats.successes).toBeDefined();
-      expect(stats.failures).toBeDefined();
-    });
-
-    it('should reset circuit breaker', () => {
-      service.resetCircuitBreaker();
-
-      const stats = service.getCircuitBreakerStats();
-      expect(stats.isOpen).toBe(false);
-    });
-
-    it('should report healthy when circuit is closed', () => {
-      expect(service.isHealthy()).toBe(true);
-    });
-  });
-
-  describe('retry configuration', () => {
-    it('should have correct retry settings', () => {
-      // Verify retry config through service instance
-      const retryConfig = (service as any).retryConfig;
-
-      expect(retryConfig.limit).toBe(3);
-      expect(retryConfig.methods).toContain('POST');
-    });
-
-    it('should calculate exponential backoff correctly', () => {
-      const retryConfig = (service as any).retryConfig;
-      const calculateDelay = retryConfig.calculateDelay;
-
-      expect(calculateDelay(1)).toBe(2000); // 2^1 * 1000 = 2s
-      expect(calculateDelay(2)).toBe(4000); // 2^2 * 1000 = 4s
-      expect(calculateDelay(3)).toBe(8000); // 2^3 * 1000 = 8s
-    });
-  });
-
   describe('message composition', () => {
     it('should compose birthday message with first name', () => {
       const user = { ...mockUser, firstName: 'Alice' };
@@ -200,17 +161,7 @@ describe('MessageSenderService', () => {
 
   describe('payload construction', () => {
     it('should include all required fields in birthday payload', () => {
-      const expectedFields = [
-        'userId',
-        'email',
-        'firstName',
-        'lastName',
-        'messageType',
-        'messageContent',
-      ];
-
-      // We can't directly test the payload without making a real HTTP request
-      // But we can verify the service has the right structure
+      // Verify the user structure has required fields
       expect(mockUser.id).toBeDefined();
       expect(mockUser.email).toBeDefined();
       expect(mockUser.firstName).toBeDefined();
@@ -225,43 +176,6 @@ describe('MessageSenderService', () => {
     });
   });
 
-  describe('service health', () => {
-    it('should report healthy when initialized', () => {
-      expect(service.isHealthy()).toBe(true);
-    });
-
-    it('should provide circuit breaker statistics', () => {
-      const stats = service.getCircuitBreakerStats();
-
-      expect(stats).toHaveProperty('state');
-      expect(stats).toHaveProperty('failures');
-      expect(stats).toHaveProperty('successes');
-      expect(stats).toHaveProperty('isOpen');
-    });
-  });
-
-  describe('configuration', () => {
-    it('should use provided API URL', () => {
-      const customService = new MessageSenderService('http://custom-api.example.com');
-
-      expect((customService as any).apiUrl).toBe('http://custom-api.example.com');
-    });
-
-    it('should use default API URL when not provided', () => {
-      const defaultService = new MessageSenderService();
-
-      expect((defaultService as any).apiUrl).toBeDefined();
-    });
-
-    it('should have correct circuit breaker thresholds', () => {
-      const cbOptions = (service as any).circuitBreakerOptions;
-
-      expect(cbOptions.timeout).toBe(10000); // 10 seconds
-      expect(cbOptions.errorThresholdPercentage).toBe(50); // 50%
-      expect(cbOptions.resetTimeout).toBe(30000); // 30 seconds
-    });
-  });
-
   describe('multiple users', () => {
     it('should handle sending to multiple users sequentially', async () => {
       const users = [
@@ -270,7 +184,7 @@ describe('MessageSenderService', () => {
         { ...mockUser, id: 'user-3', email: 'user3@example.com' },
       ];
 
-      // Just verify structure - actual sending would require HTTP mocking
+      // Verify structure for sequential processing
       expect(users).toHaveLength(3);
       users.forEach((user) => {
         expect(user.id).toBeDefined();

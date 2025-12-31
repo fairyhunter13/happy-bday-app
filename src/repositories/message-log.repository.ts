@@ -10,12 +10,11 @@
  * - Comprehensive error handling
  */
 
-import { eq, and, gte, lte, inArray, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, inArray, sql, type ExtractTablesWithRelations } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import { db, type DbType } from '../db/connection.js';
-import * as schema from '../db/schema/index.js';
+import type * as schema from '../db/schema/index.js';
 import {
   messageLogs,
   type MessageLog,
@@ -45,7 +44,7 @@ type TransactionType = PgTransaction<
  * Handles all database operations for message logs
  */
 export class MessageLogRepository {
-  constructor(private readonly database: DbType = db) {}
+  constructor(private readonly _database: DbType = db) {}
 
   /**
    * Find message log by ID
@@ -56,7 +55,7 @@ export class MessageLogRepository {
    */
   async findById(id: string, tx?: TransactionType): Promise<MessageLog | null> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(messageLogs)
@@ -78,7 +77,7 @@ export class MessageLogRepository {
    */
   async findByUserId(userId: string, tx?: TransactionType): Promise<MessageLog[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(messageLogs)
@@ -104,7 +103,7 @@ export class MessageLogRepository {
    */
   async findScheduled(startTime: Date, endTime: Date, tx?: TransactionType): Promise<MessageLog[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(messageLogs)
@@ -138,7 +137,7 @@ export class MessageLogRepository {
    */
   async findMissed(tx?: TransactionType): Promise<MessageLog[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
       const result = await dbInstance
@@ -171,7 +170,7 @@ export class MessageLogRepository {
    */
   async findAll(filters?: MessageLogFiltersDto, tx?: TransactionType): Promise<MessageLog[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const conditions = [];
 
       if (filters?.userId) {
@@ -218,7 +217,7 @@ export class MessageLogRepository {
    */
   async create(data: CreateMessageLogDto, tx?: TransactionType): Promise<MessageLog> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check idempotency key
       const existing = await this.checkIdempotency(data.idempotencyKey, tx);
@@ -274,7 +273,7 @@ export class MessageLogRepository {
     tx?: TransactionType
   ): Promise<MessageLog> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check if message exists
       const existing = await this.findById(id, tx);
@@ -319,7 +318,7 @@ export class MessageLogRepository {
    */
   async markAsSent(id: string, response: MarkAsSentDto, tx?: TransactionType): Promise<MessageLog> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check if message exists
       const existing = await this.findById(id, tx);
@@ -375,7 +374,7 @@ export class MessageLogRepository {
     tx?: TransactionType
   ): Promise<MessageLog> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check if message exists
       const existing = await this.findById(id, tx);
@@ -420,7 +419,7 @@ export class MessageLogRepository {
    */
   async checkIdempotency(key: string, tx?: TransactionType): Promise<MessageLog | null> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(messageLogs)
@@ -449,9 +448,9 @@ export class MessageLogRepository {
    * @returns Result of callback
    * @throws DatabaseError on transaction failure
    */
-  async transaction<T>(callback: (tx: TransactionType) => Promise<T>): Promise<T> {
+  async transaction<T>(callback: (_tx: TransactionType) => Promise<T>): Promise<T> {
     try {
-      return await this.database.transaction(callback);
+      return await this._database.transaction(callback);
     } catch (error) {
       throw new DatabaseError('Transaction failed', { error });
     }

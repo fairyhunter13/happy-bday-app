@@ -17,7 +17,7 @@ import { logger } from '../config/logger.js';
  * Handles Prometheus metrics endpoint
  */
 export class MetricsController {
-  constructor(private readonly metricsService: MetricsService) {}
+  constructor(private readonly _metricsService: MetricsService) {}
 
   /**
    * Get Prometheus metrics
@@ -32,8 +32,8 @@ export class MetricsController {
 
     try {
       // Get metrics from service
-      const metrics = await this.metricsService.getMetrics();
-      const contentType = this.metricsService.getContentType();
+      const metrics = await this._metricsService.getMetrics();
+      const contentType = this._metricsService.getContentType();
 
       // Set proper content type for Prometheus
       await reply.header('Content-Type', contentType).send(metrics);
@@ -68,7 +68,7 @@ export class MetricsController {
     logger.debug('Serving metrics summary');
 
     try {
-      const metricValues = await this.metricsService.getMetricValues();
+      const metricValues = await this._metricsService.getMetricValues();
 
       await reply.status(200).send({
         success: true,

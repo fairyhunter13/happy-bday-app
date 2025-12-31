@@ -182,16 +182,11 @@ export class RabbitMQConnection {
         return { status: 'unhealthy', error: 'Not connected' };
       }
 
-      // Try to create a temporary channel to verify connection
-      const testChannel = this.connection.createChannel({
-        setup: async (channel: Channel) => {
-          // Just verify we can create a channel
-          await channel.checkQueue('amq.rabbitmq.log'); // System queue that always exists
-        },
-      });
-
-      await testChannel.waitForConnect();
-      await testChannel.close();
+      // Use the existing publisher channel to verify connection is healthy
+      // waitForConnect will resolve immediately if already connected
+      if (this.publisherChannel) {
+        await this.publisherChannel.waitForConnect();
+      }
 
       return { status: 'healthy' };
     } catch (error) {
@@ -226,12 +221,29 @@ export class RabbitMQConnection {
       }
 
       this.isConnected = false;
+      // Reset singleton instance to allow re-initialization
+      RabbitMQConnection.instance = null;
       logger.info('RabbitMQ connection closed gracefully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error({ msg: 'Error closing RabbitMQ connection', error: errorMessage });
+      // Still reset instance on error to prevent stale references
+      RabbitMQConnection.instance = null;
       throw error;
     }
+  }
+
+  /**
+   * Reset singleton instance (useful for testing)
+   */
+  public static resetInstance(): void {
+    if (RabbitMQConnection.instance) {
+      RabbitMQConnection.instance.isConnected = false;
+      RabbitMQConnection.instance.connection = null;
+      RabbitMQConnection.instance.publisherChannel = null;
+      RabbitMQConnection.instance.consumerChannel = null;
+    }
+    RabbitMQConnection.instance = null;
   }
 }
 

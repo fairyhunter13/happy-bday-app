@@ -46,8 +46,8 @@ export interface DetailedHealthResponse {
     circuitBreaker: ComponentHealth;
   };
   metrics: {
-    memory: NodeJS.MemoryUsage;
-    cpu: NodeJS.CpuUsage;
+    memory: ReturnType<typeof process.memoryUsage>;
+    cpu: ReturnType<typeof process.cpuUsage>;
   };
 }
 
@@ -386,8 +386,8 @@ export class HealthCheckService {
    * @returns System metrics
    */
   getSystemMetrics(): {
-    memory: NodeJS.MemoryUsage;
-    cpu: NodeJS.CpuUsage;
+    memory: ReturnType<typeof process.memoryUsage>;
+    cpu: ReturnType<typeof process.cpuUsage>;
     uptime: number;
     version: string;
   } {

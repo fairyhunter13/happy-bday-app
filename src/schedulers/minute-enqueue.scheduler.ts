@@ -68,7 +68,7 @@ export class MinuteEnqueueScheduler {
       },
       {
         timezone: 'UTC',
-      } as any
+      } as { timezone: string }
     );
 
     logger.info('MinuteEnqueueScheduler started successfully');
@@ -239,6 +239,11 @@ export class MinuteEnqueueScheduler {
       return false; // Not started
     }
 
+    // Check for consecutive failures first (applies even if never successfully run)
+    if (this.consecutiveFailures >= 3) {
+      return false; // Too many failures
+    }
+
     if (!this.lastRunTime) {
       // Never run yet - this is OK if just started
       return true;
@@ -249,11 +254,6 @@ export class MinuteEnqueueScheduler {
 
     if (minutesSinceLastRun > 2) {
       return false; // Missed execution
-    }
-
-    // Check for consecutive failures
-    if (this.consecutiveFailures >= 3) {
-      return false; // Too many failures
     }
 
     return true;

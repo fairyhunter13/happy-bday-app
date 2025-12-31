@@ -177,7 +177,7 @@ export class MessageSenderService {
     successes: number;
   } {
     const health = emailServiceClient.getHealthStatus();
-    const stats = health.sendEmail.stats as any;
+    const stats = health.sendEmail.stats as { failures?: number; successes?: number } | undefined;
 
     return {
       state: health.sendEmail.state,

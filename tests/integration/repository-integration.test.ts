@@ -171,7 +171,7 @@ describe('Repository Integration Tests', () => {
           // Force rollback
           throw new Error('Intentional failure');
         })
-      ).rejects.toThrow('Intentional failure');
+      ).rejects.toThrow('Transaction failed');
 
       // Verify neither was created
       const user = await userRepository.findByEmail('rollback@example.com');

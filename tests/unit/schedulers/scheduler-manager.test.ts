@@ -134,8 +134,9 @@ describe('SchedulerManager', () => {
     it('should wait for running jobs to complete', async () => {
       await manager.start();
 
-      // Simulate running jobs
-      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'getStatus')
+      // Get the mock and configure it to return running once, then idle
+      const dailyGetStatus = vi.mocked(dailySchedulerModule.dailyBirthdayScheduler.getStatus);
+      dailyGetStatus
         .mockReturnValueOnce({
           isRunning: true,
           isScheduled: true,
@@ -151,29 +152,6 @@ describe('SchedulerManager', () => {
           lastRunStats: null,
         });
 
-      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus').mockReturnValue({
-        isRunning: false,
-        isScheduled: true,
-        schedule: '* * * * *',
-        lastRunTime: null,
-        totalEnqueued: 0,
-        totalRuns: 0,
-        consecutiveFailures: 0,
-        averageEnqueuedPerRun: 0,
-      });
-
-      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus').mockReturnValue({
-        isRunning: false,
-        isScheduled: true,
-        schedule: '*/10 * * * *',
-        lastRunTime: null,
-        lastRunStats: null,
-        totalRecovered: 0,
-        totalFailed: 0,
-        totalRuns: 0,
-        averageRecoveredPerRun: 0,
-      });
-
       await manager.gracefulShutdown(5000);
 
       expect(dailySchedulerModule.dailyBirthdayScheduler.stop).toHaveBeenCalled();
@@ -183,8 +161,9 @@ describe('SchedulerManager', () => {
     it('should timeout and force shutdown if jobs take too long', async () => {
       await manager.start();
 
-      // Simulate jobs that never complete
-      vi.spyOn(dailySchedulerModule.dailyBirthdayScheduler, 'getStatus').mockReturnValue({
+      // Make the job appear to always be running
+      const dailyGetStatus = vi.mocked(dailySchedulerModule.dailyBirthdayScheduler.getStatus);
+      dailyGetStatus.mockReturnValue({
         isRunning: true,
         isScheduled: true,
         schedule: '0 0 * * *',
@@ -192,7 +171,34 @@ describe('SchedulerManager', () => {
         lastRunStats: null,
       });
 
-      vi.spyOn(minuteSchedulerModule.minuteEnqueueScheduler, 'getStatus').mockReturnValue({
+      await manager.gracefulShutdown(1000); // 1 second timeout
+
+      // Should still stop despite timeout
+      expect(dailySchedulerModule.dailyBirthdayScheduler.stop).toHaveBeenCalled();
+      expect(manager.isRunning()).toBe(false);
+
+      // Reset the mock for other tests
+      dailyGetStatus.mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '0 0 * * *',
+        lastRunTime: null,
+        lastRunStats: null,
+      });
+    });
+
+    it('should immediately shutdown if all jobs idle', async () => {
+      await manager.start();
+
+      // Ensure all jobs are idle (this is the default mock state)
+      vi.mocked(dailySchedulerModule.dailyBirthdayScheduler.getStatus).mockReturnValue({
+        isRunning: false,
+        isScheduled: true,
+        schedule: '0 0 * * *',
+        lastRunTime: null,
+        lastRunStats: null,
+      });
+      vi.mocked(minuteSchedulerModule.minuteEnqueueScheduler.getStatus).mockReturnValue({
         isRunning: false,
         isScheduled: true,
         schedule: '* * * * *',
@@ -202,8 +208,7 @@ describe('SchedulerManager', () => {
         consecutiveFailures: 0,
         averageEnqueuedPerRun: 0,
       });
-
-      vi.spyOn(recoverySchedulerModule.recoveryScheduler, 'getStatus').mockReturnValue({
+      vi.mocked(recoverySchedulerModule.recoveryScheduler.getStatus).mockReturnValue({
         isRunning: false,
         isScheduled: true,
         schedule: '*/10 * * * *',
@@ -214,16 +219,6 @@ describe('SchedulerManager', () => {
         totalRuns: 0,
         averageRecoveredPerRun: 0,
       });
-
-      await manager.gracefulShutdown(1000); // 1 second timeout
-
-      // Should still stop despite timeout
-      expect(dailySchedulerModule.dailyBirthdayScheduler.stop).toHaveBeenCalled();
-      expect(manager.isRunning()).toBe(false);
-    });
-
-    it('should immediately shutdown if all jobs idle', async () => {
-      await manager.start();
 
       const startTime = Date.now();
       await manager.gracefulShutdown(30000);

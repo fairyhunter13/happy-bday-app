@@ -85,10 +85,10 @@ describe('MetricsController Integration Tests', () => {
       expect(response.statusCode).toBe(200);
       const body = response.body;
 
-      // Check for Node.js default metrics
-      expect(body).toContain('nodejs_heap_size_total_bytes');
-      expect(body).toContain('nodejs_heap_size_used_bytes');
-      expect(body).toContain('process_cpu_user_seconds_total');
+      // Check for Node.js default metrics (with birthday_scheduler_ prefix)
+      expect(body).toContain('birthday_scheduler_nodejs_heap_size_total_bytes');
+      expect(body).toContain('birthday_scheduler_nodejs_heap_size_used_bytes');
+      expect(body).toContain('birthday_scheduler_process_cpu_user_seconds_total');
     });
 
     it('should include metric HELP and TYPE comments', async () => {
@@ -125,8 +125,11 @@ describe('MetricsController Integration Tests', () => {
       const metricLines = lines.filter((line) => !line.startsWith('#') && line.trim() !== '');
 
       // Each metric line should have format: metric_name{labels} value
+      // Value can be integer, decimal, scientific notation, or special values (NaN, +Inf, -Inf)
       for (const line of metricLines) {
-        expect(line).toMatch(/^[a-zA-Z_:][a-zA-Z0-9_:]*(\{.*\})?\s+[\d.]+/);
+        expect(line).toMatch(
+          /^[a-zA-Z_:][a-zA-Z0-9_:]*(\{.*\})?\s+([-+]?[\d.]+([eE][-+]?\d+)?|[Nn][Aa][Nn]|[+-]?[Ii][Nn][Ff])$/
+        );
       }
     });
   });

@@ -91,30 +91,6 @@ services:
     networks:
       - test-network
 
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: test-api
-    environment:
-      <<: *test-env
-      PORT: 3000
-      LOG_LEVEL: debug
-    ports:
-      - '3000:3000'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    logging:
-      <<: *logging
-    networks:
-      - test-network
-    command: npm run dev
-
 volumes:
   postgres_test_data:
   rabbitmq_test_data:

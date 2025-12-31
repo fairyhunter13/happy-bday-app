@@ -3,13 +3,15 @@
  */
 
 export class ApplicationError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly statusCode: number = 500,
-    public readonly details?: unknown
-  ) {
+  public readonly code: string;
+  public readonly statusCode: number;
+  public readonly details?: unknown;
+
+  constructor(message: string, code: string, statusCode: number = 500, details?: unknown) {
     super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
     this.name = this.constructor.name;
     Error.captureStackTrace(this, this.constructor);
   }
