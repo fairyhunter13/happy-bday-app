@@ -284,6 +284,11 @@ export class SchedulerService {
         // Record metrics for scheduled message
         metricsService.recordMessageScheduled(messageType, user.timezone);
         metricsService.recordBirthdayScheduledToday(user.timezone, messageType);
+        metricsService.recordBirthdayProcessed('scheduled', user.timezone);
+
+        // Record template usage (strategy name as template)
+        const templateName = strategy.constructor.name.replace('Strategy', '');
+        metricsService.recordMessageTemplateUsage(templateName, '1.0');
 
         stats.scheduled++;
       } catch (error) {

@@ -2119,6 +2119,100 @@ Before committing new metrics:
 
 ---
 
+## System Metrics (from SystemMetricsService)
+
+The application includes a comprehensive `SystemMetricsService` that collects system-level metrics beyond Prometheus defaults. These metrics provide deep visibility into Node.js runtime behavior and system resource utilization.
+
+### System Load Metrics
+
+| Metric Name | Type | Labels | Description |
+|-------------|------|--------|-------------|
+| `system_load_average` | Gauge | `period` (1m, 5m, 15m) | System load average over different time periods |
+| `system_memory_free_bytes` | Gauge | - | System free memory in bytes |
+| `system_memory_total_bytes` | Gauge | - | System total memory in bytes |
+| `system_uptime_seconds` | Gauge | - | System uptime in seconds |
+| `system_cpu_count` | Gauge | - | Number of CPU cores available |
+| `process_uptime_seconds` | Gauge | - | Process uptime in seconds |
+| `process_memory_rss_bytes` | Gauge | - | Process Resident Set Size (physical memory) in bytes |
+| `process_cpu_usage_percent` | Gauge | - | Process CPU usage percentage (0-100 per CPU core) |
+
+### Event Loop Metrics
+
+| Metric Name | Type | Description | Normal Range |
+|-------------|------|-------------|---------------|
+| `nodejs_eventloop_utilization` | Gauge | Event loop utilization (0-1, where 1 = 100% busy) | < 0.7 |
+| `nodejs_eventloop_active` | Gauge | Event loop active time percentage (0-1) | Variable |
+| `nodejs_eventloop_idle` | Gauge | Event loop idle time percentage (0-1) | Variable |
+| `nodejs_active_handles_total` | Gauge | Active handles (files, sockets, timers, etc.) | Depends on workload |
+| `nodejs_active_requests_total` | Gauge | Active requests (pending I/O operations) | Depends on workload |
+
+### Garbage Collection Monitoring
+
+| Metric Name | Type | Labels | Description |
+|-------------|------|--------|-------------|
+| `nodejs_gc_pause_seconds` | Gauge | `gc_type` (scavenge, mark-sweep-compact, incremental-marking, process-weak-callbacks) | GC pause duration in seconds |
+| `nodejs_gc_runs_total` | Gauge | `gc_type` | Total number of GC runs by type |
+
+**GC Type Mapping:**
+- `scavenge` (1) - Minor GC, fast collection of young generation
+- `mark-sweep-compact` (2) - Major GC, full heap collection
+- `incremental-marking` (4) - Incremental marking phase
+- `process-weak-callbacks` (8) - Weak reference callback processing
+
+### V8 Heap Detailed Metrics
+
+| Metric Name | Type | Labels | Description |
+|-------------|------|--------|-------------|
+| `nodejs_heap_space_used_bytes` | Gauge | `space` (NewSpace, OldSpace, CodeSpace, MapSpace, etc.) | Heap space used in bytes by space name |
+| `nodejs_heap_space_size_bytes` | Gauge | `space` | Heap space total size in bytes by space name |
+| `nodejs_heap_space_available_bytes` | Gauge | `space` | Heap space available in bytes by space name |
+| `nodejs_external_memory_bytes` | Gauge | - | External memory used by V8 (C++ objects bound to JavaScript) |
+| `nodejs_array_buffer_memory_bytes` | Gauge | - | Memory allocated for ArrayBuffers and SharedArrayBuffers |
+
+### System Metrics Collection Configuration
+
+The SystemMetricsService is configured with:
+- **Collection Interval:** 15 seconds
+- **GC Monitoring:** Enabled (PerformanceObserver with 'gc' entry type)
+- **Event Loop Utilization Tracking:** Enabled
+- **Heap Space Tracking:** Enabled
+
+### System Metrics Usage Example
+
+```typescript
+import { systemMetricsService } from '@/services/system-metrics.service';
+
+// Start metrics collection
+systemMetricsService.start();
+
+// Later: get system snapshot for debugging
+const snapshot = systemMetricsService.getSnapshot();
+console.log('Memory:', snapshot.memory);
+console.log('Load Average:', snapshot.loadAverage);
+
+// Stop on shutdown
+await systemMetricsService.stop();
+```
+
+### Interpreting System Metrics
+
+**Event Loop Utilization (0-1):**
+- < 0.5: Good, event loop is not blocking
+- 0.5-0.7: Acceptable, some blocking work
+- > 0.7: Warning, significant blocking or high traffic
+
+**GC Pause Time:**
+- < 50ms: Normal for scavenge GC
+- 50-200ms: Expected for mark-sweep
+- > 200ms: Potential performance issue
+
+**Heap Space Usage:**
+- Monitor `NewSpace` for short-lived objects
+- Track `OldSpace` for potential memory leaks
+- `External` memory for C++ binding overhead
+
+---
+
 ## References
 
 - [Prometheus Best Practices](https://prometheus.io/docs/practices/naming/)
@@ -2129,5 +2223,7 @@ Before committing new metrics:
 - [Grafana Dashboard Design](../plan/07-monitoring/grafana-dashboards-research.md)
 - [Alert Rules](../grafana/alerts/alert-rules.yaml)
 - [Queue Metrics Implementation](../src/services/queue/queue-metrics.ts)
+- [System Metrics Implementation](../src/services/system-metrics.service.ts)
+- [Metrics Service](../src/services/metrics.service.ts)
 - [Prometheus Naming Best Practices](https://prometheus.io/docs/practices/naming/)
 - [Avoiding High Cardinality](https://prometheus.io/docs/practices/naming/#labels)

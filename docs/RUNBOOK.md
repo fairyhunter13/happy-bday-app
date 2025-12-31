@@ -331,6 +331,435 @@ This section provides comprehensive operational guidance for monitoring the Birt
 
 ---
 
+### Metric Name Quick Reference Table
+
+**Organize by Use Case:**
+
+#### Debugging Metrics
+Use these metrics when investigating issues and performance problems.
+
+| Metric | What it shows | Normal range | Alert threshold | Check when |
+|--------|---------------|--------------|-----------------|------------|
+| `birthday_scheduler_api_response_time` (P99) | API latency at 99th percentile | <500ms | >1s | Users report slow responses |
+| `birthday_scheduler_nodejs_eventloop_lag_seconds` | Event loop blocking | <100ms | >500ms | API feels sluggish |
+| `birthday_scheduler_database_query_duration` (P95) | DB query speed | <50ms | >100ms | Queries timing out |
+| `birthday_scheduler_queue_depth` | Messages waiting | <100 | >1000 | Messages not processing |
+| `birthday_scheduler_messages_failed_total` | Failed messages | Increasing slowly | Spike >10/min | Message delivery failing |
+| `birthday_scheduler_api_requests_total{status=~"5.."}` | 5xx errors | Near 0 | >5% of traffic | High error rate alert |
+| `birthday_scheduler_db_connections_active` | Pool utilization | <20 | >90% of max | Database connection issues |
+| `birthday_scheduler_circuit_breaker_state` | External API health | 0 (closed) | 2 (open) | External service down |
+
+#### Capacity Planning Metrics
+Use these to understand growth trends and plan scaling.
+
+| Metric | What it shows | Normal range | Warning | Critical | Trend to watch |
+|--------|---------------|--------------|---------|----------|-----------------|
+| `birthday_scheduler_api_requests_total` | Total API volume | Baseline +/- 20% | >baseline x 1.5 | >baseline x 2 | Week-over-week growth |
+| `birthday_scheduler_queue_depth` | Message backlog trend | Drains fully daily | >500 at peak | >5000 sustained | Daily peak trend |
+| `birthday_scheduler_db_connections_active` | Connection pool usage | <50% of max | 70-80% | >90% | Growth rate over time |
+| `birthday_scheduler_nodejs_heap_size_used_bytes` | Memory consumption | Stable, <1GB | >1.2GB | >1.5GB | Memory growth rate |
+| `birthday_scheduler_process_open_fds` | File descriptors | <1000 | >3000 | >4000 | Long-term growth |
+| `birthday_scheduler_messages_processed_total` | Processing capacity | Consistent | Declining rate | Near zero | Throughput trends |
+
+#### Alerting Metrics
+Focus on these for alert tuning and threshold decisions.
+
+| Metric | What it indicates | Good value | Warning threshold | Critical threshold |
+|--------|-------------------|-----------|-------------------|-------------------|
+| `birthday_scheduler_api_requests_total{status=~"5.."}` rate | Backend errors | <0.1% | 1-5% | >5% |
+| `birthday_scheduler_queue_depth` | Processing lag | <100 | 100-1000 | >1000 |
+| `birthday_scheduler_dlq_depth` | Permanent failures | 0 | 1-10 | >10 |
+| `birthday_scheduler_db_connections_active` | Pool exhaustion | <60% | 70-85% | >90% |
+| `birthday_scheduler_messages_failed_total` rate | Delivery failures | <1/min | 5-10/min | >10/min |
+| `birthday_scheduler_nodejs_gc_duration_seconds_count` (major) | GC pressure | <1 per minute | >5 per minute | >10 per minute |
+
+---
+
+### Real-time Monitoring Commands
+
+Use these curl commands to fetch specific metrics from the `/metrics` endpoint. Run against `localhost:3000` or your deployed service URL.
+
+```bash
+# Get all metrics (full Prometheus format)
+curl http://localhost:3000/metrics
+
+# Filter specific metric category (example: birthday scheduler metrics)
+curl http://localhost:3000/metrics | grep birthday_scheduler
+
+# Watch a specific metric in real-time (requires watch + grep)
+watch -n 2 'curl -s http://localhost:3000/metrics | grep birthday_scheduler_queue_depth'
+
+# Get queue depth only
+curl http://localhost:3000/metrics | grep "^birthday_scheduler_queue_depth "
+
+# Get message processing rate
+curl http://localhost:3000/metrics | grep birthday_scheduler_messages_processed_total | grep -v "#"
+
+# Get API error rate (raw counts)
+curl http://localhost:3000/metrics | grep "birthday_scheduler_api_requests_total.*status=\"5"
+
+# Get current memory usage in bytes
+curl http://localhost:3000/metrics | grep "^birthday_scheduler_nodejs_heap_size_used_bytes "
+
+# Get database connection stats
+curl http://localhost:3000/metrics | grep "birthday_scheduler_db_connections"
+
+# Get circuit breaker state (0=closed, 1=open, 2=half-open)
+curl http://localhost:3000/metrics | grep "^birthday_scheduler_circuit_breaker_state "
+
+# Get job scheduler metrics
+curl http://localhost:3000/metrics | grep "scheduler_jobs" | grep -v "#"
+
+# Export metrics to file for analysis
+curl -s http://localhost:3000/metrics > metrics_snapshot_$(date +%s).txt
+
+# Monitor metrics over time (60 seconds, every 5 seconds)
+for i in {1..12}; do echo "=== $(date) ==="; curl -s http://localhost:3000/metrics | grep "queue_depth\|messages_processed\|api_requests"; sleep 5; done
+```
+
+---
+
+### Scheduler-Specific Monitoring
+
+The daily birthday scheduler is the core of the system. Monitor these metrics to ensure it's healthy.
+
+#### Daily Scheduler Health Check (Use at 9 AM before critical time window)
+
+```bash
+# Check if scheduler ran today (look for execution timestamp)
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_scheduler_last_success_time
+
+# Count jobs executed today
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_scheduler_jobs_executed_total
+
+# Check for scheduler failures or retries
+curl -s http://localhost:3000/metrics | grep "scheduler_job_failures_total\|scheduler_job_retries_total"
+
+# Get scheduler runtime (how long the job took)
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_scheduler_execution_duration_seconds
+
+# Check for missed executions (should be 0 for daily scheduler)
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_scheduler_missed_executions_total
+```
+
+#### Message Backlog Health
+
+```bash
+# Monitor queue as birthdays are processed (watch every 2 seconds)
+watch -n 2 'curl -s http://localhost:3000/metrics | grep "queue_depth\|messages_processed_total"'
+
+# Check message delivery rate during processing
+# Should be roughly equal to queue depth reduction rate
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_messages_sent_total
+
+# Monitor DLQ depth for failed messages
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_dlq_depth
+
+# Check if queue is draining (processing rate > arrival rate)
+# Get rate of processing: rate(messages_processed[5m])
+# Compare to: rate(messages_scheduled[5m])
+curl -s http://localhost:3000/metrics | grep "messages_scheduled_total\|messages_processed_total"
+```
+
+#### Delivery Rate Verification
+
+```bash
+# Messages that successfully left the system
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_messages_sent_total
+
+# Messages confirmed delivered by external service
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_messages_delivered_total
+
+# Failed delivery attempts
+curl -s http://localhost:3000/metrics | grep birthday_scheduler_messages_failed_total
+
+# Delivery success rate (should be >99%)
+# Query in Prometheus: (messages_delivered / messages_sent) * 100
+```
+
+---
+
+### Metric Interpretation Guide
+
+#### What high event loop utilization means
+
+**Metric:** `birthday_scheduler_nodejs_eventloop_lag_seconds` > 0.1 seconds
+
+**What it indicates:** The Node.js event loop is blocked, meaning CPU-bound operations are preventing async operations from processing. The higher the lag, the more requests pile up waiting for the event loop.
+
+**Causes:**
+- Heavy synchronous CPU work (JSON parsing, crypto operations)
+- Garbage collection pauses
+- Database query processing in main thread
+- Complex business logic without async breaks
+
+**Impact:** User requests appear slow even if the server isn't busy. P99 latency increases.
+
+**What to do:**
+1. Check CPU usage: `curl http://localhost:3000/metrics | grep nodejs_gc_duration` - is GC causing lag?
+2. Look at API response time: correlate with event loop lag spikes
+3. Check for recent code changes in computation-heavy functions
+4. If GC is cause: may need heap optimization or more memory
+
+---
+
+#### What queue depth spike indicates
+
+**Metric:** `birthday_scheduler_queue_depth` suddenly increases from <100 to >1000
+
+**What it indicates:** Messages are arriving faster than workers can process them, OR workers have stopped consuming messages.
+
+**Root causes (in order of likelihood):**
+1. Workers crashed or disconnected (check worker logs)
+2. External API is slow/down (circuit breaker may be open)
+3. Message processing has become slower (database issues?)
+4. Spike in message volume (legitimate birthday surge)
+
+**What to do:**
+1. Check worker status: `kubectl get pods | grep worker`
+2. Check worker logs: `kubectl logs deployment/birthday-scheduler-worker --tail=50`
+3. Check circuit breaker: `curl http://localhost:3000/metrics | grep circuit_breaker_state`
+4. If circuit open: wait 30 seconds for auto-recovery OR verify external API is healthy
+5. If workers healthy but queue grows: scale up workers with `kubectl scale deployment birthday-scheduler-worker --replicas=10`
+
+---
+
+#### How to correlate metrics for root cause analysis
+
+**Example: High API latency (P99 > 1s)**
+
+Follow this decision tree using metrics:
+
+```
+1. Is database query slow?
+   → Check: histogram_quantile(0.95, rate(database_query_duration_bucket[5m]))
+   → Yes (>100ms)? Go to 2a
+   → No? Go to 3
+
+2a. Database is slow - Why?
+   → Check: db_connections_active / db_connections_max
+   → High (>80%)? Connection pool exhausted - scale pool
+   → Normal? Check slow query metrics in logs
+
+3. Is event loop lag high?
+   → Check: nodejs_eventloop_lag_seconds > 0.1
+   → Yes? CPU-bound work or GC pressure
+   → Check: rate(gc_duration_seconds_count[5m]) - is GC frequent?
+   → If yes: memory pressure - scale pod
+
+4. Is external API slow?
+   → Check: external_api_duration_seconds_bucket (P95)
+   → If >500ms: contact external service provider
+   → If circuit breaker open: wait for recovery
+```
+
+**Example: High error rate (>5% 5xx errors)**
+
+```
+1. Is it all endpoints or specific endpoint?
+   → Query: sum(rate(api_requests_total{status="500"}[5m])) by (path)
+   → All endpoints? Infrastructure/database issue
+   → Single endpoint? Code bug in that handler
+
+2. If all endpoints - check in order:
+   → Database connection errors: db_connections_active near max?
+   → Memory issues: nodejs_heap_size_used_bytes > limit?
+   → Recent deployment: git log --since="30m ago"
+
+3. If single endpoint:
+   → Check endpoint-specific logs: kubectl logs | grep "<endpoint_path>"
+   → Look for validation errors, data type mismatches
+   → Check if recent code change affected this endpoint
+```
+
+---
+
+### Common Alert Scenarios and Responses
+
+#### Scenario 1: High API Latency Alert (P99 >1 second)
+
+**Symptoms:** P99 latency climbing, users complain app is slow
+
+**Investigation Checklist:**
+
+```bash
+# 1. Is it a deployment problem?
+git log --oneline -5
+kubectl rollout history deployment/birthday-scheduler-api
+
+# 2. Which endpoints are slow?
+curl http://localhost:3000/metrics | grep api_response_time | grep -v "#" | head -20
+
+# 3. Is it database latency?
+curl http://localhost:3000/metrics | grep database_query_duration | head -10
+
+# 4. Is it connection pool contention?
+curl http://localhost:3000/metrics | grep db_connections_active
+
+# 5. Is it GC pressure (memory issue)?
+curl http://localhost:3000/metrics | grep gc_duration_seconds_count
+```
+
+**Response Actions:**
+
+| Finding | Action |
+|---------|--------|
+| Recent bad deployment | `kubectl rollout undo deployment/birthday-scheduler-api` |
+| DB query slow (>100ms) | Check slow queries: `psql -c "SELECT * FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10"` |
+| Connection pool high (>85%) | `kubectl set env deployment/birthday-scheduler-api DATABASE_POOL_MAX=50` |
+| GC pause time high | Increase memory: `kubectl set resources deployment/birthday-scheduler-api --limits=memory=2Gi` |
+| No obvious cause | Scale pods: `kubectl scale deployment/birthday-scheduler-api --replicas=5` |
+
+---
+
+#### Scenario 2: Queue Backlog Alert (Depth >5000)
+
+**Symptoms:** Queue depth climbing rapidly, messages delayed
+
+**Investigation Checklist:**
+
+```bash
+# 1. Are workers running?
+kubectl get pods | grep worker
+
+# 2. Are workers healthy?
+kubectl logs deployment/birthday-scheduler-worker --tail=100 | grep -i error
+
+# 3. Is circuit breaker open?
+curl http://localhost:3000/metrics | grep circuit_breaker_state
+
+# 4. Is external API responding?
+curl -v https://email-service.digitalenvision.com.au/health
+
+# 5. What's the processing rate vs arrival rate?
+curl http://localhost:3000/metrics | grep messages_processed_total
+curl http://localhost:3000/metrics | grep messages_scheduled_total
+```
+
+**Response Actions:**
+
+| Finding | Action |
+|---------|--------|
+| 0 workers running | `kubectl scale deployment birthday-scheduler-worker --replicas=10` |
+| Workers crashing (high restart count) | `kubectl describe pods | grep "Restart Count"` - if >5, investigate logs |
+| Circuit breaker open (state=2) | Wait 30s for auto-recovery, or verify external API is up |
+| External API down | Contact vendor, monitor circuit breaker auto-recovery |
+| Processing rate slow | Scale workers: `kubectl scale deployment/birthday-scheduler-worker --replicas=20` |
+
+---
+
+#### Scenario 3: Memory Pressure Alert (Heap >85%)
+
+**Symptoms:** Memory usage climbing, potential OOM kill
+
+**Investigation Checklist:**
+
+```bash
+# 1. What's the heap trend?
+# Check if growing consistently (leak) or sawtooth (normal GC)
+curl http://localhost:3000/metrics | grep nodejs_heap_size_used_bytes
+
+# 2. Is GC keeping up?
+# Frequent major GC = memory pressure
+curl http://localhost:3000/metrics | grep gc_duration_seconds_count
+
+# 3. How many active handles/timers?
+curl http://localhost:3000/metrics | grep nodejs_active_handles
+
+# 4. Any obvious memory leaks in recent code?
+git log --since="1 week ago" --oneline
+```
+
+**Response Actions:**
+
+| Finding | Action |
+|---------|--------|
+| Heap growing steadily (possible leak) | Profile with `--inspect`, analyze heap dump |
+| Frequent major GC | Increase memory limit, reduce request volume |
+| Many active handles | Likely handle leak - check for dangling listeners |
+| Recent code change | `git revert <commit>`, deploy hotfix |
+
+---
+
+#### Scenario 4: Database Connection Exhaustion Alert (>90% pool)
+
+**Symptoms:** API returning "too many connections" errors, P99 latency spiking
+
+**Investigation Checklist:**
+
+```bash
+# 1. How many connections are in use?
+curl http://localhost:3000/metrics | grep db_connections_active
+
+# 2. Are there long-running queries holding connections?
+psql $DATABASE_URL -c "SELECT pid, query_start, query FROM pg_stat_activity WHERE state != 'idle' ORDER BY query_start;"
+
+# 3. Is connection pool wait queue growing?
+curl http://localhost:3000/metrics | grep connection_pool_waiting_requests
+
+# 4. Recent deployments affecting queries?
+git log --since="1 hour ago" --oneline
+```
+
+**Response Actions:**
+
+| Finding | Action |
+|---------|--------|
+| Long-running queries (>5 min) | `psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query_start < NOW() - INTERVAL '5 min'"` |
+| Connection pool too small | `kubectl set env deployment/birthday-scheduler-api DATABASE_POOL_MAX=50` |
+| Sudden spike in connections | Could be code issue - check recent deployment, consider rollback |
+| Legitimate scale increase | Plan database scaling: RDS instance upgrade |
+
+---
+
+#### Scenario 5: High DLQ (Dead Letter Queue) Messages
+
+**Symptoms:** DLQ depth >10, manual intervention warnings
+
+**Investigation Checklist:**
+
+```bash
+# 1. Why are messages being DLQ'd?
+# Check error logs for rejection reason
+kubectl logs deployment/birthday-scheduler-worker | grep -i "dlq\|dead.letter" | tail -50
+
+# 2. Is it a validation issue or transient failure?
+# Get samples of failed messages
+rabbitmqadmin get queue=birthday_messages_dlq count=5
+
+# 3. When did failures start?
+# Check for correlation with deployments, config changes
+git log --since="24 hours ago" --oneline
+```
+
+**Response Actions:**
+
+| Finding | Action |
+|---------|--------|
+| Data validation errors | Fix data in database, requeue manually |
+| External API temporarily down (now recovered) | Requeue messages: implement requeue script |
+| Configuration error | Fix config, restart workers, requeue |
+| Malformed message format | Archive for analysis, don't requeue (prevent loop) |
+
+---
+
+### Metric-to-Action Reference
+
+Quick lookup: "I see this metric spike, what do I do?"
+
+| Metric Spike | Immediate Check | Primary Action | Escalation |
+|--------------|-----------------|-----------------|-----------|
+| `api_response_time` P99 >2s | Database latency | Check slow queries | Database team |
+| `queue_depth` >5000 | Worker count | Scale workers | DevOps |
+| `nodejs_heap` >1.5GB | GC frequency | Restart pod | Engineering |
+| `db_connections_active` >80% | Long queries | Kill queries or scale | Database |
+| `circuit_breaker_state` =2 | External API | Wait 30s, then test | Vendor support |
+| `dlq_depth` >10 | Error pattern | Investigate failures | Engineering |
+| `gc_duration` >200ms frequent | Heap pressure | Increase memory | DevOps |
+| `error_rate` >5% | Status codes | Check recent deploy | DevOps |
+
+---
+
 ### Monitoring Strategy
 
 #### The RED Method

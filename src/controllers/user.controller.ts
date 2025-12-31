@@ -15,6 +15,7 @@ import { createUserSchema, updateUserSchema } from '../types/dto.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { ValidationError } from '../utils/errors.js';
 import { logger } from '../config/logger.js';
+import { metricsService } from '../services/metrics.service.js';
 
 /**
  * Request interfaces for type safety
@@ -80,6 +81,9 @@ export class UserController {
     const user = await this._userRepository.create(userData);
 
     logger.info({ userId: user.id, email: user.email }, 'User created successfully');
+
+    // Record user creation metric
+    metricsService.recordUserCreation('api', 'free');
 
     // Return 201 Created
     await reply.status(201).send(createSuccessResponse(user));
@@ -148,6 +152,16 @@ export class UserController {
 
     logger.info({ userId: id }, 'User updated successfully');
 
+    // Record user update metrics
+    Object.keys(updateData).forEach((field) => {
+      metricsService.recordUserUpdate(field, 'api');
+    });
+
+    // Record user activity for timezone/birthday changes
+    if (updateData.timezone || updateData.birthdayDate || updateData.anniversaryDate) {
+      metricsService.recordUserActivity('profile_update', 'active');
+    }
+
     // Trigger message rescheduling if timezone or dates changed
     if (
       updateData.timezone ||
@@ -208,6 +222,9 @@ export class UserController {
     await this._userRepository.delete(id);
 
     logger.info({ userId: id }, 'User deleted successfully');
+
+    // Record user deletion metric
+    metricsService.recordUserDeletion('user_request', 'free');
 
     // Return success message
     await reply.status(200).send(

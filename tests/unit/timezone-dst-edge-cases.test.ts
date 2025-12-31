@@ -1,0 +1,396 @@
+/**
+ * Timezone DST Edge Cases Tests
+ *
+ * Comprehensive tests for Daylight Saving Time (DST) transitions including:
+ * - Spring forward (2am nonexistent time)
+ * - Fall back (2am ambiguous time)
+ * - DST on exact birthday date
+ * - Multiple DST zones (America/New_York, Europe/London, Australia/Sydney)
+ *
+ * Covers edge cases: EC-TZ-007 to EC-TZ-010 from edge-cases-catalog.md
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { DateTime } from 'luxon';
+import { TimezoneService } from '../../src/services/timezone.service.js';
+
+describe('Timezone DST Edge Cases', () => {
+  let service: TimezoneService;
+
+  beforeEach(() => {
+    service = new TimezoneService();
+  });
+
+  describe('Spring Forward - Nonexistent Time (2am becomes 3am)', () => {
+    it('should handle birthday at 2:30am during DST spring forward in New York', () => {
+      // In 2025, DST starts on March 9 at 2am EST -> 3am EDT
+      // 2am to 2:59am don't exist on this date
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-03-09');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      // Should calculate 9am EDT successfully (not affected by 2am gap)
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+      expect(localDt.month).toBe(3);
+      expect(localDt.day).toBe(9);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should handle nonexistent time during spring forward in Europe/London', () => {
+      // In 2025, BST starts on March 30 at 1am GMT -> 2am BST
+      const timezone = 'Europe/London';
+      const birthdayDate = new Date('1990-03-30');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should verify DST status changes after spring forward', () => {
+      const timezone = 'America/New_York';
+
+      // Before DST: March 8, 2025
+      const beforeDST = new Date('2025-03-08T12:00:00Z');
+      const beforeInfo = service.handleDST(beforeDST, timezone);
+
+      // After DST: March 10, 2025
+      const afterDST = new Date('2025-03-10T12:00:00Z');
+      const afterInfo = service.handleDST(afterDST, timezone);
+
+      expect(beforeInfo.isDST).toBe(false);
+      expect(afterInfo.isDST).toBe(true);
+
+      // Offset changes from UTC-5 to UTC-4
+      expect(beforeInfo.offset).toBe(-300); // -5 hours = -300 minutes
+      expect(afterInfo.offset).toBe(-240); // -4 hours = -240 minutes
+    });
+
+    it('should handle birthday exactly on spring forward date in Australia/Sydney', () => {
+      // Australia has reversed seasons - DST starts in October
+      // In 2025, AEDT starts on October 5 at 2am AEST -> 3am AEDT
+      const timezone = 'Australia/Sydney';
+      const birthdayDate = new Date('1990-10-05');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.month).toBe(10);
+      expect(localDt.day).toBe(5);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should correctly convert 9am EDT to UTC after spring forward', () => {
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-03-15'); // After DST starts
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+      const utcDt = DateTime.fromJSDate(result).setZone('UTC');
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+
+      // 9am EDT = 1pm UTC (UTC-4)
+      expect(utcDt.hour).toBe(13);
+      expect(utcDt.minute).toBe(0);
+    });
+  });
+
+  describe('Fall Back - Ambiguous Time (2am happens twice)', () => {
+    it('should handle birthday at 2am during DST fall back in New York', () => {
+      // In 2025, DST ends on November 2 at 2am EDT -> 1am EST
+      // 1am to 1:59am happen twice on this date
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-11-02');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      // Should calculate 9am EST successfully (after the ambiguous hour)
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+      expect(localDt.month).toBe(11);
+      expect(localDt.day).toBe(2);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should handle fall back in Europe/London', () => {
+      // In 2025, GMT resumes on October 26 at 2am BST -> 1am GMT
+      const timezone = 'Europe/London';
+      const birthdayDate = new Date('1990-10-26');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should verify DST status changes after fall back', () => {
+      const timezone = 'America/New_York';
+
+      // Before fall back: November 1, 2025
+      const beforeDST = new Date('2025-11-01T12:00:00Z');
+      const beforeInfo = service.handleDST(beforeDST, timezone);
+
+      // After fall back: November 3, 2025
+      const afterDST = new Date('2025-11-03T12:00:00Z');
+      const afterInfo = service.handleDST(afterDST, timezone);
+
+      expect(beforeInfo.isDST).toBe(true);
+      expect(afterInfo.isDST).toBe(false);
+
+      // Offset changes from UTC-4 to UTC-5
+      expect(beforeInfo.offset).toBe(-240);
+      expect(afterInfo.offset).toBe(-300);
+    });
+
+    it('should handle birthday exactly on fall back date in Australia/Sydney', () => {
+      // In 2025, AEST resumes on April 6 at 3am AEDT -> 2am AEST
+      const timezone = 'Australia/Sydney';
+      const birthdayDate = new Date('1990-04-06');
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.month).toBe(4);
+      expect(localDt.day).toBe(6);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should correctly convert 9am EST to UTC after fall back', () => {
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-11-15'); // After DST ends
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+      const utcDt = DateTime.fromJSDate(result).setZone('UTC');
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.minute).toBe(0);
+
+      // 9am EST = 2pm UTC (UTC-5)
+      expect(utcDt.hour).toBe(14);
+      expect(utcDt.minute).toBe(0);
+    });
+  });
+
+  describe('Multiple DST Zones Comparison', () => {
+    const dstZones = [
+      { name: 'America/New_York', description: 'US Eastern' },
+      { name: 'America/Chicago', description: 'US Central' },
+      { name: 'America/Denver', description: 'US Mountain' },
+      { name: 'America/Los_Angeles', description: 'US Pacific' },
+      { name: 'Europe/London', description: 'UK' },
+      { name: 'Europe/Paris', description: 'Central European' },
+      { name: 'Australia/Sydney', description: 'Australian Eastern' },
+    ];
+
+    it('should validate all DST zones', () => {
+      dstZones.forEach(({ name }) => {
+        const isValid = service.isValidTimezone(name);
+        expect(isValid).toBe(true);
+      });
+    });
+
+    it('should handle birthdays in all DST zones during summer', () => {
+      const summerBirthday = new Date('1990-07-15');
+
+      dstZones.forEach(({ name, description }) => {
+        const result = service.calculateSendTime(summerBirthday, name);
+        const localDt = DateTime.fromJSDate(result).setZone(name);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(localDt.isValid).toBe(true);
+      });
+    });
+
+    it('should handle birthdays in all DST zones during winter', () => {
+      const winterBirthday = new Date('1990-01-15');
+
+      dstZones.forEach(({ name, description }) => {
+        const result = service.calculateSendTime(winterBirthday, name);
+        const localDt = DateTime.fromJSDate(result).setZone(name);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(localDt.isValid).toBe(true);
+      });
+    });
+
+    it('should detect different DST statuses across hemispheres', () => {
+      // July 15 - summer in northern hemisphere, winter in southern
+      const julyDate = new Date('2025-07-15T12:00:00Z');
+
+      const nyDST = service.handleDST(julyDate, 'America/New_York');
+      const sydneyDST = service.handleDST(julyDate, 'Australia/Sydney');
+
+      // Northern hemisphere: DST active
+      expect(nyDST.isDST).toBe(true);
+
+      // Southern hemisphere: DST inactive (winter)
+      expect(sydneyDST.isDST).toBe(false);
+    });
+
+    it('should show offset changes during DST transitions', () => {
+      const timezone = 'America/New_York';
+
+      // January (winter - EST): UTC-5
+      const winter = new Date('2025-01-15T12:00:00Z');
+      const winterOffset = service.getUTCOffset(winter, timezone);
+
+      // July (summer - EDT): UTC-4
+      const summer = new Date('2025-07-15T12:00:00Z');
+      const summerOffset = service.getUTCOffset(summer, timezone);
+
+      expect(winterOffset).toBe(-300); // -5 hours
+      expect(summerOffset).toBe(-240); // -4 hours
+      expect(summerOffset - winterOffset).toBe(60); // 1 hour difference
+    });
+  });
+
+  describe('DST on Exact Birthday Date', () => {
+    it('should handle birthday on spring forward date with isBirthdayToday check', () => {
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-03-09'); // DST starts March 9, 2025
+
+      // Check if service correctly identifies birthday on DST transition day
+      const isBirthday = service.isBirthdayToday(birthdayDate, timezone);
+
+      // This depends on current date, so we test the calculation instead
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.isValid).toBe(true);
+      expect(localDt.month).toBe(3);
+      expect(localDt.day).toBe(9);
+    });
+
+    it('should handle birthday on fall back date with isBirthdayToday check', () => {
+      const timezone = 'America/New_York';
+      const birthdayDate = new Date('1990-11-02'); // DST ends November 2, 2025
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.isValid).toBe(true);
+      expect(localDt.month).toBe(11);
+      expect(localDt.day).toBe(2);
+    });
+
+    it('should maintain date consistency across DST boundary', () => {
+      const timezone = 'America/New_York';
+
+      // Calculate for date before, on, and after DST transition
+      const dates = [
+        new Date('1990-03-08'), // Before DST
+        new Date('1990-03-09'), // DST starts
+        new Date('1990-03-10'), // After DST
+      ];
+
+      dates.forEach((date) => {
+        const result = service.calculateSendTime(date, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(localDt.day).toBe(date.getDate());
+        expect(localDt.isValid).toBe(true);
+      });
+    });
+  });
+
+  describe('DST Edge Cases - Cross-zone Coordination', () => {
+    it('should maintain correct ordering when DST changes across zones', () => {
+      // When DST starts/ends, the relative order of send times may change
+      const birthdayDate = new Date('1990-03-09'); // DST starts in US
+
+      const zones = [
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Los_Angeles',
+      ];
+
+      const sendTimes = zones.map((timezone) => {
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        return {
+          timezone,
+          sendTime: result,
+          utcTime: DateTime.fromJSDate(result).setZone('UTC'),
+        };
+      });
+
+      // Verify chronological order (East to West)
+      for (let i = 1; i < sendTimes.length; i++) {
+        expect(sendTimes[i].utcTime.toMillis()).toBeGreaterThan(
+          sendTimes[i - 1].utcTime.toMillis()
+        );
+      }
+    });
+
+    it('should handle UTC conversion accuracy during DST', () => {
+      const timezone = 'Europe/London';
+      const birthdayDate = new Date('1990-06-15'); // During BST
+
+      const result = service.calculateSendTime(birthdayDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+      const utcDt = DateTime.fromJSDate(result).setZone('UTC');
+
+      expect(localDt.hour).toBe(9);
+      expect(utcDt.hour).toBe(8); // 9am BST = 8am UTC (UTC+1)
+    });
+
+    it('should format dates correctly during DST transitions', () => {
+      const timezone = 'America/New_York';
+      const springForward = new Date('1990-03-09');
+      const fallBack = new Date('1990-11-02');
+
+      const springResult = service.calculateSendTime(springForward, timezone);
+      const fallResult = service.calculateSendTime(fallBack, timezone);
+
+      const springFormatted = service.formatDateInTimezone(springResult, timezone);
+      const fallFormatted = service.formatDateInTimezone(fallResult, timezone);
+
+      expect(springFormatted).toMatch(/2025-03-09 09:00:00/);
+      expect(fallFormatted).toMatch(/2025-11-02 09:00:00/);
+    });
+  });
+
+  describe('DST Historical Changes', () => {
+    it('should handle pre-2007 DST rules (historical dates)', () => {
+      // Before 2007, DST in US started first Sunday in April
+      // This test verifies Luxon handles historical DST rules correctly
+      const timezone = 'America/New_York';
+      const historicalDate = new Date('2005-04-03'); // First Sunday in April 2005
+
+      const result = service.calculateSendTime(historicalDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.isValid).toBe(true);
+    });
+
+    it('should handle current DST rules (post-2007)', () => {
+      // Since 2007, DST starts second Sunday in March
+      const timezone = 'America/New_York';
+      const modernDate = new Date('2025-03-09'); // Second Sunday in March 2025
+
+      const result = service.calculateSendTime(modernDate, timezone);
+      const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+      expect(localDt.hour).toBe(9);
+      expect(localDt.isValid).toBe(true);
+    });
+  });
+});

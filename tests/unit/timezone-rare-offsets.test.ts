@@ -457,6 +457,132 @@ describe('Timezone Rare Offsets', () => {
         expect(localDt.minute).toBe(0);
       });
     });
+
+    describe('Australian Central (UTC+9:30/+10:30 with DST)', () => {
+      const timezone = 'Australia/Adelaide'; // Australian Central Standard/Daylight Time
+
+      it('should validate Australia/Adelaide timezone', () => {
+        const isValid = service.isValidTimezone(timezone);
+        expect(isValid).toBe(true);
+      });
+
+      it('should calculate correct UTC offset for Adelaide (standard time)', () => {
+        // During standard time (winter in southern hemisphere)
+        const winterDate = new Date('2025-07-15T12:00:00Z');
+        const offset = service.getUTCOffset(winterDate, timezone);
+
+        // UTC+9:30 = 570 minutes (9 * 60 + 30)
+        expect(offset).toBe(570);
+      });
+
+      it('should calculate correct UTC offset for Adelaide (DST)', () => {
+        // During DST (summer in southern hemisphere)
+        const summerDate = new Date('2025-01-15T12:00:00Z');
+        const offset = service.getUTCOffset(summerDate, timezone);
+
+        // UTC+10:30 = 630 minutes (10 * 60 + 30)
+        expect(offset).toBe(630);
+      });
+
+      it('should handle birthday at 9am ACST (standard time)', () => {
+        const birthdayDate = new Date('1990-07-15'); // Winter in southern hemisphere
+
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(localDt.month).toBe(7);
+        expect(localDt.day).toBe(15);
+      });
+
+      it('should handle birthday at 9am ACDT (DST)', () => {
+        const birthdayDate = new Date('1990-01-15'); // Summer in southern hemisphere
+
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(localDt.month).toBe(1);
+        expect(localDt.day).toBe(15);
+      });
+
+      it('should correctly convert 9am ACST to UTC', () => {
+        const birthdayDate = new Date('1990-07-15');
+
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+        const utcDt = DateTime.fromJSDate(result).setZone('UTC');
+
+        // 9am ACST (UTC+9:30) = 11:30pm previous day UTC
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(utcDt.hour).toBe(23); // 11pm
+        expect(utcDt.minute).toBe(30);
+        expect(utcDt.day).toBe(14); // Previous day
+      });
+
+      it('should correctly convert 9am ACDT to UTC', () => {
+        const birthdayDate = new Date('1990-01-15');
+
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+        const utcDt = DateTime.fromJSDate(result).setZone('UTC');
+
+        // 9am ACDT (UTC+10:30) = 10:30pm previous day UTC
+        expect(localDt.hour).toBe(9);
+        expect(localDt.minute).toBe(0);
+        expect(utcDt.hour).toBe(22); // 10pm
+        expect(utcDt.minute).toBe(30);
+        expect(utcDt.day).toBe(14); // Previous day
+      });
+
+      it('should verify Adelaide observes DST', () => {
+        const winterDate = new Date('2025-07-15T12:00:00Z');
+        const summerDate = new Date('2025-01-15T12:00:00Z');
+
+        const winterDst = service.handleDST(winterDate, timezone);
+        const summerDst = service.handleDST(summerDate, timezone);
+
+        // Southern hemisphere: winter = no DST, summer = DST
+        expect(winterDst.isDST).toBe(false);
+        expect(summerDst.isDST).toBe(true);
+        expect(winterDst.offset).toBe(570); // UTC+9:30
+        expect(summerDst.offset).toBe(630); // UTC+10:30
+      });
+
+      it('should handle DST transition in Adelaide', () => {
+        // Adelaide DST starts first Sunday in October
+        const beforeDST = new Date('2025-09-01T12:00:00Z');
+        const afterDST = new Date('2025-11-01T12:00:00Z');
+
+        const beforeOffset = service.getUTCOffset(beforeDST, timezone);
+        const afterOffset = service.getUTCOffset(afterDST, timezone);
+
+        // After DST starts, offset increases by 60 minutes
+        expect(afterOffset).toBe(beforeOffset + 60);
+      });
+
+      it('should handle precise 30-minute offset during standard time', () => {
+        const date = new Date('2025-07-14T23:30:00Z'); // Should be 9am ACST
+        const dt = DateTime.fromJSDate(date).setZone(timezone);
+
+        expect(dt.hour).toBe(9);
+        expect(dt.minute).toBe(0);
+      });
+
+      it('should handle birthday message scheduling in Adelaide', () => {
+        const birthdayDate = new Date('1990-12-25'); // Christmas during DST
+
+        const result = service.calculateSendTime(birthdayDate, timezone);
+        const localDt = DateTime.fromJSDate(result).setZone(timezone);
+
+        expect(localDt.hour).toBe(9);
+        expect(localDt.month).toBe(12);
+        expect(localDt.day).toBe(25);
+      });
+    });
   });
 
   describe('Comparison Across Rare Offset Timezones', () => {

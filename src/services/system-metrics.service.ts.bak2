@@ -123,6 +123,12 @@ export class SystemMetricsService {
   /** Total GC runs by type (counter-like gauge) */
   public readonly gcRunsTotal: Gauge;
 
+  /** Heap size before GC in bytes */
+  public readonly gcHeapSizeBeforeBytes: Gauge;
+
+  /** Heap size after GC in bytes */
+  public readonly gcHeapSizeAfterBytes: Gauge;
+
   // ============================================
   // V8 HEAP DETAILED METRICS
   // ============================================
@@ -140,6 +146,15 @@ export class SystemMetricsService {
 
   /** Array buffer memory in bytes */
   public readonly arrayBufferMemory: Gauge;
+
+  /** Total heap size in bytes */
+  public readonly heapTotalSize: Gauge;
+
+  /** Used heap size in bytes */
+  public readonly heapUsedSize: Gauge;
+
+  /** Heap size limit in bytes */
+  public readonly heapSizeLimit: Gauge;
 
   /**
    * Creates a new SystemMetricsService instance
@@ -191,6 +206,7 @@ export class SystemMetricsService {
       registers: [this.registry],
     });
 
+
     this.processUptimeSeconds = new Gauge({
       name: 'process_uptime_seconds',
       help: 'Process uptime in seconds',
@@ -229,17 +245,6 @@ export class SystemMetricsService {
       registers: [this.registry],
     });
 
-    this.nodeActiveHandlesCount = new Gauge({
-      name: 'nodejs_active_handles_total',
-      help: 'Number of active handles (files, sockets, timers, etc.)',
-      registers: [this.registry],
-    });
-
-    this.nodeActiveRequestsCount = new Gauge({
-      name: 'nodejs_active_requests_total',
-      help: 'Number of active requests (pending I/O operations)',
-      registers: [this.registry],
-    });
     // ============================================
     // Initialize GC Metrics
     // ============================================
