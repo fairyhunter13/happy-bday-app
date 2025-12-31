@@ -396,6 +396,115 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
 
+  performance-load-tests:
+    name: Performance Load Tests
+    needs: [e2e-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Start test environment
+        run: docker compose -f docker-compose.test.yml up -d
+
+      - name: Wait for services
+        run: |
+          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d test_db; do sleep 2; done'
+          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T rabbitmq rabbitmq-diagnostics -q ping; do sleep 2; done'
+          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T redis redis-cli ping; do sleep 2; done'
+
+      - name: Run database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+
+      - name: Start API server
+        run: |
+          npm run build
+          node dist/src/index.js &
+          echo $! > /tmp/api.pid
+          sleep 5
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          RABBITMQ_URL: amqp://test:test@localhost:5672
+          REDIS_URL: redis://localhost:6379
+          PORT: 3000
+
+      - name: Wait for API
+        run: |
+          timeout 30 bash -c 'until curl -s http://localhost:3000/health | grep -q "ok"; do sleep 1; done'
+
+      - name: Create results directory
+        run: mkdir -p perf-results
+
+      - name: Run API load test
+        run: k6 run tests/performance/api-load.test.js --out json=perf-results/api-load.json
+        env:
+          API_URL: http://localhost:3000
+        continue-on-error: true
+
+      - name: Run scheduler load test
+        run: k6 run tests/performance/scheduler-load.test.js --out json=perf-results/scheduler-load.json
+        env:
+          API_URL: http://localhost:3000
+        continue-on-error: true
+
+      - name: Run worker throughput test
+        run: k6 run tests/performance/worker-throughput.test.js --out json=perf-results/worker-throughput.json
+        env:
+          API_URL: http://localhost:3000
+        continue-on-error: true
+
+      - name: Run E2E load test
+        run: k6 run tests/performance/e2e-load.test.js --out json=perf-results/e2e-load.json
+        env:
+          API_URL: http://localhost:3000
+        continue-on-error: true
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f /tmp/api.pid ]; then
+            kill $(cat /tmp/api.pid) || true
+          fi
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-load-results
+          path: perf-results/
+          retention-days: 30
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
   coverage-report:
     name: Coverage Report
     needs: [unit-tests, integration-tests, e2e-tests]
@@ -512,7 +621,9 @@ jobs:
       - unit-tests
       - integration-tests
       - e2e-tests
+      - chaos-tests
       - performance-smoke-test
+      - performance-load-tests
       - coverage-report
       - security-scan
       - build
@@ -526,7 +637,9 @@ jobs:
                 "${{ needs.unit-tests.result }}" != "success" ||
                 "${{ needs.integration-tests.result }}" != "success" ||
                 "${{ needs.e2e-tests.result }}" != "success" ||
+                "${{ needs.chaos-tests.result }}" != "success" ||
                 "${{ needs.performance-smoke-test.result }}" != "success" ||
+                "${{ needs.performance-load-tests.result }}" != "success" ||
                 "${{ needs.coverage-report.result }}" != "success" ||
                 "${{ needs.build.result }}" != "success" ]]; then
             echo "One or more required checks failed"
