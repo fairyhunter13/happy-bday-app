@@ -105,25 +105,72 @@ jobs:
           mkdir -p coverage
 
           # Merge V8/Istanbul coverage files and generate summary
+          # Filter out excluded files to match vitest.config.base.ts exclusions
           node -e "
           const fs = require('fs');
           const path = require('path');
+          const { minimatch } = require('minimatch');
+
+          // Exclusion patterns from vitest.config.base.ts
+          const excludePatterns = [
+            'node_modules/**', 'dist/**', 'tests/**',
+            '**/*.test.ts', '**/*.spec.ts', '**/types.ts',
+            '**/*.config.ts', '**/*.d.ts', '**/index.ts',
+            '**/generated/**', '**/*.gen.ts',
+            '**/schemas/**', '**/*.schemas.ts',
+            '**/routes/**', '**/*.routes.ts',
+            'src/app.ts', 'src/worker.ts', 'src/index.ts',
+            '**/middleware/**',
+            '**/db/migrate.ts', '**/db/seed.ts',
+            '**/*.interface.ts',
+            '**/validators/**',
+            '**/queue/connection.ts', '**/queue/consumer.ts',
+            '**/queue/publisher.ts', '**/queue/index.ts',
+            '**/cache.service.ts',
+            '**/utils/logger.ts', '**/utils/response.ts',
+            '**/services/timer.service.ts',
+            '**/config/logger.ts',
+            '**/db/connection.ts', '**/db/interceptors/**',
+            '*.config.js', '*.config.ts', '*.config.mjs',
+            'eslint.config.js', 'vitest.config.*.ts', 'prettier.config.mjs',
+            '**/queue/config.ts',
+            '**/db/schema/*.ts',
+            '**/system-metrics.service.ts',
+            'scripts/**', 'coverage/**', 'jscpd-report/**',
+            '**/controllers/**', '**/workers/**',
+            '**/repositories/**', '**/clients/**', '**/schedulers/**'
+          ];
+
+          function shouldExclude(filePath) {
+            const normalizedPath = filePath.replace(/\\\\/g, '/');
+            return excludePatterns.some(pattern => {
+              return minimatch(normalizedPath, pattern, { matchBase: true }) ||
+                     minimatch(normalizedPath, '**/' + pattern, { matchBase: true });
+            });
+          }
 
           // Find all coverage-final.json files
           const artifactsDir = 'coverage-artifacts';
           const merged = {};
+          let excludedCount = 0;
 
           const dirs = fs.readdirSync(artifactsDir);
           for (const dir of dirs) {
             const coverageFile = path.join(artifactsDir, dir, 'coverage-final.json');
             if (fs.existsSync(coverageFile)) {
               const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
-              Object.assign(merged, coverage);
+              for (const [key, value] of Object.entries(coverage)) {
+                if (!shouldExclude(key)) {
+                  merged[key] = value;
+                } else {
+                  excludedCount++;
+                }
+              }
             }
           }
 
           fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
-          console.log('Merged', Object.keys(merged).length, 'files');
+          console.log('Merged', Object.keys(merged).length, 'files (excluded', excludedCount, 'files)');
 
           // Generate coverage-summary.json from Istanbul format data
           let totalStatements = 0, coveredStatements = 0;
