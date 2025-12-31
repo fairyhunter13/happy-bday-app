@@ -19,7 +19,7 @@ import { MessageLogRepository } from '../../../src/repositories/message-log.repo
 import { UserRepository } from '../../../src/repositories/user.repository.js';
 import { MessageStatus } from '../../../src/db/schema/message-logs.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../../../src/utils/errors.js';
-import { PostgresTestContainer, cleanDatabase } from '../../helpers/testcontainers.js';
+import { PostgresTestContainer, cleanDatabase, isCI } from '../../helpers/testcontainers.js';
 import type { CreateMessageLogDto, CreateUserDto } from '../../../src/types/dto.js';
 
 describe('MessageLogRepository', () => {
@@ -39,7 +39,12 @@ describe('MessageLogRepository', () => {
     await testContainer.runMigrations('./drizzle');
 
     // Create Drizzle instance
-    queryClient = postgres(connectionString);
+    // Use limited connection pool in CI to prevent exhaustion
+    queryClient = postgres(connectionString, {
+      max: isCI() ? 2 : 10,
+      idle_timeout: 10,
+      connect_timeout: 10,
+    });
     db = drizzle(queryClient);
     repository = new MessageLogRepository(db);
     userRepository = new UserRepository(db);

@@ -38,6 +38,7 @@ describe('Scheduler Integration Tests', () => {
     process.env.DATABASE_URL = testEnv.postgresConnectionString;
     process.env.RABBITMQ_URL = testEnv.rabbitmqConnectionString;
     process.env.ENABLE_DB_METRICS = 'false'; // Disable metrics during tests
+    process.env.DATABASE_POOL_MAX = '2'; // Limit pool size in CI to prevent exhaustion
 
     // Create drizzle instance for tests (uses test container)
     db = drizzle(testEnv.getPostgresPool(), { schema });
@@ -64,6 +65,14 @@ describe('Scheduler Integration Tests', () => {
       await rabbitMQ.close();
     } catch {
       // Ignore errors if not connected
+    }
+
+    // Close the app's singleton database connection
+    try {
+      const dbConnection = await import('../../../src/db/connection.js');
+      await dbConnection.closeConnection();
+    } catch {
+      // Ignore errors if connection already closed
     }
 
     if (testEnv) await testEnv.teardown();

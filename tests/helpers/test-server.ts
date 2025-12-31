@@ -8,6 +8,10 @@ import { healthRoutes } from '../../src/routes/health.routes.js';
 import { metricsRoutes } from '../../src/routes/metrics.routes.js';
 import { ApplicationError } from '../../src/utils/errors.js';
 import type { ErrorResponse } from '../../src/types/index.js';
+import type postgres from 'postgres';
+
+// Store database connections created by test servers for proper cleanup
+const testDbConnections: Map<FastifyInstance, ReturnType<typeof postgres>> = new Map();
 
 /**
  * Options for configuring the test server
@@ -23,10 +27,12 @@ export interface TestServerOptions {
  * Create user routes with fresh database connection
  * This avoids module caching issues where the singleton db is created
  * before the test sets DATABASE_URL
+ *
+ * @param app - The Fastify instance to associate the connection with for cleanup
  */
-async function createUserRoutes(): Promise<
-  (fastify: FastifyInstance, options: Record<string, unknown>) => Promise<void>
-> {
+async function createUserRoutes(
+  app: FastifyInstance
+): Promise<(fastify: FastifyInstance, options: Record<string, unknown>) => Promise<void>> {
   // Dynamically import and create fresh instances
   const { UserController } = await import('../../src/controllers/user.controller.js');
   const { UserRepository } = await import('../../src/repositories/user.repository.js');
@@ -35,9 +41,17 @@ async function createUserRoutes(): Promise<
   const schema = await import('../../src/db/schema/index.js');
 
   // Create fresh database connection using current DATABASE_URL
+  // Use small pool size and connection timeout for CI environments
   const databaseUrl = process.env.DATABASE_URL || 'postgres://localhost:5432/test';
-  const queryClient = postgres(databaseUrl);
+  const queryClient = postgres(databaseUrl, {
+    max: 2, // Small pool size to prevent connection exhaustion in CI
+    idle_timeout: 10, // Close idle connections after 10 seconds
+    connect_timeout: 10, // Connection timeout in seconds
+  });
   const db = drizzle(queryClient, { schema });
+
+  // Store connection for cleanup when server is closed
+  testDbConnections.set(app, queryClient);
 
   // Create fresh repository and controller with the test database
   const userRepository = new UserRepository(db);
@@ -153,7 +167,7 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
   // Register user routes if requested (requires database connection)
   // Use fresh database connection to avoid module caching issues
   if (includeUserRoutes) {
-    const userRoutes = await createUserRoutes();
+    const userRoutes = await createUserRoutes(app);
     await app.register(userRoutes, { prefix: '/api/v1' });
   }
 
@@ -161,10 +175,21 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
 }
 
 /**
- * Close test server
+ * Close test server and clean up database connections
  */
 export async function closeTestServer(app: FastifyInstance): Promise<void> {
   if (app) {
+    // Close the database connection associated with this server
+    const queryClient = testDbConnections.get(app);
+    if (queryClient) {
+      try {
+        await queryClient.end();
+      } catch (e) {
+        console.warn('Error closing test database connection:', e);
+      }
+      testDbConnections.delete(app);
+    }
+
     await app.close();
   }
 }

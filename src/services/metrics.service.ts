@@ -52,6 +52,10 @@ export class MetricsService {
   // ============================================
   /** Total birthdays processed today */
   public readonly birthdaysProcessedTotal: Counter;
+  /** Birthdays scheduled for today (daily count) */
+  public readonly birthdaysScheduledTodayTotal: Counter;
+  /** Birthday messages by strategy type */
+  public readonly birthdayMessagesByStrategyTotal: Counter;
   /** Message template usage by template name */
   public readonly messageTemplateUsageTotal: Counter;
   /** User creation events */
@@ -644,6 +648,8 @@ export class MetricsService {
   public readonly schedulerJobWaitTime: Histogram;
   /** Birthday scan duration */
   public readonly birthdayScanDuration: Histogram;
+  /** Birthday processing duration per message */
+  public readonly birthdayProcessingDuration: Histogram;
   /** Timezone batch processing duration */
   public readonly timezoneBatchDuration: Histogram;
   /** Scheduler lock acquisition time */
@@ -775,6 +781,20 @@ export class MetricsService {
       name: 'birthday_scheduler_birthdays_processed_total',
       help: 'Total birthdays processed',
       labelNames: ['status', 'timezone'],
+      registers: [this.registry],
+    });
+
+    this.birthdaysScheduledTodayTotal = new Counter({
+      name: 'birthday_scheduler_birthdays_scheduled_today_total',
+      help: 'Total birthdays scheduled for today',
+      labelNames: ['timezone', 'message_type'],
+      registers: [this.registry],
+    });
+
+    this.birthdayMessagesByStrategyTotal = new Counter({
+      name: 'birthday_scheduler_birthday_messages_by_strategy_total',
+      help: 'Birthday messages by strategy type',
+      labelNames: ['strategy', 'status'],
       registers: [this.registry],
     });
 
@@ -2539,6 +2559,14 @@ export class MetricsService {
       registers: [this.registry],
     });
 
+    this.birthdayProcessingDuration = new Histogram({
+      name: 'birthday_scheduler_birthday_processing_duration_seconds',
+      help: 'Birthday message processing duration in seconds',
+      labelNames: ['status', 'strategy'],
+      buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10],
+      registers: [this.registry],
+    });
+
     this.timezoneBatchDuration = new Histogram({
       name: 'birthday_scheduler_timezone_batch_duration_seconds',
       help: 'Timezone batch processing duration in seconds',
@@ -2886,6 +2914,31 @@ export class MetricsService {
   }
 
   /**
+   * Record birthday scheduled today
+   */
+  recordBirthdayScheduledToday(timezone: string, messageType: string): void {
+    this.birthdaysScheduledTodayTotal.inc({ timezone, message_type: messageType });
+  }
+
+  /**
+   * Record birthday message by strategy
+   */
+  recordBirthdayMessageByStrategy(strategy: string, status: string): void {
+    this.birthdayMessagesByStrategyTotal.inc({ strategy, status });
+  }
+
+  /**
+   * Record birthday processing duration
+   */
+  recordBirthdayProcessingDuration(
+    status: string,
+    strategy: string,
+    durationSeconds: number
+  ): void {
+    this.birthdayProcessingDuration.observe({ status, strategy }, durationSeconds);
+  }
+
+  /**
    * Record message template usage
    */
   recordMessageTemplateUsage(templateName: string, templateVersion: string = '1.0'): void {
@@ -2893,6 +2946,13 @@ export class MetricsService {
       template_name: templateName,
       template_version: templateVersion,
     });
+  }
+
+  /**
+   * Record template render duration
+   */
+  recordTemplateRenderDuration(templateName: string, durationSeconds: number): void {
+    this.templateRenderingDuration.observe({ template_name: templateName }, durationSeconds);
   }
 
   /**
@@ -2907,6 +2967,13 @@ export class MetricsService {
    */
   recordUserDeletion(reason: string, tier: string = 'free'): void {
     this.userDeletionsTotal.inc({ reason, tier });
+  }
+
+  /**
+   * Record user update
+   */
+  recordUserUpdate(field: string, source: string = 'api'): void {
+    this.userUpdatesTotal.inc({ field, source });
   }
 
   /**
@@ -3260,21 +3327,21 @@ export class MetricsService {
   /**
    * Record cache hit
    */
-  recordCacheHit(cacheName: string, keyPattern: string = 'default'): void {
+  recordCacheHit(cacheName: string = 'redis', keyPattern: string = 'default'): void {
     this.cacheHitsTotal.inc({ cache_name: cacheName, key_pattern: keyPattern });
   }
 
   /**
    * Record cache miss
    */
-  recordCacheMiss(cacheName: string, keyPattern: string = 'default'): void {
+  recordCacheMiss(cacheName: string = 'redis', keyPattern: string = 'default'): void {
     this.cacheMissesTotal.inc({ cache_name: cacheName, key_pattern: keyPattern });
   }
 
   /**
    * Record cache eviction
    */
-  recordCacheEviction(cacheName: string, evictionReason: string): void {
+  recordCacheEviction(cacheName: string = 'redis', evictionReason: string): void {
     this.cacheEvictionsTotal.inc({ cache_name: cacheName, eviction_reason: evictionReason });
   }
 

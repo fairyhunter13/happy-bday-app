@@ -32,7 +32,12 @@ describe('User API Integration Tests', () => {
     process.env.DATABASE_URL = connectionString;
 
     // Create drizzle instance for test assertions
-    queryClient = postgres(connectionString);
+    // Use small pool size and timeouts to prevent connection exhaustion in CI
+    queryClient = postgres(connectionString, {
+      max: 2, // Small pool size
+      idle_timeout: 10, // Close idle connections after 10 seconds
+      connect_timeout: 10, // Connection timeout in seconds
+    });
     drizzle(queryClient, { schema: { users } });
 
     // Run migrations

@@ -54,6 +54,7 @@ export class MessageWorker {
    */
   private async processMessage(job: MessageJob): Promise<void> {
     const startTime = Date.now();
+    const strategyName = job.messageType; // BIRTHDAY or ANNIVERSARY
 
     logger.info({
       msg: 'Processing message job',
@@ -134,6 +135,12 @@ export class MessageWorker {
         metricsService.recordMessageSent(job.messageType, 200);
         metricsService.recordMessageDeliveryDuration(job.messageType, 'success', durationSeconds);
         metricsService.recordMessageProcessing(job.messageType, durationSeconds);
+        metricsService.recordBirthdayProcessingDuration('success', strategyName, durationSeconds);
+        metricsService.recordBirthdayMessageByStrategy(strategyName, 'success');
+
+        // Record message delivery by hour
+        const sendHour = new Date().getHours();
+        metricsService.recordMessageDeliveryByHour(sendHour, job.messageType);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -166,6 +173,8 @@ export class MessageWorker {
       // Record metrics
       metricsService.recordMessageFailed(job.messageType, errorType, job.retryCount);
       metricsService.recordMessageDeliveryDuration(job.messageType, 'failure', durationSeconds);
+      metricsService.recordBirthdayProcessingDuration('failure', strategyName, durationSeconds);
+      metricsService.recordBirthdayMessageByStrategy(strategyName, 'failure');
 
       // Re-throw to let consumer handle retry/reject logic
       throw error;

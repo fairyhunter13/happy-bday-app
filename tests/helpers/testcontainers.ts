@@ -47,13 +47,15 @@ export class PostgresTestContainer {
 
     if (this.usingCI) {
       // CI mode: connect to docker-compose services
-      // Use a very small pool to avoid connection exhaustion
+      // Use minimal pool to avoid connection exhaustion when multiple test files run in parallel
       this.connectionString = getCIConnectionStrings().postgres;
       this.pool = new Pool({
         connectionString: this.connectionString,
-        max: 2, // Limit pool size in CI to prevent exhaustion
-        idleTimeoutMillis: 10000,
-        connectionTimeoutMillis: 5000,
+        max: 1, // Single connection per pool - multiple test files share the same PostgreSQL
+        min: 0, // Don't keep idle connections
+        idleTimeoutMillis: 5000, // Release idle connections quickly
+        connectionTimeoutMillis: 30000, // Wait longer for connection when pool is exhausted
+        allowExitOnIdle: true, // Allow process to exit when pool is idle
       });
 
       // Wait for database to be ready
@@ -288,13 +290,15 @@ export class TestEnvironment {
     this.rabbitmqConnectionString = ciStrings.rabbitmq;
     this.redisConnectionString = ciStrings.redis;
 
-    // Create pool for CI database with very limited connections
-    // to avoid exhausting the shared PostgreSQL instance
+    // Create pool for CI database with minimal connections
+    // to avoid exhausting the shared PostgreSQL instance when multiple test files run in parallel
     this.pool = new Pool({
       connectionString: this.postgresConnectionString,
-      max: 2, // Limit pool size in CI to prevent exhaustion
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 5000,
+      max: 1, // Single connection per pool - multiple test files share the same PostgreSQL
+      min: 0, // Don't keep idle connections
+      idleTimeoutMillis: 5000, // Release idle connections quickly
+      connectionTimeoutMillis: 30000, // Wait longer for connection when pool is exhausted
+      allowExitOnIdle: true, // Allow process to exit when pool is idle
     });
 
     // Wait for database to be ready

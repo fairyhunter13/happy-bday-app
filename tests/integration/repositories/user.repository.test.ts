@@ -15,7 +15,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { UserRepository } from '../../../src/repositories/user.repository.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../../../src/utils/errors.js';
-import { PostgresTestContainer, cleanDatabase } from '../../helpers/testcontainers.js';
+import { PostgresTestContainer, cleanDatabase, isCI } from '../../helpers/testcontainers.js';
 import type { CreateUserDto, UpdateUserDto } from '../../../src/types/dto.js';
 import { DateTime } from 'luxon';
 
@@ -34,7 +34,12 @@ describe('UserRepository', () => {
     await testContainer.runMigrations('./drizzle');
 
     // Create Drizzle instance
-    queryClient = postgres(connectionString);
+    // Use limited connection pool in CI to prevent exhaustion
+    queryClient = postgres(connectionString, {
+      max: isCI() ? 2 : 10,
+      idle_timeout: 10,
+      connect_timeout: 10,
+    });
     db = drizzle(queryClient);
     repository = new UserRepository(db);
   });

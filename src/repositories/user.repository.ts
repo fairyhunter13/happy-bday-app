@@ -17,6 +17,7 @@ import { users, type User, type NewUser } from '../db/schema/users.js';
 import type * as schema from '../db/schema/index.js';
 import type { CreateUserDto, UpdateUserDto, UserFiltersDto } from '../types/dto.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/errors.js';
+import { metricsService } from '../services/metrics.service.js';
 
 /**
  * Transaction type for atomic operations
@@ -161,6 +162,9 @@ export class UserRepository {
 
       const result = await dbInstance.insert(users).values(newUser).returning();
 
+      // Record user creation metric
+      metricsService.recordUserCreation('direct', 'free');
+
       return result[0]!;
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
@@ -218,6 +222,12 @@ export class UserRepository {
         .where(eq(users.id, id))
         .returning();
 
+      // Record user update metrics for changed fields
+      const updatedFields = Object.keys(data);
+      for (const field of updatedFields) {
+        metricsService.recordUserUpdate(field, 'direct');
+      }
+
       return result[0]!;
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof UniqueConstraintError) {
@@ -262,6 +272,9 @@ export class UserRepository {
         })
         .where(eq(users.id, id))
         .returning();
+
+      // Record user deletion metric
+      metricsService.recordUserDeletion('soft_delete', 'free');
 
       return result[0]!;
     } catch (error) {

@@ -4,27 +4,41 @@ This document provides a comprehensive reference for all Prometheus metrics expo
 
 ## Table of Contents
 
+### Getting Started
 - [Overview](#overview)
+- [Quick Reference](#quick-reference)
 - [Monitoring Strategy](#monitoring-strategy)
+
+### Metric Reference
+- [Counter Metrics](#counter-metrics) - 105 cumulative metrics
+- [Gauge Metrics](#gauge-metrics) - 117 current value metrics
+- [Histogram Metrics](#histogram-metrics) - 36 distribution metrics
+- [Summary Metrics](#summary-metrics) - 10 percentile metrics
+- [Queue Metrics Deep-Dive](#queue-metrics-deep-dive) - RabbitMQ specifics
+
+### Operational Guidance
 - [SLO and Threshold Reference](#slo-and-threshold-reference)
 - [Metric Interpretation Guide](#metric-interpretation-guide)
-- [Counter Metrics](#counter-metrics)
-- [Gauge Metrics](#gauge-metrics)
-- [Histogram Metrics](#histogram-metrics)
-- [Summary Metrics](#summary-metrics)
-- [Queue Metrics Deep-Dive](#queue-metrics-deep-dive)
 - [Alerting Rules](#alerting-rules)
 - [Troubleshooting Decision Trees](#troubleshooting-decision-trees)
+
+### Implementation
 - [Grafana Query Examples](#grafana-query-examples)
 - [Usage Examples](#usage-examples)
 - [Configuration](#configuration)
-- [Instrumentation Status](#instrumentation-status)
 - [Dashboard Integration](#dashboard-integration)
+
+### Best Practices
+- [Adding New Metrics](#adding-new-metrics) - Complete step-by-step guide
 - [Cardinality Warnings](#cardinality-warnings)
+- [Instrumentation Status](#instrumentation-status)
+- [References](#references)
 
 ---
 
 ## Overview
+
+This document provides comprehensive documentation for all Prometheus metrics exposed by the Birthday Message Scheduler application. It includes metric definitions, interpretation guidelines, alert configurations, and best practices for adding new metrics.
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -33,6 +47,10 @@ This document provides a comprehensive reference for all Prometheus metrics expo
 | **Histogram Metrics** | 36 | Distribution of values with buckets |
 | **Summary Metrics** | 10 | Percentile-based distributions |
 | **Total** | 268 | Complete observability coverage |
+
+**Last Updated**: 2025-12-31
+**Metrics Service Location**: `/src/services/metrics.service.ts`
+**Alert Rules Location**: `/grafana/alerts/alert-rules.yaml`
 
 ### Quick Reference
 
@@ -796,6 +814,195 @@ rate(birthday_scheduler_message_acks_total[5m])
 | **NewVersionDeployed** | Build info changed | 0m | Deployment detected | Monitor for regressions |
 | **BirthdayMessageVolumeSpike** | Volume > 2x normal | 15m | High birthday volume | Monitor capacity |
 
+### Alert Configuration Details
+
+#### Alert File Structure
+
+The alert rules are defined in `/grafana/alerts/alert-rules.yaml` with the following structure:
+
+```yaml
+groups:
+  - name: critical_alerts
+    interval: 30s
+    rules:
+      - alert: AlertName
+        expr: PromQL expression
+        for: duration
+        labels:
+          severity: critical|warning|info
+          component: api|database|queue|etc
+        annotations:
+          summary: Brief description
+          description: Detailed description with templating
+          runbook: Link to runbook documentation
+```
+
+#### Notification Configuration
+
+Alerts are routed based on severity:
+
+```yaml
+alerting:
+  contactpoints:
+    - name: pagerduty-critical
+      type: pagerduty
+      settings:
+        integrationKey: "${PAGERDUTY_KEY}"
+        severity: critical
+
+    - name: email-team
+      type: email
+      settings:
+        addresses: "team@example.com"
+
+  notification_policies:
+    - match:
+        severity: critical
+      receiver: pagerduty-critical
+      continue: true
+
+    - match:
+        severity: warning|info
+      receiver: email-team
+```
+
+#### Alert Severity Levels
+
+| Severity | Response Time | Notification | Example |
+|----------|--------------|--------------|---------|
+| **Critical** | Immediate (< 5 min) | PagerDuty + Email | Service down, high error rate |
+| **Warning** | Within business hours | Email only | High latency, elevated errors |
+| **Info** | Awareness only | Email only | Traffic spike, new deployment |
+
+#### Adding New Alerts
+
+When adding new alerts to `/grafana/alerts/alert-rules.yaml`:
+
+1. **Choose appropriate severity**:
+   - Critical: Service impact, user-facing issues
+   - Warning: Potential issues, performance degradation
+   - Info: Informational, trend awareness
+
+2. **Set appropriate thresholds**:
+   - Base on SLO requirements
+   - Consider false positive rate
+   - Test with historical data
+
+3. **Include clear annotations**:
+   - Summary: One-line description
+   - Description: Include current value with `{{ $value }}`
+   - Runbook: Link to response procedures
+
+4. **Test alert expression**:
+   ```bash
+   # Test in Prometheus UI
+   # Navigate to /graph
+   # Enter PromQL expression
+   # Verify it returns expected results
+   ```
+
+5. **Document response procedure**:
+   - Add to runbook documentation
+   - Include troubleshooting steps
+   - List required permissions/access
+
+#### Alert Best Practices
+
+**Good Alert Characteristics:**
+- Actionable: Clear action required
+- Scoped: Specific component/service
+- Calibrated: Threshold based on data
+- Documented: Runbook exists
+- Tested: Verified with test alerts
+
+**Poor Alert Characteristics:**
+- Noisy: Frequent false positives
+- Vague: No clear action
+- Too sensitive: Triggers too easily
+- Undocumented: No runbook
+- Untested: Never verified
+
+**Example Good Alert:**
+```yaml
+- alert: QueueDepthCritical
+  expr: rabbitmq_queue_messages{queue="birthday_messages"} > 5000
+  for: 5m
+  labels:
+    severity: critical
+    component: queue
+  annotations:
+    summary: "Message queue depth is critically high"
+    description: "Queue depth is {{ $value }} messages (threshold: 5000)"
+    runbook: "https://docs.example.com/runbooks/queue-overflow"
+```
+
+**Example Poor Alert:**
+```yaml
+# ❌ Too vague, no threshold, no runbook
+- alert: SomethingWrong
+  expr: some_metric > 0
+  labels:
+    severity: critical
+  annotations:
+    summary: "Something is wrong"
+```
+
+#### Alert Tuning
+
+If an alert is too noisy or not firing when it should:
+
+1. **Adjust threshold**: Based on historical data
+2. **Adjust duration**: Reduce false positives
+3. **Add context**: More specific labels
+4. **Split alert**: Separate critical from warning
+
+Example tuning progression:
+```yaml
+# Initial (too noisy - fires every 30s)
+expr: error_rate > 0.01
+for: 30s
+
+# Adjusted threshold (still noisy)
+expr: error_rate > 0.05
+for: 30s
+
+# Adjusted duration (better)
+expr: error_rate > 0.05
+for: 5m
+
+# Final (good balance)
+expr: error_rate > 0.10
+for: 5m
+labels:
+  severity: warning  # Reduced from critical
+```
+
+#### Alert Testing
+
+Before deploying new alerts:
+
+```bash
+# 1. Test PromQL in Prometheus UI
+# Navigate to Prometheus → Graph
+# Enter your expression
+# Verify it returns expected time series
+
+# 2. Trigger test alert
+# Temporarily lower threshold
+# Create condition that triggers alert
+# Verify notification arrives
+
+# 3. Verify alert routing
+# Check AlertManager UI
+# Confirm alert appears
+# Verify correct receiver gets notification
+
+# 4. Test resolution
+# Fix condition
+# Verify alert auto-resolves
+# Confirm resolution notification
+```
+
 ---
 
 ## Troubleshooting Decision Trees
@@ -1514,12 +1721,413 @@ metric_relabel_configs:
 
 ---
 
+## Adding New Metrics
+
+### Step-by-Step Guide
+
+Follow this process when adding new metrics to the application:
+
+#### 1. Choose the Right Metric Type
+
+| Metric Type | Use When | Example |
+|-------------|----------|---------|
+| **Counter** | Value only increases (or resets) | Total requests, total errors, total messages sent |
+| **Gauge** | Value can go up or down | Current queue depth, active connections, memory usage |
+| **Histogram** | You need distribution/percentiles with fixed buckets | Request latency, message size, processing duration |
+| **Summary** | You need percentiles calculated on client side | Response time quantiles, processing time percentiles |
+
+**Decision Tree:**
+```
+Does the value only increase? → Counter
+Can the value increase or decrease? → Gauge
+Do you need latency/duration percentiles? → Histogram (preferred) or Summary
+Do you need to track sizes or counts with distribution? → Histogram
+```
+
+#### 2. Define the Metric in MetricsService
+
+Add the metric declaration to `/src/services/metrics.service.ts`:
+
+```typescript
+// In the class property declarations section
+export class MetricsService {
+  // ... existing metrics ...
+
+  // Add your metric property
+  public readonly myNewMetric: Counter; // or Gauge, Histogram, Summary
+}
+```
+
+#### 3. Initialize the Metric in Constructor
+
+Add initialization in the constructor:
+
+```typescript
+constructor() {
+  // ... existing initialization ...
+
+  // Initialize your metric
+  this.myNewMetric = new Counter({
+    name: 'birthday_scheduler_my_new_metric_total',
+    help: 'Clear description of what this metric measures',
+    labelNames: ['label1', 'label2'], // Keep cardinality low!
+    registers: [this.registry],
+  });
+}
+```
+
+#### 4. Metric Naming Best Practices
+
+Follow Prometheus naming conventions:
+
+```
+birthday_scheduler_<subsystem>_<metric_name>_<unit>_<type>
+```
+
+**Examples:**
+```typescript
+// Counter - must end in _total
+'birthday_scheduler_messages_sent_total'
+'birthday_scheduler_api_requests_total'
+'birthday_scheduler_cache_hits_total'
+
+// Gauge - no suffix required
+'birthday_scheduler_queue_depth'
+'birthday_scheduler_active_workers'
+'birthday_scheduler_memory_usage_bytes'
+
+// Histogram - should include unit
+'birthday_scheduler_api_response_time_seconds'
+'birthday_scheduler_message_size_bytes'
+'birthday_scheduler_batch_processing_duration_seconds'
+
+// Summary - should include unit
+'birthday_scheduler_processing_time_quantiles'
+```
+
+**Naming Rules:**
+- Use lowercase with underscores (snake_case)
+- Start with application prefix: `birthday_scheduler_`
+- Include subsystem if applicable: `database_`, `queue_`, `api_`
+- Add unit suffix: `_seconds`, `_bytes`, `_count`
+- Counters must end in `_total`
+- Be descriptive but concise
+- Use base units (seconds not milliseconds, bytes not MB)
+
+#### 5. Configure Histogram Buckets
+
+For histogram metrics, choose appropriate buckets:
+
+```typescript
+// Fast operations (< 100ms)
+buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1]
+
+// API responses (100ms - 5s)
+buckets: [0.005, 0.01, 0.05, 0.1, 0.5, 1, 5]
+
+// Database queries (1ms - 1s)
+buckets: [0.001, 0.01, 0.05, 0.1, 0.5, 1]
+
+// Message processing (10ms - 10s)
+buckets: [0.01, 0.05, 0.1, 0.5, 1, 5, 10]
+
+// Batch operations (100ms - 5 minutes)
+buckets: [0.1, 0.5, 1, 5, 10, 30, 60, 300]
+
+// Long-running jobs (1s - 1 hour)
+buckets: [1, 5, 10, 30, 60, 300, 900, 1800, 3600]
+```
+
+#### 6. Add Recording Method (Optional)
+
+Create a convenience method for recording the metric:
+
+```typescript
+/**
+ * Record my new metric
+ * @param label1 - Description of label1
+ * @param label2 - Description of label2
+ * @param value - Value to record (for gauges/histograms)
+ */
+recordMyNewMetric(label1: string, label2: string, value?: number): void {
+  if (value !== undefined) {
+    // For Histogram or Gauge
+    this.myNewMetric.observe({ label1, label2 }, value);
+  } else {
+    // For Counter
+    this.myNewMetric.inc({ label1, label2 });
+  }
+}
+```
+
+#### 7. Instrument Your Code
+
+Add metric recording at the appropriate location:
+
+```typescript
+// Counter example
+metricsService.messagesScheduledTotal.inc({
+  message_type: 'birthday',
+  timezone: 'UTC'
+});
+
+// Gauge example
+metricsService.queueDepth.set({ queue_name: 'messages' }, depth);
+
+// Histogram with timer
+const end = metricsService.apiResponseTime.startTimer({
+  method: 'GET',
+  path: '/api/users'
+});
+// ... execute operation ...
+end(); // Automatically records duration
+
+// Histogram with manual observation
+metricsService.databaseQueryDuration.observe(
+  { query_type: 'select', table: 'users' },
+  durationInSeconds
+);
+
+// Summary
+metricsService.messageProcessingQuantiles.observe(
+  { message_type: 'birthday' },
+  processingTimeSeconds
+);
+```
+
+#### 8. Update Documentation
+
+Add the metric to this document:
+
+1. **Add to metric list** in the appropriate category section
+2. **Document labels** and their possible values
+3. **Add interpretation guide** - what's normal, what's concerning
+4. **Provide query examples** for common use cases
+5. **Define alert thresholds** if applicable
+
+#### 9. Create Grafana Panels
+
+Add visualization in Grafana dashboards:
+
+```promql
+# Rate for counters
+rate(birthday_scheduler_my_new_metric_total[5m])
+
+# Current value for gauges
+birthday_scheduler_my_new_metric{label1="value"}
+
+# Percentiles for histograms
+histogram_quantile(0.99,
+  rate(birthday_scheduler_my_new_metric_bucket[5m])
+)
+
+# Summary quantiles (already calculated)
+birthday_scheduler_my_new_metric_quantiles{quantile="0.99"}
+```
+
+#### 10. Add Alerts (If Needed)
+
+Define alert rules in `/grafana/alerts/alert-rules.yaml`:
+
+```yaml
+- alert: MyNewMetricHigh
+  expr: rate(birthday_scheduler_my_new_metric_total[5m]) > 100
+  for: 5m
+  labels:
+    severity: warning
+    component: my_component
+  annotations:
+    summary: "My new metric is too high"
+    description: "Rate is {{ $value }} (threshold: 100)"
+    runbook: "https://docs.example.com/runbooks/my-new-metric"
+```
+
+### Complete Example: Adding a Cache Warming Metric
+
+Here's a complete example of adding a new metric:
+
+```typescript
+// 1. Add property declaration
+export class MetricsService {
+  public readonly cacheWarmingDuration: Histogram;
+}
+
+// 2. Initialize in constructor
+constructor() {
+  this.cacheWarmingDuration = new Histogram({
+    name: 'birthday_scheduler_cache_warming_duration_seconds',
+    help: 'Cache warming operation duration in seconds',
+    labelNames: ['cache_name', 'status'],
+    buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
+    registers: [this.registry],
+  });
+}
+
+// 3. Add recording method
+recordCacheWarming(cacheName: string, status: string, durationSeconds: number): void {
+  this.cacheWarmingDuration.observe({ cache_name: cacheName, status }, durationSeconds);
+}
+
+// 4. Instrument code
+const startTime = Date.now();
+try {
+  await warmCache('user-profiles');
+  const duration = (Date.now() - startTime) / 1000;
+  metricsService.recordCacheWarming('user-profiles', 'success', duration);
+} catch (error) {
+  const duration = (Date.now() - startTime) / 1000;
+  metricsService.recordCacheWarming('user-profiles', 'error', duration);
+  throw error;
+}
+```
+
+### Label Best Practices
+
+#### Good Label Usage
+
+```typescript
+// ✅ Low cardinality, bounded values
+metricsService.messagesScheduledTotal.inc({
+  message_type: 'birthday',  // Limited set: birthday, reminder, notification
+  timezone: 'America/New_York'  // ~400 values (IANA timezones)
+});
+
+// ✅ Status codes grouped
+metricsService.apiRequestsTotal.inc({
+  method: 'GET',  // Limited: GET, POST, PUT, DELETE, PATCH
+  path: '/api/users',  // Limited to defined routes
+  status: '200'  // Limited to HTTP status codes
+});
+```
+
+#### Bad Label Usage (Avoid!)
+
+```typescript
+// ❌ Unbounded cardinality - user_id
+metricsService.messagesScheduledTotal.inc({
+  user_id: userId,  // Could be millions of unique values!
+  message_type: 'birthday'
+});
+
+// ❌ Unbounded cardinality - request_id
+metricsService.apiRequestsTotal.inc({
+  request_id: uuid(),  // Infinite unique values!
+  method: 'GET'
+});
+
+// ❌ Dynamic values - email addresses
+metricsService.userActivityTotal.inc({
+  user_email: email  // High cardinality!
+});
+
+// ❌ Full paths with IDs
+metricsService.apiRequestsTotal.inc({
+  path: `/api/users/${userId}/profile`  // Unbounded!
+});
+```
+
+**Instead, aggregate or use separate metrics:**
+
+```typescript
+// ✅ Aggregate into segments
+const segment = getUserSegment(userId); // 'free', 'premium', 'enterprise'
+metricsService.userActivityTotal.inc({
+  user_segment: segment,
+  activity_type: 'login'
+});
+
+// ✅ Use path templates
+const pathTemplate = route.pattern; // '/api/users/:id/profile'
+metricsService.apiRequestsTotal.inc({
+  path: pathTemplate,
+  method: 'GET'
+});
+```
+
+### Testing Your Metrics
+
+#### 1. Local Testing
+
+```bash
+# Start the application
+npm run dev
+
+# Check metrics endpoint
+curl http://localhost:3000/metrics | grep my_new_metric
+
+# Trigger the code path
+curl http://localhost:3000/api/trigger-action
+
+# Verify metric value changed
+curl http://localhost:3000/metrics | grep my_new_metric
+```
+
+#### 2. Prometheus Query Testing
+
+```promql
+# Check if metric exists
+birthday_scheduler_my_new_metric_total
+
+# Check labels
+birthday_scheduler_my_new_metric_total{label1="test"}
+
+# Check rate
+rate(birthday_scheduler_my_new_metric_total[5m])
+
+# Check cardinality
+count(birthday_scheduler_my_new_metric_total)
+```
+
+#### 3. Verify in Grafana
+
+1. Go to Explore
+2. Select Prometheus data source
+3. Enter your metric query
+4. Verify data appears
+5. Add to dashboard if needed
+
+### Common Mistakes to Avoid
+
+| Mistake | Problem | Solution |
+|---------|---------|----------|
+| High cardinality labels | Memory explosion | Use bounded label values |
+| Wrong metric type | Incorrect data | Counter for increasing, Gauge for current value |
+| Missing units in name | Confusion about scale | Always include `_seconds`, `_bytes`, etc. |
+| Too many labels | Query complexity | Max 4-5 labels per metric |
+| Generic names | Unclear purpose | Be specific: `users_active` not `count` |
+| No documentation | Hard to use | Document in this file |
+| No alerts | Issues missed | Add alerts for critical metrics |
+| Wrong buckets | Poor percentiles | Choose buckets that match your SLO |
+
+### Metric Review Checklist
+
+Before committing new metrics:
+
+- [ ] Metric name follows naming conventions
+- [ ] Metric type is appropriate for use case
+- [ ] Labels have low cardinality (< 100 unique values per label)
+- [ ] No user IDs, emails, or unbounded values in labels
+- [ ] Histogram buckets match expected value distribution
+- [ ] Documentation added to METRICS.md
+- [ ] Recording method added (if complex)
+- [ ] Code instrumented correctly
+- [ ] Tested locally and verified in /metrics endpoint
+- [ ] Grafana dashboard panel created (if needed)
+- [ ] Alert rules defined (if critical)
+- [ ] Query examples provided
+- [ ] Normal/warning/critical thresholds documented
+
+---
+
 ## References
 
 - [Prometheus Best Practices](https://prometheus.io/docs/practices/naming/)
+- [Prometheus Metric Types](https://prometheus.io/docs/concepts/metric_types/)
 - [Node.js Metrics with prom-client](https://github.com/siimon/prom-client)
 - [Google SRE Book - Monitoring](https://sre.google/sre-book/monitoring-distributed-systems/)
 - [RED Method](https://www.weave.works/blog/the-red-method-key-metrics-for-microservices-architecture/)
 - [Grafana Dashboard Design](../plan/07-monitoring/grafana-dashboards-research.md)
-- [Alert Rules](../grafana/alerts/)
+- [Alert Rules](../grafana/alerts/alert-rules.yaml)
 - [Queue Metrics Implementation](../src/services/queue/queue-metrics.ts)
+- [Prometheus Naming Best Practices](https://prometheus.io/docs/practices/naming/)
+- [Avoiding High Cardinality](https://prometheus.io/docs/practices/naming/#labels)
