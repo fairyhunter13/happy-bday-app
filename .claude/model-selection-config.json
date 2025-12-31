@@ -158,10 +158,12 @@
   },
 
   "enforcement": {
-    "strict_coordinator_model": true,
-    "warn_on_deviation": true,
+    "strict_coordinator_model": false,
+    "warn_on_deviation": false,
     "log_model_usage": true,
-    "override_incorrect_selections": true
+    "override_incorrect_selections": false,
+    "mode": "coordinator_reasoning",
+    "description": "Coordinator uses reasoning judgment - no algorithmic enforcement"
   },
 
   "cost_optimization": {
