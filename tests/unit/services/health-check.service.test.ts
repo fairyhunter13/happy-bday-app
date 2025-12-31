@@ -26,6 +26,18 @@ vi.mock('../../../src/services/metrics.service.js', () => ({
   },
 }));
 
+// Mock cache service (Redis)
+vi.mock('../../../src/services/cache.service.js', () => ({
+  cacheService: {
+    isHealthy: vi.fn().mockResolvedValue(true),
+    getMetrics: vi.fn().mockResolvedValue({
+      hitRate: 0.85,
+      keysCount: 100,
+      memoryUsage: '10MB',
+    }),
+  },
+}));
+
 // Mock package.json import
 vi.mock(
   '../../package.json',
@@ -38,6 +50,7 @@ vi.mock(
 import { HealthCheckService } from '../../../src/services/health-check.service.js';
 import { db } from '../../../src/db/connection.js';
 import { messageSenderService } from '../../../src/services/message.service.js';
+import { cacheService } from '../../../src/services/cache.service.js';
 
 /**
  * Unit Tests: HealthCheckService
@@ -66,6 +79,14 @@ describe('HealthCheckService', () => {
       isOpen: false,
       failures: 0,
       successes: 10,
+    });
+
+    // Default mock for Redis cache service - must be reset after resetAllMocks
+    (cacheService.isHealthy as any).mockResolvedValue(true);
+    (cacheService.getMetrics as any).mockResolvedValue({
+      hitRate: 0.85,
+      keysCount: 100,
+      memoryUsage: '10MB',
     });
   });
 
