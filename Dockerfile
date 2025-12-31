@@ -1,0 +1,91 @@
+# ==============================================================================
+# Birthday Message Scheduler - Production Dockerfile
+# ==============================================================================
+# Multi-stage build for minimal image size and security
+# Target: Node.js 20 Alpine with production dependencies only
+
+# ==============================================================================
+# Stage 1: Dependencies
+# ==============================================================================
+FROM node:20-alpine AS deps
+
+WORKDIR /app
+
+# Install dependencies for native modules (if any)
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci
+
+# ==============================================================================
+# Stage 2: Builder
+# ==============================================================================
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Prune dev dependencies
+RUN npm prune --production
+
+# ==============================================================================
+# Stage 3: Production Runner
+# ==============================================================================
+FROM node:20-alpine AS runner
+
+# Build arguments for labels
+ARG NODE_ENV=production
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION=1.0.0
+
+# Labels for container metadata
+LABEL org.opencontainers.image.title="Birthday Message Scheduler" \
+      org.opencontainers.image.description="Production-ready birthday message scheduler with timezone support" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.vendor="Happy Birthday App" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+WORKDIR /app
+
+# Set environment
+ENV NODE_ENV=${NODE_ENV}
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 appuser
+
+# Copy built application
+COPY --from=builder --chown=appuser:nodejs /app/dist ./dist
+COPY --from=builder --chown=appuser:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=appuser:nodejs /app/package.json ./package.json
+
+# Copy migration files if they exist
+COPY --from=builder --chown=appuser:nodejs /app/src/db/migrations ./src/db/migrations
+
+# Set correct permissions
+RUN chmod -R 755 /app/dist
+
+# Switch to non-root user
+USER appuser
+
+# Expose application port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# Default command - main API server
+CMD ["node", "dist/index.js"]
