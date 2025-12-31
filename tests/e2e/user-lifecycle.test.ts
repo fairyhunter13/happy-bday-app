@@ -32,7 +32,7 @@ describe('User Lifecycle E2E Tests', () => {
 
     await pgContainer.runMigrations('./drizzle');
 
-    app = await createTestServer();
+    app = await createTestServer({ includeUserRoutes: true });
   }, 120000);
 
   afterAll(async () => {

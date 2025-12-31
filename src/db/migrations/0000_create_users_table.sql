@@ -10,8 +10,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"location_country" varchar(100),
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone,
-	CONSTRAINT "users_email_unique" UNIQUE("email")
+	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE INDEX "idx_users_birthday_date" ON "users" ("birthday_date") WHERE "deleted_at" IS NULL AND "birthday_date" IS NOT NULL;
@@ -20,4 +19,4 @@ CREATE INDEX "idx_users_anniversary_date" ON "users" ("anniversary_date") WHERE 
 --> statement-breakpoint
 CREATE INDEX "idx_users_birthday_timezone" ON "users" ("birthday_date","timezone") WHERE "deleted_at" IS NULL;
 --> statement-breakpoint
-CREATE INDEX "idx_users_email_unique" ON "users" ("email") WHERE "deleted_at" IS NULL;
+CREATE UNIQUE INDEX "idx_users_email_unique" ON "users" ("email") WHERE "deleted_at" IS NULL;

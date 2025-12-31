@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, date, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, date, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 /**
@@ -21,7 +21,9 @@ export const users = pgTable(
 
     lastName: varchar('last_name', { length: 100 }).notNull(),
 
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    // Email uniqueness is enforced via partial unique index (only non-deleted users)
+    // This allows email reuse after soft delete
+    email: varchar('email', { length: 255 }).notNull(),
 
     // IANA timezone identifier (e.g., "America/New_York", "Europe/London")
     // This handles DST automatically when using date-fns-tz or luxon
@@ -64,9 +66,9 @@ export const users = pgTable(
       .on(table.birthdayDate, table.timezone)
       .where(sql`${table.deletedAt} IS NULL`),
 
-    // Unique email index (only non-deleted users)
+    // Partial UNIQUE index on email (only non-deleted users)
     // Allows email reuse after soft delete
-    emailUniqueIdx: index('idx_users_email_unique')
+    emailUniqueIdx: uniqueIndex('idx_users_email_unique')
       .on(table.email)
       .where(sql`${table.deletedAt} IS NULL`),
   })

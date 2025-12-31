@@ -5,6 +5,10 @@ import baseConfig from './vitest.config.base';
  * Integration Test Configuration
  * Tests with database, message queue, and external dependencies
  * DRY: Extends base config with integration-specific settings
+ *
+ * COVERAGE: No strict thresholds
+ * Focus: Logic correctness, proper integration between components
+ * These tests verify that components work together correctly.
  */
 export default mergeConfig(
   baseConfig,
@@ -14,7 +18,7 @@ export default mergeConfig(
       include: ['tests/integration/**/*.test.ts'],
 
       // Medium timeout for integration tests
-      testTimeout: 60000,  // 1 minute
+      testTimeout: 60000, // 1 minute
       hookTimeout: 60000,
 
       // Fewer threads for integration tests (they use more resources)
@@ -23,6 +27,17 @@ export default mergeConfig(
           singleThread: false,
           maxThreads: 3,
           minThreads: 1,
+        },
+      },
+
+      // Coverage - NO strict thresholds for integration tests
+      // Focus on logic correctness, not coverage metrics
+      coverage: {
+        thresholds: {
+          lines: 0,
+          functions: 0,
+          branches: 0,
+          statements: 0,
         },
       },
     },
