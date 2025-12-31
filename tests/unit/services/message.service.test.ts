@@ -1,17 +1,25 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { MessageSenderService } from '../../../src/services/message.service.js';
 import { ValidationError } from '../../../src/utils/errors.js';
 import type { User } from '../../../src/db/schema/users.js';
 
-// Mock the email service client
+// Mock the email service client before importing
 vi.mock('../../../src/clients/email-service.client.js', () => ({
   emailServiceClient: {
     sendEmail: vi.fn().mockResolvedValue({
       success: true,
       messageId: 'test-message-id',
     }),
+    getHealthStatus: vi.fn().mockReturnValue({
+      sendEmail: {
+        state: 'closed',
+        stats: { successes: 10, failures: 0 },
+      },
+    }),
   },
 }));
+
+import { MessageSenderService } from '../../../src/services/message.service.js';
+import { emailServiceClient } from '../../../src/clients/email-service.client.js';
 
 /**
  * Unit Tests: MessageSenderService
@@ -219,6 +227,157 @@ describe('MessageSenderService', () => {
         const user = { ...mockUser, email };
         expect(user.email).toBe(email);
       });
+    });
+  });
+
+  describe('getHealthStatus', () => {
+    it('should return health status from email client', () => {
+      const status = service.getHealthStatus();
+
+      expect(status).toEqual({
+        sendEmail: {
+          state: 'closed',
+          stats: { successes: 10, failures: 0 },
+        },
+      });
+    });
+  });
+
+  describe('isHealthy', () => {
+    it('should return true when circuit is closed', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: { state: 'closed', stats: {} },
+      });
+
+      const result = service.isHealthy();
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when circuit is open', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: { state: 'open', stats: {} },
+      });
+
+      const result = service.isHealthy();
+
+      expect(result).toBe(false);
+    });
+
+    it('should return false when circuit is half-open', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: { state: 'half-open', stats: {} },
+      });
+
+      const result = service.isHealthy();
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('getCircuitBreakerStats', () => {
+    it('should return circuit breaker stats when closed', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: {
+          state: 'closed',
+          stats: { failures: 2, successes: 50 },
+        },
+      });
+
+      const stats = service.getCircuitBreakerStats();
+
+      expect(stats.state).toBe('closed');
+      expect(stats.isOpen).toBe(false);
+      expect(stats.failures).toBe(2);
+      expect(stats.successes).toBe(50);
+    });
+
+    it('should return isOpen true when circuit is open', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: {
+          state: 'open',
+          stats: { failures: 10, successes: 5 },
+        },
+      });
+
+      const stats = service.getCircuitBreakerStats();
+
+      expect(stats.state).toBe('open');
+      expect(stats.isOpen).toBe(true);
+    });
+
+    it('should handle missing stats', () => {
+      vi.mocked(emailServiceClient.getHealthStatus).mockReturnValue({
+        sendEmail: {
+          state: 'closed',
+          stats: undefined,
+        },
+      });
+
+      const stats = service.getCircuitBreakerStats();
+
+      expect(stats.failures).toBe(0);
+      expect(stats.successes).toBe(0);
+    });
+  });
+
+  describe('successful message sending', () => {
+    beforeEach(() => {
+      // Reset to successful mock for these tests
+      vi.mocked(emailServiceClient.sendEmail).mockResolvedValue({
+        success: true,
+        messageId: 'test-message-id',
+      });
+    });
+
+    it('should return message response on successful birthday message', async () => {
+      const result = await service.sendBirthdayMessage(mockUser);
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe('test-message-id');
+    });
+
+    it('should return message response on successful anniversary message', async () => {
+      const result = await service.sendAnniversaryMessage(mockUser);
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe('test-message-id');
+    });
+
+    it('should call email client with correct birthday message', async () => {
+      await service.sendBirthdayMessage(mockUser);
+
+      expect(emailServiceClient.sendEmail).toHaveBeenCalledWith({
+        email: 'john.doe@example.com',
+        message: 'Hey John, happy birthday!',
+      });
+    });
+
+    it('should call email client with correct anniversary message', async () => {
+      await service.sendAnniversaryMessage(mockUser);
+
+      expect(emailServiceClient.sendEmail).toHaveBeenCalledWith({
+        email: 'john.doe@example.com',
+        message: 'Hey John, happy work anniversary!',
+      });
+    });
+  });
+
+  describe('email client error handling', () => {
+    it('should propagate email client errors for birthday message', async () => {
+      const error = new Error('Email service unavailable');
+      vi.mocked(emailServiceClient.sendEmail).mockRejectedValue(error);
+
+      await expect(service.sendBirthdayMessage(mockUser)).rejects.toThrow(
+        'Email service unavailable'
+      );
+    });
+
+    it('should propagate email client errors for anniversary message', async () => {
+      const error = new Error('Rate limit exceeded');
+      vi.mocked(emailServiceClient.sendEmail).mockRejectedValue(error);
+
+      await expect(service.sendAnniversaryMessage(mockUser)).rejects.toThrow('Rate limit exceeded');
     });
   });
 });
