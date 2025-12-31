@@ -19,8 +19,10 @@ import { sql } from 'drizzle-orm';
 import { messageSenderService } from './message.service.js';
 import { cacheService } from './cache.service.js';
 import { logger } from '../config/logger.js';
-import { version } from '../../package.json' assert { type: 'json' };
+import packageJson from '../../package.json' with { type: 'json' };
 import { metricsService } from './metrics.service.js';
+
+const { version } = packageJson;
 
 /**
  * Health status for a component
