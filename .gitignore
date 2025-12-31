@@ -31,7 +31,8 @@ build/
 backups/
 
 # Testing
-coverage/
+/coverage/
+!scripts/coverage/
 .nyc_output/
 *.lcov
 perf-results/
