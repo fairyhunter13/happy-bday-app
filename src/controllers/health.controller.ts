@@ -15,7 +15,7 @@ import { logger } from '../config/logger.js';
  * - GET /health/live - Liveness probe (Kubernetes)
  */
 export class HealthController {
-  constructor(private readonly healthService: HealthCheckService = healthCheckService) {
+  constructor(private readonly _healthService: HealthCheckService = healthCheckService) {
     logger.debug('HealthController initialized');
   }
 
@@ -27,7 +27,7 @@ export class HealthController {
    */
   async getHealth(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      const response = await this.healthService.getSimpleHealth();
+      const response = await this._healthService.getSimpleHealth();
 
       logger.debug({ response }, 'Basic health check performed');
 
@@ -54,7 +54,7 @@ export class HealthController {
    */
   async getDetailedHealth(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      const response = await this.healthService.getDetailedHealth();
+      const response = await this._healthService.getDetailedHealth();
 
       logger.debug(
         {
@@ -94,7 +94,7 @@ export class HealthController {
    */
   async getReady(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      const isReady = await this.healthService.isReady();
+      const isReady = await this._healthService.isReady();
 
       logger.debug({ isReady }, 'Readiness check performed');
 
@@ -133,7 +133,7 @@ export class HealthController {
    */
   async getLive(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
-      const isLive = await this.healthService.isLive();
+      const isLive = await this._healthService.isLive();
 
       logger.debug({ isLive }, 'Liveness check performed');
 

@@ -41,225 +41,78 @@ scheduler_runs_total{scheduler="minute-enqueue-scheduler"} 3600`,
 
 /**
  * Metrics summary JSON response schema
+ * Matches the structure returned by metricsService.getMetricValues()
  */
 export const MetricsSummarySchema = {
   type: 'object',
   properties: {
-    http: {
+    scheduledTotal: {
+      type: 'number',
+      description: 'Total messages scheduled',
+      example: 100,
+    },
+    sentTotal: {
+      type: 'number',
+      description: 'Total messages sent',
+      example: 95,
+    },
+    failedTotal: {
+      type: 'number',
+      description: 'Total messages failed',
+      example: 5,
+    },
+    apiRequestsTotal: {
+      type: 'number',
+      description: 'Total API requests',
+      example: 1000,
+    },
+    queueDepth: {
       type: 'object',
-      description: 'HTTP request metrics',
-      properties: {
-        totalRequests: {
-          type: 'integer',
-          description: 'Total HTTP requests handled',
-          example: 10000,
-        },
-        requestsByMethod: {
-          type: 'object',
-          description: 'Requests grouped by HTTP method',
-          additionalProperties: {
-            type: 'integer',
-          },
-          example: {
-            GET: 7000,
-            POST: 2000,
-            PUT: 800,
-            DELETE: 200,
-          },
-        },
-        requestsByStatus: {
-          type: 'object',
-          description: 'Requests grouped by status code',
-          additionalProperties: {
-            type: 'integer',
-          },
-          example: {
-            200: 8500,
-            201: 1000,
-            400: 300,
-            404: 100,
-            500: 100,
-          },
-        },
-        averageResponseTime: {
-          type: 'number',
-          description: 'Average response time in milliseconds',
-          example: 25.5,
-        },
+      description: 'Queue depth by queue name',
+      additionalProperties: {
+        type: 'number',
+      },
+      example: {
+        birthday_messages: 150,
       },
     },
-    database: {
+    activeWorkers: {
       type: 'object',
-      description: 'Database connection metrics',
-      properties: {
-        activeConnections: {
-          type: 'integer',
-          description: 'Current active database connections',
-          example: 10,
-        },
-        maxConnections: {
-          type: 'integer',
-          description: 'Maximum allowed connections',
-          example: 20,
-        },
-        totalQueries: {
-          type: 'integer',
-          description: 'Total database queries executed',
-          example: 50000,
-        },
+      description: 'Active workers by worker type',
+      additionalProperties: {
+        type: 'number',
+      },
+      example: {
+        message_consumer: 5,
       },
     },
-    messages: {
+    circuitBreakerStatus: {
       type: 'object',
-      description: 'Message sending metrics',
-      properties: {
-        totalSent: {
-          type: 'integer',
-          description: 'Total messages sent',
-          example: 1500,
-        },
-        sentByType: {
-          type: 'object',
-          description: 'Messages sent by type',
-          additionalProperties: {
-            type: 'integer',
-          },
-          example: {
-            birthday: 1000,
-            anniversary: 500,
-          },
-        },
-        failed: {
-          type: 'integer',
-          description: 'Failed message deliveries',
-          example: 50,
-        },
-        retries: {
-          type: 'integer',
-          description: 'Message retry attempts',
-          example: 75,
-        },
+      description: 'Circuit breaker status by service name (0=closed, 1=open)',
+      additionalProperties: {
+        type: 'number',
       },
-    },
-    schedulers: {
-      type: 'object',
-      description: 'Scheduler execution metrics',
-      properties: {
-        totalRuns: {
-          type: 'integer',
-          description: 'Total scheduler executions',
-          example: 5000,
-        },
-        runsByScheduler: {
-          type: 'object',
-          description: 'Runs grouped by scheduler',
-          additionalProperties: {
-            type: 'integer',
-          },
-          example: {
-            'daily-birthday-scheduler': 100,
-            'minute-enqueue-scheduler': 3600,
-            'recovery-scheduler': 1000,
-            'cron-scheduler': 300,
-          },
-        },
-        errors: {
-          type: 'integer',
-          description: 'Total scheduler errors',
-          example: 10,
-        },
-      },
-    },
-    system: {
-      type: 'object',
-      description: 'System resource metrics',
-      properties: {
-        uptime: {
-          type: 'number',
-          description: 'Process uptime in seconds',
-          example: 86400,
-        },
-        memoryUsage: {
-          type: 'object',
-          properties: {
-            heapUsed: {
-              type: 'integer',
-              description: 'Heap memory used in bytes',
-              example: 50000000,
-            },
-            heapTotal: {
-              type: 'integer',
-              description: 'Total heap memory in bytes',
-              example: 100000000,
-            },
-            external: {
-              type: 'integer',
-              description: 'External memory in bytes',
-              example: 5000000,
-            },
-          },
-        },
-        cpuUsage: {
-          type: 'number',
-          description: 'CPU usage percentage',
-          example: 15.5,
-        },
+      example: {
+        message_api: 0,
       },
     },
   },
   examples: [
     {
-      summary: 'Healthy system metrics',
+      summary: 'Metrics summary',
       value: {
-        http: {
-          totalRequests: 10000,
-          requestsByMethod: {
-            GET: 7000,
-            POST: 2000,
-            PUT: 800,
-            DELETE: 200,
-          },
-          requestsByStatus: {
-            200: 8500,
-            201: 1000,
-            400: 300,
-            404: 100,
-            500: 100,
-          },
-          averageResponseTime: 25.5,
+        scheduledTotal: 100,
+        sentTotal: 95,
+        failedTotal: 5,
+        apiRequestsTotal: 1000,
+        queueDepth: {
+          birthday_messages: 150,
         },
-        database: {
-          activeConnections: 10,
-          maxConnections: 20,
-          totalQueries: 50000,
+        activeWorkers: {
+          message_consumer: 5,
         },
-        messages: {
-          totalSent: 1500,
-          sentByType: {
-            birthday: 1000,
-            anniversary: 500,
-          },
-          failed: 50,
-          retries: 75,
-        },
-        schedulers: {
-          totalRuns: 5000,
-          runsByScheduler: {
-            'daily-birthday-scheduler': 100,
-            'minute-enqueue-scheduler': 3600,
-            'recovery-scheduler': 1000,
-            'cron-scheduler': 300,
-          },
-          errors: 10,
-        },
-        system: {
-          uptime: 86400,
-          memoryUsage: {
-            heapUsed: 50000000,
-            heapTotal: 100000000,
-            external: 5000000,
-          },
-          cpuUsage: 15.5,
+        circuitBreakerStatus: {
+          message_api: 0,
         },
       },
     },

@@ -26,6 +26,11 @@ runs:
       shell: bash
       run: npm ci
 
+    - name: Generate OpenAPI client
+      if: inputs.install-dependencies == 'true'
+      shell: bash
+      run: npm run openapi:generate
+
 branding:
   icon: 'package'
   color: 'green'

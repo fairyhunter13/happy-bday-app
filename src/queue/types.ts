@@ -24,7 +24,7 @@ export type MessageJob = z.infer<typeof messageJobSchema>;
 /**
  * Message handler function type
  */
-export type MessageHandler = (job: MessageJob) => Promise<void>;
+export type MessageHandler = (_job: MessageJob) => Promise<void>;
 
 /**
  * Queue statistics
@@ -42,5 +42,5 @@ export interface QueueStats {
 export interface ConsumerOptions {
   prefetch?: number;
   onMessage: MessageHandler;
-  onError?: (error: Error, job?: MessageJob) => void | Promise<void>;
+  onError?: (_error: Error, _job?: MessageJob) => void | Promise<void>;
 }

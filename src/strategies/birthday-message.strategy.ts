@@ -50,7 +50,7 @@ import { logger } from '../config/logger.js';
 export class BirthdayMessageStrategy implements MessageStrategy {
   readonly messageType = 'BIRTHDAY';
 
-  constructor(private readonly tzService: TimezoneService = timezoneService) {
+  constructor(private readonly _tzService: TimezoneService = timezoneService) {
     logger.debug('BirthdayMessageStrategy initialized');
   }
 
@@ -78,7 +78,7 @@ export class BirthdayMessageStrategy implements MessageStrategy {
       }
 
       // Check if today is birthday in user's timezone
-      const isBirthday = this.tzService.isBirthdayToday(user.birthdayDate, user.timezone);
+      const isBirthday = this._tzService.isBirthdayToday(user.birthdayDate, user.timezone);
 
       if (isBirthday) {
         logger.info(
@@ -124,7 +124,7 @@ export class BirthdayMessageStrategy implements MessageStrategy {
     }
 
     // Calculate 9am local time in UTC
-    const sendTime = this.tzService.calculateSendTime(user.birthdayDate, user.timezone);
+    const sendTime = this._tzService.calculateSendTime(user.birthdayDate, user.timezone);
 
     logger.debug(
       {
@@ -210,7 +210,7 @@ export class BirthdayMessageStrategy implements MessageStrategy {
 
     if (!user.timezone) {
       errors.push('Timezone is required');
-    } else if (!this.tzService.isValidTimezone(user.timezone)) {
+    } else if (!this._tzService.isValidTimezone(user.timezone)) {
       errors.push(`Invalid timezone: ${user.timezone}`);
     }
 

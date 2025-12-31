@@ -97,7 +97,7 @@ export interface MessageStrategy {
    * // Returns true if today is Dec 30 in New York timezone
    * ```
    */
-  shouldSend(user: User, date: Date): Promise<boolean>;
+  shouldSend(_user: User, _date: Date): Promise<boolean>;
 
   /**
    * Calculate the exact time to send the message in UTC
@@ -116,7 +116,7 @@ export interface MessageStrategy {
    * // Returns: 2025-12-30T14:00:00.000Z (9am EST = 2pm UTC)
    * ```
    */
-  calculateSendTime(user: User, date: Date): Date;
+  calculateSendTime(_user: User, _date: Date): Date;
 
   /**
    * Compose the message content for this user
@@ -136,7 +136,7 @@ export interface MessageStrategy {
    * // Returns: "Hey, John Doe it's your birthday! Happy 35th!"
    * ```
    */
-  composeMessage(user: User, context: MessageContext): Promise<string>;
+  composeMessage(_user: User, _context: MessageContext): Promise<string>;
 
   /**
    * Get the schedule configuration for this message type
@@ -170,5 +170,5 @@ export interface MessageStrategy {
    * // Returns: { valid: false, errors: ['Birthday date is required', 'Timezone is required'] }
    * ```
    */
-  validate(user: User): ValidationResult;
+  validate(_user: User): ValidationResult;
 }

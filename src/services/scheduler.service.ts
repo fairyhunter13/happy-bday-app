@@ -71,9 +71,9 @@ export interface PrecalculationStats {
 export class SchedulerService {
   constructor(
     private readonly _idempotencyService: IdempotencyService = idempotencyService,
-    private readonly userRepo: UserRepository = userRepository,
-    private readonly messageLogRepo: MessageLogRepository = messageLogRepository,
-    private readonly strategyFactory = messageStrategyFactory
+    private readonly _userRepo: UserRepository = userRepository,
+    private readonly _messageLogRepo: MessageLogRepository = messageLogRepository,
+    private readonly _strategyFactory = messageStrategyFactory
   ) {
     logger.info('SchedulerService initialized with strategy factory');
   }
@@ -103,7 +103,7 @@ export class SchedulerService {
 
     try {
       // Dynamically iterate through all registered strategies
-      const strategies = this.strategyFactory.getAllStrategies();
+      const strategies = this._strategyFactory.getAllStrategies();
 
       logger.info(
         { strategyCount: strategies.length, types: strategies.map((s) => s.messageType) },
@@ -188,8 +188,8 @@ export class SchedulerService {
     // Find all users with the relevant date for this strategy
     const users =
       messageType === 'BIRTHDAY'
-        ? await this.userRepo.findBirthdaysToday()
-        : await this.userRepo.findAnniversariesToday();
+        ? await this._userRepo.findBirthdaysToday()
+        : await this._userRepo.findAnniversariesToday();
 
     stats.total = users.length;
 
@@ -236,7 +236,7 @@ export class SchedulerService {
         );
 
         // Check if message already exists
-        const existing = await this.messageLogRepo.checkIdempotency(idempotencyKey);
+        const existing = await this._messageLogRepo.checkIdempotency(idempotencyKey);
 
         if (existing) {
           logger.debug(
@@ -267,7 +267,7 @@ export class SchedulerService {
           retryCount: 0,
         };
 
-        await this.messageLogRepo.create(messageData);
+        await this._messageLogRepo.create(messageData);
 
         logger.info(
           {
@@ -325,7 +325,7 @@ export class SchedulerService {
       const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
       // Find scheduled messages in next hour
-      const messages = await this.messageLogRepo.findScheduled(now, oneHourFromNow);
+      const messages = await this._messageLogRepo.findScheduled(now, oneHourFromNow);
 
       logger.info(
         { count: messages.length, startTime: now, endTime: oneHourFromNow },
@@ -337,7 +337,7 @@ export class SchedulerService {
       for (const message of messages) {
         try {
           // Update status to QUEUED
-          await this.messageLogRepo.updateStatus(message.id, MessageStatus.QUEUED);
+          await this._messageLogRepo.updateStatus(message.id, MessageStatus.QUEUED);
 
           logger.info(
             {
@@ -410,7 +410,7 @@ export class SchedulerService {
 
     try {
       // Find missed messages
-      const missedMessages = await this.messageLogRepo.findMissed();
+      const missedMessages = await this._messageLogRepo.findMissed();
 
       stats.totalMissed = missedMessages.length;
 
@@ -431,13 +431,13 @@ export class SchedulerService {
               'Message exceeded max retries, marking as failed'
             );
 
-            await this.messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
+            await this._messageLogRepo.updateStatus(message.id, MessageStatus.FAILED);
             stats.failed++;
             continue;
           }
 
           // Reset to SCHEDULED for retry
-          await this.messageLogRepo.updateStatus(message.id, MessageStatus.SCHEDULED);
+          await this._messageLogRepo.updateStatus(message.id, MessageStatus.SCHEDULED);
 
           logger.info(
             {
@@ -513,7 +513,7 @@ export class SchedulerService {
       const endOfDay = DateTime.now().endOf('day').toJSDate();
 
       // Count by status
-      const scheduled = await this.messageLogRepo.findAll({
+      const scheduled = await this._messageLogRepo.findAll({
         limit: 10000,
         offset: 0,
         status: MessageStatus.SCHEDULED,
@@ -521,13 +521,13 @@ export class SchedulerService {
         scheduledBefore: endOfDay,
       });
 
-      const queued = await this.messageLogRepo.findAll({
+      const queued = await this._messageLogRepo.findAll({
         limit: 10000,
         offset: 0,
         status: MessageStatus.QUEUED,
       });
 
-      const sent = await this.messageLogRepo.findAll({
+      const sent = await this._messageLogRepo.findAll({
         limit: 10000,
         offset: 0,
         status: MessageStatus.SENT,
@@ -535,7 +535,7 @@ export class SchedulerService {
         scheduledBefore: endOfDay,
       });
 
-      const failed = await this.messageLogRepo.findAll({
+      const failed = await this._messageLogRepo.findAll({
         limit: 10000,
         offset: 0,
         status: MessageStatus.FAILED,
@@ -544,7 +544,7 @@ export class SchedulerService {
       });
 
       // Find next scheduled message
-      const nextMessages = await this.messageLogRepo.findScheduled(
+      const nextMessages = await this._messageLogRepo.findScheduled(
         now,
         new Date(now.getTime() + 24 * 60 * 60 * 1000)
       );
@@ -576,7 +576,7 @@ export class SchedulerService {
    */
   async scheduleUserBirthday(userId: string): Promise<ScheduledMessage | null> {
     try {
-      const user = await this.userRepo.findById(userId);
+      const user = await this._userRepo.findById(userId);
 
       if (!user) {
         logger.error({ userId }, 'User not found');
@@ -584,7 +584,7 @@ export class SchedulerService {
       }
 
       // Get birthday strategy
-      const strategy = this.strategyFactory.get('BIRTHDAY');
+      const strategy = this._strategyFactory.get('BIRTHDAY');
       const now = new Date();
 
       // Validate user has required data
@@ -614,7 +614,7 @@ export class SchedulerService {
       );
 
       // Check if already exists
-      const existing = await this.messageLogRepo.checkIdempotency(idempotencyKey);
+      const existing = await this._messageLogRepo.checkIdempotency(idempotencyKey);
 
       if (existing) {
         logger.info({ userId, idempotencyKey }, 'Message already scheduled');
@@ -640,7 +640,7 @@ export class SchedulerService {
         retryCount: 0,
       };
 
-      await this.messageLogRepo.create(messageData);
+      await this._messageLogRepo.create(messageData);
 
       logger.info(
         { userId, scheduledSendTime: sendTime },

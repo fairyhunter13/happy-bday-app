@@ -55,7 +55,7 @@ export class RecoveryScheduler {
       },
       {
         timezone: 'UTC',
-      } as any
+      } as { timezone: string }
     );
 
     logger.info('RecoveryScheduler started successfully');

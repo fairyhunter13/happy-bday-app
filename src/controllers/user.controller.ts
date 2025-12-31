@@ -48,8 +48,8 @@ interface DeleteUserRequest {
  */
 export class UserController {
   constructor(
-    private readonly userRepository: UserRepository,
-    private readonly messageRescheduleService: MessageRescheduleService = new MessageRescheduleService()
+    private readonly _userRepository: UserRepository,
+    private readonly _messageRescheduleService: MessageRescheduleService = new MessageRescheduleService()
   ) {}
 
   /**
@@ -77,7 +77,7 @@ export class UserController {
     logger.info({ email: userData.email }, 'Creating new user');
 
     // Create user via repository
-    const user = await this.userRepository.create(userData);
+    const user = await this._userRepository.create(userData);
 
     logger.info({ userId: user.id, email: user.email }, 'User created successfully');
 
@@ -99,7 +99,7 @@ export class UserController {
 
     logger.debug({ userId: id }, 'Fetching user by ID');
 
-    const user = await this.userRepository.findById(id);
+    const user = await this._userRepository.findById(id);
 
     if (!user) {
       await reply.status(404).send({
@@ -144,7 +144,7 @@ export class UserController {
     logger.info({ userId: id, updates: Object.keys(updateData) }, 'Updating user');
 
     // Update user via repository
-    const updatedUser = await this.userRepository.update(id, updateData);
+    const updatedUser = await this._userRepository.update(id, updateData);
 
     logger.info({ userId: id }, 'User updated successfully');
 
@@ -157,11 +157,14 @@ export class UserController {
       logger.info({ userId: id }, 'User dates/timezone updated - triggering message rescheduling');
 
       try {
-        const rescheduleResult = await this.messageRescheduleService.rescheduleMessagesForUser(id, {
-          timezone: updateData.timezone,
-          birthdayDate: updateData.birthdayDate,
-          anniversaryDate: updateData.anniversaryDate,
-        });
+        const rescheduleResult = await this._messageRescheduleService.rescheduleMessagesForUser(
+          id,
+          {
+            timezone: updateData.timezone,
+            birthdayDate: updateData.birthdayDate,
+            anniversaryDate: updateData.anniversaryDate,
+          }
+        );
 
         logger.info(
           {
@@ -202,7 +205,7 @@ export class UserController {
     logger.info({ userId: id }, 'Soft deleting user');
 
     // Soft delete user via repository
-    await this.userRepository.delete(id);
+    await this._userRepository.delete(id);
 
     logger.info({ userId: id }, 'User deleted successfully');
 

@@ -9,13 +9,12 @@
  * - Comprehensive error handling
  */
 
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, sql, type ExtractTablesWithRelations } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
-import type { ExtractTablesWithRelations } from 'drizzle-orm';
 import { db, type DbType } from '../db/connection.js';
 import { users, type User, type NewUser } from '../db/schema/users.js';
-import * as schema from '../db/schema/index.js';
+import type * as schema from '../db/schema/index.js';
 import type { CreateUserDto, UpdateUserDto, UserFiltersDto } from '../types/dto.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../utils/errors.js';
 
@@ -33,7 +32,7 @@ type TransactionType = PgTransaction<
  * Handles all database operations for users
  */
 export class UserRepository {
-  constructor(private readonly database: DbType = db) {}
+  constructor(private readonly _database: DbType = db) {}
 
   /**
    * Find user by ID
@@ -44,7 +43,7 @@ export class UserRepository {
    */
   async findById(id: string, tx?: TransactionType): Promise<User | null> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(users)
@@ -66,7 +65,7 @@ export class UserRepository {
    */
   async findByEmail(email: string, tx?: TransactionType): Promise<User | null> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const result = await dbInstance
         .select()
         .from(users)
@@ -88,7 +87,7 @@ export class UserRepository {
    */
   async findAll(filters?: UserFiltersDto, tx?: TransactionType): Promise<User[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const conditions = [isNull(users.deletedAt)];
 
       // Apply filters
@@ -139,7 +138,7 @@ export class UserRepository {
    */
   async create(data: CreateUserDto, tx?: TransactionType): Promise<User> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check for existing email
       const existing = await this.findByEmail(data.email, tx);
@@ -192,7 +191,7 @@ export class UserRepository {
    */
   async update(id: string, data: UpdateUserDto, tx?: TransactionType): Promise<User> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check if user exists
       const existing = await this.findById(id, tx);
@@ -247,7 +246,7 @@ export class UserRepository {
    */
   async delete(id: string, tx?: TransactionType): Promise<User> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
 
       // Check if user exists
       const existing = await this.findById(id, tx);
@@ -289,7 +288,7 @@ export class UserRepository {
    */
   async findBirthdaysToday(timezone?: string, tx?: TransactionType): Promise<User[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const conditions = [isNull(users.deletedAt), sql`${users.birthdayDate} IS NOT NULL`];
 
       if (timezone) {
@@ -328,7 +327,7 @@ export class UserRepository {
    */
   async findAnniversariesToday(timezone?: string, tx?: TransactionType): Promise<User[]> {
     try {
-      const dbInstance = tx || this.database;
+      const dbInstance = tx || this._database;
       const conditions = [isNull(users.deletedAt), sql`${users.anniversaryDate} IS NOT NULL`];
 
       if (timezone) {
@@ -370,9 +369,9 @@ export class UserRepository {
    * @returns Result of callback
    * @throws DatabaseError on transaction failure
    */
-  async transaction<T>(callback: (tx: TransactionType) => Promise<T>): Promise<T> {
+  async transaction<T>(callback: (_tx: TransactionType) => Promise<T>): Promise<T> {
     try {
-      return await this.database.transaction(callback);
+      return await this._database.transaction(callback);
     } catch (error) {
       throw new DatabaseError('Transaction failed', { error });
     }

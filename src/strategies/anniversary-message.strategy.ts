@@ -50,7 +50,7 @@ import { logger } from '../config/logger.js';
 export class AnniversaryMessageStrategy implements MessageStrategy {
   readonly messageType = 'ANNIVERSARY';
 
-  constructor(private readonly tzService: TimezoneService = timezoneService) {
+  constructor(private readonly _tzService: TimezoneService = timezoneService) {
     logger.debug('AnniversaryMessageStrategy initialized');
   }
 
@@ -79,7 +79,7 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
 
       // Check if today is anniversary in user's timezone
       // Reuse the birthday logic since it's the same month/day matching
-      const isAnniversary = this.tzService.isBirthdayToday(user.anniversaryDate, user.timezone);
+      const isAnniversary = this._tzService.isBirthdayToday(user.anniversaryDate, user.timezone);
 
       if (isAnniversary) {
         logger.info(
@@ -125,7 +125,7 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
     }
 
     // Calculate 9am local time in UTC
-    const sendTime = this.tzService.calculateSendTime(user.anniversaryDate, user.timezone);
+    const sendTime = this._tzService.calculateSendTime(user.anniversaryDate, user.timezone);
 
     logger.debug(
       {
@@ -231,7 +231,7 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
 
     if (!user.timezone) {
       errors.push('Timezone is required');
-    } else if (!this.tzService.isValidTimezone(user.timezone)) {
+    } else if (!this._tzService.isValidTimezone(user.timezone)) {
       errors.push(`Invalid timezone: ${user.timezone}`);
     }
 
