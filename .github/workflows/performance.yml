@@ -43,7 +43,7 @@ jobs:
         run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start performance environment
-        run: docker compose -f docker compose.perf.yml up -d
+        run: docker compose -f docker-compose.perf.yml up -d
 
       - name: Wait for services
         run: |
@@ -119,7 +119,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker compose.perf.yml down -v
+        run: docker compose -f docker-compose.perf.yml down -v
 
   performance-peak:
     name: Peak Load Test (100+ msg/sec)
@@ -143,7 +143,7 @@ jobs:
         run: sops --decrypt .env.test.enc > .env.test
 
       - name: Start performance environment
-        run: docker compose -f docker compose.perf.yml up -d
+        run: docker compose -f docker-compose.perf.yml up -d
 
       - name: Wait for services
         run: |
@@ -178,7 +178,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker compose.perf.yml down -v
+        run: docker compose -f docker-compose.perf.yml down -v
 
   performance-worker-scaling:
     name: Worker Scaling Test
@@ -207,7 +207,7 @@ jobs:
 
       - name: Start performance environment (${{ matrix.workers }} workers)
         run: |
-          docker compose -f docker compose.perf.yml up -d --scale worker=${{ matrix.workers }}
+          docker compose -f docker-compose.perf.yml up -d --scale worker=${{ matrix.workers }}
 
       - name: Wait for services
         run: |
@@ -240,7 +240,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose -f docker compose.perf.yml down -v
+        run: docker compose -f docker-compose.perf.yml down -v
 
   performance-report:
     name: Generate Performance Report

@@ -9,11 +9,10 @@
 5. [🛡️ Branch Protection](#-branch-protection)
 6. [📚 Documentation](#-documentation)
 7. [🔑 Required Secrets](#-required-secrets)
-8. [🌍 Environments](#-environments)
-9. [🎯 Quick Start](#-quick-start)
-10. [📊 Monitoring](#-monitoring)
-11. [🔧 Maintenance](#-maintenance)
-12. [📞 Support](#-support)
+8. [🎯 Quick Start](#-quick-start)
+9. [📊 Monitoring](#-monitoring)
+10. [🔧 Maintenance](#-maintenance)
+11. [📞 Support](#-support)
 
 ---
 
@@ -24,11 +23,10 @@ This directory contains all GitHub-specific configuration for the Birthday Messa
 ```
 .github/
 ├── workflows/                      # GitHub Actions workflows
-│   ├── ci.yml                     # Main CI pipeline
+│   ├── ci.yml                     # Main CI pipeline (includes E2E & performance tests)
 │   ├── performance.yml            # Performance testing (weekly)
 │   ├── security.yml              # Security scanning (daily)
 │   ├── docker-build.yml          # Docker image builds
-│   ├── release.yml               # Release automation
 │   └── code-quality.yml          # Code quality checks
 │
 ├── ISSUE_TEMPLATE/                # Issue templates
@@ -48,9 +46,10 @@ This directory contains all GitHub-specific configuration for the Birthday Messa
 ### Main CI Workflow
 **File**: `workflows/ci.yml`
 - Runs on: PR, push to main/develop
-- Jobs: Lint, Type Check, Unit Tests (5 shards), Integration Tests, E2E Tests, Coverage, Build
+- Jobs: Lint, Type Check, Unit Tests (5 shards), Integration Tests, E2E Tests, Performance Smoke Test, Coverage, Security Scan, Build
 - Duration: ~15-20 minutes
 - Coverage requirement: 80%
+- **Deployment Validation**: E2E tests and performance smoke tests prove the application works correctly without deploying to production
 
 ### Performance Testing
 **File**: `workflows/performance.yml`
@@ -73,13 +72,6 @@ This directory contains all GitHub-specific configuration for the Birthday Messa
 - Features: Multi-platform builds, SBOM generation, vulnerability scanning
 - Registry: GitHub Container Registry
 - Duration: ~20 minutes (multi-platform)
-
-### Release
-**File**: `workflows/release.yml`
-- Trigger: Version tags (v*.*.*)
-- Steps: Validate → Test → Build → Release → Deploy Staging → Deploy Production
-- Features: Automated changelog, GitHub releases, staged deployments
-- Duration: ~40 minutes (excluding manual approval)
 
 ### Code Quality
 **File**: `workflows/code-quality.yml`
@@ -159,7 +151,6 @@ Comprehensive guide covering:
 - Configuration requirements
 - Secrets and environment setup
 - Pull request process
-- Release process
 - Troubleshooting
 - Best practices
 
@@ -177,22 +168,6 @@ Configure in repository settings → Secrets and variables → Actions:
 - `SNYK_TOKEN` - Vulnerability scanning (required)
 - `SONAR_TOKEN` - Code quality (optional)
 
-## 🌍 Environments
-
-Create in repository settings → Environments:
-
-### staging
-
-- URL: https://staging.birthday-scheduler.example.com
-- Deployment: Automatic on release
-- Reviewers: None required
-
-### production
-
-- URL: https://birthday-scheduler.example.com
-- Deployment: Manual approval required
-- Reviewers: 1+ required
-
 ## 🎯 Quick Start
 
 ### For New Contributors
@@ -205,9 +180,8 @@ Create in repository settings → Environments:
 ### For Maintainers
 
 1. Configure required secrets (see above)
-2. Set up GitHub environments
-3. Apply branch protection rules (see `BRANCH_PROTECTION.md`)
-4. Enable Dependabot alerts and security updates
+2. Apply branch protection rules (see `BRANCH_PROTECTION.md`)
+3. Enable Dependabot alerts and security updates
 
 ## 📊 Monitoring
 
