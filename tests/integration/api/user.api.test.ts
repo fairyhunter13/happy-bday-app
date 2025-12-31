@@ -38,8 +38,8 @@ describe('User API Integration Tests', () => {
     // Run migrations
     await pgContainer.runMigrations('./drizzle');
 
-    // Create test server
-    app = await createTestServer();
+    // Create test server with user routes enabled
+    app = await createTestServer({ includeUserRoutes: true });
   }, 120000);
 
   afterAll(async () => {
