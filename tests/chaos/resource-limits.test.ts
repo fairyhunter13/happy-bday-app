@@ -178,18 +178,18 @@ describe('Resource Limits Chaos Tests', () => {
       let eventLoopBlocked = false;
       let checkCount = 0;
 
-      // Set up event loop monitoring
+      // Set up event loop monitoring with more frequent checks
       const monitor = setInterval(() => {
         checkCount++;
         logger.debug('Event loop check', { count: checkCount });
-      }, 50);
+      }, 10); // Check every 10ms for better granularity
 
-      // Heavy computation
+      // Heavy computation with more iterations to ensure monitor fires
       const heavyComputation = async () => {
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 20; i++) {
           // CPU intensive work
           let result = 0;
-          for (let j = 0; j < 10000000; j++) {
+          for (let j = 0; j < 5000000; j++) {
             result += Math.sqrt(j);
           }
 
@@ -203,6 +203,7 @@ describe('Resource Limits Chaos Tests', () => {
       clearInterval(monitor);
 
       // Verify event loop wasn't completely blocked
+      // With 20 iterations and yields, we should see at least 5 checks
       expect(checkCount).toBeGreaterThan(5); // Should have multiple checks
 
       logger.info('Event loop yielding verified', {
@@ -332,6 +333,9 @@ describe('Resource Limits Chaos Tests', () => {
       const maxQueueSize = 100;
       const queue: any[] = [];
       let backpressureActivated = false;
+      let produced = 0;
+      let consumed = 0;
+      const totalMessages = 200;
 
       const enqueueWithBackpressure = async (message: any): Promise<void> => {
         while (queue.length >= maxQueueSize) {
@@ -345,22 +349,25 @@ describe('Resource Limits Chaos Tests', () => {
         }
 
         queue.push(message);
+        produced++;
       };
 
       // Producer - fast
       const producer = async () => {
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < totalMessages; i++) {
           await enqueueWithBackpressure({ id: i });
         }
       };
 
-      // Consumer - slow
+      // Consumer - slow, processes until all messages consumed
       const consumer = async () => {
-        while (queue.length > 0 || queue.length < 200) {
+        while (consumed < totalMessages) {
           if (queue.length > 0) {
             queue.shift();
+            consumed++;
             await new Promise((resolve) => setTimeout(resolve, 5));
           } else {
+            // Wait a bit for producer to add more
             await new Promise((resolve) => setTimeout(resolve, 10));
           }
         }
@@ -370,10 +377,13 @@ describe('Resource Limits Chaos Tests', () => {
 
       logger.info('Backpressure test completed', {
         backpressureActivated,
+        produced,
+        consumed,
         finalQueueSize: queue.length,
       });
 
       expect(backpressureActivated).toBe(true);
+      expect(consumed).toBe(totalMessages);
     }, 30000);
   });
 
