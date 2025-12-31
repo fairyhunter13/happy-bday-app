@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<suppressions xmlns="https://dependency-check.github.io/DependencyCheck/suppression.1.3.xsd">
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
   <!-- Suppress false positives and known issues -->
 
   <!-- Node.js ecosystem aliases that confuse dependency-check -->
   <suppress>
-    <notes>string-width-cjs is an alias package, not a security concern</notes>
+    <notes><![CDATA[string-width-cjs is an alias package, not a security concern]]></notes>
     <packageUrl regex="true">^pkg:npm/string-width-cjs@.*$</packageUrl>
     <cpe>cpe:/a:*:*</cpe>
   </suppress>
 
   <suppress>
-    <notes>strip-ansi-cjs is an alias package, not a security concern</notes>
+    <notes><![CDATA[strip-ansi-cjs is an alias package, not a security concern]]></notes>
     <packageUrl regex="true">^pkg:npm/strip-ansi-cjs@.*$</packageUrl>
     <cpe>cpe:/a:*:*</cpe>
   </suppress>
 
   <suppress>
-    <notes>wrap-ansi-cjs is an alias package, not a security concern</notes>
+    <notes><![CDATA[wrap-ansi-cjs is an alias package, not a security concern]]></notes>
     <packageUrl regex="true">^pkg:npm/wrap-ansi-cjs@.*$</packageUrl>
     <cpe>cpe:/a:*:*</cpe>
   </suppress>
