@@ -64,7 +64,7 @@ describe('SchedulerService', () => {
       generateKey: vi.fn().mockReturnValue('idem-key-123'),
     };
 
-    // Create mock user repository
+    // Create mock user repository (for scheduleUserBirthday which uses _userRepo.findById)
     mockUserRepo = {
       findById: vi.fn().mockResolvedValue(mockUser),
       findBirthdaysToday: vi.fn().mockResolvedValue([mockUser]),
@@ -111,10 +111,13 @@ describe('SchedulerService', () => {
     };
 
     // Create service with mocked dependencies
+    // Constructor order: idempotencyService, userRepo, cachedUserRepo, messageLogRepo, strategyFactory
+    // Note: mockUserRepo serves as both _userRepo and _cachedUserRepo since they share findBirthdaysToday/findAnniversariesToday
     service = new SchedulerService(
       mockIdempotencyService,
-      mockUserRepo,
-      mockMessageLogRepo,
+      mockUserRepo,       // _userRepo (for scheduleUserBirthday)
+      mockUserRepo,       // _cachedUserRepo (for preCalculateTodaysBirthdays - needs findBirthdaysToday/findAnniversariesToday)
+      mockMessageLogRepo, // _messageLogRepo (for findScheduled, findMissed, findAll, etc.)
       mockStrategyFactory
     );
   });
