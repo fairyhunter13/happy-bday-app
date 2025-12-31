@@ -9,6 +9,7 @@ import { systemMetricsService } from '../../../src/services/system-metrics.servi
 
 describe('SystemMetricsService', () => {
   // Use the singleton instance to avoid registry conflicts
+  const service = systemMetricsService;
 
   describe('Initialization', () => {
     it('should create metrics service with default config', () => {
@@ -109,8 +110,7 @@ describe('SystemMetricsService', () => {
       expect(snapshot.memory.used).toBe(snapshot.memory.total - snapshot.memory.free);
 
       // Percent should be calculated correctly
-      const expectedPercent =
-        (snapshot.memory.used / snapshot.memory.total) * 100;
+      const expectedPercent = (snapshot.memory.used / snapshot.memory.total) * 100;
       expect(snapshot.memory.usedPercent).toBeCloseTo(expectedPercent, 2);
     });
   });
