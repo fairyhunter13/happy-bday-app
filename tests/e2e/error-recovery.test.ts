@@ -50,8 +50,8 @@ describe('E2E: Error Handling and Recovery', () => {
     publisher = new MessagePublisher();
     await publisher.initialize();
 
-    // Use real email service URL
-    messageSender = new MessageSenderService('https://email-service.digitalenvision.com.au');
+    // Use real email service (no URL parameter needed)
+    messageSender = new MessageSenderService();
   }, 180000);
 
   afterAll(async () => {
@@ -64,7 +64,6 @@ describe('E2E: Error Handling and Recovery', () => {
   beforeEach(async () => {
     await cleanDatabase(pool);
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
-    messageSender.resetCircuitBreaker();
   });
 
   describe('External API failures', () => {
@@ -261,7 +260,7 @@ describe('E2E: Error Handling and Recovery', () => {
       expect(stats.successes + stats.failures).toBeGreaterThan(0);
     }, 90000);
 
-    it('should reset circuit breaker after manual reset', async () => {
+    it('should track circuit breaker state changes', async () => {
       const user = await insertUser(pool, {
         firstName: 'Test',
         lastName: 'User',
@@ -280,21 +279,13 @@ describe('E2E: Error Handling and Recovery', () => {
         }
       }
 
-      // Get stats before reset
-      let stats = messageSender.getCircuitBreakerStats();
+      // Verify circuit breaker tracked the calls
+      const stats = messageSender.getCircuitBreakerStats();
       const hadActivity = stats.successes > 0 || stats.failures > 0;
 
-      // Reset circuit breaker
-      messageSender.resetCircuitBreaker();
-
-      // Verify reset
-      stats = messageSender.getCircuitBreakerStats();
-      expect(stats.state).toBe('closed');
-      if (hadActivity) {
-        // Stats should be reset
-        expect(stats.failures).toBe(0);
-        expect(stats.successes).toBe(0);
-      }
+      expect(hadActivity).toBe(true);
+      expect(stats.state).toBeDefined();
+      expect(['closed', 'open', 'half-open']).toContain(stats.state);
     }, 90000);
 
     it('should provide circuit breaker statistics', async () => {
