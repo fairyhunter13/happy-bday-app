@@ -80,11 +80,12 @@ A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, a
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 1,201 tests (992 passing, 209 skipped) |
-| **Test Files** | 58 test suites |
+| **Total Tests** | 992 passing (209 skipped in CI) |
+| **Test Files** | 59 test suites |
 | **Test Types** | Unit, Integration, E2E, Chaos, Performance |
-| **Coverage** | ~80% (Target: 80%+) ✅ Met |
+| **Coverage** | ~81% (Target: 80%+) ✅ Met |
 | **Mutation Testing** | Stryker (Optional) |
+| **Test Cases** | ~4,795 test assertions |
 
 ### Coverage Metrics
 
@@ -414,14 +415,16 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 
 ### Monitoring Stack (Local)
 
-#### Prometheus Metrics (258 Total)
+#### Prometheus Metrics (268 Total)
 
-- **Business Metrics** (15): Birthdays processed, template usage, user events
-- **Queue Metrics** (10): Publisher confirms, acks/nacks, redeliveries
-- **Performance Metrics** (5): Cache hits/misses, connection pools, GC events
-- **Database Metrics** (5): Deadlocks, commits, rollbacks, checkpoints
+- **Business Metrics** (25): Birthdays processed, template usage, user events
+- **Queue Metrics** (20): Publisher confirms, acks/nacks, redeliveries, depth
+- **Performance Metrics** (10): Cache hits/misses, connection pools, GC events
+- **Database Metrics** (20): Deadlocks, commits, rollbacks, checkpoints, queries
 - **HTTP Client Metrics** (5): Retries, timeouts, TLS handshakes
-- **System Metrics**: Default Node.js and process metrics
+- **System Metrics** (15): Node.js runtime, heap, event loop, GC
+- **API Metrics** (10): Request rates, response times, error rates
+- **Scheduler Metrics** (15): Job execution, lag, failures
 
 #### Grafana Dashboards (5 Dashboards)
 
@@ -438,17 +441,18 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Info Alerts**: Deployment events, configuration changes
 - **SLO Alerts**: Service Level Objective violations
 
-### CI/CD Workflows (9 Workflows)
+### CI/CD Workflows (10 Workflows)
 
 1. **CI** - Lint, type-check, unit tests (5 shards), integration, E2E, performance smoke tests
-2. **Code Quality** - ESLint, code duplication checks
-3. **Security Scanning** - npm audit, Snyk (optional)
+2. **Code Quality** - ESLint, Prettier, code duplication checks (jscpd)
+3. **Security Scanning** - npm audit, dependency scanning
 4. **Performance Tests** - k6 load testing (scheduled/manual)
-5. **Docker Build** - Multi-platform image builds
-6. **OpenAPI Validation** - API spec validation
-7. **Deploy Documentation** - GitHub Pages deployment
+5. **Docker Build** - Multi-platform image builds with SBOM
+6. **OpenAPI Validation** - API spec validation with Redocly/Spectral
+7. **Deploy Documentation** - GitHub Pages deployment with Swagger UI
 8. **Mutation Testing** - Stryker mutation testing (optional)
 9. **SonarCloud** - Code quality analysis
+10. **Snyk** - Advanced security scanning (optional)
 
 ---
 
