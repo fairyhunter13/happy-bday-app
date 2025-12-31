@@ -112,7 +112,8 @@ describe('Scheduler Integration Tests', () => {
     it('should precalculate birthdays when triggered', async () => {
       // Create test users with birthdays today
       const today = DateTime.now().setZone('America/New_York');
-      const birthdayDate = today.toFormat('yyyy-MM-dd');
+      // Use startOf('day') to get a clean date and toJSDate() for proper Date object
+      const birthdayDate = today.startOf('day').toJSDate();
 
       await db.insert(users).values([
         {
@@ -149,7 +150,7 @@ describe('Scheduler Integration Tests', () => {
 
     it('should prevent duplicate messages with idempotency', async () => {
       const today = DateTime.now().setZone('America/New_York');
-      const birthdayDate = today.toFormat('yyyy-MM-dd');
+      const birthdayDate = today.startOf('day').toJSDate();
 
       await db.insert(users).values({
         id: 'user-1',
@@ -196,7 +197,7 @@ describe('Scheduler Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        birthdayDate: '1990-01-01',
+        birthdayDate: new Date('1990-01-01'),
         timezone: 'America/New_York',
       });
 
@@ -236,7 +237,7 @@ describe('Scheduler Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        birthdayDate: '1990-01-01',
+        birthdayDate: new Date('1990-01-01'),
         timezone: 'America/New_York',
       });
 
@@ -276,7 +277,7 @@ describe('Scheduler Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        birthdayDate: '1990-01-01',
+        birthdayDate: new Date('1990-01-01'),
         timezone: 'America/New_York',
       });
 
@@ -312,7 +313,7 @@ describe('Scheduler Integration Tests', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
-        birthdayDate: '1990-01-01',
+        birthdayDate: new Date('1990-01-01'),
         timezone: 'America/New_York',
       });
 
