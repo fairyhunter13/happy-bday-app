@@ -56,16 +56,8 @@ jobs:
           ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
         continue-on-error: true
 
-      - name: Start server for OpenAPI export
-        run: |
-          npm start &
-          sleep 5
-
-      - name: Export OpenAPI spec
-        run: |
-          curl -s http://localhost:3000/docs/json > docs/openapi.json
-          # Stop server
-          pkill -f "node dist/index.js" || true
+      - name: Generate OpenAPI spec
+        run: npm run openapi:spec
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
