@@ -52,7 +52,9 @@ describe('RabbitMQ Chaos Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 10000));
       expect(disconnected).toBe(true);
 
-      await connection.close();
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
     }, 60000);
 
     it('should automatically reconnect when RabbitMQ recovers', async () => {
@@ -82,7 +84,9 @@ describe('RabbitMQ Chaos Tests', () => {
       expect(reconnectCount).toBeGreaterThanOrEqual(1);
       logger.info('Auto-reconnect verified');
 
-      await connection.close();
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
     }, 90000);
   });
 
@@ -114,7 +118,9 @@ describe('RabbitMQ Chaos Tests', () => {
       logger.info('Published persistent messages', { count: messages.length });
 
       // Close connection (simulating application restart)
-      await connection.close();
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
 
       // Wait a bit
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -139,9 +145,9 @@ describe('RabbitMQ Chaos Tests', () => {
         messageCount: queueInfo.messageCount,
       });
 
-      // Cleanup
-      await newChannel.purgeQueue('persistent_queue');
-      await newConnection.close();
+      // Cleanup - use catch handlers to prevent unhandled rejections
+      await newChannel.purgeQueue('persistent_queue').catch(() => {});
+      await newConnection.close().catch(() => {});
     }, 30000);
   });
 
@@ -193,11 +199,11 @@ describe('RabbitMQ Chaos Tests', () => {
         deadLetterQueue: dlQueue.messageCount,
       });
 
-      // Cleanup
-      await channel.deleteQueue('limited_queue');
-      await channel.deleteQueue('dead_letter_queue');
-      await channel.deleteExchange('dlx');
-      await connection.close();
+      // Cleanup - use catch handlers to prevent unhandled rejections
+      await channel.deleteQueue('limited_queue').catch(() => {});
+      await channel.deleteQueue('dead_letter_queue').catch(() => {});
+      await channel.deleteExchange('dlx').catch(() => {});
+      await connection.close().catch(() => {});
     }, 30000);
   });
 
@@ -302,7 +308,7 @@ describe('RabbitMQ Chaos Tests', () => {
       // Wait for reconnection
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
-      await connection.close();
+      await connection.close().catch(() => {});
 
       logger.info('Network partition test completed', { connectionLost, connectionRestored });
     }, 90000);
@@ -375,9 +381,13 @@ describe('RabbitMQ Chaos Tests', () => {
 
       expect(processed).toBe(messageCount);
 
-      // Cleanup
-      await channel.deleteQueue('high_throughput_queue');
-      await connection.close();
+      // Cleanup - use catch handlers to prevent unhandled rejections
+      await channel.deleteQueue('high_throughput_queue').catch(() => {
+        /* Ignore cleanup errors */
+      });
+      await connection.close().catch(() => {
+        /* Ignore cleanup errors */
+      });
     }, 60000);
   });
 
@@ -504,9 +514,9 @@ describe('RabbitMQ Chaos Tests', () => {
       // Publish some messages
       await channel.sendToQueue('cleanup_queue', { test: 'data' }, { persistent: true });
 
-      // Graceful shutdown
-      await channel.close();
-      await connection.close();
+      // Graceful shutdown - use catch handlers to prevent unhandled rejections
+      await channel.close().catch(() => {});
+      await connection.close().catch(() => {});
 
       logger.info('Resources cleaned up successfully');
 

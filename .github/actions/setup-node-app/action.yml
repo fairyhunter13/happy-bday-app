@@ -26,10 +26,10 @@ runs:
       shell: bash
       run: npm ci
 
-    - name: Generate OpenAPI client
-      if: inputs.install-dependencies == 'true'
-      shell: bash
-      run: npm run openapi:generate
+    # NOTE: OpenAPI client is pre-committed with correct ESM .js extensions
+    # Do NOT regenerate in CI as the generator produces imports without .js extensions
+    # which breaks Node.js ESM resolution. See: https://github.com/hey-api/openapi-ts/issues/3115
+    # To regenerate: npm run openapi:generate (locally), then commit the changes
 
 branding:
   icon: 'package'

@@ -318,6 +318,8 @@ jobs:
           RABBITMQ_URL: amqp://test:test@localhost:5672
           ENABLE_DB_METRICS: 'false'
           CI: true
+          # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
 
       - name: Cleanup decrypted secrets
         if: always()
