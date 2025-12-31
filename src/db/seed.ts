@@ -11,8 +11,8 @@
  * - Sample message logs in different states
  */
 
-import { db } from './connection';
-import { users, messageLogs, MessageStatus, MessageType } from './schema';
+import { db } from './connection.js';
+import { users, messageLogs, MessageStatus, MessageType } from './schema/index.js';
 import { DateTime } from 'luxon';
 
 const TIMEZONES = [

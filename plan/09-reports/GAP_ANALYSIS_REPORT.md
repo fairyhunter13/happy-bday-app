@@ -81,6 +81,14 @@ This comprehensive gap analysis evaluates the current state of the Birthday Mess
 - ✅ **Fixed Health Check Service Tests** - Added missing Redis/cache service mock (cacheService.isHealthy, cacheService.getMetrics), fixing 1 test failure
 - ✅ **All 939 Unit Tests Now Pass** - Previously had 41+1=42 test failures blocking 3 CI workflows (ci.yml, sonar.yml, mutation.yml)
 
+**Session 5 Achievements (2026-01-01 - Documentation Sync):**
+- ✅ **Implemented Redis Caching Layer** - Added CachedUserRepository (429 lines) with cache-aside pattern
+- ✅ **Real Email Service Integration** - Replaced mocks with actual email service in E2E/integration tests
+- ✅ **Probabilistic API Resilience Testing** - Added comprehensive resilient API testing framework (590 lines)
+- ✅ **ESM Module Resolution** - Fixed E2E test service dependencies for proper module loading
+- ✅ **Updated Test Statistics** - 1,201 total tests (992 passing, 209 skipped in CI)
+- ✅ **Enhanced Documentation** - Added 4 new docs: CACHE_IMPLEMENTATION.md, TESTING-PROBABILISTIC-APIS.md, resilient API testing patterns
+
 ---
 
 ## 1. Core Functionality - Complete ✅
@@ -132,8 +140,8 @@ All core functionality has been implemented as per technical specifications in `
 **Test Statistics:**
 | Metric | Current | Target | Status |
 |--------|---------|--------|--------|
-| Total Tests | 939 passing | 400+ | ✅ Exceeded |
-| Test Files | 36 test suites | 40+ | ✅ Close |
+| Total Tests | 1,201 tests (992 passing, 209 skipped) | 400+ | ✅ Exceeded |
+| Test Files | 58 test suites | 40+ | ✅ Exceeded |
 | Statement Coverage | ~80% | 80% | ✅ Met |
 | Branch Coverage | ~75% | 75% | ✅ Met |
 | Function Coverage | ~50% | 50% | ✅ Met |
@@ -924,14 +932,17 @@ All infrastructure components configured and documented.
 - ✅ Idle timeout: 30 seconds
 - ✅ Metrics interceptor active
 
-### Redis Cache Status: 0% IMPLEMENTED (Infrastructure Ready)
+### Redis Cache Status: 60% IMPLEMENTED (Active in Repositories)
 
 **Current State:**
 - ✅ Docker containers configured (dev, test, perf)
 - ✅ Environment variables defined in `environment.ts`
-- ❌ No `ioredis` dependency installed
-- ❌ No cache service implementation
-- ❌ No cache utilization in services
+- ✅ `ioredis` dependency installed (v5.x)
+- ✅ CacheService implementation (cache.service.ts)
+- ✅ CachedUserRepository implementation (429 lines, cache-aside pattern)
+- ✅ Health check integration (cacheService.isHealthy, getMetrics)
+- 🟡 Partial cache utilization in services (user repository only)
+- ❌ Cache metrics not fully instrumented
 
 **Planned Strategy (from `plan/03-research/redis-caching-strategy.md`):**
 

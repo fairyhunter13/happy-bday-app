@@ -303,6 +303,8 @@ jobs:
 
       - name: Wait for services
         uses: ./.github/actions/wait-for-services
+        with:
+          redis: false
 
       - name: Run database migrations
         run: npm run db:migrate

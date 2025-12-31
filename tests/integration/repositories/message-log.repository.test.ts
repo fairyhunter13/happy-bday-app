@@ -33,12 +33,18 @@ describe('MessageLogRepository', () => {
   beforeAll(async () => {
     // Start PostgreSQL container
     testContainer = new PostgresTestContainer();
-    const { connectionString } = await testContainer.start();
+    const result = await testContainer.start();
 
     // Run migrations
     await testContainer.runMigrations('./drizzle');
 
     // Create Drizzle instance
+    // In CI mode, use connection string from environment
+    // In local mode, use testcontainer connection string
+    const connectionString = isCI() ?
+      (process.env.DATABASE_URL || result.connectionString) :
+      result.connectionString;
+
     // Use limited connection pool in CI to prevent exhaustion
     queryClient = postgres(connectionString, {
       max: isCI() ? 2 : 10,

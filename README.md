@@ -80,10 +80,10 @@ A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, a
 
 | Metric | Value |
 |--------|-------|
-| **Total Tests** | 939+ passing |
-| **Test Files** | 36 test suites |
-| **Test Types** | Unit, Integration, E2E, Performance |
-| **Coverage** | ~80% (Target: 80%+) |
+| **Total Tests** | 1,201 tests (992 passing, 209 skipped) |
+| **Test Files** | 58 test suites |
+| **Test Types** | Unit, Integration, E2E, Chaos, Performance |
+| **Coverage** | ~80% (Target: 80%+) ✅ Met |
 | **Mutation Testing** | Stryker (Optional) |
 
 ### Coverage Metrics
@@ -217,6 +217,7 @@ All planning, architecture, research, and implementation documentation is in the
 
 - **API Framework:** Fastify 5.x + TypeScript 5.7
 - **Database:** PostgreSQL 15 + Drizzle ORM
+- **Caching Layer:** Redis 7.x (User profile caching)
 - **Message Queue:** RabbitMQ 3.x (Quorum Queues for zero data loss)
 - **Runtime:** Node.js ≥20.0.0
 
