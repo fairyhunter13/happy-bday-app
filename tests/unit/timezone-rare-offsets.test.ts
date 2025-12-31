@@ -99,7 +99,10 @@ describe('Timezone Rare Offsets', () => {
 
       const formatted = service.formatDateInTimezone(result, timezone);
 
-      expect(formatted).toMatch(/2025-06-15 09:00:00/);
+      // Use dynamic year pattern
+      const currentYear = new Date().getFullYear();
+      const yearPattern = new RegExp(`${currentYear}-06-15 09:00:00`);
+      expect(formatted).toMatch(yearPattern);
     });
 
     it('should handle current time in Nepal timezone', () => {
@@ -667,8 +670,10 @@ describe('Timezone Rare Offsets', () => {
         const result = service.calculateSendTime(birthdayDate, name);
         const formatted = service.formatDateInTimezone(result, name);
 
-        // Should include time with proper formatting
-        expect(formatted).toMatch(/2025-06-15 09:00:00/);
+        // Should include time with proper formatting - use dynamic year
+        const currentYear = new Date().getFullYear();
+        const yearPattern = new RegExp(`${currentYear}-06-15 09:00:00`);
+        expect(formatted).toMatch(yearPattern);
       });
     });
 
