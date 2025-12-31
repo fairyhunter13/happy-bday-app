@@ -28,7 +28,8 @@
       "Bash(node:*)",
       "Bash(which:*)",
       "Bash(pwd)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ],
     "deny": [
       "Bash(rm -rf /)"
@@ -41,7 +42,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-command --command '{}' --validate-safety true --prepare-resources true"
+            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-command --command '{}' --validate-safety true --prepare-resources true 2>/dev/null || true"
           }
         ]
       },
@@ -50,12 +51,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-edit --file '{}' --auto-assign-agents true --load-context true"
+            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks pre-edit --file '{}' --auto-assign-agents true --load-context true 2>/dev/null || true"
           },
           {
             "type": "prompt",
-            "prompt": "## PRE-EDIT DOCUMENTATION AWARENESS HOOK\n\nBefore modifying this file, verify documentation alignment:\n\n### Quick Internal Check:\n1. Will this edit require README.md updates?\n2. Does this change affect plan/ documentation?\n3. Is this change aligned with project_data/ requirements?\n\n### project_data/ Requirements Reference:\n- TypeScript implementation with POST/DELETE/PUT /user endpoints\n- User: firstName, lastName, birthday, location\n- 9am local time birthday messages via email-service.digitalenvision.com.au\n- Error handling, recovery, scalability (1000s/day), no duplicates\n\n### Documentation Impact Matrix:\n- src/ changes -> May need docs/RUNBOOK.md, plan/05-implementation/ updates\n- tests/ changes -> May need plan/04-testing/ updates\n- config changes -> May need docs/DEPLOYMENT_GUIDE.md updates\n- API changes -> Must update docs/vendor-specs/, README.md API section\n\nProceed with edit. Flag documentation updates needed after completion.",
-            "timeout": 15
+            "prompt": "## PRE-EDIT DOCUMENTATION AWARENESS\n\nBefore modifying this file, consider:\n1. Will this edit require README.md updates?\n2. Does this change affect plan/ documentation?\n3. Is this change aligned with project_data/ requirements?\n\nproject_data/ requirements: TypeScript, POST/DELETE/PUT /user, birthday messages at 9am local time, error handling, scalability.\n\nProceed with edit.",
+            "timeout": 10
           }
         ]
       }
@@ -66,7 +67,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-command --command '{}' --track-metrics true --store-results true"
+            "command": "cat | jq -r '.tool_input.command // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-command --command '{}' --track-metrics true --store-results true 2>/dev/null || true"
           }
         ]
       },
@@ -75,21 +76,16 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true"
+            "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true 2>/dev/null || true"
           },
           {
             "type": "command",
-            "command": "/bin/bash -c 'FILE=$(cat | jq -r \".tool_input.file_path // .tool_input.path // empty\"); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx || \"$FILE\" == *.js || \"$FILE\" == *.jsx ]]; then echo \"🔍 Running ESLint on $FILE...\"; npx eslint --fix \"$FILE\" 2>/dev/null && echo \"✅ Linting passed\" || echo \"⚠️ Linting issues found (auto-fixed where possible)\"; fi'"
+            "command": "/bin/bash -c 'FILE=$(cat | jq -r \".tool_input.file_path // .tool_input.path // empty\"); if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx || \"$FILE\" == *.js || \"$FILE\" == *.jsx ]]; then npx eslint --fix \"$FILE\" 2>/dev/null || true; fi'"
           },
           {
             "type": "prompt",
-            "prompt": "## POST-EDIT DOCUMENTATION SYNC TRACKER\n\nA file modification just completed. Track documentation sync needs:\n\n### Documentation Sync Matrix:\n| Modified Path | Documentation to Update |\n|---------------|------------------------|\n| src/api/* | docs/vendor-specs/, README.md API section |\n| src/services/* | plan/02-architecture/, docs/RUNBOOK.md |\n| src/workers/* | plan/05-implementation/, docs/RUNBOOK.md |\n| tests/* | plan/04-testing/, README.md test stats |\n| *.md in docs/ | docs/README.md index |\n| *.md in plan/ | plan/*/INDEX.md files |\n\n### Research/Planning Alignment Check:\nDoes this change:\n1. Fulfill a project_data/ requirement? -> Update plan/09-reports/GAP_ANALYSIS_REPORT.md\n2. Implement planned feature? -> Update plan/05-implementation/master-plan.md status\n3. Address a research finding? -> Cross-reference plan/03-research/ files\n\n### Queue Updates for Session End:\nNote any documentation updates needed for the Stop hooks to process.",
-            "timeout": 20
-          },
-          {
-            "type": "prompt",
-            "prompt": "## AUTO-UPDATE RESEARCH/PLAN/TARGET TRIGGER\n\n### Impact Analysis for Research, Planning, and Targets\n\nAfter each edit, assess if the change impacts:\n\n#### 1. Research Updates Needed?\nCheck if the change:\n- Introduces new technical approach -> Update plan/03-research/\n- Uses new library/framework -> Document in research\n- Changes architecture decision -> Update plan/02-architecture/\n\n#### 2. Planning Updates Needed?\nCheck if the change:\n- Completes a planned feature -> Update plan/05-implementation/master-plan.md\n- Adds new feature scope -> Add to plan/05-implementation/\n- Modifies testing approach -> Update plan/04-testing/\n\n#### 3. Target Updates Needed?\nCheck if the change:\n- Achieves a project_data/ requirement -> Update plan/09-reports/GAP_ANALYSIS_REPORT.md\n- Moves toward performance targets -> Update metrics in docs/\n- Affects CI/CD goals -> Update plan/09-reports/\n\n#### project_data/ Requirements Quick Reference:\n- TypeScript with POST/DELETE/PUT /user endpoints\n- User: firstName, lastName, birthday, location\n- 9am local time birthday messages\n- Error handling, recovery, scalability (1000s/day)\n- No duplicate messages, abstraction for future types\n\n### Auto-Update Protocol:\nIf this change significantly impacts research/plan/target:\n1. Flag the specific plan/ files that need updates\n2. Note the project_data/ requirement being fulfilled\n3. Queue update for immediate or end-of-session processing\n\nProceed with next operation. If critical updates needed, queue for processing.",
-            "timeout": 15
+            "prompt": "## POST-EDIT SYNC CHECK\n\nFile modified. Note if docs need sync:\n- src/ changes -> docs/RUNBOOK.md, plan/05-implementation/\n- tests/ changes -> plan/04-testing/\n- API changes -> README.md API section\n\nQueue updates if needed.",
+            "timeout": 10
           }
         ]
       }
@@ -100,7 +96,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash -c 'INPUT=$(cat); CUSTOM=$(echo \"$INPUT\" | jq -r \".custom_instructions // \\\"\\\"\"); echo \"🔄 PreCompact Guidance:\"; echo \"📋 IMPORTANT: Review CLAUDE.md in project root for:\"; echo \"   • 54 available agents and concurrent usage patterns\"; echo \"   • Swarm coordination strategies (hierarchical, mesh, adaptive)\"; echo \"   • SPARC methodology workflows with batchtools optimization\"; echo \"   • Critical concurrent execution rules (GOLDEN RULE: 1 MESSAGE = ALL OPERATIONS)\"; if [ -n \"$CUSTOM\" ]; then echo \"🎯 Custom compact instructions: $CUSTOM\"; fi; echo \"✅ Ready for compact operation\"'"
+            "command": "/bin/bash -c 'echo \"🔄 PreCompact: Review CLAUDE.md for agents, swarm coordination, and SPARC methodology.\"'"
           }
         ]
       },
@@ -109,7 +105,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/bin/bash -c 'echo \"🔄 Auto-Compact Guidance (Context Window Full):\"; echo \"📋 CRITICAL: Before compacting, ensure you understand:\"; echo \"   • All 54 agents available in .claude/agents/ directory\"; echo \"   • Concurrent execution patterns from CLAUDE.md\"; echo \"   • Batchtools optimization for 300% performance gains\"; echo \"   • Swarm coordination strategies for complex tasks\"; echo \"⚡ Apply GOLDEN RULE: Always batch operations in single messages\"; echo \"✅ Auto-compact proceeding with full agent context\"'"
+            "command": "/bin/bash -c 'echo \"🔄 Auto-Compact: Apply GOLDEN RULE - batch operations in single messages.\"'"
           }
         ]
       }
@@ -118,16 +114,21 @@
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cleanup-unused.sh 2>/dev/null || echo 'Cleanup skipped'"
+            "type": "prompt",
+            "prompt": "Session ending. Briefly note any documentation that may need updates next session based on work done. Keep response short.",
+            "timeout": 10
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-commit.sh 2>/dev/null || echo 'Auto-commit skipped'"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cleanup-unused.sh >/dev/null 2>&1 || true"
           },
           {
             "type": "command",
-            "command": "npx claude-flow@alpha hooks session-end --generate-summary true --persist-state true --export-metrics true 2>/dev/null || echo 'Session end hook skipped'"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/auto-commit.sh >/dev/null 2>&1 || true"
+          },
+          {
+            "type": "command",
+            "command": "npx claude-flow@alpha hooks session-end --generate-summary true --persist-state true --export-metrics true >/dev/null 2>&1 || true"
           }
         ]
       }

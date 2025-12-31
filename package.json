@@ -21,6 +21,7 @@
     "test:unit": "vitest run --config vitest.config.unit.ts",
     "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
+    "test:chaos": "vitest run --config vitest.config.chaos.ts",
     "test:coverage": "vitest run --coverage",
     "test:coverage:unit": "vitest run --config vitest.config.unit.ts --coverage",
     "test:coverage:integration": "vitest run --config vitest.config.integration.ts --coverage",
