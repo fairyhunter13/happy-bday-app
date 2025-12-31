@@ -9,17 +9,72 @@ import amqp from 'amqplib';
 const { Pool } = pg;
 
 /**
+ * Check if running in CI/CD environment
+ * CI/CD uses docker-compose for services, not testcontainers
+ */
+export function isCI(): boolean {
+  return process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+}
+
+/**
+ * Get CI/CD environment connection strings
+ * These match the docker-compose.test.yml configuration
+ */
+export function getCIConnectionStrings() {
+  return {
+    postgres: process.env.DATABASE_URL || 'postgres://test:test@localhost:5432/test_db',
+    rabbitmq: process.env.RABBITMQ_URL || 'amqp://test:test@localhost:5672',
+    redis: process.env.REDIS_URL || 'redis://localhost:6379',
+  };
+}
+
+/**
  * Test container manager for PostgreSQL
+ * Supports both testcontainers (local) and CI/CD (docker-compose) modes
  */
 export class PostgresTestContainer {
   private container: StartedPostgreSqlContainer | null = null;
   private pool: pg.Pool | null = null;
+  private usingCI: boolean = false;
+  private connectionString: string = '';
 
   async start(): Promise<{
-    container: StartedPostgreSqlContainer;
+    container: StartedPostgreSqlContainer | null;
     connectionString: string;
     pool: pg.Pool;
   }> {
+    this.usingCI = isCI();
+
+    if (this.usingCI) {
+      // CI mode: connect to docker-compose services
+      this.connectionString = getCIConnectionStrings().postgres;
+      this.pool = new Pool({ connectionString: this.connectionString });
+
+      // Wait for database to be ready
+      let retries = 30;
+      while (retries > 0) {
+        try {
+          await this.pool.query('SELECT 1');
+          console.log('PostgreSQL connection established (CI mode)');
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) {
+            throw new Error(`Failed to connect to PostgreSQL: ${error}`);
+          }
+          console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
+
+      return {
+        container: null,
+        connectionString: this.connectionString,
+        pool: this.pool,
+      };
+    }
+
+    // Local mode: use testcontainers
     this.container = await new PostgreSqlContainer('postgres:15-alpine')
       .withExposedPorts(5432)
       .withEnvironment({
@@ -30,12 +85,12 @@ export class PostgresTestContainer {
       .withStartupTimeout(120000)
       .start();
 
-    const connectionString = this.container.getConnectionUri();
-    this.pool = new Pool({ connectionString });
+    this.connectionString = this.container.getConnectionUri();
+    this.pool = new Pool({ connectionString: this.connectionString });
 
     return {
       container: this.container,
-      connectionString,
+      connectionString: this.connectionString,
       pool: this.pool,
     };
   }
@@ -47,6 +102,7 @@ export class PostgresTestContainer {
 
     const db = drizzle(this.pool);
     await migrate(db, { migrationsFolder });
+    console.log(`Migrations completed (CI mode: ${this.usingCI})`);
   }
 
   async stop(): Promise<void> {
@@ -54,7 +110,7 @@ export class PostgresTestContainer {
       await this.pool.end();
       this.pool = null;
     }
-    if (this.container) {
+    if (this.container && !this.usingCI) {
       await this.container.stop();
       this.container = null;
     }
@@ -65,6 +121,10 @@ export class PostgresTestContainer {
       throw new Error('PostgreSQL container not started');
     }
     return this.pool;
+  }
+
+  getConnectionString(): string {
+    return this.connectionString;
   }
 }
 
@@ -175,11 +235,15 @@ export class RedisTestContainer {
 
 /**
  * Complete test environment with all required services
+ * Supports both:
+ * - Local development: Uses testcontainers to start containers
+ * - CI/CD: Connects to docker-compose managed containers
  */
 export class TestEnvironment {
   private postgres: PostgresTestContainer;
   private rabbitmq: RabbitMQTestContainer;
   private redis: RedisTestContainer;
+  private usingCI: boolean = false;
 
   public postgresConnectionString: string = '';
   public rabbitmqConnectionString: string = '';
@@ -191,11 +255,75 @@ export class TestEnvironment {
     this.postgres = new PostgresTestContainer();
     this.rabbitmq = new RabbitMQTestContainer();
     this.redis = new RedisTestContainer();
+    this.usingCI = isCI();
   }
 
   async setup(): Promise<void> {
-    console.log('Starting test environment...');
+    console.log(`Starting test environment... (CI mode: ${this.usingCI})`);
 
+    if (this.usingCI) {
+      // In CI/CD, connect to external docker-compose services
+      await this.setupCIEnvironment();
+    } else {
+      // Local development: start testcontainers
+      await this.setupLocalEnvironment();
+    }
+
+    console.log('Test environment started successfully');
+  }
+
+  /**
+   * Setup for CI/CD environment using docker-compose services
+   */
+  private async setupCIEnvironment(): Promise<void> {
+    const ciStrings = getCIConnectionStrings();
+
+    this.postgresConnectionString = ciStrings.postgres;
+    this.rabbitmqConnectionString = ciStrings.rabbitmq;
+    this.redisConnectionString = ciStrings.redis;
+
+    // Create pool for CI database
+    this.pool = new Pool({ connectionString: this.postgresConnectionString });
+
+    // Wait for database to be ready
+    let retries = 30;
+    while (retries > 0) {
+      try {
+        await this.pool.query('SELECT 1');
+        console.log('PostgreSQL connection established');
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          throw new Error(`Failed to connect to PostgreSQL: ${error}`);
+        }
+        console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
+    // Connect to RabbitMQ
+    retries = 30;
+    while (retries > 0) {
+      try {
+        this.amqpConnection = await amqp.connect(this.rabbitmqConnectionString);
+        console.log('RabbitMQ connection established');
+        break;
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          throw new Error(`Failed to connect to RabbitMQ: ${error}`);
+        }
+        console.log(`Waiting for RabbitMQ... (${retries} retries left)`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  /**
+   * Setup for local development using testcontainers
+   */
+  private async setupLocalEnvironment(): Promise<void> {
     // Start all containers in parallel
     const [postgresResult, rabbitmqResult, redisResult] = await Promise.all([
       this.postgres.start(),
@@ -210,29 +338,70 @@ export class TestEnvironment {
     this.amqpConnection = rabbitmqResult.connection;
 
     this.redisConnectionString = redisResult.connectionString;
-
-    console.log('Test environment started successfully');
   }
 
   async runMigrations(migrationsFolder: string = './drizzle'): Promise<void> {
-    await this.postgres.runMigrations(migrationsFolder);
+    if (this.usingCI) {
+      // In CI, run migrations using the pool directly
+      if (!this.pool) {
+        throw new Error('PostgreSQL pool not initialized');
+      }
+      const db = drizzle(this.pool);
+      await migrate(db, { migrationsFolder });
+      console.log('Migrations completed (CI mode)');
+    } else {
+      await this.postgres.runMigrations(migrationsFolder);
+    }
   }
 
   async teardown(): Promise<void> {
     console.log('Stopping test environment...');
 
-    // Stop all containers in parallel
-    await Promise.all([this.postgres.stop(), this.rabbitmq.stop(), this.redis.stop()]);
+    if (this.usingCI) {
+      // In CI, just close connections (don't stop containers)
+      if (this.amqpConnection) {
+        try {
+          await this.amqpConnection.close();
+        } catch (e) {
+          console.warn('Error closing RabbitMQ connection:', e);
+        }
+        this.amqpConnection = null;
+      }
+      if (this.pool) {
+        try {
+          await this.pool.end();
+        } catch (e) {
+          console.warn('Error closing PostgreSQL pool:', e);
+        }
+        this.pool = null;
+      }
+    } else {
+      // Local: Stop all containers in parallel
+      await Promise.all([this.postgres.stop(), this.rabbitmq.stop(), this.redis.stop()]);
+    }
 
     console.log('Test environment stopped');
   }
 
   getPostgresPool(): pg.Pool {
+    if (this.usingCI && this.pool) {
+      return this.pool;
+    }
     return this.postgres.getPool();
   }
 
   getRabbitMQConnection(): amqp.Connection {
+    if (this.usingCI && this.amqpConnection) {
+      return this.amqpConnection;
+    }
     return this.rabbitmq.getConnection();
+  }
+
+  /**
+   * Check if using CI environment
+   */
+  isUsingCI(): boolean {
+    return this.usingCI;
   }
 }
 
