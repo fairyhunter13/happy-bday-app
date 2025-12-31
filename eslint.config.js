@@ -106,6 +106,7 @@ export default [
       '*.config.js',
       '*.config.ts',
       '.husky/**',
+      '.claude/**',
       'plan/**',
       'scripts/**',
       'tests/**',
