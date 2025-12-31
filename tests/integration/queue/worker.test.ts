@@ -78,10 +78,7 @@ describe('Message Worker Integration Tests', () => {
     return user!;
   };
 
-  const createTestMessageLog = async (
-    userId: string,
-    overrides: MessageLogOverrides = {}
-  ) => {
+  const createTestMessageLog = async (userId: string, overrides: MessageLogOverrides = {}) => {
     const messageData = {
       id: generateUuid(),
       userId,

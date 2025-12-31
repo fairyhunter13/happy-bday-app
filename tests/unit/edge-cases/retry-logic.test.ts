@@ -250,7 +250,8 @@ describe('Retry Logic Edge Cases', () => {
       const recordBackoff = (backoffTime: number): void => {
         metrics.totalRetries++;
         metrics.avgBackoffTime =
-          (metrics.avgBackoffTime * (metrics.totalRetries - 1) + backoffTime) / metrics.totalRetries;
+          (metrics.avgBackoffTime * (metrics.totalRetries - 1) + backoffTime) /
+          metrics.totalRetries;
         metrics.minBackoffTime = Math.min(metrics.minBackoffTime, backoffTime);
         metrics.maxBackoffTime = Math.max(metrics.maxBackoffTime, backoffTime);
       };
@@ -714,11 +715,11 @@ describe('Retry Logic Edge Cases', () => {
         };
       };
 
-      const dlqMsg = createDLQMessage(
-        { userId: '123' },
-        5,
-        ['Network timeout', 'Service unavailable', 'Rate limit']
-      );
+      const dlqMsg = createDLQMessage({ userId: '123' }, 5, [
+        'Network timeout',
+        'Service unavailable',
+        'Rate limit',
+      ]);
 
       expect(dlqMsg.metadata.totalRetries).toBe(5);
       expect(dlqMsg.metadata.failureReasons).toHaveLength(3);

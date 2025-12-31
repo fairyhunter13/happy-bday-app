@@ -470,7 +470,12 @@ describe('Worker Error Handling Edge Cases', () => {
 
       const metrics: MessageMetrics[] = [];
 
-      const recordMetrics = (messageId: string, memUsed: number, cpu: number, dur: number): void => {
+      const recordMetrics = (
+        messageId: string,
+        memUsed: number,
+        cpu: number,
+        dur: number
+      ): void => {
         metrics.push({
           messageId,
           memoryUsed: memUsed,
