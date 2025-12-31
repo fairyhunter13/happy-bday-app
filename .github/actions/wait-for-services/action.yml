@@ -10,6 +10,14 @@ inputs:
     description: 'PostgreSQL port'
     required: false
     default: '5432'
+  postgres-user:
+    description: 'PostgreSQL user'
+    required: false
+    default: 'test'
+  postgres-db:
+    description: 'PostgreSQL database'
+    required: false
+    default: 'test_db'
   rabbitmq:
     description: 'Wait for RabbitMQ'
     required: false
@@ -39,6 +47,28 @@ runs:
       run: |
         TIMEOUT="${{ inputs.timeout }}"
 
+        wait_for_postgres() {
+          local host="$1"
+          local port="$2"
+          local user="$3"
+          local db="$4"
+          echo "Waiting for PostgreSQL on port $port..."
+
+          # First wait for port
+          timeout $TIMEOUT bash -c "until nc -z $host $port; do sleep 1; done" || {
+            echo "Error: PostgreSQL port $port did not become available in $TIMEOUT seconds"
+            exit 1
+          }
+
+          # Then verify actual connectivity with pg_isready
+          timeout $TIMEOUT bash -c "until pg_isready -h $host -p $port -U $user -d $db; do sleep 1; done" || {
+            echo "Error: PostgreSQL did not become ready in $TIMEOUT seconds"
+            exit 1
+          }
+
+          echo "PostgreSQL is ready!"
+        }
+
         wait_for_port() {
           local host="$1"
           local port="$2"
@@ -52,7 +82,7 @@ runs:
         }
 
         if [ "${{ inputs.postgres }}" = "true" ]; then
-          wait_for_port localhost ${{ inputs.postgres-port }} "PostgreSQL"
+          wait_for_postgres localhost ${{ inputs.postgres-port }} ${{ inputs.postgres-user }} ${{ inputs.postgres-db }}
         fi
 
         if [ "${{ inputs.rabbitmq }}" = "true" ]; then

@@ -228,7 +228,7 @@ describe('RabbitMQ Chaos Tests', () => {
       const maxAttempts = 3;
 
       // Consumer that fails and requeues
-      await channel.consume(
+      const { consumerTag } = await channel.consume(
         'retry_queue',
         async (msg) => {
           if (!msg) return;
@@ -255,16 +255,12 @@ describe('RabbitMQ Chaos Tests', () => {
       expect(processingAttempts).toBe(maxAttempts);
       logger.info('Message requeued and eventually processed');
 
-      // Cleanup
-      await channel.cancel('amq.ctag-*').catch(() => {
-        /* Ignore cleanup errors */
-      });
-      await channel.deleteQueue('retry_queue').catch(() => {
-        /* Ignore cleanup errors */
-      });
-      await connection.close().catch(() => {
-        /* Ignore cleanup errors */
-      });
+      // Cleanup - cancel consumer first to prevent unhandled rejections
+      await channel.cancel(consumerTag).catch(() => {});
+      // Wait for pending operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await channel.deleteQueue('retry_queue').catch(() => {});
+      await connection.close().catch(() => {});
     }, 20000);
   });
 
@@ -349,7 +345,7 @@ describe('RabbitMQ Chaos Tests', () => {
 
       // Consume messages
       const consumeStart = Date.now();
-      await channel.consume(
+      const { consumerTag } = await channel.consume(
         'high_throughput_queue',
         async (msg) => {
           if (!msg) return;
@@ -381,13 +377,12 @@ describe('RabbitMQ Chaos Tests', () => {
 
       expect(processed).toBe(messageCount);
 
-      // Cleanup - use catch handlers to prevent unhandled rejections
-      await channel.deleteQueue('high_throughput_queue').catch(() => {
-        /* Ignore cleanup errors */
-      });
-      await connection.close().catch(() => {
-        /* Ignore cleanup errors */
-      });
+      // Cleanup - cancel consumer first to prevent unhandled rejections
+      await channel.cancel(consumerTag).catch(() => {});
+      // Wait for pending operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await channel.deleteQueue('high_throughput_queue').catch(() => {});
+      await connection.close().catch(() => {});
     }, 60000);
   });
 
@@ -415,7 +410,7 @@ describe('RabbitMQ Chaos Tests', () => {
       let maxInFlight = 0;
       let processed = 0;
 
-      await channel.consume(
+      const { consumerTag } = await channel.consume(
         'backpressure_queue',
         async (msg) => {
           if (!msg) return;
@@ -447,13 +442,12 @@ describe('RabbitMQ Chaos Tests', () => {
       expect(maxInFlight).toBeLessThanOrEqual(5);
       expect(processed).toBe(20);
 
-      // Cleanup
-      await channel.deleteQueue('backpressure_queue').catch(() => {
-        /* Ignore cleanup errors */
-      });
-      await connection.close().catch(() => {
-        /* Ignore cleanup errors */
-      });
+      // Cleanup - cancel consumer first to prevent unhandled rejections
+      await channel.cancel(consumerTag).catch(() => {});
+      // Wait for pending operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await channel.deleteQueue('backpressure_queue').catch(() => {});
+      await connection.close().catch(() => {});
     }, 30000);
   });
 
