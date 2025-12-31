@@ -26,6 +26,11 @@ export default mergeConfig(
       testTimeout: 120000, // 2 minutes
       hookTimeout: 120000,
 
+      // CRITICAL: Run e2e test FILES sequentially to avoid resource conflicts
+      // Each test file creates its own TestEnvironment with limited connection pools
+      // Running files in parallel causes PostgreSQL connection exhaustion in CI
+      fileParallelism: false,
+
       // Run e2e tests sequentially to avoid port conflicts
       poolOptions: {
         threads: {

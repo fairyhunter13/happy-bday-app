@@ -200,7 +200,7 @@ describe('Repository Integration Tests', () => {
         lastName: 'User',
         email: 'birthday@example.com',
         timezone: 'America/New_York',
-        birthdayDate: new Date(1990, today.month - 1, today.day),
+        birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
       };
       const user = await userRepository.create(userData);
 
@@ -343,7 +343,7 @@ describe('Repository Integration Tests', () => {
           lastName: 'Test',
           email: `user${i}@example.com`,
           timezone: i % 2 === 0 ? 'America/New_York' : 'Europe/London',
-          birthdayDate: new Date(1990 + i, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1990 + i, today.month - 1, today.day)),
         });
       }
 
@@ -381,21 +381,21 @@ describe('Repository Integration Tests', () => {
           lastName: 'User',
           email: 'ny@example.com',
           timezone: 'America/New_York',
-          birthdayDate: new Date(1990, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
         },
         {
           firstName: 'London',
           lastName: 'User',
           email: 'london@example.com',
           timezone: 'Europe/London',
-          birthdayDate: new Date(1991, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1991, today.month - 1, today.day)),
         },
         {
           firstName: 'Tokyo',
           lastName: 'User',
           email: 'tokyo@example.com',
           timezone: 'Asia/Tokyo',
-          birthdayDate: new Date(1992, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1992, today.month - 1, today.day)),
         },
       ];
 

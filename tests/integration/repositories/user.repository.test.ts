@@ -437,7 +437,7 @@ describe('UserRepository', () => {
         lastName: 'Today',
         email: 'bday@example.com',
         timezone: 'UTC',
-        birthdayDate: new Date(1990, today.month - 1, today.day),
+        birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
       };
 
       const userWithDifferentBday: CreateUserDto = {
@@ -466,14 +466,14 @@ describe('UserRepository', () => {
           lastName: 'User',
           email: 'ny@example.com',
           timezone: 'America/New_York',
-          birthdayDate: new Date(1990, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
         },
         {
           firstName: 'London',
           lastName: 'User',
           email: 'london@example.com',
           timezone: 'Europe/London',
-          birthdayDate: new Date(1990, today.month - 1, today.day),
+          birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
         },
       ];
 
@@ -495,7 +495,7 @@ describe('UserRepository', () => {
         lastName: 'Birthday',
         email: 'has@example.com',
         timezone: 'UTC',
-        birthdayDate: new Date(1990, today.month - 1, today.day),
+        birthdayDate: new Date(Date.UTC(1990, today.month - 1, today.day)),
       };
 
       const userWithoutBday: CreateUserDto = {
@@ -524,7 +524,7 @@ describe('UserRepository', () => {
         lastName: 'Today',
         email: 'anniv@example.com',
         timezone: 'UTC',
-        anniversaryDate: new Date(2015, today.month - 1, today.day),
+        anniversaryDate: new Date(Date.UTC(2015, today.month - 1, today.day)),
       };
 
       const userWithDifferentAnniv: CreateUserDto = {
