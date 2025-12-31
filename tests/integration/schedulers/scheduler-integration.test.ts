@@ -6,30 +6,41 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
 import { SchedulerManager } from '../../../src/schedulers/index.js';
-import { db } from '../../../src/db/connection.js';
 import { users, messageLogs } from '../../../src/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { MessageStatus } from '../../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
-import type { PostgreSqlContainer } from '@testcontainers/postgresql';
-import { setupTestDatabase, teardownTestDatabase } from '../../helpers/database.js';
+import { PostgresTestContainer, cleanDatabase } from '../../helpers/testcontainers.js';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import * as schema from '../../../src/db/schema/index.js';
 
 describe('Scheduler Integration Tests', () => {
-  let container: PostgreSqlContainer;
+  let pgContainer: PostgresTestContainer;
   let manager: SchedulerManager;
+  let db: ReturnType<typeof drizzle<typeof schema>>;
 
   beforeAll(async () => {
-    container = await setupTestDatabase();
-  });
+    // Start PostgreSQL container
+    pgContainer = new PostgresTestContainer();
+    const { pool } = await pgContainer.start();
+
+    // Set environment variable for the app
+    process.env.DATABASE_URL = `postgres://test:test@${pgContainer.getPool().options.host}:${pgContainer.getPool().options.port}/test_db`;
+
+    // Create drizzle instance for tests
+    db = drizzle(pool, { schema });
+
+    // Run migrations
+    await pgContainer.runMigrations('./drizzle');
+  }, 120000);
 
   afterAll(async () => {
-    await teardownTestDatabase(container);
+    if (pgContainer) await pgContainer.stop();
   });
 
   beforeEach(async () => {
-    // Clear database
-    await db.delete(messageLogs);
-    await db.delete(users);
+    // Clean database
+    await cleanDatabase(pgContainer.getPool());
 
     manager = new SchedulerManager();
   });
