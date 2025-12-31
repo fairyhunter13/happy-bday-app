@@ -65,7 +65,7 @@ jobs:
         run: sops --decrypt .env.test.enc > .env.test
 
       - name: Run unit tests (shard ${{ matrix.shard }})
-        run: npm run test:unit -- --shard=${{ matrix.shard }}/5 --reporter=verbose
+        run: npm run test:unit -- --shard=${{ matrix.shard }}/5 --reporter=verbose --coverage
 
       - name: Cleanup decrypted secrets
         if: always()
@@ -77,6 +77,9 @@ jobs:
           name: coverage-unit-shard-${{ matrix.shard }}
           path: coverage/
           retention-days: 7
+
+      - name: Check unit test coverage thresholds
+        run: npm run test:coverage:check
 
   integration-tests:
     name: Integration Tests
@@ -281,7 +284,7 @@ jobs:
       - name: Start API server
         run: |
           npm run build
-          node dist/index.js &
+          node dist/src/index.js &
           echo $! > /tmp/api.pid
           sleep 5
         env:
@@ -366,6 +369,13 @@ jobs:
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Update coverage history
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ -f scripts/coverage/update-history.sh ]; then
+            bash scripts/coverage/update-history.sh
+          fi
 
       - name: Comment coverage on PR
         if: github.event_name == 'pull_request'

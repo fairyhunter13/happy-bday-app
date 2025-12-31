@@ -424,18 +424,17 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Info Alerts**: Deployment events, configuration changes
 - **SLO Alerts**: Service Level Objective violations
 
-### CI/CD Workflows (10 Workflows)
+### CI/CD Workflows (9 Workflows)
 
-1. **CI** - Lint, type-check, unit tests (5 shards)
+1. **CI** - Lint, type-check, unit tests (5 shards), integration, E2E, performance smoke tests
 2. **Code Quality** - ESLint, code duplication checks
 3. **Security Scanning** - npm audit, Snyk (optional)
-4. **Performance Tests** - k6 load testing
+4. **Performance Tests** - k6 load testing (scheduled/manual)
 5. **Docker Build** - Multi-platform image builds
 6. **OpenAPI Validation** - API spec validation
 7. **Deploy Documentation** - GitHub Pages deployment
 8. **Mutation Testing** - Stryker mutation testing (optional)
 9. **SonarCloud** - Code quality analysis
-10. **Release** - Automated releases and changelogs
 
 ---
 
