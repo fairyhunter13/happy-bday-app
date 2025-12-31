@@ -10,12 +10,21 @@ Historical documents that have been superseded by newer versions or consolidated
 
 ## Archived Documents
 
+### Project Reports (2025-12-31)
+
+| Document | Original Date | Reason for Archive |
+|----------|--------------|-------------------|
+| [`ARCHITECT_SCOPE_UPDATE_REPORT.md`](./ARCHITECT_SCOPE_UPDATE_REPORT.md) | 2025-12-31 | Scope update report - completed |
+| [`CLEANUP_FINAL_REPORT.md`](./CLEANUP_FINAL_REPORT.md) | 2025-12-31 | Cleanup report - completed |
+| [`FINAL_CLEANUP_VERIFICATION.md`](./FINAL_CLEANUP_VERIFICATION.md) | 2025-12-31 | Verification report - completed |
+| [`GAP_ANALYSIS_CURRENT_STATE.md`](./GAP_ANALYSIS_CURRENT_STATE.md) | 2025-12-31 | Previous gap analysis - superseded |
+| [`SCOPE_CHANGE_SUMMARY.md`](./SCOPE_CHANGE_SUMMARY.md) | 2025-12-31 | Scope changes - completed |
+
 ### Old Index Files
 
 | Document | Original Date | Reason for Archive | Superseded By |
 |----------|--------------|-------------------|---------------|
 | [`INDEX.md`](./INDEX.md) | 2025-12-31 | Coverage trends-specific index | [`../04-testing/coverage-tracking/`](../04-testing/coverage-tracking/) |
-| [`REORGANIZATION_SUMMARY.md`](./REORGANIZATION_SUMMARY.md) | 2025-12-30 | Previous reorganization | New reorganization (2025-12-31) |
 
 ---
 
@@ -91,4 +100,4 @@ git diff <commit1> <commit2> -- plan/<filename>
 
 **Archive Reason:** Historical reference only
 
-**Total Archived Files:** 2
+**Total Archived Files:** 7

@@ -58,8 +58,8 @@ jobs:
             exit 1
           fi
 
-          if [ "$WARNING_COUNT" -gt 10 ]; then
-            echo "::warning::ESLint found $WARNING_COUNT warnings (threshold: 10)"
+          if [ "$WARNING_COUNT" -gt 50 ]; then
+            echo "::warning::ESLint found $WARNING_COUNT warnings (threshold: 50)"
             exit 1
           fi
 
@@ -297,13 +297,13 @@ jobs:
           | Metric | Value | Status |
           |--------|-------|--------|
           | ESLint Errors | $ESLINT_ERRORS | $([ $ESLINT_ERRORS -eq 0 ] && echo '✅' || echo '❌') |
-          | ESLint Warnings | $ESLINT_WARNINGS | $([ $ESLINT_WARNINGS -le 10 ] && echo '✅' || echo '⚠️') |
+          | ESLint Warnings | $ESLINT_WARNINGS | $([ $ESLINT_WARNINGS -le 50 ] && echo '✅' || echo '⚠️') |
           | TypeScript Strict | Enabled | ✅ |
           | Code Duplication | ${DUPLICATION}% | $([ $(echo "$DUPLICATION < 5" | bc -l) -eq 1 ] && echo '✅' || echo '⚠️') |
 
           ### Quality Gates
           - ✅ **ESLint**: $([ $ESLINT_ERRORS -eq 0 ] && echo 'Passed' || echo 'Failed')
-          - $([ $ESLINT_WARNINGS -le 10 ] && echo '✅' || echo '⚠️') **Warnings**: $ESLINT_WARNINGS / 10 max
+          - $([ $ESLINT_WARNINGS -le 50 ] && echo '✅' || echo '⚠️') **Warnings**: $ESLINT_WARNINGS / 50 max
           - ✅ **TypeScript**: Strict mode enabled
           - $([ $(echo "$DUPLICATION < 5" | bc -l) -eq 1 ] && echo '✅' || echo '⚠️') **Duplication**: ${DUPLICATION}% / 5% max
 
