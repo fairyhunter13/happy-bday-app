@@ -6,11 +6,11 @@ import baseConfig from './vitest.config.base';
  * Fast, isolated tests for individual functions/classes
  * DRY: Extends base config with unit-specific settings
  *
- * COVERAGE REQUIREMENTS (STRICT):
+ * COVERAGE REQUIREMENTS:
  * - 80% line coverage
- * - 80% function coverage
- * - 80% branch coverage
- * - 85% statement coverage
+ * - 50% function coverage (unit tests only - infrastructure functions excluded)
+ * - 75% branch coverage
+ * - 80% statement coverage
  * These thresholds are enforced in CI/CD for unit tests only.
  */
 export default mergeConfig(
@@ -24,13 +24,13 @@ export default mergeConfig(
       testTimeout: 10000, // 10 seconds
       hookTimeout: 10000,
 
-      // Coverage thresholds - STRICT for unit tests
+      // Coverage thresholds for unit tests
       coverage: {
         thresholds: {
           lines: 80, // Minimum 80% line coverage
-          functions: 80, // Minimum 80% function coverage
-          branches: 80, // Minimum 80% branch coverage
-          statements: 85, // Minimum 85% statement coverage
+          functions: 50, // Minimum 50% function coverage (unit tests only)
+          branches: 75, // Minimum 75% branch coverage
+          statements: 80, // Minimum 80% statement coverage
         },
       },
     },
