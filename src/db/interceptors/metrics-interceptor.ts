@@ -312,7 +312,7 @@ export class QueryTimingTracker {
  * @param config - Interceptor configuration
  * @returns Wrapped client with metrics tracking
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createMetricsWrapper<T extends (..._args: any[]) => any>(
   client: T,
   config?: MetricsInterceptorConfig
