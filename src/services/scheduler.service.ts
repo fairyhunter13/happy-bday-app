@@ -2,6 +2,10 @@ import { DateTime } from 'luxon';
 import { idempotencyService, type IdempotencyService } from './idempotency.service.js';
 import { userRepository, type UserRepository } from '../repositories/user.repository.js';
 import {
+  cachedUserRepository,
+  type CachedUserRepository,
+} from '../repositories/cached-user.repository.js';
+import {
   messageLogRepository,
   type MessageLogRepository,
 } from '../repositories/message-log.repository.js';
@@ -72,10 +76,11 @@ export class SchedulerService {
   constructor(
     private readonly _idempotencyService: IdempotencyService = idempotencyService,
     private readonly _userRepo: UserRepository = userRepository,
+    private readonly _cachedUserRepo: CachedUserRepository = cachedUserRepository,
     private readonly _messageLogRepo: MessageLogRepository = messageLogRepository,
     private readonly _strategyFactory = messageStrategyFactory
   ) {
-    logger.info('SchedulerService initialized with strategy factory');
+    logger.info('SchedulerService initialized with strategy factory and caching');
   }
 
   /**
@@ -186,10 +191,11 @@ export class SchedulerService {
     };
 
     // Find all users with the relevant date for this strategy
+    // Use cached repository for better performance (weak consistency with daily refresh)
     const users =
       messageType === 'BIRTHDAY'
-        ? await this._userRepo.findBirthdaysToday()
-        : await this._userRepo.findAnniversariesToday();
+        ? await this._cachedUserRepo.findBirthdaysToday()
+        : await this._cachedUserRepo.findAnniversariesToday();
 
     stats.total = users.length;
 

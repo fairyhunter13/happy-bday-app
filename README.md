@@ -38,6 +38,7 @@
 ### Code Quality & Security
 [![Code Quality](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
 [![Security Scan](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml)
+[![Snyk Security](https://img.shields.io/snyk/vulnerabilities/github/fairyhunter13/happy-bday-app?logo=snyk)](https://snyk.io/test/github/fairyhunter13/happy-bday-app)
 [![SonarCloud](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/sonar.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/sonar.yml)
 [![Quality Gate Status](https://img.shields.io/badge/SonarCloud-Quality%20Gate-brightgreen?logo=sonarcloud)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
 [![Mutation Testing](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml)

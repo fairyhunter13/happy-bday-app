@@ -6,3 +6,4 @@
 
 export * from './user.repository.js';
 export * from './message-log.repository.js';
+export * from './cached-user.repository.js';

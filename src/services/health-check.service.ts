@@ -17,6 +17,7 @@
 import { db } from '../db/connection.js';
 import { sql } from 'drizzle-orm';
 import { messageSenderService } from './message.service.js';
+import { cacheService } from './cache.service.js';
 import { logger } from '../config/logger.js';
 import { version } from '../../package.json' assert { type: 'json' };
 import { metricsService } from './metrics.service.js';
@@ -43,6 +44,7 @@ export interface DetailedHealthResponse {
   services: {
     database: ComponentHealth;
     rabbitmq: ComponentHealth;
+    redis: ComponentHealth;
     circuitBreaker: ComponentHealth;
   };
   metrics: {
@@ -167,6 +169,65 @@ export class HealthCheckService {
   }
 
   /**
+   * Check Redis cache health
+   *
+   * @returns Redis health status
+   */
+  async checkRedis(): Promise<ComponentHealth> {
+    const startTime = Date.now();
+
+    try {
+      // Use cache service health check
+      const isHealthy = await cacheService.isHealthy();
+      const latency = Date.now() - startTime;
+
+      if (isHealthy) {
+        // Get cache metrics for additional details
+        const metrics = await cacheService.getMetrics();
+
+        logger.debug({ latency, metrics }, 'Redis health check passed');
+
+        return {
+          healthy: true,
+          message: 'Redis connection OK',
+          details: {
+            connected: true,
+            hitRate: metrics.hitRate,
+            keysCount: metrics.keysCount,
+            memoryUsage: metrics.memoryUsage,
+          },
+          latency,
+        };
+      } else {
+        logger.warn({ latency }, 'Redis health check failed');
+
+        return {
+          healthy: false,
+          message: 'Redis connection failed or not configured',
+          details: {
+            connected: false,
+          },
+          latency,
+        };
+      }
+    } catch (error) {
+      const latency = Date.now() - startTime;
+
+      logger.error(
+        { error: error instanceof Error ? error.message : String(error), latency },
+        'Redis health check failed'
+      );
+
+      return {
+        healthy: false,
+        message: 'Redis connection failed',
+        error: error instanceof Error ? error.message : String(error),
+        latency,
+      };
+    }
+  }
+
+  /**
    * Check circuit breaker status
    *
    * @returns Circuit breaker health status
@@ -226,11 +287,13 @@ export class HealthCheckService {
     const startTime = Date.now();
 
     // Check all components in parallel
-    const [databaseHealth, rabbitmqHealth, circuitBreakerHealth] = await Promise.allSettled([
-      this.checkDatabase(),
-      this.checkRabbitMQ(),
-      this.checkCircuitBreaker(),
-    ]);
+    const [databaseHealth, rabbitmqHealth, redisHealth, circuitBreakerHealth] =
+      await Promise.allSettled([
+        this.checkDatabase(),
+        this.checkRabbitMQ(),
+        this.checkRedis(),
+        this.checkCircuitBreaker(),
+      ]);
 
     // Extract health status from settled promises
     const database: ComponentHealth =
@@ -257,6 +320,18 @@ export class HealthCheckService {
                 : String(rabbitmqHealth.reason),
           };
 
+    const redis: ComponentHealth =
+      redisHealth.status === 'fulfilled'
+        ? redisHealth.value
+        : {
+            healthy: false,
+            message: 'Health check failed',
+            error:
+              redisHealth.reason instanceof Error
+                ? redisHealth.reason.message
+                : String(redisHealth.reason),
+          };
+
     const circuitBreaker: ComponentHealth =
       circuitBreakerHealth.status === 'fulfilled'
         ? circuitBreakerHealth.value
@@ -270,8 +345,11 @@ export class HealthCheckService {
           };
 
     // Determine overall status
-    const allHealthy = database.healthy && rabbitmq.healthy && circuitBreaker.healthy;
-    const anyHealthy = database.healthy || rabbitmq.healthy || circuitBreaker.healthy;
+    // Note: Redis is optional, so we don't fail if it's down
+    const criticalServicesHealthy = database.healthy && rabbitmq.healthy && circuitBreaker.healthy;
+    const allHealthy = criticalServicesHealthy && redis.healthy;
+    const anyHealthy =
+      database.healthy || rabbitmq.healthy || redis.healthy || circuitBreaker.healthy;
 
     const status = allHealthy ? 'ok' : anyHealthy ? 'degraded' : 'down';
 
@@ -289,6 +367,7 @@ export class HealthCheckService {
       services: {
         database,
         rabbitmq,
+        redis,
         circuitBreaker,
       },
       metrics: {
@@ -303,6 +382,7 @@ export class HealthCheckService {
         duration,
         database: database.healthy,
         rabbitmq: rabbitmq.healthy,
+        redis: redis.healthy,
         circuitBreaker: circuitBreaker.healthy,
       },
       'Detailed health check completed'

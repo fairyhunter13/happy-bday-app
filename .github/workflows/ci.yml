@@ -351,18 +351,27 @@ jobs:
       - name: Start API server
         run: |
           npm run build
-          node dist/src/index.js &
+          node dist/src/index.js > /tmp/api.log 2>&1 &
           echo $! > /tmp/api.pid
-          sleep 5
+          echo "API server started with PID $(cat /tmp/api.pid)"
+          sleep 15
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
           REDIS_URL: redis://localhost:6379
           PORT: 3000
+          NODE_ENV: test
 
       - name: Wait for API
         run: |
-          timeout 30 bash -c 'until curl -s http://localhost:3000/health | grep -q "ok"; do sleep 1; done'
+          echo "Waiting for API to be ready..."
+          timeout 90 bash -c 'until curl -sf http://localhost:3000/health | grep -q "ok"; do echo "Still waiting... ($(date +%H:%M:%S))"; sleep 3; done' || {
+            echo "API failed to start within timeout!"
+            echo "=== API Server Logs ==="
+            cat /tmp/api.log || echo "No logs found"
+            exit 1
+          }
+          echo "API is ready!"
 
       - name: Create results directory
         run: mkdir -p perf-results
@@ -441,18 +450,27 @@ jobs:
       - name: Start API server
         run: |
           npm run build
-          node dist/src/index.js &
+          node dist/src/index.js > /tmp/api.log 2>&1 &
           echo $! > /tmp/api.pid
-          sleep 5
+          echo "API server started with PID $(cat /tmp/api.pid)"
+          sleep 15
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
           REDIS_URL: redis://localhost:6379
           PORT: 3000
+          NODE_ENV: test
 
       - name: Wait for API
         run: |
-          timeout 30 bash -c 'until curl -s http://localhost:3000/health | grep -q "ok"; do sleep 1; done'
+          echo "Waiting for API to be ready..."
+          timeout 90 bash -c 'until curl -sf http://localhost:3000/health | grep -q "ok"; do echo "Still waiting... ($(date +%H:%M:%S))"; sleep 3; done' || {
+            echo "API failed to start within timeout!"
+            echo "=== API Server Logs ==="
+            cat /tmp/api.log || echo "No logs found"
+            exit 1
+          }
+          echo "API is ready!"
 
       - name: Create results directory
         run: mkdir -p perf-results
