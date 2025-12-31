@@ -87,15 +87,6 @@ export class SystemMetricsService {
   /** CPU count (informational) */
   public readonly systemCpuCount: Gauge;
 
-  /** Process uptime in seconds */
-  public readonly processUptimeSeconds: Gauge;
-
-  /** Process memory RSS (Resident Set Size) in bytes */
-  public readonly processMemoryRss: Gauge;
-
-  /** Process CPU usage percentage (0-100 per CPU core) */
-  public readonly processCpuUsagePercent: Gauge;
-
   // ============================================
   // EVENT LOOP METRICS
   // ============================================
@@ -108,12 +99,6 @@ export class SystemMetricsService {
   /** Event loop idle time percentage */
   public readonly eventLoopIdle: Gauge;
 
-  /** Active handles count (files, sockets, timers, etc.) */
-  public readonly nodeActiveHandlesCount: Gauge;
-
-  /** Active requests count (pending I/O operations) */
-  public readonly nodeActiveRequestsCount: Gauge;
-
   // ============================================
   // GC MONITORING METRICS
   // ============================================
@@ -122,12 +107,6 @@ export class SystemMetricsService {
 
   /** Total GC runs by type (counter-like gauge) */
   public readonly gcRunsTotal: Gauge;
-
-  /** Heap size before GC in bytes */
-  public readonly gcHeapSizeBeforeBytes: Gauge;
-
-  /** Heap size after GC in bytes */
-  public readonly gcHeapSizeAfterBytes: Gauge;
 
   // ============================================
   // V8 HEAP DETAILED METRICS
@@ -146,15 +125,6 @@ export class SystemMetricsService {
 
   /** Array buffer memory in bytes */
   public readonly arrayBufferMemory: Gauge;
-
-  /** Total heap size in bytes */
-  public readonly heapTotalSize: Gauge;
-
-  /** Used heap size in bytes */
-  public readonly heapUsedSize: Gauge;
-
-  /** Heap size limit in bytes */
-  public readonly heapSizeLimit: Gauge;
 
   /**
    * Creates a new SystemMetricsService instance

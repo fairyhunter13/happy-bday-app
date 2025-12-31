@@ -33,6 +33,41 @@ Before spawning each agent, ask:
 3. Does this need deep reasoning I would apply? → **Opus**
 4. Am I choosing Opus "just to be safe"? → Probably **Sonnet**
 
+### ⚠️ MANDATORY: Explicit Model Specification
+
+**ALWAYS specify the model parameter when spawning agents.** Never omit it.
+
+```javascript
+// REQUIRED - Always include model parameter
+Task({
+  description: "Implement feature",
+  prompt: "...",
+  subagent_type: "general-purpose",
+  model: "sonnet"  // ← MANDATORY
+})
+
+// FORBIDDEN - Never omit model parameter
+Task({
+  description: "Implement feature",
+  prompt: "...",
+  subagent_type: "general-purpose"
+  // Missing model = inherits parent (often Opus) = wasted cost
+})
+```
+
+### Model Tracking & Audit
+
+All spawned agents should be trackable. Include in agent prompts:
+- Task complexity justification
+- Why this model was chosen
+- Expected token usage estimate
+
+Example prompt prefix:
+```
+[Model: sonnet | Justification: Standard implementation task | Est: ~5K tokens]
+Your task is to...
+```
+
 ---
 
 ## Project Overview
@@ -159,6 +194,18 @@ Unless you have a specific reason for Opus or Haiku, use Sonnet.
 
 ### 4. Cost Awareness
 Opus is ~15x more expensive than Haiku. Use it when the task genuinely needs it.
+
+### 5. Model Usage Audit Trail
+
+After spawning agents, the coordinator should log:
+```
+## Session Model Usage Summary
+| Task ID | Model | Task Type | Tokens | Cost Est |
+|---------|-------|-----------|--------|----------|
+| a8a2263 | opus  | research  | ~3.5K  | ~$52.50  |
+| a632dd7 | sonnet| implement | ~17K   | ~$51.00  |
+| afaa5f3 | haiku | validate  | ~300   | ~$0.30   |
+```
 
 ---
 

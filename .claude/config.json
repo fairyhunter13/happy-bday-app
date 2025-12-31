@@ -1,5 +1,5 @@
 {
-  "version": "2.0",
+  "version": "1.0",
   "sparc": {
     "enabled": true,
     "modes": [
@@ -32,18 +32,5 @@
       "optimization",
       "maintenance"
     ]
-  },
-  "hive_mind": {
-    "enabled": true,
-    "config_file": ".claude/hive-mind-config.json",
-    "model_selection_mode": "coordinator_reasoning",
-    "model_selection": {
-      "mode": "full_reasoning",
-      "description": "Coordinator (Opus 4.5) decides all model selections using reasoning judgment",
-      "algorithmic_enforcement": false,
-      "coordinator_has_full_control": true,
-      "default_recommendation": "sonnet",
-      "guidance": "See CLAUDE.md for model selection guidelines"
-    }
   }
 }
