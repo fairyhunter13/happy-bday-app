@@ -90,6 +90,12 @@ export async function createTestServer(options: TestServerOptions = {}): Promise
 
   const app = Fastify({
     logger, // Disable logging in tests by default
+    ajv: {
+      customOptions: {
+        // Allow OpenAPI-specific keywords in JSON Schema
+        keywords: ['example'],
+      },
+    },
   });
 
   // Global error handler (same as main app)

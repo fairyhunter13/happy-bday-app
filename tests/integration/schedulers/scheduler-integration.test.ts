@@ -4,43 +4,56 @@
  * Tests the complete flow of schedulers with mocked time
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { SchedulerManager } from '../../../src/schedulers/index.js';
 import { users, messageLogs } from '../../../src/db/schema/index.js';
 import { eq } from 'drizzle-orm';
 import { MessageStatus } from '../../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
-import { PostgresTestContainer, cleanDatabase } from '../../helpers/testcontainers.js';
+import { TestEnvironment, cleanDatabase } from '../../helpers/testcontainers.js';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from '../../../src/db/schema/index.js';
+import { RabbitMQConnection, initializeRabbitMQ } from '../../../src/queue/connection.js';
 
 describe('Scheduler Integration Tests', () => {
-  let pgContainer: PostgresTestContainer;
+  let testEnv: TestEnvironment;
   let manager: SchedulerManager;
   let db: ReturnType<typeof drizzle<typeof schema>>;
 
   beforeAll(async () => {
-    // Start PostgreSQL container
-    pgContainer = new PostgresTestContainer();
-    const { pool } = await pgContainer.start();
+    // Start full test environment with PostgreSQL, RabbitMQ, and Redis
+    testEnv = new TestEnvironment();
+    await testEnv.setup();
 
-    // Set environment variable for the app
-    process.env.DATABASE_URL = `postgres://test:test@${pgContainer.getPool().options.host}:${pgContainer.getPool().options.port}/test_db`;
+    // Set environment variables for the app
+    process.env.DATABASE_URL = testEnv.postgresConnectionString;
+    process.env.RABBITMQ_URL = testEnv.rabbitmqConnectionString;
 
     // Create drizzle instance for tests
-    db = drizzle(pool, { schema });
+    db = drizzle(testEnv.getPostgresPool(), { schema });
 
     // Run migrations
-    await pgContainer.runMigrations('./drizzle');
-  }, 120000);
+    await testEnv.runMigrations('./drizzle');
+
+    // Initialize RabbitMQ connection for tests
+    await initializeRabbitMQ();
+  }, 180000);
 
   afterAll(async () => {
-    if (pgContainer) await pgContainer.stop();
+    // Close RabbitMQ connection first
+    try {
+      const rabbitMQ = RabbitMQConnection.getInstance();
+      await rabbitMQ.close();
+    } catch {
+      // Ignore errors if not connected
+    }
+
+    if (testEnv) await testEnv.teardown();
   });
 
   beforeEach(async () => {
     // Clean database
-    await cleanDatabase(pgContainer.getPool());
+    await cleanDatabase(testEnv.getPostgresPool());
 
     manager = new SchedulerManager();
   });
