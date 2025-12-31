@@ -79,8 +79,7 @@
     "tests/**/*.test.ts",
     "tests/**/*.spec.ts",
     "**/*.test.ts",
-    "**/*.spec.ts",
-    "src/clients/generated/**/*"
+    "**/*.spec.ts"
   ],
   "ts-node": {
     "esm": true,

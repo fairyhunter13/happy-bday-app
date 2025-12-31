@@ -4,6 +4,33 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { users } from '../../src/db/schema/index.js';
 import { logger } from '../helpers/logger';
+import fs from 'fs';
+import path from 'path';
+
+/**
+ * Helper function to run migrations on a database
+ * Note: Chaos tests only need basic schema (users table), not partitioning
+ */
+async function runMigrations(connectionString: string): Promise<void> {
+  const migrationClient = postgres(connectionString, { max: 1 });
+  try {
+    // Read and execute only the users table migration
+    const migrationsDir = path.join(process.cwd(), 'src/db/migrations');
+    const userMigration = path.join(migrationsDir, '0000_create_users_table.sql');
+
+    const sql = fs.readFileSync(userMigration, 'utf-8');
+    // Split by statement-breakpoint and execute each statement
+    const statements = sql.split('--> statement-breakpoint').map(s => s.trim()).filter(s => s);
+    for (const statement of statements) {
+      if (statement) {
+        await migrationClient.unsafe(statement);
+      }
+    }
+    logger.info('Executed migration: 0000_create_users_table.sql');
+  } finally {
+    await migrationClient.end();
+  }
+}
 
 describe('Database Chaos Tests', () => {
   let container: StartedPostgreSqlContainer;
@@ -17,6 +44,7 @@ describe('Database Chaos Tests', () => {
       .start();
 
     connectionString = container.getConnectionUri();
+    await runMigrations(connectionString);
   }, 60000);
 
   afterAll(async () => {
@@ -59,6 +87,9 @@ describe('Database Chaos Tests', () => {
         .start();
 
       connectionString = container.getConnectionUri();
+
+      // Run migrations on the new container
+      await runMigrations(connectionString);
 
       const client = postgres(connectionString, {
         max: 5,
@@ -194,12 +225,11 @@ describe('Database Chaos Tests', () => {
 
       // Generate large dataset
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
-        id: `user-${i}`,
         firstName: `First${i}`,
         lastName: `Last${i}`,
         email: `user${i}@example.com`,
-        dateOfBirth: new Date('1990-01-01'),
-        timezoneOffset: 0,
+        birthdayDate: new Date('1990-01-01'),
+        timezone: 'America/New_York',
       }));
 
       // Insert large dataset (should handle gracefully)
