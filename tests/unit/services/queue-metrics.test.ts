@@ -201,7 +201,10 @@ describe('QueueMetricsInstrumentation', () => {
         'test-routing-key',
         expect.any(Number)
       );
-      expect(metricsService.recordPublisherConfirm).toHaveBeenCalledWith('test-exchange', 'success');
+      expect(metricsService.recordPublisherConfirm).toHaveBeenCalledWith(
+        'test-exchange',
+        'success'
+      );
     });
 
     it('should instrument failed publish', async () => {
@@ -221,7 +224,10 @@ describe('QueueMetricsInstrumentation', () => {
         'test-routing-key',
         expect.any(Number)
       );
-      expect(metricsService.recordPublisherConfirm).toHaveBeenCalledWith('test-exchange', 'failure');
+      expect(metricsService.recordPublisherConfirm).toHaveBeenCalledWith(
+        'test-exchange',
+        'failure'
+      );
     });
 
     it('should track message metadata for latency calculation', async () => {
@@ -348,7 +354,10 @@ describe('QueueMetricsInstrumentation', () => {
       instrumentation.instrumentNack(mockChannel, mockMsg, 'test-queue', true, 'transient_error');
 
       expect(mockChannel.nack).toHaveBeenCalledWith(mockMsg, false, true);
-      expect(metricsService.recordMessageNack).toHaveBeenCalledWith('test-queue', 'transient_error');
+      expect(metricsService.recordMessageNack).toHaveBeenCalledWith(
+        'test-queue',
+        'transient_error'
+      );
       expect(metricsService.recordMessageRedelivery).toHaveBeenCalledWith(
         'test-queue',
         'transient_error'
@@ -362,7 +371,10 @@ describe('QueueMetricsInstrumentation', () => {
       instrumentation.instrumentNack(mockChannel, mockMsg, 'test-queue', false, 'permanent_error');
 
       expect(mockChannel.nack).toHaveBeenCalledWith(mockMsg, false, false);
-      expect(metricsService.recordMessageNack).toHaveBeenCalledWith('test-queue', 'permanent_error');
+      expect(metricsService.recordMessageNack).toHaveBeenCalledWith(
+        'test-queue',
+        'permanent_error'
+      );
       expect(metricsService.recordMessageRedelivery).not.toHaveBeenCalled();
     });
 
@@ -373,7 +385,10 @@ describe('QueueMetricsInstrumentation', () => {
       instrumentation.instrumentReject(mockChannel, mockMsg, 'test-queue', 'max_retries');
 
       expect(mockChannel.nack).toHaveBeenCalledWith(mockMsg, false, false);
-      expect(metricsService.recordMessageNack).toHaveBeenCalledWith('test-queue', 'reject:max_retries');
+      expect(metricsService.recordMessageNack).toHaveBeenCalledWith(
+        'test-queue',
+        'reject:max_retries'
+      );
     });
 
     it('should track retry count on nack with requeue', async () => {

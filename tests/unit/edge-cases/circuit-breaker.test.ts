@@ -334,7 +334,10 @@ describe('Circuit Breaker Edge Cases', () => {
         const total = circuit.failures + circuit.successes;
         const failureRate = circuit.failures / total;
 
-        if (circuit.failures >= circuit.failureThreshold && failureRate >= circuit.failureRateThreshold) {
+        if (
+          circuit.failures >= circuit.failureThreshold &&
+          failureRate >= circuit.failureRateThreshold
+        ) {
           circuit.state = 'OPEN';
         }
       };
@@ -746,7 +749,9 @@ describe('Circuit Breaker Edge Cases', () => {
 
       // Clock skew (current time is before openedAt)
       // When current time is before openedAt, elapsed is negative, so remaining = resetTimeout - (-1000) = 31000
-      expect(calculateTimeRemaining(circuit.openedAt - 1000)).toBeGreaterThanOrEqual(circuit.resetTimeout);
+      expect(calculateTimeRemaining(circuit.openedAt - 1000)).toBeGreaterThanOrEqual(
+        circuit.resetTimeout
+      );
     });
 
     it('should cleanup stale circuit breaker state', () => {
@@ -799,7 +804,7 @@ describe('Circuit Breaker Edge Cases', () => {
       recordStateChange('CLOSED');
 
       // Wait a bit to ensure time passes
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       recordStateChange('OPEN', stateHistory[0]);
       recordStateChange('HALF_OPEN', stateHistory[1]);
