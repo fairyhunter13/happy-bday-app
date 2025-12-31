@@ -312,8 +312,8 @@ export class QueryTimingTracker {
  * @param config - Interceptor configuration
  * @returns Wrapped client with metrics tracking
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function createMetricsWrapper<T extends (...args: any[]) => any>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
+export function createMetricsWrapper<T extends (..._args: any[]) => any>(
   client: T,
   config?: MetricsInterceptorConfig
 ): T {
@@ -370,6 +370,7 @@ export function updateConnectionPoolMetrics(poolStats: {
  * @returns Cleanup function to stop metrics collection
  */
 export function startConnectionPoolMetrics(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   queryClient: any,
   intervalMs: number = 10000
 ): () => void {

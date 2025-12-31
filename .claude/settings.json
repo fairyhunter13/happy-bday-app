@@ -104,28 +104,22 @@
         "hooks": [
           {
             "type": "prompt",
-            "prompt": "Before completing this response, perform a comprehensive validation and documentation maintenance check:\n\n## VALIDATION\n1. **Requirements Alignment**: Did the work align with project requirements in plan/01-requirements/ and project_data/?\n2. **Research Compliance**: Are implementations consistent with research findings in plan/03-research/?\n3. **Target Achievement**: Does current state move toward targets in plan/05-implementation/master-plan.md?\n4. **Gap Status**: Does plan/09-reports/GAP_ANALYSIS_REPORT.md need updating?\n\n## DOCUMENTATION MAINTENANCE (CRITICAL)\n5. **Update Documentation**: If code was modified, update relevant docs in docs/ and plan/ directories:\n   - Update RUNBOOK.md if operational procedures changed\n   - Update METRICS.md if metrics were added/modified\n   - Update GAP_ANALYSIS_REPORT.md with session progress\n   - Update INDEX.md files if new files were added\n   - Update master-plan.md if implementation status changed\n6. **Restructure/Reorganize**: Ensure docs are well-organized, properly formatted, and have consistent structure\n7. **Sync with Current State**: All documentation must accurately reflect the current repository state\n\n## CLEANUP\n8. **Remove Unused**: Identify files that are no longer referenced (except project_data/ which is protected)\n\nIf documentation needs updating based on this session's work, continue to update them. Otherwise allow completion.\n\nReturn JSON: {\"continue\": true/false, \"reason\": \"brief explanation\", \"docs_to_update\": [\"list of doc files if any\"]}",
+            "prompt": "## DYNAMIC VALIDATION HOOK: Project Requirements Compliance\n\nPerform a DYNAMIC validation of plan/ directory files against project_data/ requirements:\n\n### Source Requirements (project_data/Fullstack Backend Developer Assessment Test.docx.txt):\n- TypeScript implementation\n- POST /user and DELETE /user endpoints\n- User fields: firstName, lastName, birthday, location\n- Birthday message at 9am local time via email-service.digitalenvision.com.au\n- Message format: \"Hey, {full_name} it's your birthday\"\n- Handle API errors, timeouts, and recovery for unsent messages\n- Scalability: abstraction for future message types, handle thousands of birthdays\n- Race condition prevention: no duplicate messages\n- BONUS: PUT /user endpoint\n\n### Dynamic Validation Tasks:\n1. **Scan plan/ directory** for all requirement documentation\n2. **Compare each plan file** against the source requirements above\n3. **Identify gaps or inconsistencies** between plans and requirements\n4. **Check implementation status** in src/ directory against plan targets\n5. **Generate specific recommendations** for any misalignments found\n\n### Action Required:\nIf any plan/ files don't properly reflect or fulfill project_data/ requirements:\n- List the specific files that need updating\n- Describe what changes are needed\n- Continue the session to make updates\n\nReturn JSON: {\"continue\": true/false, \"gaps_found\": [], \"files_to_update\": [], \"recommendations\": []}",
+            "timeout": 180
+          },
+          {
+            "type": "prompt",
+            "prompt": "## DYNAMIC DOCUMENTATION MAINTENANCE HOOK\n\nPerform DYNAMIC documentation maintenance based on the current repository state:\n\n### Scope:\n- **docs/ directory**: All documentation files\n- **plan/ directory and subdirectories**: All planning and research files\n\n### Dynamic Maintenance Tasks:\n1. **Scan recent file changes** in src/, tests/, and config files\n2. **Identify documentation gaps** - code changes without corresponding doc updates\n3. **Check INDEX.md files** in each plan/ subdirectory are up-to-date\n4. **Verify cross-references** between docs and plan files\n5. **Ensure consistency** between implementation and documentation\n\n### Files to Always Check:\n- docs/RUNBOOK.md - operational procedures match current implementation\n- docs/METRICS.md - all implemented metrics are documented\n- plan/09-reports/GAP_ANALYSIS_REPORT.md - reflects current implementation status\n- plan/05-implementation/master-plan.md - phase status is accurate\n- All INDEX.md files - list all files in their directories\n\n### Dynamic Update Rules:\n- If src/ files were modified, check if corresponding docs need updates\n- If new features were added, ensure they're documented\n- If tests were added, update testing documentation\n- Restructure and reorganize docs as needed for clarity\n\n### Action Required:\nIf documentation needs updating based on current repository state:\n- List specific files that need updates\n- Describe what updates are needed\n- Continue the session to make updates\n\nReturn JSON: {\"continue\": true/false, \"docs_outdated\": [], \"updates_needed\": [], \"reorganization_needed\": false}",
+            "timeout": 180
+          },
+          {
+            "type": "prompt",
+            "prompt": "## DYNAMIC GAP ANALYSIS HOOK\n\nPerform DYNAMIC gap analysis between current implementation and project targets:\n\n### Analysis Scope:\n1. **Compare src/ implementation** against plan/05-implementation/master-plan.md targets\n2. **Check test coverage** against plan/04-testing/testing-strategy.md goals\n3. **Verify monitoring setup** against plan/07-monitoring/ specifications\n4. **Validate research compliance** - implementations match plan/03-research/ findings\n\n### Key Metrics to Check:\n- Test coverage percentage vs target (>=80%)\n- API endpoints implemented vs planned\n- Monitoring metrics implemented vs documented\n- Database schema matches requirements\n- Queue implementation matches RabbitMQ research\n\n### Gap Report Location:\nplan/09-reports/GAP_ANALYSIS_REPORT.md\n\n### Action Required:\nIf significant gaps are found:\n- Update GAP_ANALYSIS_REPORT.md with current status\n- List high-priority items that need attention\n- Continue session if critical gaps need immediate action\n\nReturn JSON: {\"continue\": true/false, \"completion_percentage\": 0-100, \"critical_gaps\": [], \"report_updated\": false}",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-requirements.sh 2>/dev/null || echo 'Requirements validation skipped'"
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/doc-maintenance.sh 2>/dev/null || echo 'Doc maintenance skipped'"
-          },
-          {
-            "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/cleanup-unused.sh 2>/dev/null || echo 'Cleanup skipped'"
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gap-analysis.sh 2>/dev/null || echo 'Gap analysis skipped'"
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-project-requirements.sh 2>/dev/null || echo 'Project requirements validation skipped'"
           },
           {
             "type": "command",
