@@ -30,6 +30,12 @@ export async function createApp(): Promise<FastifyInstance> {
     requestIdLogLabel: 'requestId',
     disableRequestLogging: false,
     requestIdHeader: 'x-request-id',
+    ajv: {
+      customOptions: {
+        // Allow OpenAPI-specific keywords in JSON Schema
+        keywords: ['example'],
+      },
+    },
   });
 
   // Register security plugins
