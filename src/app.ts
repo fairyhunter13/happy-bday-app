@@ -32,8 +32,8 @@ export async function createApp(): Promise<FastifyInstance> {
     requestIdHeader: 'x-request-id',
     ajv: {
       customOptions: {
-        // Allow OpenAPI-specific keywords in JSON Schema
-        keywords: ['example'],
+        // Disable strict mode to allow OpenAPI-specific keywords like 'example'
+        strict: false,
       },
     },
   });
@@ -233,7 +233,33 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
 
   // Global error handler
   app.setErrorHandler(async (error, request, reply) => {
-    const err = error as Error;
+    const err = error as Error & { validation?: unknown; statusCode?: number };
+
+    // Handle Fastify validation errors (from Ajv schema validation)
+    if (err.validation) {
+      const errorResponse: ErrorResponse = {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: err.message,
+          details: err.validation,
+        },
+        timestamp: new Date().toISOString(),
+        path: request.url,
+      };
+
+      request.log.warn(
+        {
+          error: err.message,
+          validation: err.validation,
+          code: 'VALIDATION_ERROR',
+        },
+        'Validation error occurred'
+      );
+
+      await reply.status(400).send(errorResponse);
+      return;
+    }
+
     const errorResponse: ErrorResponse = {
       error: {
         code: error instanceof ApplicationError ? error.code : 'INTERNAL_SERVER_ERROR',
@@ -244,7 +270,7 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
       path: request.url,
     };
 
-    const statusCode = error instanceof ApplicationError ? error.statusCode : 500;
+    const statusCode = error instanceof ApplicationError ? error.statusCode : err.statusCode || 500;
 
     request.log.error(
       {
