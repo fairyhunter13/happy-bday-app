@@ -11,8 +11,8 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 ## Quick Navigation
 
 ### Start Here
-- **Metrics Overview:** [`METRICS_INDEX.md`](./METRICS_INDEX.md)
-- **Quick Reference:** [`METRICS_QUICK_REFERENCE.md`](./METRICS_QUICK_REFERENCE.md)
+- **Metrics Strategy:** [`metrics-strategy-research.md`](./metrics-strategy-research.md)
+- **Implementation Plan:** [`metrics-implementation-plan.md`](./metrics-implementation-plan.md)
 - **Grafana Dashboards:** [`grafana-dashboards-research.md`](./grafana-dashboards-research.md)
 
 ---
@@ -23,8 +23,6 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 
 | Document | Description | Status |
 |----------|-------------|--------|
-| [`METRICS_INDEX.md`](./METRICS_INDEX.md) | Complete metrics catalog and index | Final |
-| [`METRICS_QUICK_REFERENCE.md`](./METRICS_QUICK_REFERENCE.md) | Quick reference for metrics usage | Final |
 | [`metrics-strategy-research.md`](./metrics-strategy-research.md) | 100% observability blueprint (100+ metrics) | Final |
 | [`metrics-implementation-plan.md`](./metrics-implementation-plan.md) | Implementation roadmap and plan | Final |
 | [`metrics-expansion-plan.md`](./metrics-expansion-plan.md) | Future metrics expansion strategy | Final |
@@ -35,16 +33,21 @@ Comprehensive monitoring strategy including Prometheus metrics, Grafana dashboar
 |----------|-------------|--------|
 | [`grafana-dashboards-research.md`](./grafana-dashboards-research.md) | Dashboard research and specifications | Final |
 | [`grafana-dashboard-specifications.md`](./grafana-dashboard-specifications.md) | Detailed dashboard specifications | Final |
-| [`api-performance-dashboard.json`](./api-performance-dashboard.json) | API performance dashboard definition | Final |
-| [`database-dashboard.json`](./database-dashboard.json) | Database monitoring dashboard | Final |
-| [`infrastructure-dashboard.json`](./infrastructure-dashboard.json) | Infrastructure overview dashboard | Final |
-| [`message-processing-dashboard.json`](./message-processing-dashboard.json) | Message queue processing dashboard | Final |
+
+**Note:** Dashboard JSON files are located in `/grafana/dashboards/` directory:
+- `api-performance.json` - API performance dashboard
+- `database.json` - Database monitoring dashboard
+- `infrastructure.json` - Infrastructure overview dashboard
+- `message-processing.json` - Message queue processing dashboard
+- `security.json` - Security monitoring dashboard
 
 ### Alert Rules
 
 | Document | Description | Status |
 |----------|-------------|--------|
 | [`alert-rules-enhancements.md`](./alert-rules-enhancements.md) | Alert rules and SLO definitions | Final |
+
+**Note:** Alert rule YAML files are located in `/grafana/alerts/` directory.
 
 ---
 
@@ -154,8 +157,8 @@ Application → Prometheus → Grafana
 ## Support
 
 ### Documentation
-- Metrics: [`METRICS_INDEX.md`](./METRICS_INDEX.md)
-- Quick Ref: [`METRICS_QUICK_REFERENCE.md`](./METRICS_QUICK_REFERENCE.md)
+- Metrics Strategy: [`metrics-strategy-research.md`](./metrics-strategy-research.md)
+- Implementation: [`metrics-implementation-plan.md`](./metrics-implementation-plan.md)
 - Dashboards: [`grafana-dashboards-research.md`](./grafana-dashboards-research.md)
 
 ### External Resources

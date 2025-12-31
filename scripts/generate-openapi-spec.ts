@@ -179,7 +179,8 @@ Production-ready API for scheduling birthday and anniversary messages with timez
         },
       ],
       tags: [
-        { name: 'health', description: 'Health check endpoints' },
+        { name: 'health', description: 'Health check endpoints for monitoring and orchestration' },
+        { name: 'metrics', description: 'Prometheus metrics endpoints for observability' },
         { name: 'users', description: 'User management operations' },
         { name: 'messages', description: 'Message log operations' },
         { name: 'scheduler', description: 'Scheduler operations' },
@@ -213,6 +214,58 @@ Production-ready API for scheduling birthday and anniversary messages with timez
       response: {
         200: { $ref: 'HealthResponse#' },
         503: { $ref: 'ErrorResponse#' },
+      },
+    },
+    handler: async () => ({}),
+  });
+
+  app.get('/live', {
+    schema: {
+      tags: ['health'],
+      summary: 'Liveness check',
+      description: 'Kubernetes liveness probe - checks if the service is alive',
+      response: {
+        200: { $ref: 'HealthResponse#' },
+      },
+    },
+    handler: async () => ({}),
+  });
+
+  app.get('/health/schedulers', {
+    schema: {
+      tags: ['health'],
+      summary: 'Scheduler health check',
+      description: 'Check the health status of all CRON schedulers',
+      response: {
+        200: { $ref: 'SuccessResponse#' },
+      },
+    },
+    handler: async () => ({}),
+  });
+
+  // Metrics routes
+  app.get('/metrics', {
+    schema: {
+      tags: ['metrics'],
+      summary: 'Prometheus metrics',
+      description: 'Get Prometheus-formatted metrics for monitoring',
+      response: {
+        200: {
+          type: 'string',
+          description: 'Prometheus text format metrics',
+        },
+      },
+    },
+    handler: async () => ({}),
+  });
+
+  app.get('/metrics/summary', {
+    schema: {
+      tags: ['metrics'],
+      summary: 'Metrics summary',
+      description: 'Get a JSON summary of all metrics for debugging',
+      response: {
+        200: { $ref: 'SuccessResponse#' },
       },
     },
     handler: async () => ({}),

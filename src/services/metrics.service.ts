@@ -148,6 +148,136 @@ export class MetricsService {
   public readonly httpTlsHandshakesTotal: Counter;
 
   // ============================================
+  // API PERFORMANCE METRICS - Counters (10 new metrics)
+  // ============================================
+  /** API errors by endpoint and error code */
+  public readonly apiErrorsTotal: Counter;
+  /** API requests by status code range (2xx, 3xx, 4xx, 5xx) */
+  public readonly apiRequestsByStatusRangeTotal: Counter;
+  /** Slow API requests (exceeding threshold) */
+  public readonly apiSlowRequestsTotal: Counter;
+  /** API request timeouts */
+  public readonly apiTimeoutsTotal: Counter;
+  /** API validation errors */
+  public readonly apiValidationErrorsTotal: Counter;
+  /** API payload parsing errors */
+  public readonly apiPayloadErrorsTotal: Counter;
+  /** API circuit breaker trips */
+  public readonly apiCircuitBreakerTripsTotal: Counter;
+  /** API request retries by client */
+  public readonly apiClientRetriesTotal: Counter;
+  /** API CORS rejections */
+  public readonly apiCorsRejectionsTotal: Counter;
+  /** API content negotiation failures */
+  public readonly apiContentNegotiationFailuresTotal: Counter;
+
+  // ============================================
+  // SCHEDULER METRICS - Counters (15 new metrics)
+  // ============================================
+  /** Scheduler jobs scheduled */
+  public readonly schedulerJobsScheduledTotal: Counter;
+  /** Scheduler jobs executed */
+  public readonly schedulerJobsExecutedTotal: Counter;
+  /** Scheduler job failures */
+  public readonly schedulerJobFailuresTotal: Counter;
+  /** Scheduler job skipped (due to overlap) */
+  public readonly schedulerJobsSkippedTotal: Counter;
+  /** Scheduler job cancellations */
+  public readonly schedulerJobCancellationsTotal: Counter;
+  /** Scheduler job timeouts */
+  public readonly schedulerJobTimeoutsTotal: Counter;
+  /** Scheduler recovery events */
+  public readonly schedulerRecoveryEventsTotal: Counter;
+  /** Scheduler missed executions */
+  public readonly schedulerMissedExecutionsTotal: Counter;
+  /** Scheduler job retries */
+  public readonly schedulerJobRetriesTotal: Counter;
+  /** Scheduler cron parse errors */
+  public readonly schedulerCronParseErrorsTotal: Counter;
+  /** Birthday scan completions */
+  public readonly birthdayScanCompletionsTotal: Counter;
+  /** Birthday scan errors */
+  public readonly birthdayScanErrorsTotal: Counter;
+  /** Timezone processing completions */
+  public readonly timezoneProcessingCompletionsTotal: Counter;
+  /** Scheduled message dispatches */
+  public readonly scheduledMessageDispatchesTotal: Counter;
+  /** Scheduler health check executions */
+  public readonly schedulerHealthChecksTotal: Counter;
+
+  // ============================================
+  // BUSINESS METRICS - Counters Extended (10 new metrics)
+  // ============================================
+  /** User updates by field */
+  public readonly userUpdatesTotal: Counter;
+  /** Messages sent by channel type */
+  public readonly messagesByChannelTotal: Counter;
+  /** Messages sent by priority */
+  public readonly messagesByPriorityTotal: Counter;
+  /** User timezone changes */
+  public readonly userTimezoneChangesTotal: Counter;
+  /** Birthday date updates */
+  public readonly birthdayDateUpdatesTotal: Counter;
+  /** Opt-in events */
+  public readonly userOptInsTotal: Counter;
+  /** Opt-out events */
+  public readonly userOptOutsTotal: Counter;
+  /** Message personalization usage */
+  public readonly messagePersonalizationUsageTotal: Counter;
+  /** Bulk operations performed */
+  public readonly bulkOperationsTotal: Counter;
+  /** Data export requests */
+  public readonly dataExportRequestsTotal: Counter;
+
+  // ============================================
+  // DATABASE OPERATIONS - Counters Extended (10 new metrics)
+  // ============================================
+  /** Database query errors by type */
+  public readonly databaseQueryErrorsTotal: Counter;
+  /** Database connection errors */
+  public readonly databaseConnectionErrorsTotal: Counter;
+  /** Database slow queries */
+  public readonly databaseSlowQueriesTotal: Counter;
+  /** Database prepared statement executions */
+  public readonly databasePreparedStatementsTotal: Counter;
+  /** Database index scans */
+  public readonly databaseIndexScansTotal: Counter;
+  /** Database full table scans */
+  public readonly databaseFullTableScansTotal: Counter;
+  /** Database constraint violations */
+  public readonly databaseConstraintViolationsTotal: Counter;
+  /** Database migration executions */
+  public readonly databaseMigrationsTotal: Counter;
+  /** Database vacuum operations */
+  public readonly databaseVacuumOperationsTotal: Counter;
+  /** Database analyze operations */
+  public readonly databaseAnalyzeOperationsTotal: Counter;
+
+  // ============================================
+  // MESSAGE QUEUE - Counters Extended (10 new metrics)
+  // ============================================
+  /** Dead letter queue message additions */
+  public readonly dlqMessagesAddedTotal: Counter;
+  /** Dead letter queue message processed */
+  public readonly dlqMessagesProcessedTotal: Counter;
+  /** Queue overflow events */
+  public readonly queueOverflowEventsTotal: Counter;
+  /** Message expiration events */
+  public readonly messageExpirationsTotal: Counter;
+  /** Message priority upgrades */
+  public readonly messagePriorityUpgradesTotal: Counter;
+  /** Queue consumer restarts */
+  public readonly queueConsumerRestartsTotal: Counter;
+  /** Message deduplication events */
+  public readonly messageDeduplicationsTotal: Counter;
+  /** Message batching events */
+  public readonly messageBatchingEventsTotal: Counter;
+  /** Queue failover events */
+  public readonly queueFailoverEventsTotal: Counter;
+  /** Message compression events */
+  public readonly messageCompressionEventsTotal: Counter;
+
+  // ============================================
   // GAUGE METRICS (Original - 7 metrics)
   // ============================================
   public readonly queueDepth: Gauge;
@@ -279,6 +409,136 @@ export class MetricsService {
   public readonly systemTotalMemory: Gauge;
 
   // ============================================
+  // API PERFORMANCE METRICS - Gauges (10 new metrics)
+  // ============================================
+  /** Current active API requests */
+  public readonly apiActiveRequests: Gauge;
+  /** API request queue length */
+  public readonly apiRequestQueueLength: Gauge;
+  /** Average API response time (rolling window) */
+  public readonly apiAverageResponseTime: Gauge;
+  /** API error rate percentage (rolling window) */
+  public readonly apiErrorRate: Gauge;
+  /** API requests per second (current) */
+  public readonly apiRequestsPerSecond: Gauge;
+  /** API payload size average */
+  public readonly apiPayloadSizeAverage: Gauge;
+  /** API connection pool utilization */
+  public readonly apiConnectionPoolUtilization: Gauge;
+  /** API rate limit remaining */
+  public readonly apiRateLimitRemaining: Gauge;
+  /** API circuit breaker state (0=closed, 1=open, 0.5=half-open) */
+  public readonly apiCircuitBreakerState: Gauge;
+  /** API health score (0-100) */
+  public readonly apiHealthScore: Gauge;
+
+  // ============================================
+  // SCHEDULER METRICS - Gauges (15 new metrics)
+  // ============================================
+  /** Next scheduled execution timestamp */
+  public readonly schedulerNextExecutionTime: Gauge;
+  /** Scheduler job lag (seconds behind schedule) */
+  public readonly schedulerJobLag: Gauge;
+  /** Active scheduled jobs */
+  public readonly schedulerActiveJobs: Gauge;
+  /** Pending scheduled jobs */
+  public readonly schedulerPendingJobs: Gauge;
+  /** Running scheduled jobs */
+  public readonly schedulerRunningJobs: Gauge;
+  /** Scheduler thread pool size */
+  public readonly schedulerThreadPoolSize: Gauge;
+  /** Scheduler thread pool active */
+  public readonly schedulerThreadPoolActive: Gauge;
+  /** Scheduler lock status */
+  public readonly schedulerLockStatus: Gauge;
+  /** Birthdays remaining to process today */
+  public readonly birthdaysRemainingToday: Gauge;
+  /** Scheduler backlog size */
+  public readonly schedulerBacklogSize: Gauge;
+  /** Current timezone being processed */
+  public readonly schedulerCurrentTimezoneOffset: Gauge;
+  /** Scheduler last successful run timestamp */
+  public readonly schedulerLastSuccessfulRun: Gauge;
+  /** Scheduler consecutive failures */
+  public readonly schedulerConsecutiveFailures: Gauge;
+  /** Scheduler execution window remaining */
+  public readonly schedulerExecutionWindowRemaining: Gauge;
+  /** Scheduler resource utilization */
+  public readonly schedulerResourceUtilization: Gauge;
+
+  // ============================================
+  // DATABASE OPERATIONS - Gauges Extended (10 new metrics)
+  // ============================================
+  /** Database connection pool size */
+  public readonly databasePoolSize: Gauge;
+  /** Database connection pool idle connections */
+  public readonly databasePoolIdleConnections: Gauge;
+  /** Database connection pool waiting requests */
+  public readonly databasePoolWaitingRequests: Gauge;
+  /** Database query execution queue size */
+  public readonly databaseQueryExecutionQueue: Gauge;
+  /** Database connection latency */
+  public readonly databaseConnectionLatency: Gauge;
+  /** Database transaction in progress */
+  public readonly databaseTransactionsInProgress: Gauge;
+  /** Database replication slots active */
+  public readonly databaseReplicationSlotsActive: Gauge;
+  /** Database WAL size */
+  public readonly databaseWalSize: Gauge;
+  /** Database cache size */
+  public readonly databaseCacheSize: Gauge;
+  /** Database temp files size */
+  public readonly databaseTempFilesSize: Gauge;
+
+  // ============================================
+  // MESSAGE QUEUE - Gauges Extended (10 new metrics)
+  // ============================================
+  /** Queue messages ready */
+  public readonly queueMessagesReady: Gauge;
+  /** Queue messages unacked */
+  public readonly queueMessagesUnacked: Gauge;
+  /** Queue message publish rate */
+  public readonly queuePublishRate: Gauge;
+  /** Queue message delivery rate */
+  public readonly queueDeliveryRate: Gauge;
+  /** Queue consumer utilization */
+  public readonly queueConsumerUtilization: Gauge;
+  /** DLQ message age (oldest) */
+  public readonly dlqOldestMessageAge: Gauge;
+  /** Queue connection count */
+  public readonly queueConnectionCount: Gauge;
+  /** Queue message size average */
+  public readonly queueMessageSizeAverage: Gauge;
+  /** Queue high watermark */
+  public readonly queueHighWatermark: Gauge;
+  /** Queue redelivery backoff */
+  public readonly queueRedeliveryBackoff: Gauge;
+
+  // ============================================
+  // BUSINESS METRICS - Gauges Extended (10 new metrics)
+  // ============================================
+  /** Total registered users */
+  public readonly totalRegisteredUsers: Gauge;
+  /** Users by timezone count */
+  public readonly usersByTimezone: Gauge;
+  /** Messages in send queue */
+  public readonly messagesInSendQueue: Gauge;
+  /** Average message delivery time */
+  public readonly averageMessageDeliveryTime: Gauge;
+  /** Daily active users */
+  public readonly dailyActiveUsers: Gauge;
+  /** Weekly active users */
+  public readonly weeklyActiveUsers: Gauge;
+  /** Monthly active users */
+  public readonly monthlyActiveUsers: Gauge;
+  /** Message delivery success rate */
+  public readonly messageDeliverySuccessRate: Gauge;
+  /** User engagement score */
+  public readonly userEngagementScore: Gauge;
+  /** Platform health score */
+  public readonly platformHealthScore: Gauge;
+
+  // ============================================
   // HISTOGRAM METRICS (Original - 6 metrics)
   // ============================================
   public readonly messageDeliveryDuration: Histogram;
@@ -360,6 +620,62 @@ export class MetricsService {
   public readonly queueLatencyQuantiles: Summary;
   /** HTTP client latency quantiles */
   public readonly httpClientLatencyQuantiles: Summary;
+
+  // ============================================
+  // API PERFORMANCE - Histograms (5 new metrics)
+  // ============================================
+  /** API endpoint latency by route */
+  public readonly apiEndpointLatency: Histogram;
+  /** API request body size */
+  public readonly apiRequestBodySize: Histogram;
+  /** API response body size */
+  public readonly apiResponseBodySize: Histogram;
+  /** API authentication duration */
+  public readonly apiAuthDuration: Histogram;
+  /** API middleware duration */
+  public readonly apiMiddlewareDuration: Histogram;
+
+  // ============================================
+  // SCHEDULER - Histograms (5 new metrics)
+  // ============================================
+  /** Scheduler job duration by type */
+  public readonly schedulerJobDuration: Histogram;
+  /** Scheduler job wait time */
+  public readonly schedulerJobWaitTime: Histogram;
+  /** Birthday scan duration */
+  public readonly birthdayScanDuration: Histogram;
+  /** Timezone batch processing duration */
+  public readonly timezoneBatchDuration: Histogram;
+  /** Scheduler lock acquisition time */
+  public readonly schedulerLockAcquisitionTime: Histogram;
+
+  // ============================================
+  // BUSINESS - Histograms (5 new metrics)
+  // ============================================
+  /** User registration duration */
+  public readonly userRegistrationDuration: Histogram;
+  /** Message personalization duration */
+  public readonly messagePersonalizationDuration: Histogram;
+  /** Bulk operation duration */
+  public readonly bulkOperationDuration: Histogram;
+  /** User data export duration */
+  public readonly userDataExportDuration: Histogram;
+  /** Template rendering duration */
+  public readonly templateRenderingDuration: Histogram;
+
+  // ============================================
+  // SUMMARY METRICS - Extended (5 new metrics)
+  // ============================================
+  /** Scheduler execution quantiles */
+  public readonly schedulerExecutionQuantiles: Summary;
+  /** Message queue latency quantiles */
+  public readonly messageQueueLatencyQuantiles: Summary;
+  /** Database connection acquisition quantiles */
+  public readonly databaseConnectionQuantiles: Summary;
+  /** Business operation duration quantiles */
+  public readonly businessOperationQuantiles: Summary;
+  /** End-to-end message delivery quantiles */
+  public readonly endToEndDeliveryQuantiles: Summary;
 
   constructor() {
     // Create registry
@@ -744,6 +1060,406 @@ export class MetricsService {
       name: 'birthday_scheduler_http_tls_handshakes_total',
       help: 'HTTP TLS handshake events',
       labelNames: ['host', 'tls_version'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // API PERFORMANCE METRICS - Counters Initialization
+    // ============================================
+    this.apiErrorsTotal = new Counter({
+      name: 'birthday_scheduler_api_errors_total',
+      help: 'API errors by endpoint and error code',
+      labelNames: ['endpoint', 'error_code', 'method'],
+      registers: [this.registry],
+    });
+
+    this.apiRequestsByStatusRangeTotal = new Counter({
+      name: 'birthday_scheduler_api_requests_by_status_range_total',
+      help: 'API requests by status code range (2xx, 3xx, 4xx, 5xx)',
+      labelNames: ['status_range', 'method', 'endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiSlowRequestsTotal = new Counter({
+      name: 'birthday_scheduler_api_slow_requests_total',
+      help: 'Slow API requests exceeding threshold',
+      labelNames: ['endpoint', 'method', 'threshold_ms'],
+      registers: [this.registry],
+    });
+
+    this.apiTimeoutsTotal = new Counter({
+      name: 'birthday_scheduler_api_timeouts_total',
+      help: 'API request timeouts',
+      labelNames: ['endpoint', 'method'],
+      registers: [this.registry],
+    });
+
+    this.apiValidationErrorsTotal = new Counter({
+      name: 'birthday_scheduler_api_validation_errors_total',
+      help: 'API validation errors',
+      labelNames: ['endpoint', 'field', 'error_type'],
+      registers: [this.registry],
+    });
+
+    this.apiPayloadErrorsTotal = new Counter({
+      name: 'birthday_scheduler_api_payload_errors_total',
+      help: 'API payload parsing errors',
+      labelNames: ['endpoint', 'error_type'],
+      registers: [this.registry],
+    });
+
+    this.apiCircuitBreakerTripsTotal = new Counter({
+      name: 'birthday_scheduler_api_circuit_breaker_trips_total',
+      help: 'API circuit breaker trip events',
+      labelNames: ['service', 'endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiClientRetriesTotal = new Counter({
+      name: 'birthday_scheduler_api_client_retries_total',
+      help: 'API client retry attempts',
+      labelNames: ['endpoint', 'retry_count'],
+      registers: [this.registry],
+    });
+
+    this.apiCorsRejectionsTotal = new Counter({
+      name: 'birthday_scheduler_api_cors_rejections_total',
+      help: 'API CORS rejection events',
+      labelNames: ['origin', 'endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiContentNegotiationFailuresTotal = new Counter({
+      name: 'birthday_scheduler_api_content_negotiation_failures_total',
+      help: 'API content negotiation failures',
+      labelNames: ['endpoint', 'content_type'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // SCHEDULER METRICS - Counters Initialization
+    // ============================================
+    this.schedulerJobsScheduledTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_jobs_scheduled_total',
+      help: 'Scheduler jobs scheduled',
+      labelNames: ['job_type', 'priority'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobsExecutedTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_jobs_executed_total',
+      help: 'Scheduler jobs executed',
+      labelNames: ['job_type', 'status'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobFailuresTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_job_failures_total',
+      help: 'Scheduler job failures',
+      labelNames: ['job_type', 'failure_reason'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobsSkippedTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_jobs_skipped_total',
+      help: 'Scheduler jobs skipped due to overlap',
+      labelNames: ['job_type', 'skip_reason'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobCancellationsTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_job_cancellations_total',
+      help: 'Scheduler job cancellations',
+      labelNames: ['job_type', 'cancellation_reason'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobTimeoutsTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_job_timeouts_total',
+      help: 'Scheduler job timeouts',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerRecoveryEventsTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_recovery_events_total',
+      help: 'Scheduler recovery events',
+      labelNames: ['recovery_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerMissedExecutionsTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_missed_executions_total',
+      help: 'Scheduler missed executions',
+      labelNames: ['job_type', 'miss_reason'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobRetriesTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_job_retries_total',
+      help: 'Scheduler job retries',
+      labelNames: ['job_type', 'retry_count'],
+      registers: [this.registry],
+    });
+
+    this.schedulerCronParseErrorsTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_cron_parse_errors_total',
+      help: 'Scheduler cron expression parse errors',
+      labelNames: ['expression'],
+      registers: [this.registry],
+    });
+
+    this.birthdayScanCompletionsTotal = new Counter({
+      name: 'birthday_scheduler_birthday_scan_completions_total',
+      help: 'Birthday scan completions',
+      labelNames: ['timezone', 'status'],
+      registers: [this.registry],
+    });
+
+    this.birthdayScanErrorsTotal = new Counter({
+      name: 'birthday_scheduler_birthday_scan_errors_total',
+      help: 'Birthday scan errors',
+      labelNames: ['timezone', 'error_type'],
+      registers: [this.registry],
+    });
+
+    this.timezoneProcessingCompletionsTotal = new Counter({
+      name: 'birthday_scheduler_timezone_processing_completions_total',
+      help: 'Timezone processing completions',
+      labelNames: ['timezone', 'status'],
+      registers: [this.registry],
+    });
+
+    this.scheduledMessageDispatchesTotal = new Counter({
+      name: 'birthday_scheduler_scheduled_message_dispatches_total',
+      help: 'Scheduled message dispatches',
+      labelNames: ['message_type', 'channel'],
+      registers: [this.registry],
+    });
+
+    this.schedulerHealthChecksTotal = new Counter({
+      name: 'birthday_scheduler_scheduler_health_checks_total',
+      help: 'Scheduler health check executions',
+      labelNames: ['status'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // BUSINESS METRICS - Counters Extended Initialization
+    // ============================================
+    this.userUpdatesTotal = new Counter({
+      name: 'birthday_scheduler_user_updates_total',
+      help: 'User updates by field',
+      labelNames: ['field', 'source'],
+      registers: [this.registry],
+    });
+
+    this.messagesByChannelTotal = new Counter({
+      name: 'birthday_scheduler_messages_by_channel_total',
+      help: 'Messages sent by channel type',
+      labelNames: ['channel', 'message_type'],
+      registers: [this.registry],
+    });
+
+    this.messagesByPriorityTotal = new Counter({
+      name: 'birthday_scheduler_messages_by_priority_total',
+      help: 'Messages sent by priority',
+      labelNames: ['priority', 'message_type'],
+      registers: [this.registry],
+    });
+
+    this.userTimezoneChangesTotal = new Counter({
+      name: 'birthday_scheduler_user_timezone_changes_total',
+      help: 'User timezone changes',
+      labelNames: ['from_timezone', 'to_timezone'],
+      registers: [this.registry],
+    });
+
+    this.birthdayDateUpdatesTotal = new Counter({
+      name: 'birthday_scheduler_birthday_date_updates_total',
+      help: 'Birthday date updates',
+      labelNames: ['source'],
+      registers: [this.registry],
+    });
+
+    this.userOptInsTotal = new Counter({
+      name: 'birthday_scheduler_user_opt_ins_total',
+      help: 'User opt-in events',
+      labelNames: ['channel', 'source'],
+      registers: [this.registry],
+    });
+
+    this.userOptOutsTotal = new Counter({
+      name: 'birthday_scheduler_user_opt_outs_total',
+      help: 'User opt-out events',
+      labelNames: ['channel', 'reason'],
+      registers: [this.registry],
+    });
+
+    this.messagePersonalizationUsageTotal = new Counter({
+      name: 'birthday_scheduler_message_personalization_usage_total',
+      help: 'Message personalization usage',
+      labelNames: ['personalization_type'],
+      registers: [this.registry],
+    });
+
+    this.bulkOperationsTotal = new Counter({
+      name: 'birthday_scheduler_bulk_operations_total',
+      help: 'Bulk operations performed',
+      labelNames: ['operation_type', 'status'],
+      registers: [this.registry],
+    });
+
+    this.dataExportRequestsTotal = new Counter({
+      name: 'birthday_scheduler_data_export_requests_total',
+      help: 'Data export requests',
+      labelNames: ['export_type', 'format'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // DATABASE OPERATIONS - Counters Extended Initialization
+    // ============================================
+    this.databaseQueryErrorsTotal = new Counter({
+      name: 'birthday_scheduler_database_query_errors_total',
+      help: 'Database query errors by type',
+      labelNames: ['query_type', 'error_code'],
+      registers: [this.registry],
+    });
+
+    this.databaseConnectionErrorsTotal = new Counter({
+      name: 'birthday_scheduler_database_connection_errors_total',
+      help: 'Database connection errors',
+      labelNames: ['error_type', 'pool_name'],
+      registers: [this.registry],
+    });
+
+    this.databaseSlowQueriesTotal = new Counter({
+      name: 'birthday_scheduler_database_slow_queries_total',
+      help: 'Database slow queries',
+      labelNames: ['query_type', 'table', 'threshold_ms'],
+      registers: [this.registry],
+    });
+
+    this.databasePreparedStatementsTotal = new Counter({
+      name: 'birthday_scheduler_database_prepared_statements_total',
+      help: 'Database prepared statement executions',
+      labelNames: ['statement_name', 'status'],
+      registers: [this.registry],
+    });
+
+    this.databaseIndexScansTotal = new Counter({
+      name: 'birthday_scheduler_database_index_scans_total',
+      help: 'Database index scans',
+      labelNames: ['table', 'index_name'],
+      registers: [this.registry],
+    });
+
+    this.databaseFullTableScansTotal = new Counter({
+      name: 'birthday_scheduler_database_full_table_scans_total',
+      help: 'Database full table scans',
+      labelNames: ['table'],
+      registers: [this.registry],
+    });
+
+    this.databaseConstraintViolationsTotal = new Counter({
+      name: 'birthday_scheduler_database_constraint_violations_total',
+      help: 'Database constraint violations',
+      labelNames: ['table', 'constraint_type'],
+      registers: [this.registry],
+    });
+
+    this.databaseMigrationsTotal = new Counter({
+      name: 'birthday_scheduler_database_migrations_total',
+      help: 'Database migration executions',
+      labelNames: ['migration_name', 'status'],
+      registers: [this.registry],
+    });
+
+    this.databaseVacuumOperationsTotal = new Counter({
+      name: 'birthday_scheduler_database_vacuum_operations_total',
+      help: 'Database vacuum operations',
+      labelNames: ['table', 'vacuum_type'],
+      registers: [this.registry],
+    });
+
+    this.databaseAnalyzeOperationsTotal = new Counter({
+      name: 'birthday_scheduler_database_analyze_operations_total',
+      help: 'Database analyze operations',
+      labelNames: ['table'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // MESSAGE QUEUE - Counters Extended Initialization
+    // ============================================
+    this.dlqMessagesAddedTotal = new Counter({
+      name: 'birthday_scheduler_dlq_messages_added_total',
+      help: 'Dead letter queue message additions',
+      labelNames: ['queue_name', 'reason'],
+      registers: [this.registry],
+    });
+
+    this.dlqMessagesProcessedTotal = new Counter({
+      name: 'birthday_scheduler_dlq_messages_processed_total',
+      help: 'Dead letter queue messages processed',
+      labelNames: ['queue_name', 'action'],
+      registers: [this.registry],
+    });
+
+    this.queueOverflowEventsTotal = new Counter({
+      name: 'birthday_scheduler_queue_overflow_events_total',
+      help: 'Queue overflow events',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.messageExpirationsTotal = new Counter({
+      name: 'birthday_scheduler_message_expirations_total',
+      help: 'Message expiration events',
+      labelNames: ['queue_name', 'message_type'],
+      registers: [this.registry],
+    });
+
+    this.messagePriorityUpgradesTotal = new Counter({
+      name: 'birthday_scheduler_message_priority_upgrades_total',
+      help: 'Message priority upgrade events',
+      labelNames: ['queue_name', 'from_priority', 'to_priority'],
+      registers: [this.registry],
+    });
+
+    this.queueConsumerRestartsTotal = new Counter({
+      name: 'birthday_scheduler_queue_consumer_restarts_total',
+      help: 'Queue consumer restart events',
+      labelNames: ['queue_name', 'reason'],
+      registers: [this.registry],
+    });
+
+    this.messageDeduplicationsTotal = new Counter({
+      name: 'birthday_scheduler_message_deduplications_total',
+      help: 'Message deduplication events',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.messageBatchingEventsTotal = new Counter({
+      name: 'birthday_scheduler_message_batching_events_total',
+      help: 'Message batching events',
+      labelNames: ['queue_name', 'batch_size'],
+      registers: [this.registry],
+    });
+
+    this.queueFailoverEventsTotal = new Counter({
+      name: 'birthday_scheduler_queue_failover_events_total',
+      help: 'Queue failover events',
+      labelNames: ['from_queue', 'to_queue'],
+      registers: [this.registry],
+    });
+
+    this.messageCompressionEventsTotal = new Counter({
+      name: 'birthday_scheduler_message_compression_events_total',
+      help: 'Message compression events',
+      labelNames: ['queue_name', 'compression_type'],
       registers: [this.registry],
     });
 
@@ -1149,6 +1865,389 @@ export class MetricsService {
       registers: [this.registry],
     });
 
+    // ============================================
+    // API PERFORMANCE METRICS - Gauges Initialization
+    // ============================================
+    this.apiActiveRequests = new Gauge({
+      name: 'birthday_scheduler_api_active_requests',
+      help: 'Current active API requests',
+      labelNames: ['endpoint', 'method'],
+      registers: [this.registry],
+    });
+
+    this.apiRequestQueueLength = new Gauge({
+      name: 'birthday_scheduler_api_request_queue_length',
+      help: 'API request queue length',
+      registers: [this.registry],
+    });
+
+    this.apiAverageResponseTime = new Gauge({
+      name: 'birthday_scheduler_api_average_response_time',
+      help: 'Average API response time (rolling window) in milliseconds',
+      labelNames: ['endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiErrorRate = new Gauge({
+      name: 'birthday_scheduler_api_error_rate',
+      help: 'API error rate percentage (rolling window)',
+      labelNames: ['endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiRequestsPerSecond = new Gauge({
+      name: 'birthday_scheduler_api_requests_per_second',
+      help: 'Current API requests per second',
+      labelNames: ['endpoint'],
+      registers: [this.registry],
+    });
+
+    this.apiPayloadSizeAverage = new Gauge({
+      name: 'birthday_scheduler_api_payload_size_average',
+      help: 'Average API payload size in bytes',
+      labelNames: ['endpoint', 'direction'],
+      registers: [this.registry],
+    });
+
+    this.apiConnectionPoolUtilization = new Gauge({
+      name: 'birthday_scheduler_api_connection_pool_utilization',
+      help: 'API connection pool utilization percentage',
+      registers: [this.registry],
+    });
+
+    this.apiRateLimitRemaining = new Gauge({
+      name: 'birthday_scheduler_api_rate_limit_remaining',
+      help: 'API rate limit remaining',
+      labelNames: ['endpoint', 'client_id'],
+      registers: [this.registry],
+    });
+
+    this.apiCircuitBreakerState = new Gauge({
+      name: 'birthday_scheduler_api_circuit_breaker_state',
+      help: 'API circuit breaker state (0=closed, 1=open, 0.5=half-open)',
+      labelNames: ['service'],
+      registers: [this.registry],
+    });
+
+    this.apiHealthScore = new Gauge({
+      name: 'birthday_scheduler_api_health_score',
+      help: 'API health score (0-100)',
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // SCHEDULER METRICS - Gauges Initialization
+    // ============================================
+    this.schedulerNextExecutionTime = new Gauge({
+      name: 'birthday_scheduler_scheduler_next_execution_time',
+      help: 'Next scheduled execution timestamp',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobLag = new Gauge({
+      name: 'birthday_scheduler_scheduler_job_lag',
+      help: 'Scheduler job lag in seconds behind schedule',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerActiveJobs = new Gauge({
+      name: 'birthday_scheduler_scheduler_active_jobs',
+      help: 'Active scheduled jobs count',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerPendingJobs = new Gauge({
+      name: 'birthday_scheduler_scheduler_pending_jobs',
+      help: 'Pending scheduled jobs count',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerRunningJobs = new Gauge({
+      name: 'birthday_scheduler_scheduler_running_jobs',
+      help: 'Currently running scheduled jobs count',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerThreadPoolSize = new Gauge({
+      name: 'birthday_scheduler_scheduler_thread_pool_size',
+      help: 'Scheduler thread pool size',
+      registers: [this.registry],
+    });
+
+    this.schedulerThreadPoolActive = new Gauge({
+      name: 'birthday_scheduler_scheduler_thread_pool_active',
+      help: 'Scheduler active threads count',
+      registers: [this.registry],
+    });
+
+    this.schedulerLockStatus = new Gauge({
+      name: 'birthday_scheduler_scheduler_lock_status',
+      help: 'Scheduler lock status (1=locked, 0=unlocked)',
+      labelNames: ['lock_name'],
+      registers: [this.registry],
+    });
+
+    this.birthdaysRemainingToday = new Gauge({
+      name: 'birthday_scheduler_birthdays_remaining_today',
+      help: 'Birthdays remaining to process today',
+      labelNames: ['timezone'],
+      registers: [this.registry],
+    });
+
+    this.schedulerBacklogSize = new Gauge({
+      name: 'birthday_scheduler_scheduler_backlog_size',
+      help: 'Scheduler backlog size',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerCurrentTimezoneOffset = new Gauge({
+      name: 'birthday_scheduler_scheduler_current_timezone_offset',
+      help: 'Current timezone offset being processed',
+      registers: [this.registry],
+    });
+
+    this.schedulerLastSuccessfulRun = new Gauge({
+      name: 'birthday_scheduler_scheduler_last_successful_run',
+      help: 'Scheduler last successful run timestamp',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerConsecutiveFailures = new Gauge({
+      name: 'birthday_scheduler_scheduler_consecutive_failures',
+      help: 'Scheduler consecutive failures count',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerExecutionWindowRemaining = new Gauge({
+      name: 'birthday_scheduler_scheduler_execution_window_remaining',
+      help: 'Scheduler execution window remaining in seconds',
+      labelNames: ['job_type'],
+      registers: [this.registry],
+    });
+
+    this.schedulerResourceUtilization = new Gauge({
+      name: 'birthday_scheduler_scheduler_resource_utilization',
+      help: 'Scheduler resource utilization percentage',
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // DATABASE OPERATIONS - Gauges Extended Initialization
+    // ============================================
+    this.databasePoolSize = new Gauge({
+      name: 'birthday_scheduler_database_pool_size',
+      help: 'Database connection pool size',
+      labelNames: ['pool_name'],
+      registers: [this.registry],
+    });
+
+    this.databasePoolIdleConnections = new Gauge({
+      name: 'birthday_scheduler_database_pool_idle_connections',
+      help: 'Database connection pool idle connections',
+      labelNames: ['pool_name'],
+      registers: [this.registry],
+    });
+
+    this.databasePoolWaitingRequests = new Gauge({
+      name: 'birthday_scheduler_database_pool_waiting_requests',
+      help: 'Database connection pool waiting requests',
+      labelNames: ['pool_name'],
+      registers: [this.registry],
+    });
+
+    this.databaseQueryExecutionQueue = new Gauge({
+      name: 'birthday_scheduler_database_query_execution_queue',
+      help: 'Database query execution queue size',
+      registers: [this.registry],
+    });
+
+    this.databaseConnectionLatency = new Gauge({
+      name: 'birthday_scheduler_database_connection_latency',
+      help: 'Database connection latency in milliseconds',
+      labelNames: ['pool_name'],
+      registers: [this.registry],
+    });
+
+    this.databaseTransactionsInProgress = new Gauge({
+      name: 'birthday_scheduler_database_transactions_in_progress',
+      help: 'Database transactions currently in progress',
+      labelNames: ['transaction_type'],
+      registers: [this.registry],
+    });
+
+    this.databaseReplicationSlotsActive = new Gauge({
+      name: 'birthday_scheduler_database_replication_slots_active',
+      help: 'Database active replication slots',
+      registers: [this.registry],
+    });
+
+    this.databaseWalSize = new Gauge({
+      name: 'birthday_scheduler_database_wal_size',
+      help: 'Database WAL size in bytes',
+      registers: [this.registry],
+    });
+
+    this.databaseCacheSize = new Gauge({
+      name: 'birthday_scheduler_database_cache_size',
+      help: 'Database cache size in bytes',
+      labelNames: ['cache_type'],
+      registers: [this.registry],
+    });
+
+    this.databaseTempFilesSize = new Gauge({
+      name: 'birthday_scheduler_database_temp_files_size',
+      help: 'Database temporary files size in bytes',
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // MESSAGE QUEUE - Gauges Extended Initialization
+    // ============================================
+    this.queueMessagesReady = new Gauge({
+      name: 'birthday_scheduler_queue_messages_ready',
+      help: 'Queue messages ready for consumption',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueMessagesUnacked = new Gauge({
+      name: 'birthday_scheduler_queue_messages_unacked',
+      help: 'Queue messages currently unacknowledged',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queuePublishRate = new Gauge({
+      name: 'birthday_scheduler_queue_publish_rate',
+      help: 'Queue message publish rate per second',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueDeliveryRate = new Gauge({
+      name: 'birthday_scheduler_queue_delivery_rate',
+      help: 'Queue message delivery rate per second',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueConsumerUtilization = new Gauge({
+      name: 'birthday_scheduler_queue_consumer_utilization',
+      help: 'Queue consumer utilization percentage',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.dlqOldestMessageAge = new Gauge({
+      name: 'birthday_scheduler_dlq_oldest_message_age',
+      help: 'DLQ oldest message age in seconds',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueConnectionCount = new Gauge({
+      name: 'birthday_scheduler_queue_connection_count',
+      help: 'Queue connection count',
+      registers: [this.registry],
+    });
+
+    this.queueMessageSizeAverage = new Gauge({
+      name: 'birthday_scheduler_queue_message_size_average',
+      help: 'Queue average message size in bytes',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueHighWatermark = new Gauge({
+      name: 'birthday_scheduler_queue_high_watermark',
+      help: 'Queue high watermark (max messages seen)',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    this.queueRedeliveryBackoff = new Gauge({
+      name: 'birthday_scheduler_queue_redelivery_backoff',
+      help: 'Queue current redelivery backoff in seconds',
+      labelNames: ['queue_name'],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // BUSINESS METRICS - Gauges Extended Initialization
+    // ============================================
+    this.totalRegisteredUsers = new Gauge({
+      name: 'birthday_scheduler_total_registered_users',
+      help: 'Total registered users',
+      registers: [this.registry],
+    });
+
+    this.usersByTimezone = new Gauge({
+      name: 'birthday_scheduler_users_by_timezone',
+      help: 'Users count by timezone',
+      labelNames: ['timezone'],
+      registers: [this.registry],
+    });
+
+    this.messagesInSendQueue = new Gauge({
+      name: 'birthday_scheduler_messages_in_send_queue',
+      help: 'Messages currently in send queue',
+      labelNames: ['message_type'],
+      registers: [this.registry],
+    });
+
+    this.averageMessageDeliveryTime = new Gauge({
+      name: 'birthday_scheduler_average_message_delivery_time',
+      help: 'Average message delivery time in seconds',
+      labelNames: ['message_type'],
+      registers: [this.registry],
+    });
+
+    this.dailyActiveUsers = new Gauge({
+      name: 'birthday_scheduler_daily_active_users',
+      help: 'Daily active users count',
+      registers: [this.registry],
+    });
+
+    this.weeklyActiveUsers = new Gauge({
+      name: 'birthday_scheduler_weekly_active_users',
+      help: 'Weekly active users count',
+      registers: [this.registry],
+    });
+
+    this.monthlyActiveUsers = new Gauge({
+      name: 'birthday_scheduler_monthly_active_users',
+      help: 'Monthly active users count',
+      registers: [this.registry],
+    });
+
+    this.messageDeliverySuccessRate = new Gauge({
+      name: 'birthday_scheduler_message_delivery_success_rate',
+      help: 'Message delivery success rate percentage',
+      labelNames: ['message_type'],
+      registers: [this.registry],
+    });
+
+    this.userEngagementScore = new Gauge({
+      name: 'birthday_scheduler_user_engagement_score',
+      help: 'User engagement score (0-100)',
+      labelNames: ['segment'],
+      registers: [this.registry],
+    });
+
+    this.platformHealthScore = new Gauge({
+      name: 'birthday_scheduler_platform_health_score',
+      help: 'Platform health score (0-100)',
+      registers: [this.registry],
+    });
+
     // Initialize Histogram metrics
     this.messageDeliveryDuration = new Histogram({
       name: 'birthday_scheduler_message_delivery_duration_seconds',
@@ -1370,6 +2469,135 @@ export class MetricsService {
       registers: [this.registry],
     });
 
+    // ============================================
+    // API PERFORMANCE - Histograms Initialization
+    // ============================================
+    this.apiEndpointLatency = new Histogram({
+      name: 'birthday_scheduler_api_endpoint_latency_seconds',
+      help: 'API endpoint latency by route in seconds',
+      labelNames: ['endpoint', 'method', 'status'],
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+      registers: [this.registry],
+    });
+
+    this.apiRequestBodySize = new Histogram({
+      name: 'birthday_scheduler_api_request_body_size_bytes',
+      help: 'API request body size in bytes',
+      labelNames: ['endpoint', 'method'],
+      buckets: [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000],
+      registers: [this.registry],
+    });
+
+    this.apiResponseBodySize = new Histogram({
+      name: 'birthday_scheduler_api_response_body_size_bytes',
+      help: 'API response body size in bytes',
+      labelNames: ['endpoint', 'method', 'status'],
+      buckets: [100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000],
+      registers: [this.registry],
+    });
+
+    this.apiAuthDuration = new Histogram({
+      name: 'birthday_scheduler_api_auth_duration_seconds',
+      help: 'API authentication duration in seconds',
+      labelNames: ['auth_type', 'status'],
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1],
+      registers: [this.registry],
+    });
+
+    this.apiMiddlewareDuration = new Histogram({
+      name: 'birthday_scheduler_api_middleware_duration_seconds',
+      help: 'API middleware execution duration in seconds',
+      labelNames: ['middleware_name'],
+      buckets: [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // SCHEDULER - Histograms Initialization
+    // ============================================
+    this.schedulerJobDuration = new Histogram({
+      name: 'birthday_scheduler_scheduler_job_duration_seconds',
+      help: 'Scheduler job duration by type in seconds',
+      labelNames: ['job_type', 'status'],
+      buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120, 300],
+      registers: [this.registry],
+    });
+
+    this.schedulerJobWaitTime = new Histogram({
+      name: 'birthday_scheduler_scheduler_job_wait_time_seconds',
+      help: 'Scheduler job wait time in seconds',
+      labelNames: ['job_type'],
+      buckets: [0.01, 0.1, 0.5, 1, 5, 10, 30, 60, 300],
+      registers: [this.registry],
+    });
+
+    this.birthdayScanDuration = new Histogram({
+      name: 'birthday_scheduler_birthday_scan_duration_seconds',
+      help: 'Birthday scan duration in seconds',
+      labelNames: ['timezone', 'status'],
+      buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60, 120],
+      registers: [this.registry],
+    });
+
+    this.timezoneBatchDuration = new Histogram({
+      name: 'birthday_scheduler_timezone_batch_duration_seconds',
+      help: 'Timezone batch processing duration in seconds',
+      labelNames: ['timezone', 'batch_size'],
+      buckets: [0.1, 0.5, 1, 2, 5, 10, 30, 60],
+      registers: [this.registry],
+    });
+
+    this.schedulerLockAcquisitionTime = new Histogram({
+      name: 'birthday_scheduler_scheduler_lock_acquisition_time_seconds',
+      help: 'Scheduler lock acquisition time in seconds',
+      labelNames: ['lock_name', 'status'],
+      buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // BUSINESS - Histograms Initialization
+    // ============================================
+    this.userRegistrationDuration = new Histogram({
+      name: 'birthday_scheduler_user_registration_duration_seconds',
+      help: 'User registration duration in seconds',
+      labelNames: ['source', 'status'],
+      buckets: [0.1, 0.25, 0.5, 1, 2, 5, 10, 30],
+      registers: [this.registry],
+    });
+
+    this.messagePersonalizationDuration = new Histogram({
+      name: 'birthday_scheduler_message_personalization_duration_seconds',
+      help: 'Message personalization duration in seconds',
+      labelNames: ['personalization_type'],
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5],
+      registers: [this.registry],
+    });
+
+    this.bulkOperationDuration = new Histogram({
+      name: 'birthday_scheduler_bulk_operation_duration_seconds',
+      help: 'Bulk operation duration in seconds',
+      labelNames: ['operation_type', 'batch_size'],
+      buckets: [0.5, 1, 2, 5, 10, 30, 60, 120, 300],
+      registers: [this.registry],
+    });
+
+    this.userDataExportDuration = new Histogram({
+      name: 'birthday_scheduler_user_data_export_duration_seconds',
+      help: 'User data export duration in seconds',
+      labelNames: ['export_type', 'format'],
+      buckets: [1, 2, 5, 10, 30, 60, 120, 300, 600],
+      registers: [this.registry],
+    });
+
+    this.templateRenderingDuration = new Histogram({
+      name: 'birthday_scheduler_template_rendering_duration_seconds',
+      help: 'Template rendering duration in seconds',
+      labelNames: ['template_name'],
+      buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25],
+      registers: [this.registry],
+    });
+
     // Initialize Summary metrics
     this.messageProcessingQuantiles = new Summary({
       name: 'birthday_scheduler_message_processing_quantiles',
@@ -1410,6 +2638,49 @@ export class MetricsService {
       name: 'birthday_scheduler_http_client_latency_quantiles',
       help: 'HTTP client latency quantiles',
       labelNames: ['host', 'method'],
+      percentiles: [0.5, 0.9, 0.95, 0.99],
+      registers: [this.registry],
+    });
+
+    // ============================================
+    // SUMMARY METRICS - Extended Initialization
+    // ============================================
+    this.schedulerExecutionQuantiles = new Summary({
+      name: 'birthday_scheduler_scheduler_execution_quantiles',
+      help: 'Scheduler execution time quantiles',
+      labelNames: ['job_type'],
+      percentiles: [0.5, 0.9, 0.95, 0.99],
+      registers: [this.registry],
+    });
+
+    this.messageQueueLatencyQuantiles = new Summary({
+      name: 'birthday_scheduler_message_queue_latency_quantiles',
+      help: 'Message queue latency quantiles',
+      labelNames: ['queue_name', 'operation'],
+      percentiles: [0.5, 0.9, 0.95, 0.99],
+      registers: [this.registry],
+    });
+
+    this.databaseConnectionQuantiles = new Summary({
+      name: 'birthday_scheduler_database_connection_quantiles',
+      help: 'Database connection acquisition time quantiles',
+      labelNames: ['pool_name'],
+      percentiles: [0.5, 0.9, 0.95, 0.99],
+      registers: [this.registry],
+    });
+
+    this.businessOperationQuantiles = new Summary({
+      name: 'birthday_scheduler_business_operation_quantiles',
+      help: 'Business operation duration quantiles',
+      labelNames: ['operation_type'],
+      percentiles: [0.5, 0.9, 0.95, 0.99],
+      registers: [this.registry],
+    });
+
+    this.endToEndDeliveryQuantiles = new Summary({
+      name: 'birthday_scheduler_end_to_end_delivery_quantiles',
+      help: 'End-to-end message delivery time quantiles',
+      labelNames: ['message_type', 'channel'],
       percentiles: [0.5, 0.9, 0.95, 0.99],
       registers: [this.registry],
     });
