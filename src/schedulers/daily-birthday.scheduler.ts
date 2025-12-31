@@ -20,6 +20,7 @@ import cron from 'node-cron';
 import { schedulerService } from '../services/scheduler.service.js';
 import { logger } from '../config/logger.js';
 import { env } from '../config/environment.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export class DailyBirthdayScheduler {
   private task: ReturnType<typeof cron.schedule> | null = null;
@@ -109,6 +110,10 @@ export class DailyBirthdayScheduler {
         duplicatesSkipped: stats.duplicatesSkipped,
         errorCount: stats.errors.length,
       };
+
+      // Update gauge metrics for birthdays today and pending
+      metricsService.setBirthdaysToday('all', stats.totalBirthdays + stats.totalAnniversaries);
+      metricsService.setBirthdaysPending('normal', stats.messagesScheduled);
 
       // Log comprehensive statistics
       logger.info(

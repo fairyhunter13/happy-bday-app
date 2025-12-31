@@ -141,6 +141,9 @@ export class MessageWorker {
         // Record message delivery by hour
         const sendHour = new Date().getHours();
         metricsService.recordMessageDeliveryByHour(sendHour, job.messageType);
+
+        // Record birthday greeting type
+        metricsService.recordBirthdayGreetingType(job.messageType.toLowerCase(), 'email');
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
