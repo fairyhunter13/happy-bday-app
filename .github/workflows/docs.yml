@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate OpenAPI client
+        run: npm run openapi:generate
+
       - name: Build TypeScript
         run: npm run build
 
