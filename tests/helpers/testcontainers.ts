@@ -47,8 +47,14 @@ export class PostgresTestContainer {
 
     if (this.usingCI) {
       // CI mode: connect to docker-compose services
+      // Use a very small pool to avoid connection exhaustion
       this.connectionString = getCIConnectionStrings().postgres;
-      this.pool = new Pool({ connectionString: this.connectionString });
+      this.pool = new Pool({
+        connectionString: this.connectionString,
+        max: 2, // Limit pool size in CI to prevent exhaustion
+        idleTimeoutMillis: 10000,
+        connectionTimeoutMillis: 5000,
+      });
 
       // Wait for database to be ready
       let retries = 30;
@@ -282,8 +288,14 @@ export class TestEnvironment {
     this.rabbitmqConnectionString = ciStrings.rabbitmq;
     this.redisConnectionString = ciStrings.redis;
 
-    // Create pool for CI database
-    this.pool = new Pool({ connectionString: this.postgresConnectionString });
+    // Create pool for CI database with very limited connections
+    // to avoid exhausting the shared PostgreSQL instance
+    this.pool = new Pool({
+      connectionString: this.postgresConnectionString,
+      max: 2, // Limit pool size in CI to prevent exhaustion
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+    });
 
     // Wait for database to be ready
     let retries = 30;
