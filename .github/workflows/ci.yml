@@ -237,6 +237,75 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
 
+  chaos-tests:
+    name: Chaos Tests
+    needs: [integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test
+          RABBITMQ_DEFAULT_PASS: test
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
+
+      - name: Wait for services
+        uses: ./.github/actions/wait-for-services
+
+      - name: Run database migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+
+      - name: Run chaos tests
+        run: npm run test:chaos
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          RABBITMQ_URL: amqp://test:test@localhost:5672
+          CI: true
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
   performance-smoke-test:
     name: Performance Smoke Test
     needs: [integration-tests]
