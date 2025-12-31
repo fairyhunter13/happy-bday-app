@@ -12,7 +12,8 @@ build/
 *.tsbuildinfo
 
 # Auto-generated code (DRY: generated from OpenAPI specs)
-src/clients/generated/
+# Note: src/clients/generated/ is tracked for Docker builds
+# Regenerate with: npm run generate:client
 
 # Environment variables
 .env
