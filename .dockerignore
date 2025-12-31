@@ -1,0 +1,74 @@
+# ==============================================================================
+# Docker Build Ignore File
+# ==============================================================================
+
+# Dependencies (will be installed fresh)
+node_modules
+.npm
+
+# Build outputs (will be built fresh)
+dist
+*.tsbuildinfo
+
+# Development files
+.env
+.env.*
+!.env.example
+.env.test
+.env.test.enc
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+.nyc_output
+tests
+**/*.test.ts
+**/*.spec.ts
+vitest.config*.ts
+jest.config.*
+
+# Documentation
+docs
+*.md
+!README.md
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Docker files (avoid recursive)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Performance tests
+k6
+grafana
+prometheus
+
+# SOPS encrypted files
+*.enc
+.sops.yaml
+
+# Misc
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Drizzle studio
+.drizzle
+
+# Plan and project files
+plan
+project_data
