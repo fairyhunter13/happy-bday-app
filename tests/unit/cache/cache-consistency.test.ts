@@ -108,11 +108,9 @@ describe('Cache Consistency Tests', () => {
       expect(mockCacheService.set).toHaveBeenCalledTimes(2);
 
       // Verify user:v1:id key
-      expect(mockCacheService.set).toHaveBeenCalledWith(
-        `user:v1:${mockUser.id}`,
-        mockUser,
-        { ttl: 3600 }
-      );
+      expect(mockCacheService.set).toHaveBeenCalledWith(`user:v1:${mockUser.id}`, mockUser, {
+        ttl: 3600,
+      });
 
       // Verify user:email:v1:email key
       expect(mockCacheService.set).toHaveBeenCalledWith(

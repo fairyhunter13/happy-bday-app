@@ -20,7 +20,10 @@ async function runMigrations(connectionString: string): Promise<void> {
 
     const sql = fs.readFileSync(userMigration, 'utf-8');
     // Split by statement-breakpoint and execute each statement
-    const statements = sql.split('--> statement-breakpoint').map(s => s.trim()).filter(s => s);
+    const statements = sql
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter((s) => s);
     for (const statement of statements) {
       if (statement) {
         await migrationClient.unsafe(statement);
