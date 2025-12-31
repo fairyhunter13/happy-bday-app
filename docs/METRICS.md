@@ -19,6 +19,8 @@ This document provides a comprehensive reference for all Prometheus metrics expo
 - [Usage Examples](#usage-examples)
 - [Configuration](#configuration)
 - [Instrumentation Status](#instrumentation-status)
+- [Dashboard Integration](#dashboard-integration)
+- [Cardinality Warnings](#cardinality-warnings)
 
 ---
 
@@ -601,11 +603,23 @@ Histograms track value distributions across configurable buckets.
 | `scheduler_job_queue_time_seconds` | 0.1, 1, 5, 10, 30, 60 | Job queue time |
 | `scheduler_recovery_duration_seconds` | 0.1, 1, 5, 10, 30 | Recovery duration |
 
+### Business Histograms (5 metrics)
+
+| Metric Name | Buckets | Description |
+|-------------|---------|-------------|
+| `user_registration_duration_seconds` | 0.1, 0.25, 0.5, 1, 2, 5, 10, 30 | User registration duration |
+| `message_personalization_duration_seconds` | 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5 | Message personalization duration |
+| `bulk_operation_duration_seconds` | 0.5, 1, 2, 5, 10, 30, 60, 120, 300 | Bulk operation duration |
+| `user_data_export_duration_seconds` | 1, 2, 5, 10, 30, 60, 120, 300, 600 | User data export duration |
+| `template_rendering_duration_seconds` | 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25 | Template rendering duration |
+
 ---
 
 ## Summary Metrics
 
 Summaries provide quantile-based distributions (p50, p90, p99).
+
+### Original Summary Metrics (10 metrics)
 
 | Metric Name | Quantiles | Description |
 |-------------|-----------|-------------|
@@ -619,6 +633,16 @@ Summaries provide quantile-based distributions (p50, p90, p99).
 | `connection_time_summary` | 0.5, 0.9, 0.95, 0.99 | Connection time percentiles |
 | `gc_pause_summary` | 0.5, 0.9, 0.95, 0.99 | GC pause percentiles |
 | `event_loop_lag_summary` | 0.5, 0.9, 0.95, 0.99 | Event loop lag percentiles |
+
+### Extended Summary Metrics (5 new metrics)
+
+| Metric Name | Quantiles | Description |
+|-------------|-----------|-------------|
+| `scheduler_execution_quantiles` | 0.5, 0.9, 0.95, 0.99 | Scheduler execution time quantiles |
+| `message_queue_latency_quantiles` | 0.5, 0.9, 0.95, 0.99 | Message queue latency quantiles |
+| `database_connection_quantiles` | 0.5, 0.9, 0.95, 0.99 | Database connection acquisition time quantiles |
+| `business_operation_quantiles` | 0.5, 0.9, 0.95, 0.99 | Business operation duration quantiles |
+| `end_to_end_delivery_quantiles` | 0.5, 0.9, 0.95, 0.99 | End-to-end message delivery time quantiles |
 
 ---
 
@@ -1249,6 +1273,244 @@ receivers:
 - Individual query execution times (requires Drizzle interceptor)
 - Per-table operation counts
 - Connection pool wait times (requires driver hooks)
+
+---
+
+## Dashboard Integration
+
+### Grafana Dashboard Setup
+
+The application provides comprehensive Prometheus metrics that integrate seamlessly with Grafana for visualization and monitoring.
+
+#### Dashboard JSON Location
+
+- **Main Dashboard:** `grafana/dashboards/birthday-scheduler-main.json`
+- **Performance Dashboard:** `grafana/dashboards/birthday-scheduler-performance.json`
+- **Queue Dashboard:** `grafana/dashboards/birthday-scheduler-queue.json`
+- **Business Metrics Dashboard:** `grafana/dashboards/birthday-scheduler-business.json`
+- **Alert Status Dashboard:** `grafana/dashboards/birthday-scheduler-alerts.json`
+
+#### Import Steps
+
+1. Navigate to Grafana Home
+2. Click "Create" → "Import"
+3. Upload JSON file or paste URL
+4. Select Prometheus data source
+5. Click "Import"
+
+#### Key Panels to Monitor
+
+| Dashboard | Panels | Purpose |
+|-----------|--------|---------|
+| **Main** | Request Rate, Error Rate, P99 Latency, Active Requests | Overall system health |
+| **Performance** | CPU Usage, Memory Usage, GC Events, Event Loop Lag | Resource utilization |
+| **Queue** | Queue Depth, Consumer Count, Message Age, DLQ Growth | Queue health |
+| **Business** | Messages Sent, Delivery Success Rate, Active Users, Birthdays Today | Business KPIs |
+| **Alerts** | Active Alerts, Alert Trends, SLO Status, Error Budget | Alert status and trends |
+
+#### Alert Thresholds (Default Configuration)
+
+| Metric | Warning | Critical | Notes |
+|--------|---------|----------|-------|
+| Error Rate | > 1% | > 5% | Triggers when error rate exceeds thresholds |
+| API Latency (P99) | > 1s | > 2s | Request latency percentile |
+| Queue Depth | > 1000 | > 10000 | Message backlog accumulation |
+| Memory Usage | > 85% | > 95% | Process memory consumption |
+| CPU Usage | > 80% | > 90% | CPU utilization percentage |
+| Message Delivery Rate | < 99% | < 95% | Delivery success percentage |
+| Database Connections | > 80% | > 95% | Connection pool exhaustion |
+| DLQ Depth | > 100 | > 1000 | Dead letter queue growth |
+| Scheduler Lag | > 60s | > 300s | Job execution delay |
+| Cache Hit Rate | < 80% | < 60% | Cache effectiveness |
+
+#### Dashboard Variables (Templating)
+
+For flexible dashboards, configure these Grafana template variables:
+
+```yaml
+- name: environment
+  type: query
+  datasource: Prometheus
+  query: label_values(birthday_scheduler_api_requests_total, environment)
+
+- name: job_type
+  type: query
+  datasource: Prometheus
+  query: label_values(birthday_scheduler_scheduler_jobs_executed_total, job_type)
+
+- name: queue_name
+  type: query
+  datasource: Prometheus
+  query: label_values(birthday_scheduler_queue_depth, queue_name)
+
+- name: service_name
+  type: query
+  datasource: Prometheus
+  query: label_values(birthday_scheduler_external_api_calls_total, api_name)
+```
+
+#### Recommended Panel Configurations
+
+**Request Rate Panel:**
+```promql
+sum(rate(birthday_scheduler_api_requests_total[5m])) by (path)
+```
+
+**Error Rate Panel:**
+```promql
+100 * sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
+    / sum(rate(birthday_scheduler_api_requests_total[5m]))
+```
+
+**Queue Depth Panel:**
+```promql
+birthday_scheduler_queue_depth{queue_name="$queue_name"}
+```
+
+**Message Delivery Success Rate:**
+```promql
+sum(rate(birthday_scheduler_messages_sent_total[1h]))
+  / sum(rate(birthday_scheduler_messages_scheduled_total[1h])) * 100
+```
+
+---
+
+## Cardinality Warnings
+
+### Understanding High-Cardinality Labels
+
+High-cardinality labels (labels with many unique values) can cause performance issues in Prometheus:
+
+- **Memory usage increases** - Each unique label combination creates a separate time series
+- **Query performance degrades** - Large numbers of series slow down queries
+- **Scraped data grows** - Larger metrics payloads increase bandwidth and storage
+
+#### Current Label Cardinality
+
+| Metric | Label | Cardinality | Type | Notes |
+|--------|-------|-------------|------|-------|
+| `api_requests_total` | `path` | Medium | Endpoint paths | Finite, URL-based |
+| `api_requests_total` | `method` | Very Low (4-7) | HTTP methods | GET, POST, PUT, DELETE, etc. |
+| `messages_scheduled_total` | `message_type` | Low | Message types | Fixed set of types |
+| `messages_scheduled_total` | `timezone` | Medium (300-400) | Timezone identifiers | Fixed IANA timezone list |
+| `external_api_calls_total` | `api_name` | Low | Service names | Known external services |
+| `queue_depth` | `queue_name` | Very Low (1-10) | Queue names | Fixed queue definitions |
+| `database_connections` | `state` | Very Low (2-3) | Connection state | active, idle, waiting |
+
+#### High-Cardinality Labels to Avoid
+
+**Unsafe Labels** - DO NOT use these as label values:
+
+```
+- User IDs (billions of unique values)
+- Message IDs (unbounded growth)
+- Request IDs (unbounded growth)
+- Email addresses (unbounded growth)
+- IP addresses (high cardinality)
+- Custom JSON in labels (arbitrary growth)
+- Auto-incrementing IDs (unbounded growth)
+```
+
+**Example of Unsafe Code:**
+```typescript
+// WRONG - High cardinality!
+metricsService.messagesScheduledTotal.inc({
+  user_id: userId,  // Millions of unique values
+  request_id: requestId,  // Unbounded growth
+});
+
+// CORRECT - Use low-cardinality labels
+metricsService.messagesScheduledTotal.inc({
+  message_type: 'birthday',  // Fixed set
+  priority: 'high',  // Bounded values
+});
+```
+
+#### Recommended Label Practices
+
+1. **Keep label cardinality low**
+   - Use at most 10-15 unique values per label
+   - Exception: timezone label (~400 values) is acceptable for business reasons
+
+2. **Use fixed, enumerated values**
+   - Status codes: 200, 201, 400, 401, 403, 404, 500, 502, 503
+   - Methods: GET, POST, PUT, DELETE, PATCH
+   - Types: email, sms, push, webhook
+
+3. **Aggregate before recording**
+   ```typescript
+   // Instead of recording user_id, record user_segment
+   const segment = getUserSegment(user); // e.g., 'premium', 'free'
+   metricsService.userActivityTotal.inc({ segment });
+   ```
+
+4. **Use metric name prefixes for variation**
+   ```typescript
+   // Instead of: metric.observe({variant: 'v1'|'v2'|'v3'})
+   // Use separate metrics:
+   metricsService.apiResponseTimeV1.observe(duration);
+   metricsService.apiResponseTimeV2.observe(duration);
+   ```
+
+5. **Document all label values**
+   - Maintain a label value reference in the metric definition
+   - Example: Document all possible `message_type` values
+
+#### Cardinality Monitoring
+
+Monitor cardinality using these Prometheus queries:
+
+```promql
+# Total series count
+count(count by (__name__) (up))
+
+# Series count by metric
+topk(20, count by (__name__) ({job="happy-bday-app"}))
+
+# High-cardinality labels
+topk(20, count by (__name__, job, __name__) (
+  count by (__name__, job, le) ({job="happy-bday-app"})
+))
+
+# Cardinality explosion detection
+# (daily increase > 10%)
+rate(count(count by (__name__) (up))[1d] offset 1d) /
+  count(count by (__name__) (up)) > 1.1
+```
+
+#### Cardinality Limits
+
+Current configuration limits:
+
+| Limit | Value | Reason |
+|-------|-------|--------|
+| Max label names per metric | 10 | Prevents metadata explosion |
+| Max label value cardinality | 1000 | Prevents runaway growth |
+| Max time series per scrape | 50000 | Prometheus storage protection |
+| Max sample time series | 100000 | Prevents OOM |
+
+If you encounter cardinality warnings:
+
+1. Check recent metric additions
+2. Review label values for unbounded cardinality
+3. Consider removing or consolidating labels
+4. Use metric relabeling to drop high-cardinality labels
+5. Consider splitting into separate metrics
+
+#### Prometheus Configuration for Cardinality
+
+```yaml
+# prometheus.yml
+metric_relabel_configs:
+  # Drop user_id labels (high cardinality)
+  - source_labels: [__name__]
+    regex: '.*_user_id'
+    action: drop
+
+  # Keep only essential labels
+  - action: keep_labels
+    regex: '__name__|job|instance|method|status|path'
+```
 
 ---
 

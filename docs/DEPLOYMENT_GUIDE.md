@@ -168,12 +168,21 @@ All testing runs automatically via GitHub Actions:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| **ci.yml** | Every push/PR | Unit, integration, E2E tests |
+| **ci.yml** | Every push/PR | Unit, integration, E2E tests with coverage enforcement |
 | **code-quality.yml** | Every push/PR | Linting, type checking |
 | **security.yml** | Daily, push/PR | Security scanning |
 | **performance.yml** | Weekly | Load testing with k6 |
 | **docker-build.yml** | Push to main | Docker image build verification |
 | **docs.yml** | Push to main | GitHub Pages documentation |
+
+### Coverage Enforcement
+
+The CI pipeline includes automated coverage enforcement:
+
+1. **Per-Shard Coverage Collection**: Each unit test shard runs with `--coverage` flag to generate coverage reports
+2. **Coverage Threshold Validation**: The `npm run test:coverage:check` command validates that each shard meets minimum coverage thresholds
+3. **Merged Coverage Report**: All coverage reports are merged in the coverage-report job for a comprehensive view
+4. **Coverage History Tracking** (main branch only): Coverage metrics are automatically tracked over time for trend analysis
 
 ### Running Tests Locally (Same as CI)
 
@@ -510,10 +519,12 @@ npm run db:generate                  # Generate new migration
 
 npm test                             # All tests
 npm run test:unit                    # Unit tests only
+npm run test:unit -- --coverage      # Unit tests with coverage
 npm run test:integration             # Integration tests only
 npm run test:e2e                     # E2E tests
 npm run test:performance             # Performance tests (k6)
 npm run test:coverage                # Coverage report
+npm run test:coverage:check          # Validate coverage thresholds
 
 # Code Quality
 

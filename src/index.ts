@@ -6,6 +6,7 @@
 import { startServer, shutdownServer } from './app.js';
 import { logger, logStartup } from './config/logger.js';
 import { schedulerManager } from './schedulers/index.js';
+import { systemMetricsService } from './services/system-metrics.service.js';
 
 /**
  * Main application entry point
@@ -17,6 +18,11 @@ async function main(): Promise<void> {
 
     // Start the server
     const app = await startServer();
+
+    // Start system metrics collection
+    logger.info('Starting system metrics collection...');
+    systemMetricsService.start();
+    logger.info('System metrics collection started successfully');
 
     // Start schedulers
     logger.info('Initializing CRON schedulers...');
@@ -34,6 +40,11 @@ async function main(): Promise<void> {
         logger.info('Shutting down schedulers...');
         await schedulerManager.gracefulShutdown(30000); // 30 second timeout
         logger.info('Schedulers shut down successfully');
+
+        // Stop system metrics collection
+        logger.info('Stopping system metrics collection...');
+        await systemMetricsService.stop();
+        logger.info('System metrics collection stopped successfully');
 
         // Shutdown server
         await shutdownServer(app);

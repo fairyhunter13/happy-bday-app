@@ -1,0 +1,176 @@
+{
+  "$schema": "https://schema.claude.ai/model-selection-config.json",
+  "version": "2.0.0",
+  "description": "Configuration for intelligent model selection in Hive Mind sessions",
+
+  "coordinator": {
+    "model": "opus",
+    "model_id": "claude-opus-4-5-20251101",
+    "always_use": true,
+    "roles": ["coordinator", "planner", "queen", "strategic-planner", "architect-lead"]
+  },
+
+  "workers": {
+    "default_model": "sonnet",
+    "default_model_id": "claude-sonnet-4-5-20250929",
+    "intelligent_routing": true,
+
+    "complexity_based_routing": {
+      "use_opus": {
+        "complexity_threshold": 71,
+        "agent_types": [],
+        "task_patterns": [
+          "design.*architecture",
+          "research.*novel",
+          "distributed.*system",
+          "security.*audit",
+          "algorithm.*complex"
+        ]
+      },
+
+      "use_sonnet": {
+        "complexity_range": [31, 70],
+        "agent_types": [
+          "coder",
+          "tester",
+          "reviewer",
+          "documenter",
+          "analyzer",
+          "debugger",
+          "implementer",
+          "researcher"
+        ],
+        "task_patterns": [
+          "implement",
+          "feature",
+          "test",
+          "review",
+          "fix",
+          "bug",
+          "document",
+          "api",
+          "service",
+          "integration",
+          "refactor"
+        ]
+      },
+
+      "use_haiku": {
+        "complexity_threshold": 30,
+        "agent_types": [
+          "formatter",
+          "validator",
+          "optimizer",
+          "simple-refactor"
+        ],
+        "task_patterns": [
+          "format",
+          "validate",
+          "search",
+          "find",
+          "list",
+          "check",
+          "rename",
+          "move",
+          "copy",
+          "simple"
+        ]
+      }
+    }
+  },
+
+  "complexity_scoring": {
+    "keyword_weights": {
+      "complex": {
+        "weight": 40,
+        "keywords": [
+          "architecture",
+          "design",
+          "research",
+          "novel",
+          "distributed",
+          "security",
+          "algorithm",
+          "optimization",
+          "analyze.*pattern",
+          "deep.*analysis"
+        ]
+      },
+      "moderate": {
+        "weight": 20,
+        "keywords": [
+          "implement",
+          "feature",
+          "test",
+          "review",
+          "fix",
+          "bug",
+          "document",
+          "api",
+          "service",
+          "integration"
+        ]
+      },
+      "simple": {
+        "weight": 5,
+        "keywords": [
+          "format",
+          "validate",
+          "search",
+          "find",
+          "list",
+          "check",
+          "rename",
+          "move",
+          "copy",
+          "simple"
+        ]
+      }
+    },
+    "metadata_weights": {
+      "files_affected": {
+        "weight": 0.15,
+        "max_score": 20,
+        "multiplier": 2
+      },
+      "lines_of_code": {
+        "weight": 0.2,
+        "max_score": 20,
+        "divisor": 50
+      },
+      "domain_expertise": {
+        "weight": 25,
+        "boolean": true
+      },
+      "novelty": {
+        "weight": 20,
+        "boolean": true
+      },
+      "criticality": {
+        "weight_map": {
+          "low": 0,
+          "medium": 10,
+          "high": 20,
+          "critical": 25
+        }
+      }
+    }
+  },
+
+  "enforcement": {
+    "strict_coordinator_model": true,
+    "warn_on_deviation": true,
+    "log_model_usage": true,
+    "override_incorrect_selections": true
+  },
+
+  "cost_optimization": {
+    "strategy": "intelligent",
+    "expected_distribution": {
+      "opus": "5-10%",
+      "sonnet": "60-70%",
+      "haiku": "20-30%"
+    },
+    "estimated_savings": "60-70% vs all-Opus"
+  }
+}
