@@ -1,177 +1,118 @@
 {
   "$schema": "https://schema.claude.ai/hive-mind-config.json",
-  "version": "2.0.0",
-  "description": "Permanent Hive Mind configuration with intelligent model selection",
+  "version": "3.0.0",
+  "description": "Hive Mind configuration with FULL REASONING MODE - Coordinator decides all model selections",
 
-  "permanent_model_strategy": {
-    "enabled": true,
-    "enforce_across_sessions": true,
-    "description": "This configuration is permanent and applies to all hive-mind sessions"
+  "model_selection_mode": {
+    "mode": "coordinator_reasoning",
+    "description": "The coordinator (Opus 4.5) uses its reasoning judgment to select models for all spawned agents",
+    "algorithmic_enforcement": false,
+    "coordinator_has_full_control": true
   },
 
   "coordinator_config": {
     "role": "Queen Coordinator / Strategic Planner",
     "model": "opus",
     "model_id": "claude-opus-4-5-20251101",
-    "always_use_opus": true,
-    "reasoning": "Coordinators and planners ALWAYS use Opus 4.5 for maximum strategic intelligence",
-    "applies_to": [
-      "coordinator",
-      "planner",
-      "queen",
-      "strategic-planner",
-      "architect-lead",
-      "hive-mind-coordinator"
+    "capabilities": [
+      "Full model selection authority for all spawned agents",
+      "Strategic planning and coordination",
+      "Cost-aware decision making",
+      "Nuanced task complexity assessment"
     ]
   },
 
-  "worker_agent_config": {
-    "intelligent_model_routing": {
-      "enabled": true,
-      "default_model": "sonnet",
-      "auto_select": true,
-      "description": "Workers automatically use Sonnet or Haiku based on task complexity"
-    },
-
-    "routing_rules": {
-      "use_sonnet_when": [
-        "Task complexity score >= 31",
-        "Moderate to complex implementation work",
-        "Code writing and testing",
-        "Code review and analysis",
-        "Documentation generation",
-        "Multi-file changes",
-        "Integration work",
-        "Default for most development tasks"
-      ],
-
-      "use_haiku_when": [
-        "Task complexity score < 31",
-        "Simple formatting tasks",
-        "Basic file operations",
-        "Quick searches and validation",
-        "Status checks",
-        "Simple refactoring",
-        "Batch processing of simple tasks"
-      ],
-
-      "never_use_opus_for_workers": {
-        "rule": "Workers never use Opus - only coordinator uses Opus",
-        "reasoning": "Opus is reserved for strategic planning and coordination only",
-        "exception": "None - this is absolute"
-      }
-    },
-
-    "complexity_thresholds": {
-      "simple_task": {
-        "score_range": [0, 30],
-        "model": "haiku",
-        "model_id": "claude-3-5-haiku-20241022",
-        "cost_optimization": "Maximum efficiency for simple tasks"
+  "model_selection_guidance": {
+    "description": "Guidelines for coordinator when selecting models (NOT enforced, just guidance)",
+    "available_models": {
+      "opus": {
+        "model_id": "claude-opus-4-5-20251101",
+        "cost": "~$15/MTok input, ~$75/MTok output",
+        "use_when": [
+          "Novel architecture or system design requiring deep reasoning",
+          "Security-critical analysis needing thorough evaluation",
+          "Cross-domain problems requiring synthesis of multiple knowledge areas",
+          "Tasks where failure cost is very high",
+          "Complex debugging requiring understanding of intricate systems"
+        ]
       },
-      "moderate_to_complex_task": {
-        "score_range": [31, 100],
-        "model": "sonnet",
+      "sonnet": {
         "model_id": "claude-sonnet-4-5-20250929",
-        "reasoning": "Sonnet handles all moderate to complex worker tasks efficiently"
+        "cost": "~$3/MTok input, ~$15/MTok output",
+        "use_when": [
+          "Standard implementation and coding tasks",
+          "Testing and test writing",
+          "Code review and analysis",
+          "Documentation generation",
+          "Bug fixes and debugging",
+          "API integration work",
+          "DEFAULT for most development tasks"
+        ]
+      },
+      "haiku": {
+        "model_id": "claude-3-5-haiku-20241022",
+        "cost": "~$1/MTok input, ~$5/MTok output",
+        "use_when": [
+          "Simple, mechanical tasks (formatting, linting)",
+          "File searches and listings",
+          "Basic validation and checks",
+          "Repetitive batch operations",
+          "Status gathering and reporting",
+          "Simple refactoring (renames, moves)"
+        ]
       }
     },
-
-    "complexity_scoring": {
-      "factors": {
-        "files_affected": {
-          "weight": 0.2,
-          "calculation": "min(files_count * 2, 20)"
-        },
-        "lines_of_code": {
-          "weight": 0.2,
-          "calculation": "min(loc / 50, 20)"
-        },
-        "task_complexity_keywords": {
-          "weight": 0.3,
-          "simple": ["format", "validate", "search", "check", "list", "find"],
-          "moderate": ["implement", "write", "test", "review", "fix", "debug"],
-          "complex": ["design", "architect", "research", "optimize", "refactor"]
-        },
-        "criticality": {
-          "weight": 0.15,
-          "levels": {
-            "low": 0,
-            "medium": 5,
-            "high": 10,
-            "critical": 15
-          }
-        },
-        "novelty": {
-          "weight": 0.15,
-          "requires_innovation": 15
-        }
-      }
-    }
+    "decision_factors": [
+      "Task complexity and nuance (not just keywords)",
+      "Cost implications relative to task value",
+      "Whether the task requires coordinator-level reasoning",
+      "Confidence that a lower model will succeed",
+      "Cross-task dependencies and context requirements",
+      "Criticality and risk tolerance"
+    ],
+    "default_recommendation": "sonnet"
   },
 
-  "agent_type_mappings": {
-    "always_sonnet_agents": [
-      "coder",
-      "tester",
-      "reviewer",
-      "documenter",
-      "analyzer",
-      "debugger",
-      "implementer"
-    ],
-    "can_use_haiku_agents": [
-      "formatter",
-      "validator",
-      "optimizer",
-      "simple-refactor"
-    ],
-    "description": "Agent types and their default model preferences"
-  },
-
-  "session_initialization": {
-    "on_hive_mind_spawn": {
-      "step_1": "Load this configuration file",
-      "step_2": "Initialize coordinator with Opus 4.5",
-      "step_3": "Set all worker agents to use intelligent routing (Sonnet/Haiku)",
-      "step_4": "Store configuration in session memory",
-      "step_5": "Enforce rules throughout session lifecycle"
+  "cost_awareness": {
+    "relative_costs": {
+      "opus_vs_sonnet": "~5x more expensive",
+      "opus_vs_haiku": "~15x more expensive",
+      "sonnet_vs_haiku": "~3x more expensive"
     },
-    "persistence": {
-      "store_in_memory": true,
-      "memory_namespace": "hive-mind-model-config",
-      "ttl": null,
-      "description": "Configuration persists across session resumes"
-    }
+    "guidance": "Consider whether the task genuinely needs higher reasoning capability, or if you're choosing a more expensive model 'just to be safe'. Sonnet handles most development tasks well."
   },
 
   "enforcement_mechanisms": {
     "pre_task_hook": {
-      "enabled": true,
-      "validate_model_selection": true,
-      "override_incorrect_selections": true
+      "enabled": false,
+      "validate_model_selection": false,
+      "override_incorrect_selections": false
     },
     "runtime_validation": {
-      "enabled": true,
+      "enabled": false,
       "log_model_usage": true,
-      "warn_on_deviation": true
+      "warn_on_deviation": false
     }
   },
 
-  "cost_optimization": {
-    "strategy": "Maximum intelligence for coordination, optimal efficiency for execution",
-    "expected_distribution": {
-      "opus_usage": "5-10% (coordinator only)",
-      "sonnet_usage": "60-70% (most worker tasks)",
-      "haiku_usage": "20-30% (simple worker tasks)"
+  "session_initialization": {
+    "on_hive_mind_spawn": {
+      "step_1": "Load this configuration file for guidance",
+      "step_2": "Initialize coordinator with Opus 4.5",
+      "step_3": "Coordinator reasons about model selection for each spawned agent",
+      "step_4": "No algorithmic override - coordinator's judgment is final"
     },
-    "estimated_cost_savings": "60-70% compared to all-Opus approach"
+    "persistence": {
+      "store_in_memory": true,
+      "memory_namespace": "hive-mind-model-config",
+      "ttl": null
+    }
   },
 
   "monitoring": {
     "track_model_usage_per_session": true,
-    "track_complexity_scores": true,
     "track_cost_per_task": true,
-    "generate_session_report": true
+    "generate_session_report": true,
+    "purpose": "For coordinator's awareness, not enforcement"
   }
 }
