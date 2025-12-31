@@ -15,6 +15,9 @@ export type CreateClientConfig<T extends ClientOptions = ClientOptions2> = (
   override?: Config<ClientOptions & T>
 ) => Config<Required<ClientOptions> & T>;
 
-export const client = createClient(
-  createConfig<ClientOptions2>({ baseUrl: 'https://email-service.digitalenvision.com.au' })
-);
+// Use environment variable for baseUrl with fallback to production URL
+// This allows tests to verify integration with the real email service
+const emailServiceUrl =
+  process.env.EMAIL_SERVICE_URL || 'https://email-service.digitalenvision.com.au';
+
+export const client = createClient(createConfig<ClientOptions2>({ baseUrl: emailServiceUrl }));

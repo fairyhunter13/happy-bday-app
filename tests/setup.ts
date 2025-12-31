@@ -34,7 +34,12 @@ process.env.RABBITMQ_EXCHANGE_NAME = 'birthday-exchange';
 process.env.RABBITMQ_DLX_NAME = 'birthday-dlx';
 process.env.RABBITMQ_DLQ_NAME = 'birthday-dlq';
 
-// Optional services
+// Email Service - use REAL email service for E2E/integration tests
+// The email service has ~10% random failure rate - tests should handle this
+process.env.EMAIL_SERVICE_URL = 'https://email-service.digitalenvision.com.au';
+process.env.EMAIL_SERVICE_TIMEOUT = '30000';
+
+// Legacy (deprecated)
 process.env.MESSAGE_API_URL = 'http://localhost:9999/api/messages';
 process.env.MESSAGE_SERVICE_TIMEOUT = '10000';
 

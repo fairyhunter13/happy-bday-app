@@ -115,8 +115,8 @@ describe('SchedulerService', () => {
     // Note: mockUserRepo serves as both _userRepo and _cachedUserRepo since they share findBirthdaysToday/findAnniversariesToday
     service = new SchedulerService(
       mockIdempotencyService,
-      mockUserRepo,       // _userRepo (for scheduleUserBirthday)
-      mockUserRepo,       // _cachedUserRepo (for preCalculateTodaysBirthdays - needs findBirthdaysToday/findAnniversariesToday)
+      mockUserRepo, // _userRepo (for scheduleUserBirthday)
+      mockUserRepo, // _cachedUserRepo (for preCalculateTodaysBirthdays - needs findBirthdaysToday/findAnniversariesToday)
       mockMessageLogRepo, // _messageLogRepo (for findScheduled, findMissed, findAll, etc.)
       mockStrategyFactory
     );
