@@ -16,7 +16,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { TestEnvironment, waitFor, cleanDatabase, purgeQueues } from '../helpers/testcontainers.js';
+import {
+  TestEnvironment,
+  waitFor,
+  cleanDatabase,
+  purgeQueues,
+} from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
 import {
   createResilientTester,

@@ -29,7 +29,9 @@ export class HealthController {
     try {
       const response = await this._healthService.getSimpleHealth();
 
-      logger.debug({ response }, 'Basic health check performed');
+      // Use info level in production/CI to help debug startup issues
+      const logLevel = process.env.NODE_ENV === 'test' ? 'debug' : 'info';
+      logger[logLevel]({ response }, 'Health check: OK');
 
       await reply.status(200).send(response);
     } catch (error) {

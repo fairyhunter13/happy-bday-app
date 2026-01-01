@@ -146,16 +146,33 @@ export class RabbitMQConnection {
 
   /**
    * Wait for connection to be established
+   * In CI environments, RabbitMQ may be slow to start, so we use a longer timeout
    */
-  private async waitForConnection(timeout = 30000): Promise<void> {
+  private async waitForConnection(timeout = 60000): Promise<void> {
     const startTime = Date.now();
+    const checkInterval = 200; // Check every 200ms
+    let lastLogTime = startTime;
 
     while (!this.isConnected && Date.now() - startTime < timeout) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, checkInterval));
+
+      // Log progress every 5 seconds to help debug CI issues
+      const now = Date.now();
+      if (now - lastLogTime >= 5000) {
+        logger.info(
+          {
+            elapsed: Math.round((now - startTime) / 1000),
+            timeout: Math.round(timeout / 1000),
+          },
+          'Waiting for RabbitMQ connection...'
+        );
+        lastLogTime = now;
+      }
     }
 
     if (!this.isConnected) {
-      throw new Error('Failed to connect to RabbitMQ within timeout');
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      throw new Error(`Failed to connect to RabbitMQ within ${elapsed}s timeout`);
     }
   }
 

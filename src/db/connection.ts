@@ -27,6 +27,10 @@ const poolConfig = {
   max: parseInt(process.env.DATABASE_POOL_MAX || '20', 10),
   idle_timeout: 30, // Close idle connections after 30s
   connect_timeout: 10, // Timeout connection attempts after 10s
+  max_lifetime: 3600, // Close connections after 1 hour
+  connection: {
+    application_name: 'birthday-app',
+  },
 };
 
 // Create postgres client with connection pooling

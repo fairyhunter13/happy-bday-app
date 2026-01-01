@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { TestEnvironment, waitFor } from '../helpers/testcontainers';
+import { TestEnvironment, waitFor } from '../helpers/testcontainers-optimized';
 import { insertUser, findMessageLogsByUserId } from '../helpers/test-helpers';
 import { DateTime } from 'luxon';
 import type { Pool } from 'pg';

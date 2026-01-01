@@ -221,25 +221,23 @@
 - [x] ~~Security metrics (rate limit tracking, auth failures)~~ - Done - Implemented in `src/services/metrics.service.ts`
 - [x] ~~Advanced database stats (table sizes, index usage)~~ - Done - Custom queries in `postgres_exporter/queries.yaml`
 
-#### Low Priority (Deferred - Optional Enhancements)
-- [ ] OpenTelemetry integration (optional - future enhancement, requires additional package installation)
-- [ ] Distributed tracing (optional - future enhancement, requires OpenTelemetry integration)
-- [ ] Log aggregation setup (optional - requires external ELK/CloudWatch services)
-- [ ] Performance regression automation (optional - future enhancement)
-
-**Note**: These enhancements require external infrastructure or additional package dependencies.
-They are deferred to avoid scope creep and maintain focus on core functionality.
 
 ---
 
-### Removed Items (Unfeasible)
+### Removed Items (Out of Scope)
 
-The following items have been identified as outside the scope of codebase development:
+The following items have been removed from the project scope:
 
+**Optional Enhancements** (User Request: "for any optional enhancements, please don't do it ever, remove them"):
+- OpenTelemetry integration - Requires additional package installation and external infrastructure
+- Distributed tracing - Depends on OpenTelemetry integration and adds complexity
+- Log aggregation setup - Requires external ELK/CloudWatch services
+- Performance regression automation - Optional enhancement without clear ROI
+
+**Infrastructure Items** (Outside codebase development scope):
 | Original Item | Category | Reason |
 |---------------|----------|--------|
 | Deploy RabbitMQ cluster (3 nodes minimum) | Operations | Requires production infrastructure |
-| Configure log aggregation (ELK stack, CloudWatch) | Operations | Requires external services |
 | Deploy to Amazon MQ | Operations | AWS-specific deployment |
 | Set up Kubernetes cluster | Operations | Infrastructure provisioning |
 | Configure DNS / Set up domain | Operations | External resource |
@@ -247,7 +245,8 @@ The following items have been identified as outside the scope of codebase develo
 | Get approval from stakeholders | Process | Human coordination |
 | Create Codecov account | External | External service signup |
 
-**Note**: These items are valid for a production deployment checklist but cannot be completed through code changes alone. They are preserved for reference but marked as outside development scope.
+**Note**: Removed optional enhancements to maintain focus on core functionality and user requirements.
+Infrastructure items are valid for production deployment but cannot be completed through code changes alone.
 
 ---
 
