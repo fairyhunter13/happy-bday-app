@@ -26,7 +26,47 @@ export const HealthStatusSchema = {
 } as const;
 
 /**
- * Health check response schema
+ * Simple health check response schema (for /health endpoint)
+ * Returns basic status without service details
+ */
+export const SimpleHealthResponseSchema = {
+  type: 'object',
+  required: ['status', 'timestamp', 'uptime', 'version'],
+  properties: {
+    status: {
+      type: 'string',
+      enum: ['ok', 'down'],
+      description: 'ok = service running, down = service unavailable',
+      example: 'ok',
+    },
+    timestamp: {
+      type: 'string',
+      format: 'date-time',
+      description: 'Current server timestamp',
+      example: '2025-12-30T10:30:00.000Z',
+    },
+    uptime: {
+      type: 'number',
+      description: 'Server uptime in seconds',
+      example: 3600.5,
+    },
+    version: {
+      type: 'string',
+      description: 'Application version',
+      example: '1.0.0',
+    },
+  },
+  example: {
+    status: 'ok',
+    timestamp: '2025-12-30T10:30:00.000Z',
+    uptime: 3600.5,
+    version: '1.0.0',
+  },
+} as const;
+
+/**
+ * Detailed health check response schema (for /health/detailed endpoint)
+ * Returns comprehensive status including all service details
  */
 export const HealthResponseSchema = {
   type: 'object',
@@ -355,17 +395,18 @@ export const SchedulerHealthResponseSchema = {
 export const HealthRouteSchema = {
   tags: ['health'],
   summary: 'Get application health status',
-  description: `Comprehensive health check endpoint for monitoring application health.
+  description: `Simple health check endpoint for load balancers and basic monitoring.
 
 **Use Cases:**
-- Application monitoring and alerting
 - Load balancer health checks
-- Service discovery health probes
+- Basic service availability monitoring
+- Quick liveness verification
 
-**Status Codes:**
-- ok: All services operational
-- degraded: Some services have issues but app is functional
-- error: Critical services are down
+**Status Values:**
+- ok: Service is running normally
+- down: Service is unavailable
+
+**For detailed service health, use /health/detailed endpoint.**
 
 **No Rate Limit**`,
   operationId: 'getHealth',
@@ -374,7 +415,7 @@ export const HealthRouteSchema = {
       description: 'Health status retrieved successfully',
       content: {
         'application/json': {
-          schema: HealthResponseSchema,
+          schema: SimpleHealthResponseSchema,
         },
       },
     },
