@@ -7,13 +7,15 @@
 # ==============================================================================
 # Stage 1: Dependencies
 # ==============================================================================
-FROM node:20-alpine3.20 AS deps
+FROM node:20-alpine3.21 AS deps
 
 WORKDIR /app
 
 # Install dependencies for native modules (if any) and security updates
-RUN apk add --no-cache libc6-compat && \
-    apk upgrade --no-cache
+RUN apk update && \
+    apk add --no-cache libc6-compat && \
+    apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
 
 # Copy package files
 COPY package*.json ./
@@ -25,12 +27,14 @@ RUN npm ci --ignore-scripts && \
 # ==============================================================================
 # Stage 2: Builder
 # ==============================================================================
-FROM node:20-alpine3.20 AS builder
+FROM node:20-alpine3.21 AS builder
 
 WORKDIR /app
 
 # Apply security updates
-RUN apk upgrade --no-cache
+RUN apk update && \
+    apk upgrade --no-cache && \
+    rm -rf /var/cache/apk/*
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -46,7 +50,7 @@ RUN npm prune --production && \
 # ==============================================================================
 # Stage 3: Production Runner
 # ==============================================================================
-FROM node:20-alpine3.20 AS runner
+FROM node:20-alpine3.21 AS runner
 
 # Build arguments for labels
 ARG NODE_ENV=production
@@ -69,7 +73,8 @@ WORKDIR /app
 ENV NODE_ENV=${NODE_ENV}
 
 # Apply security updates and remove unnecessary packages
-RUN apk upgrade --no-cache && \
+RUN apk update && \
+    apk upgrade --no-cache && \
     apk add --no-cache dumb-init && \
     rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
