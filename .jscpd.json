@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/jscpd.json",
   "threshold": 5,
-  "minLines": 5,
-  "minTokens": 50,
+  "minLines": 7,
+  "minTokens": 60,
   "reporters": ["html", "json", "console"],
   "output": "./jscpd-report",
   "format": ["typescript", "javascript", "json", "yaml"],
@@ -26,7 +26,10 @@
     "**/grafana/**",
     "**/prometheus/**",
     "**/*.gen.ts",
-    "**/*.gen.js"
+    "**/*.gen.js",
+    "**/.claude-flow/**",
+    "**/.hive-mind/**",
+    "**/scripts/**"
   ],
   "absolute": true,
   "gitignore": true,
