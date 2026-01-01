@@ -31,6 +31,7 @@ import {
   sleep,
   createTodayBirthdayUTC,
 } from '../helpers/test-helpers.js';
+import { QUEUES } from '../../src/queue/config.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';
 import { MessagePublisher } from '../../src/queue/publisher.js';
@@ -83,12 +84,8 @@ describe('E2E: Complete Birthday Message Flow', () => {
     // Clean database and purge queues before each test
     // Note: Queue names must match actual queue names (birthday-messages, not birthday-queue)
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, [
-      'birthday-messages',
-      'birthday-dlq',
-      'anniversary-queue',
-      'dlq',
-    ]);
+    // Only purge queues that actually exist in the application
+    await purgeQueues(amqpConnection, [QUEUES.BIRTHDAY_MESSAGES, QUEUES.BIRTHDAY_DLQ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to avoid test pollution

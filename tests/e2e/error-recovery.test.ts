@@ -26,6 +26,7 @@ import {
   sleep,
 } from '../helpers/test-helpers.js';
 import { createResilientTester, RetryPresets } from '../helpers/resilient-api-tester.js';
+import { QUEUES } from '../../src/queue/config.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';
 import { MessagePublisher } from '../../src/queue/publisher.js';
@@ -72,12 +73,8 @@ describe('E2E: Error Handling and Recovery', () => {
 
   beforeEach(async () => {
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, [
-      'birthday-messages',
-      'birthday-dlq',
-      'anniversary-queue',
-      'dlq',
-    ]);
+    // Use queue names from config to ensure consistency
+    await purgeQueues(amqpConnection, [QUEUES.BIRTHDAY_MESSAGES, QUEUES.BIRTHDAY_DLQ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to ensure consistent test behavior
