@@ -117,9 +117,16 @@ export class PostgresTestContainer {
       throw new Error('PostgreSQL container not started');
     }
 
+    // In CI mode, migrations are already run by the workflow before tests
+    // Skip to avoid "relation already exists" errors
+    if (this.usingCI) {
+      console.log('CI mode: skipping migrations (already run by CI workflow)');
+      return;
+    }
+
     const db = drizzle(this.pool);
     await migrate(db, { migrationsFolder });
-    console.log(`Migrations completed (CI mode: ${this.usingCI})`);
+    console.log('Migrations completed (local mode)');
   }
 
   async stop(): Promise<void> {
@@ -367,16 +374,12 @@ export class TestEnvironment {
 
   async runMigrations(migrationsFolder: string = './drizzle'): Promise<void> {
     if (this.usingCI) {
-      // In CI, run migrations using the pool directly
-      if (!this.pool) {
-        throw new Error('PostgreSQL pool not initialized');
-      }
-      const db = drizzle(this.pool);
-      await migrate(db, { migrationsFolder });
-      console.log('Migrations completed (CI mode)');
-    } else {
-      await this.postgres.runMigrations(migrationsFolder);
+      // In CI, migrations are already run by the workflow before tests
+      // Skip to avoid "relation already exists" errors
+      console.log('CI mode: skipping migrations (already run by CI workflow)');
+      return;
     }
+    await this.postgres.runMigrations(migrationsFolder);
   }
 
   async teardown(): Promise<void> {
