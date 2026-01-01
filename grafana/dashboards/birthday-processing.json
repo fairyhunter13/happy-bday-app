@@ -1,0 +1,742 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - Birthday Processing",
+    "tags": ["birthday-scheduler", "birthday", "processing", "scheduler", "production"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Birthdays Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_birthdays_today{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Birthdays Today",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "blue"
+                },
+                {
+                  "value": 10,
+                  "color": "green"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 100,
+                  "color": "orange"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Number of birthdays occurring today"
+      },
+      {
+        "id": 2,
+        "title": "Birthdays Pending Processing",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_birthdays_pending{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Pending",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 20,
+                  "color": "yellow"
+                },
+                {
+                  "value": 50,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Birthdays queued for processing"
+      },
+      {
+        "id": 3,
+        "title": "Birthdays Remaining Today",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_birthdays_remaining_today{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Remaining",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 10,
+                  "color": "yellow"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Birthdays still to process today"
+      },
+      {
+        "id": 4,
+        "title": "Message Success Rate",
+        "type": "gauge",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "(sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) / (sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) + sum(rate(birthday_scheduler_messages_failed_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])))) * 100",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 90,
+                  "color": "yellow"
+                },
+                {
+                  "value": 95,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Message delivery success rate. SLO: >95%"
+      },
+      {
+        "id": 5,
+        "title": "Message Processing Flow",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 4,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_scheduled_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Scheduled",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_sent_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Sent",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_failed_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Failed",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Scheduled",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "Sent",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "Failed",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "Message lifecycle: scheduled → sent/failed"
+      },
+      {
+        "id": 6,
+        "title": "Birthday Processing Completions",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 4,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_birthdays_processed_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Processed",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_birthday_scan_completions_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Scans Complete",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_birthday_scan_errors_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Scan Errors",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Operations/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Processed",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "Scans Complete",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "Scan Errors",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "Birthday scan and processing rates"
+      },
+      {
+        "id": 7,
+        "title": "Scheduler Job Status",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_scheduler_jobs_scheduled_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Scheduled",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_scheduler_jobs_executed_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Executed",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_scheduler_job_failures_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Failed",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_scheduler_jobs_skipped_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Skipped",
+            "refId": "D"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Jobs/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "Scheduled",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "Executed",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "Failed",
+            "color": "#F2495C"
+          },
+          {
+            "alias": "Skipped",
+            "color": "#FFAB00"
+          }
+        ],
+        "description": "Scheduler job execution metrics"
+      },
+      {
+        "id": 8,
+        "title": "Scheduler Active/Pending Jobs",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 12,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_scheduler_active_jobs{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Active",
+            "refId": "A"
+          },
+          {
+            "expr": "birthday_scheduler_scheduler_pending_jobs{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Pending",
+            "refId": "B"
+          },
+          {
+            "expr": "birthday_scheduler_scheduler_running_jobs{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "Running",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Jobs",
+            "format": "short"
+          }
+        ],
+        "description": "Current scheduler job states"
+      },
+      {
+        "id": 9,
+        "title": "Message Channels",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_messages_by_channel_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (channel)",
+            "legendFormat": "{{channel}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Messages sent by channel (email, sms, push)"
+      },
+      {
+        "id": 10,
+        "title": "Birthday Greeting Types",
+        "type": "graph",
+        "gridPos": {
+          "x": 8,
+          "y": 20,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_birthday_greeting_types_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (greeting_type)",
+            "legendFormat": "{{greeting_type}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Greetings/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Birthday greeting types sent"
+      },
+      {
+        "id": 11,
+        "title": "Message Strategy Distribution",
+        "type": "graph",
+        "gridPos": {
+          "x": 16,
+          "y": 20,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_birthday_messages_by_strategy_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (strategy)",
+            "legendFormat": "{{strategy}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Messages/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Messages by delivery strategy"
+      },
+      {
+        "id": 12,
+        "title": "Scheduled Message Dispatches",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 26,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_scheduled_message_dispatches_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Dispatches",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Dispatches/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Rate of scheduled message dispatches"
+      },
+      {
+        "id": 13,
+        "title": "Scheduler Job Lag",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 26,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_scheduler_job_lag{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Lag (seconds)",
+            "format": "s"
+          }
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [60],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ],
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Scheduler Lag",
+          "noDataState": "no_data"
+        },
+        "description": "Scheduler lag behind schedule (seconds)"
+      },
+      {
+        "id": 14,
+        "title": "Timezone Processing",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 32,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_timezone_processing_completions_total{namespace=\"$namespace\", instance=~\"$instance\"}[1h]))",
+            "legendFormat": "Timezones Processed (1h)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "description": "Timezone processing completions in last hour"
+      },
+      {
+        "id": 15,
+        "title": "Scheduler Consecutive Failures",
+        "type": "stat",
+        "gridPos": {
+          "x": 8,
+          "y": 32,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_scheduler_consecutive_failures{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 3,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Consecutive scheduler failures"
+      },
+      {
+        "id": 16,
+        "title": "Scheduler Backlog Size",
+        "type": "graph",
+        "gridPos": {
+          "x": 16,
+          "y": 32,
+          "w": 8,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_scheduler_backlog_size{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Backlog Items",
+            "format": "short"
+          }
+        ],
+        "description": "Scheduler backlog size"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_birthdays_today, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_birthdays_today{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {"text": "1m", "value": "1m", "selected": false},
+            {"text": "5m", "value": "5m", "selected": true},
+            {"text": "10m", "value": "10m", "selected": false},
+            {"text": "30m", "value": "30m", "selected": false},
+            {"text": "1h", "value": "1h", "selected": false}
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\".*[Bb]irthday.*|.*[Ss]cheduler.*|.*[Mm]essage.*\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "Birthday/Scheduler Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Back to Overview",
+        "url": "/d/overview-dashboard",
+        "icon": "dashboard",
+        "type": "link"
+      },
+      {
+        "title": "Message Processing",
+        "url": "/d/message-processing",
+        "icon": "dashboard",
+        "type": "link"
+      }
+    ]
+  }
+}

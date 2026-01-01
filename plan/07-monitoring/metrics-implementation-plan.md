@@ -1115,7 +1115,7 @@ birthday_scheduler_message_processing_quantiles
 
 ### P0 (Critical - Week 1)
 **Goal**: Get core infrastructure metrics collecting
-- [ ] Database metrics interceptor
+- [x] Database metrics interceptor - Implemented in: `src/db/interceptors/metrics-interceptor.ts`
 - [ ] Queue metrics (consumer + publisher)
 - [ ] HTTP response/request size tracking
 
@@ -1125,9 +1125,9 @@ birthday_scheduler_message_processing_quantiles
 **Goal**: Add business and performance metrics
 - [ ] User lifecycle metrics
 - [ ] Birthday processing metrics
-- [ ] System/runtime metrics
+- [x] System/runtime metrics - Implemented in: `src/services/system-metrics.service.ts`
 - [ ] HTTP client metrics
-- [ ] Cache service with metrics
+- [x] Cache service with metrics - Implemented in: `src/services/cache.service.ts`
 
 **Expected Metrics Active**: +38
 

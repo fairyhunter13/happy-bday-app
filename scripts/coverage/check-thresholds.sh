@@ -13,10 +13,11 @@ if [ ! -f "$SUMMARY_FILE" ]; then
 fi
 
 # Thresholds (must match vitest.config.base.ts)
+# Updated for Phase 9 requirements
 LINE_THRESHOLD=80
-FUNCTION_THRESHOLD=50
-BRANCH_THRESHOLD=75
-STATEMENT_THRESHOLD=80
+FUNCTION_THRESHOLD=80
+BRANCH_THRESHOLD=80
+STATEMENT_THRESHOLD=85
 
 # Extract coverage percentages using jq
 LINES=$(jq -r '.total.lines.pct // 0' "$SUMMARY_FILE")

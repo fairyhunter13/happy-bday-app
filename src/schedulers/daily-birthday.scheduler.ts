@@ -85,6 +85,8 @@ export class DailyBirthdayScheduler {
   private async executeJob(): Promise<void> {
     if (this.isRunning) {
       logger.warn('DailyBirthdayScheduler job already running, skipping this execution');
+      // Record job skip metrics
+      metricsService.recordSchedulerJobSkipped('daily_birthday_precalculation', 'already_running');
       return;
     }
 
@@ -100,6 +102,7 @@ export class DailyBirthdayScheduler {
       const stats = await schedulerService.preCalculateTodaysBirthdays();
 
       const executionTime = Date.now() - startTime;
+      const executionDuration = executionTime / 1000; // Convert to seconds
 
       // Store stats for health check
       this.lastRunTime = new Date();
@@ -114,6 +117,10 @@ export class DailyBirthdayScheduler {
       // Update gauge metrics for birthdays today and pending
       metricsService.setBirthdaysToday('all', stats.totalBirthdays + stats.totalAnniversaries);
       metricsService.setBirthdaysPending('normal', stats.messagesScheduled);
+
+      // Record scheduler job metrics
+      metricsService.recordSchedulerExecution('daily_birthday', 'success', executionDuration);
+      metricsService.recordBirthdayProcessingDuration('success', 'daily', executionDuration);
 
       // Log comprehensive statistics
       logger.info(
@@ -145,6 +152,8 @@ export class DailyBirthdayScheduler {
             },
             'User precalculation error'
           );
+          // Record per-user error metrics
+          metricsService.recordBirthdayProcessed('error', 'unknown');
         });
       }
 
@@ -159,6 +168,7 @@ export class DailyBirthdayScheduler {
       logger.info('='.repeat(80));
     } catch (error) {
       const executionTime = Date.now() - startTime;
+      const executionDuration = executionTime / 1000; // Convert to seconds
 
       logger.error(
         {
@@ -168,6 +178,10 @@ export class DailyBirthdayScheduler {
         },
         'Daily birthday precalculation job failed'
       );
+
+      // Record failure metrics
+      metricsService.recordSchedulerExecution('daily_birthday', 'failure', executionDuration);
+      metricsService.recordBirthdayProcessingDuration('failure', 'daily', executionDuration);
 
       // Store error state for health check
       this.lastRunTime = new Date();

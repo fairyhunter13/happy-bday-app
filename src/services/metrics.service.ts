@@ -46,6 +46,8 @@ export class MetricsService {
   public readonly securityEventsTotal: Counter;
   public readonly rateLimitHitsTotal: Counter;
   public readonly authFailuresTotal: Counter;
+  public readonly externalApiErrorsTotal: Counter;
+  public readonly circuitBreakerTripsTotal: Counter;
 
   // ============================================
   // BUSINESS METRICS - Counters (15 new metrics)
@@ -771,6 +773,20 @@ export class MetricsService {
       name: 'birthday_scheduler_auth_failures_total',
       help: 'Total authentication failures',
       labelNames: ['failure_type', 'endpoint'],
+      registers: [this.registry],
+    });
+
+    this.externalApiErrorsTotal = new Counter({
+      name: 'birthday_scheduler_external_api_errors_total',
+      help: 'Total external API errors by type',
+      labelNames: ['api_name', 'method', 'error_type'],
+      registers: [this.registry],
+    });
+
+    this.circuitBreakerTripsTotal = new Counter({
+      name: 'birthday_scheduler_circuit_breaker_trips_total',
+      help: 'Total circuit breaker trips by service',
+      labelNames: ['service', 'operation'],
       registers: [this.registry],
     });
 
@@ -3808,6 +3824,140 @@ export class MetricsService {
    */
   recordApiResponseQuantiles(method: string, path: string, durationSeconds: number): void {
     this.apiResponseQuantiles.observe({ method, path }, durationSeconds);
+  }
+
+  // ============================================
+  // SCHEDULER METRICS - Recording Methods
+  // ============================================
+
+  /**
+   * Record scheduler job skipped (due to overlap or other reasons)
+   */
+  recordSchedulerJobSkipped(jobType: string, skipReason: string): void {
+    this.schedulerJobsSkippedTotal.inc({ job_type: jobType, skip_reason: skipReason });
+  }
+
+  /**
+   * Record scheduler job failure
+   */
+  recordSchedulerJobFailure(jobType: string, failureReason: string): void {
+    this.schedulerJobFailuresTotal.inc({ job_type: jobType, failure_reason: failureReason });
+  }
+
+  /**
+   * Record scheduler job scheduled
+   */
+  recordSchedulerJobScheduled(jobType: string): void {
+    this.schedulerJobsScheduledTotal.inc({ job_type: jobType });
+  }
+
+  /**
+   * Record scheduler job executed
+   */
+  recordSchedulerJobExecuted(jobType: string, status: string): void {
+    this.schedulerJobsExecutedTotal.inc({ job_type: jobType, status });
+  }
+
+  /**
+   * Record scheduler job cancellation
+   */
+  recordSchedulerJobCancellation(jobType: string, reason: string): void {
+    this.schedulerJobCancellationsTotal.inc({ job_type: jobType, reason });
+  }
+
+  /**
+   * Record scheduler job timeout
+   */
+  recordSchedulerJobTimeout(jobType: string): void {
+    this.schedulerJobTimeoutsTotal.inc({ job_type: jobType });
+  }
+
+  /**
+   * Record scheduler recovery event
+   */
+  recordSchedulerRecoveryEvent(recoveryType: string, status: string): void {
+    this.schedulerRecoveryEventsTotal.inc({ recovery_type: recoveryType, status });
+  }
+
+  /**
+   * Record scheduler missed execution
+   */
+  recordSchedulerMissedExecution(jobType: string, reason: string): void {
+    this.schedulerMissedExecutionsTotal.inc({ job_type: jobType, reason });
+  }
+
+  /**
+   * Record scheduler job retry
+   */
+  recordSchedulerJobRetry(jobType: string, retryCount: number): void {
+    this.schedulerJobRetriesTotal.inc({ job_type: jobType, retry_count: retryCount.toString() });
+  }
+
+  /**
+   * Record scheduler cron parse error
+   */
+  recordSchedulerCronParseError(cronExpression: string): void {
+    this.schedulerCronParseErrorsTotal.inc({ cron_expression: cronExpression });
+  }
+
+  /**
+   * Record birthday scan completion
+   */
+  recordBirthdayScanCompletion(timezone: string, status: string): void {
+    this.birthdayScanCompletionsTotal.inc({ timezone, status });
+  }
+
+  /**
+   * Record birthday scan error
+   */
+  recordBirthdayScanError(timezone: string, errorType: string): void {
+    this.birthdayScanErrorsTotal.inc({ timezone, error_type: errorType });
+  }
+
+  /**
+   * Record timezone processing completion
+   */
+  recordTimezoneProcessingCompletion(timezone: string, messageType: string): void {
+    this.timezoneProcessingCompletionsTotal.inc({ timezone, message_type: messageType });
+  }
+
+  /**
+   * Record scheduled message dispatch
+   */
+  recordScheduledMessageDispatch(messageType: string, status: string): void {
+    this.scheduledMessageDispatchesTotal.inc({ message_type: messageType, status });
+  }
+
+  /**
+   * Record scheduler health check
+   */
+  recordSchedulerHealthCheck(jobType: string, status: string): void {
+    this.schedulerHealthChecksTotal.inc({ job_type: jobType, status });
+  }
+
+  // ============================================
+  // API ERROR METRICS - Recording Methods
+  // ============================================
+
+  /**
+   * Record API validation error
+   */
+  recordApiValidationError(endpoint: string, errorType: string): void {
+    this.apiValidationErrorsTotal.inc({ endpoint, error_type: errorType });
+  }
+
+  /**
+   * Record external API error
+   */
+  recordExternalApiError(apiName: string, method: string, errorType: string): void {
+    this.apiErrorsTotal.inc({ api_name: apiName, method, error_type: errorType });
+  }
+
+  /**
+   * Record circuit breaker trip
+   */
+  recordCircuitBreakerTrip(service: string, endpoint: string): void {
+    this.apiCircuitBreakerTripsTotal.inc({ service, endpoint });
   }
 
   /**

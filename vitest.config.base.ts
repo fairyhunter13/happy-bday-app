@@ -38,9 +38,9 @@ export default defineConfig({
       // and re-enforced in coverage-report job after merging all unit test coverage reports
       thresholds: {
         lines: 80, // Minimum 80% line coverage
-        functions: 50, // Minimum 50% function coverage (unit tests only)
-        branches: 75, // Minimum 75% branch coverage
-        statements: 80, // Minimum 80% statement coverage
+        functions: 80, // Minimum 80% function coverage (Phase 9 requirement)
+        branches: 80, // Minimum 80% branch coverage (Phase 9 requirement)
+        statements: 85, // Minimum 85% statement coverage (Phase 9 requirement)
       },
 
       // Files to exclude from coverage

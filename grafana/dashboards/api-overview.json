@@ -1,0 +1,592 @@
+{
+  "dashboard": {
+    "title": "Birthday Scheduler - API Overview",
+    "tags": ["birthday-scheduler", "api", "overview", "production"],
+    "timezone": "browser",
+    "refresh": "30s",
+    "schemaVersion": 30,
+    "version": 1,
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate (Total)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Total Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "format": "short"
+          }
+        ],
+        "description": "Total API request rate across all endpoints"
+      },
+      {
+        "id": 2,
+        "title": "API Error Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 8,
+          "y": 0,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_errors_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (error_code)",
+            "legendFormat": "{{error_code}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Errors/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "/4../",
+            "color": "#FFAB00"
+          },
+          {
+            "alias": "/5../",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "API errors by error code - 4xx (client errors) and 5xx (server errors)"
+      },
+      {
+        "id": 3,
+        "title": "API Success Rate",
+        "type": "gauge",
+        "gridPos": {
+          "x": 16,
+          "y": 0,
+          "w": 8,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "100 - ((sum(rate(birthday_scheduler_api_errors_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) / sum(rate(birthday_scheduler_api_requests_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))) * 100)",
+            "legendFormat": "Success Rate",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 95,
+                  "color": "yellow"
+                },
+                {
+                  "value": 99,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "API success rate (non-error responses). SLO: >99%"
+      },
+      {
+        "id": 4,
+        "title": "API Response Time Percentiles",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 6,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(birthday_scheduler_api_response_time_seconds_bucket{namespace=\"$namespace\", instance=~\"$instance\"}[$interval])) by (le))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Response Time",
+            "format": "s"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "p50",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "p95",
+            "color": "#FFAB00"
+          },
+          {
+            "alias": "p99",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "API response time distribution. p95 target: <500ms, p99 target: <1s"
+      },
+      {
+        "id": 5,
+        "title": "API Requests by Status Range",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 6,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_by_status_range_total{namespace=\"$namespace\", instance=~\"$instance\", status_range=\"2xx\"}[$interval]))",
+            "legendFormat": "2xx Success",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_by_status_range_total{namespace=\"$namespace\", instance=~\"$instance\", status_range=\"3xx\"}[$interval]))",
+            "legendFormat": "3xx Redirect",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_by_status_range_total{namespace=\"$namespace\", instance=~\"$instance\", status_range=\"4xx\"}[$interval]))",
+            "legendFormat": "4xx Client Error",
+            "refId": "C"
+          },
+          {
+            "expr": "sum(rate(birthday_scheduler_api_requests_by_status_range_total{namespace=\"$namespace\", instance=~\"$instance\", status_range=\"5xx\"}[$interval]))",
+            "legendFormat": "5xx Server Error",
+            "refId": "D"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "format": "short"
+          }
+        ],
+        "seriesOverrides": [
+          {
+            "alias": "2xx Success",
+            "color": "#73BF69"
+          },
+          {
+            "alias": "3xx Redirect",
+            "color": "#5794F2"
+          },
+          {
+            "alias": "4xx Client Error",
+            "color": "#FFAB00"
+          },
+          {
+            "alias": "5xx Server Error",
+            "color": "#F2495C"
+          }
+        ],
+        "description": "API requests grouped by HTTP status code ranges"
+      },
+      {
+        "id": 6,
+        "title": "Slow API Requests",
+        "type": "stat",
+        "gridPos": {
+          "x": 0,
+          "y": 14,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_slow_requests_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Slow Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Requests exceeding latency threshold"
+      },
+      {
+        "id": 7,
+        "title": "API Timeouts",
+        "type": "stat",
+        "gridPos": {
+          "x": 6,
+          "y": 14,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_timeouts_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Timeouts/sec",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.01,
+                  "color": "yellow"
+                },
+                {
+                  "value": 0.1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "API request timeouts"
+      },
+      {
+        "id": 8,
+        "title": "Validation Errors",
+        "type": "stat",
+        "gridPos": {
+          "x": 12,
+          "y": 14,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(birthday_scheduler_api_validation_errors_total{namespace=\"$namespace\", instance=~\"$instance\"}[$interval]))",
+            "legendFormat": "Validation Errors/sec",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "area",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 0.1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 1,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Request validation failures"
+      },
+      {
+        "id": 9,
+        "title": "Circuit Breaker Trips",
+        "type": "stat",
+        "gridPos": {
+          "x": 18,
+          "y": 14,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(increase(birthday_scheduler_api_circuit_breaker_trips_total{namespace=\"$namespace\", instance=~\"$instance\"}[1h]))",
+            "legendFormat": "Trips (1h)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "value_and_name"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "green"
+                },
+                {
+                  "value": 1,
+                  "color": "yellow"
+                },
+                {
+                  "value": 5,
+                  "color": "red"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Circuit breaker activations in the last hour"
+      },
+      {
+        "id": 10,
+        "title": "Active API Requests",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 18,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_api_active_requests{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Active Requests",
+            "format": "short"
+          }
+        ],
+        "description": "Currently processing API requests"
+      },
+      {
+        "id": 11,
+        "title": "API Health Score",
+        "type": "gauge",
+        "gridPos": {
+          "x": 12,
+          "y": 18,
+          "w": 12,
+          "h": 6
+        },
+        "targets": [
+          {
+            "expr": "birthday_scheduler_api_health_score{namespace=\"$namespace\", instance=~\"$instance\"}",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "min": 0,
+            "max": 100,
+            "unit": "short",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "value": 0,
+                  "color": "red"
+                },
+                {
+                  "value": 50,
+                  "color": "yellow"
+                },
+                {
+                  "value": 80,
+                  "color": "green"
+                }
+              ]
+            }
+          }
+        },
+        "description": "Composite API health score (0-100)"
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {
+            "text": "Prometheus",
+            "value": "Prometheus"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false
+        },
+        {
+          "name": "namespace",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total, namespace)",
+          "current": {
+            "text": "production",
+            "value": "production"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Namespace",
+          "description": "Kubernetes namespace filter"
+        },
+        {
+          "name": "instance",
+          "type": "query",
+          "datasource": "${datasource}",
+          "query": "label_values(birthday_scheduler_api_requests_total{namespace=\"$namespace\"}, instance)",
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "hide": 0,
+          "includeAll": true,
+          "multi": true,
+          "options": [],
+          "refresh": 1,
+          "regex": "",
+          "skipUrlSync": false,
+          "sort": 1,
+          "label": "Instance",
+          "description": "Filter by instance/pod"
+        },
+        {
+          "name": "interval",
+          "type": "interval",
+          "query": "1m,5m,10m,30m,1h",
+          "current": {
+            "text": "5m",
+            "value": "5m"
+          },
+          "hide": 0,
+          "includeAll": false,
+          "multi": false,
+          "options": [
+            {"text": "1m", "value": "1m", "selected": false},
+            {"text": "5m", "value": "5m", "selected": true},
+            {"text": "10m", "value": "10m", "selected": false},
+            {"text": "30m", "value": "30m", "selected": false},
+            {"text": "1h", "value": "1h", "selected": false}
+          ],
+          "label": "Interval",
+          "description": "Time aggregation interval"
+        }
+      ]
+    },
+    "annotations": {
+      "list": [
+        {
+          "datasource": "${datasource}",
+          "enable": true,
+          "expr": "ALERTS{alertname=~\".*API.*\", namespace=\"$namespace\"}",
+          "iconColor": "rgba(255, 96, 96, 1)",
+          "name": "API Alerts",
+          "step": "60s",
+          "tagKeys": "alertname,severity",
+          "textFormat": "{{alertname}}: {{severity}}",
+          "titleFormat": "Alert"
+        }
+      ]
+    },
+    "links": [
+      {
+        "title": "Back to Overview",
+        "url": "/d/overview-dashboard",
+        "icon": "dashboard",
+        "type": "link"
+      },
+      {
+        "title": "Full API Performance",
+        "url": "/d/api-performance",
+        "icon": "dashboard",
+        "type": "link"
+      }
+    ]
+  }
+}
