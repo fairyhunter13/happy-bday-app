@@ -41,7 +41,7 @@ jobs:
     name: Unit Tests
     needs: [lint-and-type-check]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
     name: Integration Tests
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     services:
       postgres:
@@ -165,7 +165,7 @@ jobs:
     name: E2E Tests
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 12  # Reduced from 20 with optimized config
+    timeout-minutes: 10  # Must complete in < 10 minutes
 
     services:
       postgres:
@@ -250,7 +250,7 @@ jobs:
     name: Chaos Tests
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
 
     services:
       postgres:
@@ -471,7 +471,7 @@ jobs:
     name: Performance Load Tests (${{ matrix.test }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 12  # Reduced from 15
+    timeout-minutes: 10  # Must complete in < 10 minutes
     strategy:
       fail-fast: false
       matrix:
