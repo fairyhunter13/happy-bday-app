@@ -1,36 +1,24 @@
 # Sync Commands
 
-Commands for synchronizing and maintaining documentation and plan files.
+Commands for synchronizing, organizing, and analyzing documentation and plan files.
 
 ## Available Commands
 
 | Command | Description |
 |---------|-------------|
 | [gap-analysis](./gap-analysis.md) | Generate gap analysis comparing plans with actual implementation |
-| [docs-sync](./docs-sync.md) | Synchronize and maintain documentation files |
-| [docs-organize](./docs-organize.md) | Organize, restructure, and refactor documentation |
+| [docs-sync](./docs-sync.md) | Synchronize, organize, and maintain documentation files |
 
 ## Quick Start
 
 ### Generate Gap Analysis
 ```bash
-/sync:gap-analysis all
-/sync:gap-analysis testing
-/sync:gap-analysis architecture
+/sync:gap-analysis
 ```
 
-### Synchronize Documentation
+### Synchronize & Organize Documentation
 ```bash
-/sync:docs-sync all
-/sync:docs-sync docs
-/sync:docs-sync plan
-```
-
-### Organize Documentation
-```bash
-/sync:docs-organize all
-/sync:docs-organize docs
-/sync:docs-organize plan
+/sync:docs-sync
 ```
 
 ## What These Commands Do
@@ -46,8 +34,6 @@ Commands for synchronizing and maintaining documentation and plan files.
 - Marks completed checklists
 - Removes outdated references
 - Adds implementation file references
-
-### Docs Organize
 - Restructures files for better organization
 - Consolidates duplicate content
 - Archives outdated files
