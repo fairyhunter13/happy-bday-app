@@ -79,32 +79,10 @@ Thumbs.db
 *.seed
 *.pid.lock
 
-
-
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-
-
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-
-
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-
-
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-
-# local project data files
+# Local project data files
 project_data
 
-
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
-
-
-# Removed Windows wrapper files per user request
+# Windows wrapper files
 hive-mind-prompt-*.txt
 
 # Claude Flow generated files
@@ -124,12 +102,4 @@ memory/agents/*
 coordination/memory_bank/*
 coordination/subtasks/*
 coordination/orchestration/*
-*.db
-*.db-journal
-*.db-wal
-*.sqlite
-*.sqlite-journal
-*.sqlite-wal
 claude-flow
-# Removed Windows wrapper files per user request
-hive-mind-prompt-*.txt
