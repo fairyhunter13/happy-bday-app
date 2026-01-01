@@ -31,8 +31,8 @@ jobs:
         run: npm run lint -- --format json --output-file eslint-report.json
 
       - name: Annotate code with ESLint results
+        if: always()
         uses: ataylorme/eslint-annotate-action@v2
-        continue-on-error: true
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           report-json: eslint-report.json

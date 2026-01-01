@@ -62,7 +62,6 @@ jobs:
           echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
 
           exit $exit_code
-        continue-on-error: true
 
       - name: Upload mutation report
         uses: actions/upload-artifact@v4
@@ -149,7 +148,6 @@ jobs:
             }
 
       - name: Check mutation score threshold
-        continue-on-error: true
         run: |
           score="${{ steps.mutation.outputs.mutation_score }}"
           if [ -z "$score" ]; then
@@ -157,17 +155,13 @@ jobs:
             exit 0
           fi
 
-          # Check if score meets break threshold (50%)
-          if (( $(echo "$score < 50" | bc -l) )); then
-            echo "Mutation score ($score%) is below the break threshold (50%)"
-            exit 1
-          fi
-
           echo "Mutation score: $score%"
           if (( $(echo "$score >= 80" | bc -l) )); then
             echo "Excellent! Mutation score meets the high threshold."
           elif (( $(echo "$score >= 60" | bc -l) )); then
             echo "Good. Mutation score is acceptable but could be improved."
+          elif (( $(echo "$score < 50" | bc -l) )); then
+            echo "Warning: Mutation score ($score%) is below the break threshold (50%)"
           else
             echo "Warning: Mutation score is below the low threshold (60%)."
           fi
