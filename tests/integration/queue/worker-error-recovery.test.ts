@@ -469,9 +469,9 @@ describe('Worker Error Recovery Integration Tests', () => {
       await consumer.startConsuming();
 
       // Poll for message processing with timeout
-      const startTime = Date.now();
-      const maxWaitTime = 15000; // 15 seconds max
-      while (!secondWorkerProcessed && Date.now() - startTime < maxWaitTime) {
+      const pollStartTime = Date.now();
+      const pollMaxWaitTime = 15000; // 15 seconds max
+      while (!secondWorkerProcessed && Date.now() - pollStartTime < pollMaxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
