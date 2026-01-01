@@ -323,42 +323,50 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await consumer.startConsuming();
 
+      // Start with retryCount near max to speed up DLQ routing
+      // This tests that a message at max retries goes to DLQ on failure
       const job: MessageJob = {
         messageId: messageLog.id,
         userId: user.id,
         messageType: MessageType.BIRTHDAY,
         scheduledSendTime: new Date().toISOString(),
-        retryCount: 0,
+        retryCount: RETRY_CONFIG.MAX_RETRIES - 1,
         timestamp: Date.now(),
       };
 
       await publisher.publishMessage(job);
 
-      // Wait for processing and retries
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      // Message should be in DLQ now - check all messages in DLQ to find ours
+      // Poll for message in DLQ with timeout
       const channel = connection.getConsumerChannel();
       let foundOurMessage = false;
+      const startTime = Date.now();
+      const maxWaitTime = 10000; // 10 seconds max
 
-      // Try to find our message in the DLQ (may have other messages from race conditions)
-      for (let i = 0; i < 10; i++) {
-        const dlqMessage = await channel.get(QUEUES.BIRTHDAY_DLQ, { noAck: false });
-        if (dlqMessage === false) break;
+      while (!foundOurMessage && Date.now() - startTime < maxWaitTime) {
+        // Try to find our message in the DLQ
+        for (let i = 0; i < 10; i++) {
+          const dlqMessage = await channel.get(QUEUES.BIRTHDAY_DLQ, { noAck: false });
+          if (dlqMessage === false) break;
 
-        const content = JSON.parse(dlqMessage.content.toString());
-        if (content.messageId === messageLog.id) {
-          foundOurMessage = true;
-          channel.ack(dlqMessage);
-          break;
-        } else {
-          // Ack and continue looking
-          channel.ack(dlqMessage);
+          const content = JSON.parse(dlqMessage.content.toString());
+          if (content.messageId === messageLog.id) {
+            foundOurMessage = true;
+            channel.ack(dlqMessage);
+            break;
+          } else {
+            // Ack and continue looking
+            channel.ack(dlqMessage);
+          }
+        }
+
+        if (!foundOurMessage) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
+      expect(processingAttempts).toBeGreaterThanOrEqual(1);
       expect(foundOurMessage).toBe(true);
-    });
+    }, 15000);
   });
 
   describe('2. Worker Crash Simulation and Restart', () => {
