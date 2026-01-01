@@ -76,6 +76,7 @@ jobs:
             VERSION=${{ steps.meta.outputs.version }}
 
       - name: Build and push Docker image (Main/Tags)
+        id: build-push
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v5
         with:
@@ -92,10 +93,32 @@ jobs:
             VCS_REF=${{ github.sha }}
             VERSION=${{ steps.meta.outputs.version }}
 
+      - name: Pull image for testing
+        if: github.event_name != 'pull_request'
+        run: |
+          # Pull the image with retries to handle registry propagation delay
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-push.outputs.digest }}"
+          echo "Pulling image: $IMAGE"
+
+          for i in 1 2 3 4 5; do
+            echo "Attempt $i/5..."
+            if docker pull "$IMAGE"; then
+              echo "Successfully pulled image"
+              # Tag for easier reference in subsequent steps
+              docker tag "$IMAGE" "test-image:local"
+              exit 0
+            fi
+            echo "Pull failed, waiting 10 seconds..."
+            sleep 10
+          done
+
+          echo "::error::Failed to pull image after 5 attempts"
+          exit 1
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image-ref: test-image:local
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -154,10 +177,10 @@ jobs:
             user: "appuser"
           EOF
 
-          # Run tests
+          # Run tests using the locally tagged image
           if [ -f container-test.yaml ]; then
             echo "Running container structure tests..."
-            if ! container-structure-test test --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} --config container-test.yaml; then
+            if ! container-structure-test test --image test-image:local --config container-test.yaml; then
               echo "::error::Container structure tests failed - image may not meet requirements"
               exit 1
             fi
@@ -171,7 +194,7 @@ jobs:
         if: github.event_name != 'pull_request'
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          image: test-image:local
           format: spdx-json
           output-file: sbom.spdx.json
 
