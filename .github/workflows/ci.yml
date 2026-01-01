@@ -893,16 +893,15 @@ jobs:
           install-dependencies: 'false'
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+        run: npm audit --audit-level=critical
 
       # Optional Secret: SNYK_TOKEN
       # Purpose: Enable Snyk vulnerability scanning for dependencies
       # Setup: Get token from https://snyk.io/ and run 'gh secret set SNYK_TOKEN'
-      # Note: Workflow continues if token is missing (graceful degradation)
+      # Note: Step is skipped if token is missing (graceful degradation)
       - name: Run Snyk security scan
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/node@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:

@@ -38,12 +38,10 @@ jobs:
         run: npm ci
 
       - name: Run npm audit (production)
-        run: npm audit --omit=dev --audit-level=moderate
-        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=critical
 
       - name: Run npm audit (all dependencies)
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+        run: npm audit --audit-level=critical
 
       - name: Generate audit report
         if: always()
@@ -83,8 +81,8 @@ jobs:
         run: npm ci
 
       - name: Run Snyk to check for vulnerabilities
+        if: env.SNYK_TOKEN != ''
         uses: snyk/actions/node@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -97,9 +95,8 @@ jobs:
           sarif_file: snyk.sarif
 
       - name: Run Snyk to check Docker image vulnerabilities
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && env.SNYK_TOKEN != ''
         uses: snyk/actions/docker@master
-        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -168,7 +165,6 @@ jobs:
       - name: Run Trivy vulnerability scanner
         if: success()
         uses: aquasecurity/trivy-action@master
-        continue-on-error: true
         with:
           image-ref: test-image:${{ github.sha }}
           format: 'sarif'
@@ -179,14 +175,12 @@ jobs:
       - name: Upload Trivy results to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
-        continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
           category: 'trivy-container'
 
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
-        continue-on-error: true
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -196,9 +190,8 @@ jobs:
           exit-code: '0'
 
       - name: Upload filesystem scan results
-        if: hashFiles('trivy-fs-results.sarif') != ''
+        if: always() && hashFiles('trivy-fs-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
-        continue-on-error: true
         with:
           sarif_file: trivy-fs-results.sarif
           category: 'trivy-filesystem'

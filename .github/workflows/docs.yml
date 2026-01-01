@@ -48,22 +48,20 @@ jobs:
 
       - name: Run tests with coverage
         run: npm run test:coverage || true
-        continue-on-error: true
 
       - name: Update coverage history
         run: |
           chmod +x scripts/coverage/update-history.sh
           ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
-        continue-on-error: true
 
       - name: Generate OpenAPI spec
         run: npm run openapi:spec
 
       - name: Setup Pages
+        if: always()
         uses: actions/configure-pages@v4
         with:
           enablement: true
-        continue-on-error: true
 
       - name: Create documentation site
         run: |
@@ -299,7 +297,6 @@ jobs:
             git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
             git push || true
           fi
-        continue-on-error: true
 
   deploy:
     environment:

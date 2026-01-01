@@ -72,7 +72,7 @@ jobs:
         run: npm run perf:report
 
       - name: Download baseline results
-        continue-on-error: true
+        if: always()
         uses: dawidd6/action-download-artifact@v3
         with:
           name: performance-baseline
