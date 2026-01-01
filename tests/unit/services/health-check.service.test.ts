@@ -38,6 +38,25 @@ vi.mock('../../../src/services/cache.service.js', () => ({
   },
 }));
 
+// Mock RabbitMQ connection - use vi.hoisted to ensure mock is available
+const { mockRabbitMQHealthCheck, mockRabbitMQIsHealthy } = vi.hoisted(() => ({
+  mockRabbitMQHealthCheck: vi.fn().mockResolvedValue({
+    status: 'healthy',
+    connected: true,
+    channelCount: 1,
+  }),
+  mockRabbitMQIsHealthy: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock('../../../src/queue/connection.js', () => ({
+  RabbitMQConnection: {
+    getInstance: vi.fn(() => ({
+      healthCheck: mockRabbitMQHealthCheck,
+      isHealthy: mockRabbitMQIsHealthy,
+    })),
+  },
+}));
+
 // Mock package.json import
 vi.mock(
   '../../package.json',
@@ -88,6 +107,14 @@ describe('HealthCheckService', () => {
       keysCount: 100,
       memoryUsage: '10MB',
     });
+
+    // Default mock for RabbitMQ connection - must be reset after resetAllMocks
+    mockRabbitMQHealthCheck.mockResolvedValue({
+      status: 'healthy',
+      connected: true,
+      channelCount: 1,
+    });
+    mockRabbitMQIsHealthy.mockReturnValue(true);
   });
 
   afterEach(() => {
