@@ -103,9 +103,12 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
+      - name: Build application
+        run: npm run build
+
       - name: Start API server
         run: |
-          npm run start:test &
+          npm run start &
           echo $! > server.pid
           sleep 10
         env:
@@ -113,6 +116,7 @@ jobs:
           RABBITMQ_URL: amqp://test:test@localhost:5672
           REDIS_URL: redis://localhost:6379
           PORT: 3000
+          NODE_ENV: test
 
       - name: Verify API is running
         run: |
@@ -138,7 +142,6 @@ jobs:
             2>&1 | tee smoke-output.log
         env:
           API_URL: http://localhost:3000
-        continue-on-error: true
 
       - name: Stop API server
         if: always()
@@ -229,9 +232,12 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
+      - name: Build application
+        run: npm run build
+
       - name: Start API server
         run: |
-          npm run start:test &
+          npm run start &
           echo $! > server.pid
           sleep 10
         env:
@@ -239,6 +245,7 @@ jobs:
           RABBITMQ_URL: amqp://test:test@localhost:5672
           REDIS_URL: redis://localhost:6379
           PORT: 3000
+          NODE_ENV: test
 
       - name: Verify API is running
         run: |
@@ -265,7 +272,6 @@ jobs:
         env:
           API_URL: http://localhost:3000
           CI: 'true'
-        continue-on-error: true
 
       - name: Stop API server
         if: always()
