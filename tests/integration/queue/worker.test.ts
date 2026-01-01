@@ -104,27 +104,37 @@ describe('Message Worker Integration Tests', () => {
       const ciStrings = getCIConnectionStrings();
       rabbitMQUrl = ciStrings.rabbitmq;
 
+      console.log(`CI mode: connecting to PostgreSQL at ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`);
+
       // Setup test database connection using CI PostgreSQL
+      // Use shorter timeouts to fail fast
       pgClient = postgres(ciStrings.postgres, {
-        max: 2,
-        idle_timeout: 10,
-        connect_timeout: 30,
+        max: 3,
+        idle_timeout: 20,
+        connect_timeout: 5, // 5 second timeout per attempt
       });
 
-      // Wait for database to be ready
-      let retries = 30;
+      // Wait for database to be ready with exponential backoff
+      let retries = 10;
+      let delay = 500;
       while (retries > 0) {
         try {
-          await pgClient`SELECT 1`;
-          console.log('PostgreSQL connection established (CI mode)');
-          break;
-        } catch (error) {
-          retries--;
-          if (retries === 0) {
-            throw new Error(`Failed to connect to PostgreSQL: ${error}`);
+          // Force immediate connection test
+          const result = await pgClient`SELECT 1 as test`;
+          if (result && result.length > 0) {
+            console.log('PostgreSQL connection established (CI mode)');
+            break;
           }
-          console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          throw new Error('Empty result from SELECT 1');
+        } catch (error: unknown) {
+          retries--;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          if (retries === 0) {
+            throw new Error(`Failed to connect to PostgreSQL after 10 attempts: ${errorMessage}`);
+          }
+          console.log(`Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.5, 5000); // Exponential backoff up to 5s
         }
       }
 

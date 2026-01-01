@@ -49,29 +49,36 @@ export class PostgresTestContainer {
       // CI mode: connect to docker-compose services
       // Use minimal pool to avoid connection exhaustion when multiple test files run in parallel
       this.connectionString = getCIConnectionStrings().postgres;
+      console.log(
+        `CI mode: connecting to PostgreSQL at ${this.connectionString.replace(/:[^:@]+@/, ':***@')}`
+      );
+
       this.pool = new Pool({
         connectionString: this.connectionString,
-        max: 1, // Single connection per pool - multiple test files share the same PostgreSQL
+        max: 2, // Small pool - multiple test files share the same PostgreSQL
         min: 0, // Don't keep idle connections
         idleTimeoutMillis: 5000, // Release idle connections quickly
-        connectionTimeoutMillis: 30000, // Wait longer for connection when pool is exhausted
+        connectionTimeoutMillis: 10000, // 10 second timeout per attempt
         allowExitOnIdle: true, // Allow process to exit when pool is idle
       });
 
-      // Wait for database to be ready
-      let retries = 30;
+      // Wait for database to be ready with exponential backoff
+      let retries = 15;
+      let delay = 500;
       while (retries > 0) {
         try {
           await this.pool.query('SELECT 1');
           console.log('PostgreSQL connection established (CI mode)');
           break;
-        } catch (error) {
+        } catch (error: unknown) {
           retries--;
+          const errorMessage = error instanceof Error ? error.message : String(error);
           if (retries === 0) {
-            throw new Error(`Failed to connect to PostgreSQL: ${error}`);
+            throw new Error(`Failed to connect to PostgreSQL: ${errorMessage}`);
           }
-          console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          console.log(`Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          delay = Math.min(delay * 1.5, 3000); // Exponential backoff up to 3s
         }
       }
 
