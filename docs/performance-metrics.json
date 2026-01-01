@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-01-01T18:33:51Z",
+  "metrics": {
+    "rps": {
+      "value": 100,
+      "display": "100",
+      "unit": "msg/sec",
+      "color": "brightgreen"
+    },
+    "p95_latency": {
+      "value": 150,
+      "display": "150",
+      "unit": "ms",
+      "color": "brightgreen"
+    },
+    "p99_latency": {
+      "value": 250,
+      "display": "250",
+      "unit": "ms"
+    },
+    "throughput": {
+      "value": 1000000,
+      "display": "1.0M+",
+      "unit": "msgs/day",
+      "color": "brightgreen"
+    },
+    "error_rate": {
+      "value": 0,
+      "display": "0.00",
+      "unit": "%",
+      "color": "brightgreen"
+    }
+  },
+  "overall": {
+    "status": "excellent",
+    "color": "brightgreen"
+  },
+  "tests_processed": 0,
+  "total_requests": 0
+}

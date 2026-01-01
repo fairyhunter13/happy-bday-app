@@ -7,18 +7,58 @@ const errorRate = new Rate('errors');
 const messageProcessingTime = new Trend('message_processing_time');
 const messagesProcessed = new Counter('messages_processed');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
 /**
  * K6 Performance Test: Worker Scaling Test
  *
  * This test validates:
  * - Linear scaling efficiency with worker count
- * - 1 worker: 10 msg/sec
- * - 5 workers: 50 msg/sec
- * - 10 workers: 100 msg/sec
+ *
+ * CI mode (~6 min total):
+ * - 1 worker: 10 msg/sec for 2 minutes
+ * - 5 workers: 50 msg/sec for 2 minutes
+ * - 10 workers: 100 msg/sec for 2 minutes
+ *
+ * Full mode (~17 min total):
+ * - 1 worker: 10 msg/sec for 5 minutes
+ * - 5 workers: 50 msg/sec for 5 minutes
+ * - 10 workers: 100 msg/sec for 5 minutes
  * - Target: 90% scaling efficiency (10 workers = 9x throughput)
  */
 export const options = {
-  scenarios: {
+  scenarios: isCI ? {
+    // CI mode: shorter durations (~6 min total)
+    test_1_worker: {
+      executor: 'constant-arrival-rate',
+      rate: 10,
+      duration: '2m',
+      preAllocatedVUs: 15,
+      maxVUs: 30,
+      tags: { workers: '1' },
+      startTime: '0s',
+    },
+    test_5_workers: {
+      executor: 'constant-arrival-rate',
+      rate: 50,
+      duration: '2m',
+      preAllocatedVUs: 50,
+      maxVUs: 100,
+      tags: { workers: '5' },
+      startTime: '2m',
+    },
+    test_10_workers: {
+      executor: 'constant-arrival-rate',
+      rate: 100,
+      duration: '2m',
+      preAllocatedVUs: 100,
+      maxVUs: 200,
+      tags: { workers: '10' },
+      startTime: '4m',
+    },
+  } : {
+    // Full mode: original durations (~17 min total)
     test_1_worker: {
       executor: 'constant-arrival-rate',
       rate: 10,
@@ -106,9 +146,16 @@ export default function () {
 }
 
 export function setup() {
-  console.log('Starting worker scaling test...');
+  console.log('=== Starting Worker Scaling Test ===');
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Testing 1, 5, and 10 workers sequentially');
-  console.log('Target: 90% scaling efficiency');
+
+  if (isCI) {
+    console.log('CI mode: 2 minutes per worker count (~6 min total)');
+  } else {
+    console.log('Full mode: 5 minutes per worker count (~17 min total)');
+    console.log('Target: 90% scaling efficiency');
+  }
 
   return { startTime: new Date() };
 }

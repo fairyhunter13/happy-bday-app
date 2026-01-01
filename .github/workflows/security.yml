@@ -126,7 +126,7 @@ jobs:
             --enableRetired
             --enableExperimental
             --failOnCVSS 7
-            --suppression dependency-check-suppressions.xml
+            --suppression ${{ github.workspace }}/dependency-check-suppressions.xml
 
       - name: Upload OWASP report
         if: always()
@@ -226,11 +226,30 @@ jobs:
       - name: Validate licenses
         run: |
           # Fail if any dependency has a restricted license
-          RESTRICTED_LICENSES="GPL|AGPL|LGPL|SSPL|Commons Clause"
-          if license-checker --production --json | jq -r '.[] | .licenses' | grep -iE "$RESTRICTED_LICENSES"; then
-            echo "Found restricted licenses!"
+          # More precise patterns to avoid false positives
+          # Matches: GPL-2.0, GPL-3.0, AGPL-3.0, SSPL, Commons Clause
+          # Does NOT match: LGPL (LGPL is acceptable for dynamic linking in most cases)
+          echo "Checking for restricted licenses..."
+
+          # Extract licenses and check for truly restricted ones
+          RESTRICTED_FOUND=$(license-checker --production --json | jq -r '.[] | .licenses' | grep -iE "^(GPL|AGPL|SSPL)" | grep -v -i "LGPL" || true)
+
+          if [ -n "$RESTRICTED_FOUND" ]; then
+            echo "::error::Found GPL/AGPL/SSPL licenses which may not be compatible:"
+            echo "$RESTRICTED_FOUND"
+            echo ""
+            echo "Packages with restricted licenses:"
+            license-checker --production --json | jq -r 'to_entries[] | select(.value.licenses | test("^(GPL|AGPL|SSPL)"; "i")) | select(.value.licenses | test("LGPL"; "i") | not) | "\(.key): \(.value.licenses)"' || true
             exit 1
           fi
+
+          # Check for Commons Clause separately
+          COMMONS_CLAUSE=$(license-checker --production --json | jq -r '.[] | .licenses' | grep -i "Commons Clause" || true)
+          if [ -n "$COMMONS_CLAUSE" ]; then
+            echo "::error::Found Commons Clause license which is not compatible"
+            exit 1
+          fi
+
           echo "All licenses are compliant"
 
       - name: Upload license report
