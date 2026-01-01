@@ -73,6 +73,15 @@
             "command": "cat | jq -r '.tool_input.file_path // .tool_input.path // empty' | tr '\\n' '\\0' | xargs -0 -I {} npx claude-flow@alpha hooks post-edit --file '{}' --format true --update-memory true"
           }
         ]
+      },
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/bash -c 'INPUT=$(cat); if [ -f .hive-mind/hive.db ]; then MODEL=$(echo \"$INPUT\" | jq -r \".tool_input.model // \\\"default\\\"\"); AGENT_TYPE=$(echo \"$INPUT\" | jq -r \".tool_input.subagent_type // \\\"general-purpose\\\"\"); DESC=$(echo \"$INPUT\" | jq -r \".tool_input.description // \\\"task\\\"\" | head -c 100); AGENT_ID=\"task-agent-$(date +%s)-$$\"; SESSION_ID=$(sqlite3 .hive-mind/hive.db \"SELECT id FROM sessions WHERE status = '\\''active'\\'' ORDER BY created_at DESC LIMIT 1;\" 2>/dev/null); SWARM_ID=$(sqlite3 .hive-mind/hive.db \"SELECT swarm_id FROM sessions WHERE id = '\\''$SESSION_ID'\\'';\" 2>/dev/null); if [ -n \"$SWARM_ID\" ]; then sqlite3 .hive-mind/hive.db \"INSERT OR REPLACE INTO agents (id, swarm_id, name, type, role, metadata, status, created_at) VALUES ('\\''$AGENT_ID'\\'', '\\''$SWARM_ID'\\'', '\\''$DESC'\\'', '\\''$AGENT_TYPE'\\'', '\\''task-agent'\\'', json_object('\\''model'\\'', '\\''$MODEL'\\'', '\\''spawnedAt'\\'', datetime('\\''now'\\''), '\\''source'\\'', '\\''claude-code-task'\\''), '\\''spawned'\\'', datetime('\\''now'\\'')); \" 2>/dev/null && echo \"📊 Task agent tracked: $AGENT_TYPE (model: $MODEL)\"; fi; fi'"
+          }
+        ]
       }
     ],
     "PreCompact": [
