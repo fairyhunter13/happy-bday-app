@@ -1,0 +1,166 @@
+# Custom PostgreSQL queries for Birthday Scheduler application
+# These queries provide application-specific metrics beyond pg_exporter defaults
+
+pg_birthday_scheduler:
+  query: |
+    SELECT
+      COUNT(*) FILTER (WHERE DATE(birthday) = CURRENT_DATE) as birthdays_today,
+      COUNT(*) FILTER (WHERE DATE(birthday) > CURRENT_DATE AND DATE(birthday) <= CURRENT_DATE + INTERVAL '7 days') as birthdays_next_week,
+      COUNT(*) as total_users,
+      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours') as users_created_last_24h
+    FROM users
+  master: true
+  metrics:
+    - birthdays_today:
+        usage: "GAUGE"
+        description: "Number of birthdays today"
+    - birthdays_next_week:
+        usage: "GAUGE"
+        description: "Number of birthdays in the next 7 days"
+    - total_users:
+        usage: "GAUGE"
+        description: "Total users in the system"
+    - users_created_last_24h:
+        usage: "GAUGE"
+        description: "Users created in the last 24 hours"
+
+pg_message_logs_stats:
+  query: |
+    SELECT
+      status,
+      COUNT(*) as count,
+      COALESCE(AVG(EXTRACT(EPOCH FROM (updated_at - created_at))), 0) as avg_processing_time_seconds
+    FROM message_logs
+    WHERE created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY status
+  master: true
+  metrics:
+    - status:
+        usage: "LABEL"
+        description: "Message status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of messages by status"
+    - avg_processing_time_seconds:
+        usage: "GAUGE"
+        description: "Average processing time in seconds"
+
+pg_message_logs_hourly:
+  query: |
+    SELECT
+      EXTRACT(HOUR FROM created_at)::int as hour,
+      message_type,
+      COUNT(*) as count,
+      COUNT(*) FILTER (WHERE status = 'sent') as sent_count,
+      COUNT(*) FILTER (WHERE status = 'failed') as failed_count
+    FROM message_logs
+    WHERE created_at > NOW() - INTERVAL '24 hours'
+    GROUP BY EXTRACT(HOUR FROM created_at), message_type
+    ORDER BY hour
+  master: true
+  metrics:
+    - hour:
+        usage: "LABEL"
+        description: "Hour of the day (0-23)"
+    - message_type:
+        usage: "LABEL"
+        description: "Type of message (birthday, anniversary)"
+    - count:
+        usage: "GAUGE"
+        description: "Total messages processed in this hour"
+    - sent_count:
+        usage: "GAUGE"
+        description: "Messages sent successfully in this hour"
+    - failed_count:
+        usage: "GAUGE"
+        description: "Messages failed in this hour"
+
+pg_table_sizes:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      pg_total_relation_size(schemaname||'.'||tablename) as size_bytes,
+      pg_relation_size(schemaname||'.'||tablename) as table_size_bytes,
+      pg_total_relation_size(schemaname||'.'||tablename) - pg_relation_size(schemaname||'.'||tablename) as index_size_bytes
+    FROM pg_tables
+    WHERE schemaname = 'public'
+  master: true
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Total size including indexes"
+    - table_size_bytes:
+        usage: "GAUGE"
+        description: "Table size excluding indexes"
+    - index_size_bytes:
+        usage: "GAUGE"
+        description: "Total index size"
+
+pg_scheduled_messages:
+  query: |
+    SELECT
+      message_type,
+      status,
+      COUNT(*) as count,
+      MIN(scheduled_at) as earliest_scheduled,
+      MAX(scheduled_at) as latest_scheduled
+    FROM message_logs
+    WHERE status = 'scheduled' AND scheduled_at > NOW()
+    GROUP BY message_type, status
+  master: true
+  metrics:
+    - message_type:
+        usage: "LABEL"
+        description: "Type of scheduled message"
+    - status:
+        usage: "LABEL"
+        description: "Message status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of scheduled messages"
+
+pg_timezone_distribution:
+  query: |
+    SELECT
+      timezone,
+      COUNT(*) as user_count
+    FROM users
+    GROUP BY timezone
+    ORDER BY user_count DESC
+    LIMIT 20
+  master: true
+  metrics:
+    - timezone:
+        usage: "LABEL"
+        description: "User timezone"
+    - user_count:
+        usage: "GAUGE"
+        description: "Number of users in this timezone"
+
+pg_connection_stats:
+  query: |
+    SELECT
+      state,
+      COUNT(*) as count,
+      MAX(EXTRACT(EPOCH FROM (NOW() - state_change)))::bigint as max_duration_seconds
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+    GROUP BY state
+  master: true
+  metrics:
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - count:
+        usage: "GAUGE"
+        description: "Number of connections in this state"
+    - max_duration_seconds:
+        usage: "GAUGE"
+        description: "Maximum duration in this state"
