@@ -402,12 +402,17 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       let firstWorkerProcessed = false;
       let secondWorkerProcessed = false;
+      let firstWorkerMessageId: string | null = null;
 
       // First consumer that fails with a TRANSIENT error (these get requeued)
       const firstConsumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          firstWorkerProcessed = true;
+          // Only track our specific test message
+          if (job.messageId === messageLog.id) {
+            firstWorkerProcessed = true;
+            firstWorkerMessageId = job.messageId;
+          }
           // Simulate transient network error - this WILL be requeued
           // Using "timeout" pattern which matches the transient error detection
           throw new Error('Network timeout - temporarily unavailable');
@@ -427,8 +432,15 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await publisher.publishMessage(job);
 
+      // Wait for our specific message to be processed by first worker
+      const startTime = Date.now();
+      const maxWaitTime = 10000; // 10 seconds max
+      while (!firstWorkerProcessed && Date.now() - startTime < maxWaitTime) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      }
+
       // Wait for transient error handling and requeue
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Stop first worker - this forces rebalancing of unacked messages
       await firstConsumer.stopConsuming();
@@ -438,15 +450,19 @@ describe('Worker Error Recovery Integration Tests', () => {
       consumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          secondWorkerProcessed = true;
-          // Successful processing
-          await testDb
-            .update(messageLogs)
-            .set({
-              status: MessageStatus.SENT,
-              updatedAt: new Date(),
-            })
-            .where(eq(messageLogs.id, job.messageId));
+          // Only track and process our specific test message
+          if (job.messageId === messageLog.id) {
+            secondWorkerProcessed = true;
+            // Successful processing
+            await testDb
+              .update(messageLogs)
+              .set({
+                status: MessageStatus.SENT,
+                updatedAt: new Date(),
+              })
+              .where(eq(messageLogs.id, job.messageId));
+          }
+          // Ignore other messages (leftover from previous tests)
         },
       });
 
