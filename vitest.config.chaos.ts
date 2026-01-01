@@ -40,15 +40,11 @@ export default mergeConfig(
       // Serialize file execution in CI to prevent race conditions
       ...(isCI ? { fileParallelism: false } : {}),
 
-      // Coverage - NO thresholds for chaos tests
-      // Focus on resilience testing, not coverage metrics
+      // Coverage - DISABLED for chaos tests
+      // Only unit tests collect coverage (faster CI, clearer metrics)
+      // Chaos tests focus on resilience, not coverage
       coverage: {
-        thresholds: {
-          lines: 0,
-          functions: 0,
-          branches: 0,
-          statements: 0,
-        },
+        enabled: false,
       },
     },
   })

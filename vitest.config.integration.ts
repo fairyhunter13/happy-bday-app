@@ -41,16 +41,11 @@ export default mergeConfig(
       // Serialize file execution in CI to prevent race conditions
       ...(isCI ? { fileParallelism: false } : {}),
 
-      // Coverage - NO individual thresholds for integration tests
-      // Coverage IS collected and merged in CI coverage-report job
-      // Focus on logic correctness; thresholds enforced on merged coverage
+      // Coverage - DISABLED for integration tests
+      // Only unit tests collect coverage (faster CI, clearer metrics)
+      // Integration tests focus on logic correctness, not coverage
       coverage: {
-        thresholds: {
-          lines: 0,
-          functions: 0,
-          branches: 0,
-          statements: 0,
-        },
+        enabled: false,
       },
     },
   })

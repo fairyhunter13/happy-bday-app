@@ -22,21 +22,25 @@ export default defineConfig({
     // Setup files
     setupFiles: ['./tests/setup.ts'],
 
-    // Coverage configuration
+    // Coverage configuration - UNIT TESTS ONLY
+    // IMPORTANT: Coverage is ONLY collected for unit tests
+    // Integration, E2E, and chaos tests have coverage disabled for faster CI
+    // This provides clear metrics from unit tests without redundant instrumentation
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
 
-      // Coverage thresholds (ENFORCED in CI/CD via .github/workflows/ci.yml)
-      // CI ENFORCEMENT: coverage-report job fails if merged coverage < thresholds
+      // Coverage thresholds - UNIT TESTS ONLY
+      // (ENFORCED in CI/CD via .github/workflows/ci.yml)
+      // CI ENFORCEMENT: coverage-report job fails if unit test coverage < thresholds
       // Script: scripts/coverage/check-thresholds.sh
       // NOTE: These thresholds are disabled in vitest.config.unit-ci.ts for sharded runs
-      // and re-enforced in coverage-report job after merging all coverage reports
+      // and re-enforced in coverage-report job after merging all unit test coverage reports
       thresholds: {
-        lines: 80,        // Minimum 80% line coverage
-        functions: 50,    // Minimum 50% function coverage (unit tests only)
-        branches: 75,     // Minimum 75% branch coverage
-        statements: 80,   // Minimum 80% statement coverage
+        lines: 80, // Minimum 80% line coverage
+        functions: 50, // Minimum 50% function coverage (unit tests only)
+        branches: 75, // Minimum 75% branch coverage
+        statements: 80, // Minimum 80% statement coverage
       },
 
       // Files to exclude from coverage
@@ -152,7 +156,7 @@ export default defineConfig({
     },
 
     // Default timeouts
-    testTimeout: 30000,  // 30 seconds
+    testTimeout: 30000, // 30 seconds
     hookTimeout: 30000,
 
     // Pool options for parallel execution
