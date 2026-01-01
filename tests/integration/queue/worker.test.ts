@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import { RabbitMQContainer, StartedRabbitMQContainer } from '@testcontainers/rabbitmq';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { isCI, getCIConnectionStrings } from '../../helpers/testcontainers.js';
 import {
   RabbitMQConnection,
   MessagePublisher,
@@ -96,63 +97,99 @@ describe('Message Worker Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    // Start RabbitMQ container
-    rabbitContainer = await new RabbitMQContainer('rabbitmq:3.13-management-alpine')
-      .withExposedPorts(5672, 15672)
-      .withStartupTimeout(90000)
-      .start();
+    const usingCI = isCI();
 
-    rabbitMQUrl = rabbitContainer.getAmqpUrl();
+    if (usingCI) {
+      // In CI mode, use docker-compose services
+      const ciStrings = getCIConnectionStrings();
+      rabbitMQUrl = ciStrings.rabbitmq;
 
-    // Start PostgreSQL container
-    pgContainer = await new PostgreSqlContainer('postgres:16-alpine')
-      .withDatabase('test_db')
-      .withUsername('test_user')
-      .withPassword('test_password')
-      .start();
+      // Setup test database connection using CI PostgreSQL
+      pgClient = postgres(ciStrings.postgres, {
+        max: 2,
+        idle_timeout: 10,
+        connect_timeout: 30,
+      });
 
-    // Setup test database connection
-    const connectionString = pgContainer.getConnectionUri();
-    pgClient = postgres(connectionString);
-    testDb = drizzle(pgClient, { schema });
+      // Wait for database to be ready
+      let retries = 30;
+      while (retries > 0) {
+        try {
+          await pgClient`SELECT 1`;
+          console.log('PostgreSQL connection established (CI mode)');
+          break;
+        } catch (error) {
+          retries--;
+          if (retries === 0) {
+            throw new Error(`Failed to connect to PostgreSQL: ${error}`);
+          }
+          console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      }
 
-    // Create tables
-    await pgClient`
-      CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        timezone VARCHAR(100) NOT NULL,
-        birthday_date DATE,
-        anniversary_date DATE,
-        location_city VARCHAR(100),
-        location_country VARCHAR(100),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        deleted_at TIMESTAMPTZ
-      )
-    `;
+      testDb = drizzle(pgClient, { schema });
+      // Tables are created by migrations in CI
+    } else {
+      // Local mode: Start testcontainers
+      // Start RabbitMQ container
+      rabbitContainer = await new RabbitMQContainer('rabbitmq:3.13-management-alpine')
+        .withExposedPorts(5672, 15672)
+        .withStartupTimeout(90000)
+        .start();
 
-    await pgClient`
-      CREATE TABLE IF NOT EXISTS message_logs (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        message_type VARCHAR(50) NOT NULL,
-        message_content TEXT NOT NULL,
-        scheduled_send_time TIMESTAMPTZ NOT NULL,
-        actual_send_time TIMESTAMPTZ,
-        status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
-        retry_count INTEGER NOT NULL DEFAULT 0,
-        last_retry_at TIMESTAMPTZ,
-        api_response_code INTEGER,
-        api_response_body TEXT,
-        error_message TEXT,
-        idempotency_key VARCHAR(255) NOT NULL UNIQUE,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      )
-    `;
+      rabbitMQUrl = rabbitContainer.getAmqpUrl();
+
+      // Start PostgreSQL container
+      pgContainer = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('test_db')
+        .withUsername('test_user')
+        .withPassword('test_password')
+        .start();
+
+      // Setup test database connection
+      const connectionString = pgContainer.getConnectionUri();
+      pgClient = postgres(connectionString);
+      testDb = drizzle(pgClient, { schema });
+
+      // Create tables (only in local mode - CI uses migrations)
+      await pgClient`
+        CREATE TABLE IF NOT EXISTS users (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          first_name VARCHAR(100) NOT NULL,
+          last_name VARCHAR(100) NOT NULL,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          timezone VARCHAR(100) NOT NULL,
+          birthday_date DATE,
+          anniversary_date DATE,
+          location_city VARCHAR(100),
+          location_country VARCHAR(100),
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          deleted_at TIMESTAMPTZ
+        )
+      `;
+
+      await pgClient`
+        CREATE TABLE IF NOT EXISTS message_logs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          message_type VARCHAR(50) NOT NULL,
+          message_content TEXT NOT NULL,
+          scheduled_send_time TIMESTAMPTZ NOT NULL,
+          actual_send_time TIMESTAMPTZ,
+          status VARCHAR(20) NOT NULL DEFAULT 'SCHEDULED',
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          last_retry_at TIMESTAMPTZ,
+          api_response_code INTEGER,
+          api_response_body TEXT,
+          error_message TEXT,
+          idempotency_key VARCHAR(255) NOT NULL UNIQUE,
+          created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+      `;
+    }
 
     // Wait for RabbitMQ to be fully ready
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -170,11 +207,14 @@ describe('Message Worker Integration Tests', () => {
     if (pgClient) {
       await pgClient.end();
     }
-    if (rabbitContainer) {
-      await rabbitContainer.stop();
-    }
-    if (pgContainer) {
-      await pgContainer.stop();
+    // Only stop containers in local mode (not in CI)
+    if (!isCI()) {
+      if (rabbitContainer) {
+        await rabbitContainer.stop();
+      }
+      if (pgContainer) {
+        await pgContainer.stop();
+      }
     }
   }, 30000);
 
