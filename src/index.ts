@@ -7,6 +7,7 @@ import { startServer, shutdownServer } from './app.js';
 import { logger, logStartup } from './config/logger.js';
 import { schedulerManager } from './schedulers/index.js';
 import { systemMetricsService } from './services/system-metrics.service.js';
+import { initializeRabbitMQ, getRabbitMQ } from './queue/connection.js';
 
 /**
  * Main application entry point
@@ -23,6 +24,11 @@ async function main(): Promise<void> {
     logger.info('Starting system metrics collection...');
     systemMetricsService.start();
     logger.info('System metrics collection started successfully');
+
+    // Initialize RabbitMQ connection (required by schedulers)
+    logger.info('Initializing RabbitMQ connection...');
+    await initializeRabbitMQ();
+    logger.info('RabbitMQ connection established');
 
     // Start schedulers
     logger.info('Initializing CRON schedulers...');
@@ -45,6 +51,16 @@ async function main(): Promise<void> {
         logger.info('Stopping system metrics collection...');
         await systemMetricsService.stop();
         logger.info('System metrics collection stopped successfully');
+
+        // Close RabbitMQ connection
+        logger.info('Closing RabbitMQ connection...');
+        try {
+          const rabbitMQ = getRabbitMQ();
+          await rabbitMQ.close();
+          logger.info('RabbitMQ connection closed');
+        } catch (error) {
+          logger.warn({ error }, 'Error closing RabbitMQ connection (may already be closed)');
+        }
 
         // Shutdown server
         await shutdownServer(app);
