@@ -9,7 +9,7 @@
  * Integrates with Prometheus metrics service
  */
 
-import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
 import { metricsService } from '../services/metrics.service.js';
 import { logger } from '../config/logger.js';
 
@@ -41,10 +41,18 @@ function normalizePath(path: string): string {
 /**
  * Metrics tracking middleware for Fastify
  *
+ * This is a Fastify onRequest hook that tracks HTTP request metrics.
+ * It uses the done() callback to signal completion and avoid blocking the request.
+ *
  * @param request - Fastify request
  * @param reply - Fastify reply
+ * @param done - Callback to signal hook completion
  */
-export function metricsMiddleware(request: FastifyRequest, reply: FastifyReply): void {
+export function metricsMiddleware(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  done: HookHandlerDoneFunction
+): void {
   const startTime = Date.now();
 
   // Track request start
@@ -83,4 +91,7 @@ export function metricsMiddleware(request: FastifyRequest, reply: FastifyReply):
   };
 
   reply.raw.on('finish', trackMetrics);
+
+  // Signal hook completion immediately to avoid blocking the request
+  done();
 }
