@@ -24,10 +24,10 @@ const isCI = __ENV.CI === 'true';
 const E2E_STAGES = isCI
   ? [
       { duration: '1m', target: 50 },    // CI: Ramp to 50 flows
-      { duration: '2m', target: 100 },   // CI: Ramp to 100 flows
-      { duration: '5m', target: 100 },   // CI: Sustain 100 flows
+      { duration: '2m', target: 150 },   // CI: Ramp to 150 flows
+      { duration: '5m', target: 150 },   // CI: Sustain for 5 minutes
       { duration: '2m', target: 0 },     // CI: Ramp down
-    ]
+    ]  // Total: ~10 minutes
   : [
       { duration: '2m', target: 100 },   // Full: Ramp to 100 flows
       { duration: '3m', target: 500 },   // Full: Ramp to 500 flows
@@ -48,8 +48,8 @@ const E2E_STAGES = isCI
  * 5. Email sent via external service
  *
  * Load profile (CI mode: ~10 min total):
- * - Ramp up: 0 → 50 → 100 flows over 3 minutes
- * - Sustained: 100 flows for 5 minutes
+ * - Ramp up: 0 → 50 → 150 flows over 3 minutes
+ * - Sustained: 150 flows for 5 minutes
  * - Ramp down: 2 minutes
  *
  * Load profile (Full mode: ~37 min total):
@@ -479,9 +479,9 @@ export function setup() {
   console.log('  5. Email sent and verified');
 
   if (isCI) {
-    console.log('Load profile: 0 → 50 → 100 concurrent flows');
-    console.log('Sustained: 100 flows for 5 minutes');
-    console.log('Expected flows: ~1,500 total');
+    console.log('Load profile: 0 → 50 → 150 concurrent flows over 3 minutes');
+    console.log('Sustained: 150 flows for 5 minutes');
+    console.log('Expected flows: ~1,200 total');
   } else {
     console.log('Load profile: 0 → 100 → 500 → 1000 concurrent flows');
     console.log('Sustained: 1000 flows for 20 minutes');

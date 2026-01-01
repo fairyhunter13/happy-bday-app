@@ -21,25 +21,25 @@ const isCI = __ENV.CI === 'true';
 // Scenario configurations based on environment
 const WORKER_SCENARIOS = isCI
   ? {
-      // CI mode: shortened scenarios (~10 min total)
+      // CI mode: optimized scenarios (~10 min total)
       single_worker_baseline: {
         executor: 'constant-arrival-rate',
-        rate: 50, // 50 messages/min
+        rate: 80, // 80 messages/min
         timeUnit: '1m',
         duration: '2m',
-        preAllocatedVUs: 5,
-        maxVUs: 10,
+        preAllocatedVUs: 8,
+        maxVUs: 15,
         exec: 'testWorkerProcessing',
         tags: { workers: '1', scenario: 'baseline' },
         env: { WORKER_COUNT: '1' },
       },
       five_workers_medium: {
         executor: 'constant-arrival-rate',
-        rate: 100, // 100 messages/min
+        rate: 150, // 150 messages/min
         timeUnit: '1m',
-        duration: '2m',
-        preAllocatedVUs: 10,
-        maxVUs: 20,
+        duration: '3m',
+        preAllocatedVUs: 15,
+        maxVUs: 30,
         exec: 'testWorkerProcessing',
         tags: { workers: '5', scenario: 'medium' },
         env: { WORKER_COUNT: '5' },
@@ -47,27 +47,27 @@ const WORKER_SCENARIOS = isCI
       },
       ten_workers_high: {
         executor: 'constant-arrival-rate',
-        rate: 200, // 200 messages/min
+        rate: 250, // 250 messages/min
         timeUnit: '1m',
         duration: '3m',
-        preAllocatedVUs: 20,
-        maxVUs: 40,
+        preAllocatedVUs: 25,
+        maxVUs: 50,
         exec: 'testWorkerProcessing',
         tags: { workers: '10', scenario: 'high' },
         env: { WORKER_COUNT: '10' },
-        startTime: '4m',
+        startTime: '5m',
       },
       failure_retry_test: {
         executor: 'constant-arrival-rate',
-        rate: 50, // 50 messages/min
+        rate: 100, // 100 messages/min
         timeUnit: '1m',
         duration: '2m',
-        preAllocatedVUs: 10,
-        maxVUs: 20,
+        preAllocatedVUs: 15,
+        maxVUs: 30,
         exec: 'testFailureRetry',
         tags: { workers: '10', scenario: 'failure' },
         env: { WORKER_COUNT: '10' },
-        startTime: '7m',
+        startTime: '8m',
       },
     }
   : {
@@ -143,10 +143,10 @@ const WORKER_SCENARIOS = isCI
  * - Worker scaling efficiency
  *
  * CI mode (~10 min total):
- * 1. Baseline: 1 worker, 50 messages/min for 2 minutes
- * 2. Medium: 5 workers, 100 messages/min for 2 minutes
- * 3. High: 10 workers, 200 messages/min for 3 minutes
- * 4. Failure: Retry testing 50 messages/min for 2 minutes
+ * 1. Baseline: 1 worker, 80 messages/min for 2 minutes
+ * 2. Medium: 5 workers, 150 messages/min for 3 minutes
+ * 3. High: 10 workers, 250 messages/min for 3 minutes
+ * 4. Failure: Retry testing 100 messages/min for 2 minutes
  *
  * Full mode (~30 min total):
  * 1. Baseline: 1 worker, 100 messages/min for 5 minutes
@@ -398,11 +398,11 @@ export function setup() {
   console.log('Test scenarios:');
 
   if (isCI) {
-    console.log('  1. Baseline: 1 worker @ 50 msg/min (2m)');
-    console.log('  2. Medium: 5 workers @ 100 msg/min (2m)');
-    console.log('  3. High: 10 workers @ 200 msg/min (3m)');
-    console.log('  4. Failure: Retry testing @ 50 msg/min (2m)');
-    console.log('Expected total: ~600 messages processed');
+    console.log('  1. Baseline: 1 worker @ 80 msg/min (2m)');
+    console.log('  2. Medium: 5 workers @ 150 msg/min (3m)');
+    console.log('  3. High: 10 workers @ 250 msg/min (3m)');
+    console.log('  4. Failure: Retry testing @ 100 msg/min (2m)');
+    console.log('Expected total: ~1,410 messages processed');
   } else {
     console.log('  1. Baseline: 1 worker @ 100 msg/min (5m)');
     console.log('  2. Medium: 5 workers @ 500 msg/min (5m)');

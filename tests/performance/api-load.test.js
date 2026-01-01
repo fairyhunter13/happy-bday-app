@@ -23,9 +23,9 @@ const LOAD_STAGES = isCI
   ? [
       { duration: '1m', target: 50 },    // CI: Ramp to 50 users
       { duration: '2m', target: 200 },   // CI: Ramp to 200 users
-      { duration: '5m', target: 200 },   // CI: Sustain 200 users for 5 minutes
+      { duration: '5m', target: 200 },   // CI: Sustain for 5 minutes
       { duration: '2m', target: 0 },     // CI: Ramp down
-    ]
+    ]  // Total: ~10 minutes
   : [
       { duration: '2m', target: 100 },   // Full: Ramp up to 100 users
       { duration: '3m', target: 500 },   // Full: Ramp up to 500 users
@@ -45,7 +45,7 @@ const LOAD_STAGES = isCI
  *
  * Load profile (CI mode: ~10 min total):
  * - Ramp up: 0 → 50 → 200 users over 3 minutes
- * - Sustained: 5 minutes at 200 concurrent users
+ * - Sustained: 200 users for 5 minutes
  * - Ramp down: 2 minutes
  *
  * Load profile (Full mode: ~45 min total):
@@ -356,7 +356,7 @@ export function setup() {
   if (isCI) {
     console.log('Load profile: 0 → 50 → 200 users over 3 minutes');
     console.log('Sustained load: 200 users for 5 minutes');
-    console.log('Expected operations: ~5,000 total requests');
+    console.log('Expected operations: ~12,000 total requests');
   } else {
     console.log('Load profile: 0 → 100 → 500 → 1000 users over 10 minutes');
     console.log('Sustained load: 1000 users for 30 minutes');

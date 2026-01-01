@@ -479,10 +479,14 @@ jobs:
         run: docker compose -f docker-compose.test.yml down -v
 
   performance-load-tests:
-    name: Performance Load Tests
+    name: Performance Load Tests (${{ matrix.test }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [api-load, scheduler-load, worker-throughput, e2e-load]
 
     steps:
       - name: Checkout code
@@ -597,84 +601,25 @@ jobs:
       - name: Create results directory
         run: mkdir -p perf-results
 
-      - name: Run API load test
-        id: api-load-test
-        run: k6 run tests/performance/api-load.test.js --out json=perf-results/api-load.json
-        env:
-          API_URL: http://localhost:3000
-
-      - name: Run scheduler load test
-        id: scheduler-load-test
-        run: k6 run tests/performance/scheduler-load.test.js --out json=perf-results/scheduler-load.json
-        env:
-          API_URL: http://localhost:3000
-
-      - name: Run worker throughput test
-        id: worker-throughput-test
-        run: k6 run tests/performance/worker-throughput.test.js --out json=perf-results/worker-throughput.json
-        env:
-          API_URL: http://localhost:3000
-
-      - name: Run E2E load test
-        id: e2e-load-test
-        run: k6 run tests/performance/e2e-load.test.js --out json=perf-results/e2e-load.json
+      - name: Run performance test
+        id: perf-test
+        run: k6 run tests/performance/${{ matrix.test }}.test.js --out json=perf-results/${{ matrix.test }}.json
         env:
           API_URL: http://localhost:3000
 
       - name: Performance Test Summary
         if: always()
         run: |
-          echo "## Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Performance Test Results - ${{ matrix.test }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Check each performance test result
-          api_load_outcome="${{ steps.api-load-test.outcome }}"
-          scheduler_load_outcome="${{ steps.scheduler-load-test.outcome }}"
-          worker_throughput_outcome="${{ steps.worker-throughput-test.outcome }}"
-          e2e_load_outcome="${{ steps.e2e-load-test.outcome }}"
+          test_outcome="${{ steps.perf-test.outcome }}"
 
-          any_failed=false
-
-          if [ "$api_load_outcome" == "failure" ]; then
-            echo "- :x: API Load Test **FAILED**" >> $GITHUB_STEP_SUMMARY
-            any_failed=true
-          elif [ "$api_load_outcome" == "success" ]; then
-            echo "- :white_check_mark: API Load Test PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "$scheduler_load_outcome" == "failure" ]; then
-            echo "- :x: Scheduler Load Test **FAILED**" >> $GITHUB_STEP_SUMMARY
-            any_failed=true
-          elif [ "$scheduler_load_outcome" == "success" ]; then
-            echo "- :white_check_mark: Scheduler Load Test PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "$worker_throughput_outcome" == "failure" ]; then
-            echo "- :x: Worker Throughput Test **FAILED**" >> $GITHUB_STEP_SUMMARY
-            any_failed=true
-          elif [ "$worker_throughput_outcome" == "success" ]; then
-            echo "- :white_check_mark: Worker Throughput Test PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          if [ "$e2e_load_outcome" == "failure" ]; then
-            echo "- :x: E2E Load Test **FAILED**" >> $GITHUB_STEP_SUMMARY
-            any_failed=true
-          elif [ "$e2e_load_outcome" == "success" ]; then
-            echo "- :white_check_mark: E2E Load Test PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "$any_failed" = true ]; then
-            echo "### Performance Warning" >> $GITHUB_STEP_SUMMARY
-            echo "One or more performance tests failed. Review results before merging:" >> $GITHUB_STEP_SUMMARY
-            echo "- Check the performance results artifact for detailed metrics" >> $GITHUB_STEP_SUMMARY
-            echo "- Verify if this is a regression or test environment variance" >> $GITHUB_STEP_SUMMARY
-            echo "- Request performance review if merging with failures" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "::warning::Performance tests failed - review results before merging"
-          else
-            echo "All performance tests passed successfully!" >> $GITHUB_STEP_SUMMARY
+          if [ "$test_outcome" == "failure" ]; then
+            echo "- :x: ${{ matrix.test }} **FAILED**" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::${{ matrix.test }} performance test failed - review results before merging"
+          elif [ "$test_outcome" == "success" ]; then
+            echo "- :white_check_mark: ${{ matrix.test }} PASSED" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Stop API server
@@ -688,7 +633,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: performance-load-results
+          name: performance-load-results-${{ matrix.test }}
           path: perf-results/
           retention-days: 30
 
@@ -846,7 +791,6 @@ jobs:
       # Must match: vitest.config.base.ts
       - name: Check coverage threshold
         run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
-        continue-on-error: false
 
       # Required Secret: CODECOV_TOKEN
       # Purpose: Upload coverage reports to Codecov for tracking and analysis
