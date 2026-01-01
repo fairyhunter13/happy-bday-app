@@ -44,6 +44,7 @@
 [![Mutation Testing](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml)
 
 ### Coverage & Validation
+[![codecov](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json&logo=vitest)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
 [![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
 [![OpenAPI Validation](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)

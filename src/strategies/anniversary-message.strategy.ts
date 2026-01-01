@@ -165,7 +165,10 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
     }
 
     // Calculate years of service
-    const anniversaryYear = user.anniversaryDate.getFullYear();
+    // Handle both Date objects and string representations (PostgreSQL returns dates as strings)
+    const anniversaryDate =
+      user.anniversaryDate instanceof Date ? user.anniversaryDate : new Date(user.anniversaryDate);
+    const anniversaryYear = anniversaryDate.getFullYear();
     const yearsOfService = context.currentYear - anniversaryYear;
 
     // Compose message with years of service
@@ -245,7 +248,12 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
 
     // Check for potential issues (warnings)
     if (user.anniversaryDate) {
-      const year = user.anniversaryDate.getFullYear();
+      // Handle both Date objects and string representations (PostgreSQL returns dates as strings)
+      const anniversaryDate =
+        user.anniversaryDate instanceof Date
+          ? user.anniversaryDate
+          : new Date(user.anniversaryDate);
+      const year = anniversaryDate.getFullYear();
       const currentYear = new Date().getFullYear();
 
       if (year > currentYear) {

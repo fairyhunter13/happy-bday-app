@@ -217,10 +217,13 @@
 - [x] ~~Advanced database stats (table sizes, index usage)~~ - Done - Custom queries in `postgres_exporter/queries.yaml`
 
 #### Low Priority (Deferred - Optional Enhancements)
-- [ ] OpenTelemetry integration (optional - future enhancement)
-- [ ] Distributed tracing (optional - future enhancement)
-- [ ] Log aggregation setup (optional - requires external services)
+- [ ] OpenTelemetry integration (optional - future enhancement, requires additional package installation)
+- [ ] Distributed tracing (optional - future enhancement, requires OpenTelemetry integration)
+- [ ] Log aggregation setup (optional - requires external ELK/CloudWatch services)
 - [ ] Performance regression automation (optional - future enhancement)
+
+**Note**: These enhancements require external infrastructure or additional package dependencies.
+They are deferred to avoid scope creep and maintain focus on core functionality.
 
 ---
 
