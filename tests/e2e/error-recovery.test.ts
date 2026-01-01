@@ -16,6 +16,7 @@ import {
   waitFor,
   cleanDatabase,
   purgeQueues,
+  clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
 import {
   insertUser,
@@ -71,6 +72,8 @@ describe('E2E: Error Handling and Recovery', () => {
   beforeEach(async () => {
     await cleanDatabase(pool);
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    // Clear birthday/anniversary cache to ensure newly created users are found
+    await clearBirthdayCache();
   });
 
   describe('External API failures', () => {

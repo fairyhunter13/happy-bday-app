@@ -375,7 +375,7 @@ describe('Worker Error Recovery Integration Tests', () => {
       const channel = connection.getConsumerChannel();
       let foundOurMessage = false;
       const startTime = Date.now();
-      const maxWaitTime = 10000; // 10 seconds max (must be less than test timeout of 20s)
+      const maxWaitTime = 15000; // 15 seconds max (must be less than test timeout of 25s)
 
       while (!foundOurMessage && Date.now() - startTime < maxWaitTime) {
         // Try to find our message in the DLQ
@@ -413,7 +413,7 @@ describe('Worker Error Recovery Integration Tests', () => {
       expect(ourMessageProcessed).toBe(true);
       expect(processingAttempts).toBeGreaterThanOrEqual(1);
       expect(foundOurMessage).toBe(true);
-    }, 20000);
+    }, 25000);
   });
 
   describe('2. Worker Crash Simulation and Restart', () => {

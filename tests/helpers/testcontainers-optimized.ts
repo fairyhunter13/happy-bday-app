@@ -525,6 +525,27 @@ export async function cleanDatabase(pool: pg.Pool): Promise<void> {
 }
 
 /**
+ * Clear Redis cache for birthdays/anniversaries today
+ * This is important for E2E tests that create users with specific birthdays
+ * and expect them to be found by the scheduler
+ */
+export async function clearBirthdayCache(): Promise<void> {
+  try {
+    // Import cacheService dynamically to avoid circular dependencies
+    const { cacheService } = await import('../../src/services/cache.service.js');
+
+    // Delete all birthday and anniversary cache keys
+    await cacheService.deletePattern('birthdays:*');
+    await cacheService.deletePattern('anniversaries:*');
+
+    console.log('[Cache] Cleared birthday and anniversary cache');
+  } catch (error) {
+    // Don't fail tests on cache clear errors - cache might not be initialized
+    console.warn('Cache clear warning:', (error as Error).message);
+  }
+}
+
+/**
  * Helper to purge all RabbitMQ queues
  * Ensures queues exist before purging to avoid 404 errors
  */

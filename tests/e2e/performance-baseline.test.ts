@@ -16,6 +16,7 @@ import {
   waitFor,
   cleanDatabase,
   purgeQueues,
+  clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
 import { DateTime } from 'luxon';
@@ -166,6 +167,8 @@ describe('E2E: Performance Baseline', () => {
   beforeEach(async () => {
     await cleanDatabase(pool);
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    // Clear birthday/anniversary cache to ensure newly created users are found
+    await clearBirthdayCache();
   });
 
   describe('End-to-end latency measurement', () => {
