@@ -60,10 +60,12 @@ describe('E2E: Error Handling and Recovery', () => {
   }, 180000);
 
   afterAll(async () => {
-    if (worker.isRunning()) {
+    if (worker?.isRunning()) {
       await worker.stop();
     }
-    await env.teardown();
+    if (env) {
+      await env.teardown();
+    }
   }, 60000);
 
   beforeEach(async () => {

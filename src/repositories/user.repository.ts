@@ -294,6 +294,10 @@ export class UserRepository {
    * 2. Compare with current date in user's timezone
    * 3. Handle timezone conversion properly
    *
+   * Note: This method finds all users whose birthday month/day matches today's date
+   * in UTC. The scheduler is responsible for checking if it's actually the user's
+   * birthday in their local timezone before scheduling messages.
+   *
    * @param timezone - Optional timezone filter (defaults to all timezones)
    * @param tx - Optional transaction
    * @returns Users with birthdays today
@@ -308,14 +312,15 @@ export class UserRepository {
         conditions.push(eq(users.timezone, timezone));
       }
 
-      // Extract month and day from birthday_date and compare with today
+      // Extract month and day from birthday_date and compare with today (UTC)
       // Using EXTRACT to get month/day components for comparison
+      // NOTE: We use UTC date to ensure consistency across all test environments
       const today = new Date();
-      const month = today.getMonth() + 1; // JavaScript months are 0-indexed
-      const day = today.getDate();
+      const utcMonth = today.getUTCMonth() + 1; // JavaScript months are 0-indexed
+      const utcDay = today.getUTCDate();
 
-      conditions.push(sql`EXTRACT(MONTH FROM ${users.birthdayDate}) = ${month}`);
-      conditions.push(sql`EXTRACT(DAY FROM ${users.birthdayDate}) = ${day}`);
+      conditions.push(sql`EXTRACT(MONTH FROM ${users.birthdayDate}) = ${utcMonth}`);
+      conditions.push(sql`EXTRACT(DAY FROM ${users.birthdayDate}) = ${utcDay}`);
 
       const result = await dbInstance
         .select()
@@ -333,6 +338,10 @@ export class UserRepository {
    *
    * Same logic as findBirthdaysToday but for anniversary_date
    *
+   * Note: This method finds all users whose anniversary month/day matches today's date
+   * in UTC. The scheduler is responsible for checking if it's actually the user's
+   * anniversary in their local timezone before scheduling messages.
+   *
    * @param timezone - Optional timezone filter
    * @param tx - Optional transaction
    * @returns Users with anniversaries today
@@ -347,13 +356,15 @@ export class UserRepository {
         conditions.push(eq(users.timezone, timezone));
       }
 
-      // Extract month and day from anniversary_date and compare with today
+      // Extract month and day from anniversary_date and compare with today (UTC)
+      // Using EXTRACT to get month/day components for comparison
+      // NOTE: We use UTC date to ensure consistency across all test environments
       const today = new Date();
-      const month = today.getMonth() + 1;
-      const day = today.getDate();
+      const utcMonth = today.getUTCMonth() + 1; // JavaScript months are 0-indexed
+      const utcDay = today.getUTCDate();
 
-      conditions.push(sql`EXTRACT(MONTH FROM ${users.anniversaryDate}) = ${month}`);
-      conditions.push(sql`EXTRACT(DAY FROM ${users.anniversaryDate}) = ${day}`);
+      conditions.push(sql`EXTRACT(MONTH FROM ${users.anniversaryDate}) = ${utcMonth}`);
+      conditions.push(sql`EXTRACT(DAY FROM ${users.anniversaryDate}) = ${utcDay}`);
 
       const result = await dbInstance
         .select()

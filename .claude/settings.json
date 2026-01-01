@@ -104,7 +104,7 @@
           },
           {
             "type": "command",
-            "command": "sqlite3 .hive-mind/hive.db \"UPDATE sessions SET checkpoint_data = json_set(COALESCE(checkpoint_data, '{}'), '$.timestamp', datetime('now')), updated_at = CURRENT_TIMESTAMP WHERE status = 'active';\" 2>/dev/null && echo '✅ Hive-mind checkpoint updated' || true"
+            "command": "/bin/bash -c 'if [ -f .hive-mind/hive.db ]; then SESSION_ID=$(sqlite3 .hive-mind/hive.db \"SELECT id FROM sessions WHERE status = '\\''active'\\'' ORDER BY created_at DESC LIMIT 1;\" 2>/dev/null); if [ -n \"$SESSION_ID\" ]; then SWARM_ID=$(sqlite3 .hive-mind/hive.db \"SELECT swarm_id FROM sessions WHERE id = '\\''$SESSION_ID'\\'';\" 2>/dev/null); AGENT_COUNT=$(sqlite3 .hive-mind/hive.db \"SELECT COUNT(*) FROM agents WHERE swarm_id = '\\''$SWARM_ID'\\'';\" 2>/dev/null); TASK_COUNT=$(sqlite3 .hive-mind/hive.db \"SELECT COUNT(*) FROM tasks WHERE swarm_id = '\\''$SWARM_ID'\\'';\" 2>/dev/null); sqlite3 .hive-mind/hive.db \"UPDATE sessions SET checkpoint_data = json_set(checkpoint_data, '\\''\\044.lastCheckpoint'\\'', datetime('\\''now'\\'')), updated_at = CURRENT_TIMESTAMP WHERE id = '\\''$SESSION_ID'\\'';\" 2>/dev/null; CHECKPOINT_ID=\"checkpoint-$(date +%s)-$$\"; sqlite3 .hive-mind/hive.db \"INSERT INTO session_checkpoints (id, session_id, checkpoint_name, checkpoint_data, created_at) VALUES ('\\''$CHECKPOINT_ID'\\'', '\\''$SESSION_ID'\\'', '\\''claude-stop-$(date +%Y%m%d-%H%M%S)'\\'', '\\''{}'\\'', datetime('\\''now'\\'')); \" 2>/dev/null; echo \"✅ Hive-mind checkpoint saved: $SESSION_ID (agents: $AGENT_COUNT, tasks: $TASK_COUNT)\"; fi; fi'"
           }
         ]
       }
