@@ -224,6 +224,15 @@ export class EmailServiceClient {
       },
     };
   }
+
+  /**
+   * Reset circuit breaker to closed state
+   * Useful for testing to reset state between tests
+   */
+  resetCircuitBreaker(): void {
+    this.sendEmailCircuit.close();
+    logger.info('Circuit breaker manually reset to closed state');
+  }
 }
 
 // Export singleton instance

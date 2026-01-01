@@ -17,6 +17,7 @@ import {
   cleanDatabase,
   purgeQueues,
   clearBirthdayCache,
+  resetCircuitBreaker,
 } from '../helpers/testcontainers-optimized.js';
 import {
   insertUser,
@@ -74,6 +75,8 @@ describe('E2E: Error Handling and Recovery', () => {
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
+    // Reset circuit breaker to closed state to ensure consistent test behavior
+    await resetCircuitBreaker();
   });
 
   describe('External API failures', () => {

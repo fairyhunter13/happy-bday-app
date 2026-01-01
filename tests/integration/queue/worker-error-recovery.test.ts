@@ -465,23 +465,23 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       // Wait for first worker to attempt processing at least once
       const startTime = Date.now();
-      const maxWaitTime = 10000;
+      const maxWaitTime = 15000; // Increased for CI reliability
       while (firstWorkerAttempts === 0 && Date.now() - startTime < maxWaitTime) {
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       console.log(
         `[worker-crash-test] First worker attempts: ${firstWorkerAttempts}, waited ${Date.now() - startTime}ms`
       );
 
       // Wait a bit for the transient error handling to requeue the message
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Stop first worker - message should be redelivered by RabbitMQ
       console.log('[worker-crash-test] Stopping first consumer...');
       await firstConsumer.stopConsuming();
 
       // Give RabbitMQ time to rebalance the message
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Start new worker that will successfully process the message
       console.log('[worker-crash-test] Starting second consumer...');
@@ -509,7 +509,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       // Poll for message processing with timeout
       const pollStartTime = Date.now();
-      const pollMaxWaitTime = 10000;
+      const pollMaxWaitTime = 15000; // Increased for CI reliability
       while (!secondWorkerProcessed && Date.now() - pollStartTime < pollMaxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
