@@ -97,17 +97,12 @@ jobs:
 
       - name: Run Snyk to check Docker image vulnerabilities
         if: github.ref == 'refs/heads/main' && env.SNYK_TOKEN != ''
-        # continue-on-error for upstream Node.js vulnerabilities in Alpine base image
-        # Alpine 3.20 ships Node.js 22.16.0, but 22.17.1 is needed for CVE fix
-        # Our npm dependencies are clean - only base image has issues
-        continue-on-error: true
         uses: snyk/actions/docker@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           image: ghcr.io/${{ github.repository }}:latest
-          # Exclude base image vulns (Node.js upstream issues we can't fix)
-          args: --severity-threshold=high --exclude-base-image-vulns
+          args: --severity-threshold=high
 
   owasp-dependency-check:
     name: OWASP Dependency Check
