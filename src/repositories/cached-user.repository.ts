@@ -160,7 +160,7 @@ export class CachedUserRepository {
    * @param filters - Optional query filters
    * @returns Array of users
    */
-  async findAll(filters?: UserFiltersDto): Promise<User[]> {
+  findAll(filters?: UserFiltersDto): Promise<User[]> {
     // No caching for list operations (too many permutations)
     return this._userRepo.findAll(filters);
   }
@@ -421,7 +421,7 @@ export class CachedUserRepository {
    * @returns Result of callback
    */
   async transaction<T>(callback: Parameters<UserRepository['transaction']>[0]): Promise<T> {
-    return this._userRepo.transaction(callback) as Promise<T>;
+    return (await this._userRepo.transaction(callback)) as T;
   }
 }
 

@@ -240,7 +240,11 @@ export class MessageLogRepository {
 
       const result = await dbInstance.insert(messageLogs).values(newMessageLog).returning();
 
-      return result[0]!;
+      const created = result[0];
+      if (!created) {
+        throw new DatabaseError('Failed to create message log: no result returned', { data });
+      }
+      return created;
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         throw error;
@@ -290,7 +294,14 @@ export class MessageLogRepository {
         .where(eq(messageLogs.id, id))
         .returning();
 
-      return result[0]!;
+      const updated = result[0];
+      if (!updated) {
+        throw new DatabaseError(`Failed to update message status: no result returned`, {
+          id,
+          status,
+        });
+      }
+      return updated;
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
@@ -338,7 +349,14 @@ export class MessageLogRepository {
         .where(eq(messageLogs.id, id))
         .returning();
 
-      return result[0]!;
+      const updated = result[0];
+      if (!updated) {
+        throw new DatabaseError(`Failed to mark message as sent: no result returned`, {
+          id,
+          response,
+        });
+      }
+      return updated;
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
@@ -399,7 +417,14 @@ export class MessageLogRepository {
         .where(eq(messageLogs.id, id))
         .returning();
 
-      return result[0]!;
+      const updated = result[0];
+      if (!updated) {
+        throw new DatabaseError(`Failed to mark message as failed: no result returned`, {
+          id,
+          errorData,
+        });
+      }
+      return updated;
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;

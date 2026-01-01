@@ -44,10 +44,7 @@ function normalizePath(path: string): string {
  * @param request - Fastify request
  * @param reply - Fastify reply
  */
-export async function metricsMiddleware(
-  request: FastifyRequest,
-  reply: FastifyReply
-): Promise<void> {
+export function metricsMiddleware(request: FastifyRequest, reply: FastifyReply): void {
   const startTime = Date.now();
 
   // Track request start
