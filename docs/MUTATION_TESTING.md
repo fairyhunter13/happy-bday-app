@@ -132,7 +132,7 @@ The workflow automatically comments mutation testing results on PRs:
 
 ## Incremental Mode
 
-Incremental mode (`npm run test:mutation:incremental`) stores results in `.stryker-tmp/incremental.json` and only re-tests:
+Incremental mode is now **enabled by default** in `stryker.config.mjs` (`incremental: true`). Results are stored in `.stryker-tmp/incremental.json` and only re-test:
 - Changed source files
 - Changed test files
 - Previously survived mutants
