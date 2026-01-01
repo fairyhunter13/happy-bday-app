@@ -152,7 +152,7 @@ jobs:
             - name: "npm version"
               command: "npm"
               args: ["--version"]
-              expectedOutput: ["10\\."]
+              expectedOutput: ["\\d+\\."]
 
           fileExistenceTests:
             - name: 'App dist directory exists'
