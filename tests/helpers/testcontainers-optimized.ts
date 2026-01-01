@@ -546,6 +546,21 @@ export async function clearBirthdayCache(): Promise<void> {
 }
 
 /**
+ * Reset circuit breaker to closed state
+ * This is important for E2E tests that test retry behavior
+ * since the circuit breaker state persists across tests
+ */
+export async function resetCircuitBreaker(): Promise<void> {
+  try {
+    const { emailServiceClient } = await import('../../src/clients/email-service.client.js');
+    emailServiceClient.resetCircuitBreaker();
+    console.log('[CircuitBreaker] Reset to closed state');
+  } catch (error) {
+    console.warn('Circuit breaker reset warning:', (error as Error).message);
+  }
+}
+
+/**
  * Helper to purge all RabbitMQ queues
  * Ensures queues exist before purging to avoid 404 errors
  */
