@@ -25,7 +25,12 @@ import {
   clearBirthdayCache,
   resetCircuitBreaker,
 } from '../helpers/testcontainers-optimized.js';
-import { insertUser, findMessageLogsByUserId, sleep } from '../helpers/test-helpers.js';
+import {
+  insertUser,
+  findMessageLogsByUserId,
+  sleep,
+  createTodayBirthdayUTC,
+} from '../helpers/test-helpers.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';
 import { MessagePublisher } from '../../src/queue/publisher.js';
@@ -83,9 +88,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
   describe('Complete flow: User creation -> Scheduling -> Queue -> Worker -> Email sent', () => {
     it('should complete full birthday message flow successfully', async () => {
       // Step 1: Create user with birthday today
-      const timezone = 'America/New_York';
-      const today = DateTime.now().setZone(timezone);
-      const birthdayDate = today.set({ year: 1990, hour: 0, minute: 0, second: 0 }).toJSDate();
+      // Use UTC-aligned birthday date to ensure findBirthdaysToday() matches
+      const timezone = 'UTC';
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       const user = await insertUser(pool, {
         firstName: 'John',
@@ -181,9 +186,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
     }, 60000);
 
     it('should prevent duplicate messages with idempotency', async () => {
+      // Use UTC-aligned birthday date to ensure findBirthdaysToday() matches
       const timezone = 'UTC';
-      const today = DateTime.now().setZone(timezone);
-      const birthdayDate = today.set({ year: 1985, hour: 0, minute: 0 }).toJSDate();
+      const birthdayDate = createTodayBirthdayUTC(1985);
 
       const user = await insertUser(pool, {
         firstName: 'Jane',
@@ -209,16 +214,16 @@ describe('E2E: Complete Birthday Message Flow', () => {
     });
 
     it('should handle both birthday and anniversary messages for same user', async () => {
-      const timezone = 'Europe/London';
-      const today = DateTime.now().setZone(timezone);
+      // Use UTC-aligned dates to ensure findBirthdaysToday() and findAnniversariesToday() match
+      const timezone = 'UTC';
 
       const user = await insertUser(pool, {
         firstName: 'Alice',
         lastName: 'Johnson',
         email: 'alice.johnson@test.com',
         timezone,
-        birthdayDate: today.set({ year: 1992, hour: 0, minute: 0 }).toJSDate(),
-        anniversaryDate: today.set({ year: 2020, hour: 0, minute: 0 }).toJSDate(),
+        birthdayDate: createTodayBirthdayUTC(1992),
+        anniversaryDate: createTodayBirthdayUTC(2020),
       });
 
       // Run scheduler
@@ -245,18 +250,17 @@ describe('E2E: Complete Birthday Message Flow', () => {
 
   describe('Message timing accuracy', () => {
     it('should schedule message at exactly 9am in user timezone', async () => {
+      // Test with various timezones - all use UTC-aligned birthday for consistency
       const timezones = ['America/New_York', 'Europe/London', 'Asia/Tokyo', 'Australia/Sydney'];
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const timezone of timezones) {
-        const today = DateTime.now().setZone(timezone);
-        const birthdayDate = today.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'User',
           lastName: timezone,
           email: `user-${timezone}@test.com`,
           timezone,
-          birthdayDate,
+          birthdayDate, // Use UTC-aligned date for findBirthdaysToday() matching
           anniversaryDate: null,
         });
 
@@ -277,14 +281,15 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const timezone1 = 'America/Los_Angeles'; // UTC-8
       const timezone2 = 'Asia/Tokyo'; // UTC+9
 
-      const today = DateTime.now();
+      // Use UTC-aligned birthday for findBirthdaysToday() matching
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       const user1 = await insertUser(pool, {
         firstName: 'User1',
         lastName: 'LA',
         email: 'user1@test.com',
         timezone: timezone1,
-        birthdayDate: today.setZone(timezone1).set({ year: 1990 }).toJSDate(),
+        birthdayDate,
         anniversaryDate: null,
       });
 
@@ -293,7 +298,7 @@ describe('E2E: Complete Birthday Message Flow', () => {
         lastName: 'Tokyo',
         email: 'user2@test.com',
         timezone: timezone2,
-        birthdayDate: today.setZone(timezone2).set({ year: 1990 }).toJSDate(),
+        birthdayDate,
         anniversaryDate: null,
       });
 
@@ -301,6 +306,9 @@ describe('E2E: Complete Birthday Message Flow', () => {
 
       const messages1 = await findMessageLogsByUserId(pool, user1.id);
       const messages2 = await findMessageLogsByUserId(pool, user2.id);
+
+      expect(messages1).toHaveLength(1);
+      expect(messages2).toHaveLength(1);
 
       // Tokyo should be sent much earlier in UTC time than LA
       const utcTime1 = DateTime.fromJSDate(messages1[0].scheduledSendTime).setZone('UTC');
@@ -321,7 +329,7 @@ describe('E2E: Complete Birthday Message Flow', () => {
         lastName: 'Wilson',
         email: 'bob.wilson@test.com',
         timezone: 'UTC',
-        birthdayDate: DateTime.now().set({ year: 1990 }).toJSDate(),
+        birthdayDate: createTodayBirthdayUTC(1990),
         anniversaryDate: null,
       });
 
@@ -364,7 +372,7 @@ describe('E2E: Complete Birthday Message Flow', () => {
         lastName: 'Davis',
         email: 'carol.davis@test.com',
         timezone: 'UTC',
-        birthdayDate: DateTime.now().set({ year: 1990 }).toJSDate(),
+        birthdayDate: createTodayBirthdayUTC(1990),
         anniversaryDate: null,
       });
 
@@ -418,16 +426,15 @@ describe('E2E: Complete Birthday Message Flow', () => {
 
   describe('Scheduler statistics and monitoring', () => {
     it('should provide accurate scheduler statistics', async () => {
-      // Create 5 users with birthdays today
+      // Create 5 users with birthdays today using UTC-aligned dates
+      const birthdayDate = createTodayBirthdayUTC(1990);
       for (let i = 0; i < 5; i++) {
         await insertUser(pool, {
           firstName: `User${i}`,
           lastName: 'Test',
           email: `user${i}@test.com`,
           timezone: 'UTC',
-          birthdayDate: DateTime.now()
-            .set({ year: 1990 - i })
-            .toJSDate(),
+          birthdayDate,
           anniversaryDate: null,
         });
       }
