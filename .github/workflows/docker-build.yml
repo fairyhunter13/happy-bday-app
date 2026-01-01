@@ -123,7 +123,7 @@ jobs:
             - name: "node version"
               command: "node"
               args: ["--version"]
-              expectedOutput: ["v20.*"]
+              expectedOutput: ["v22.*"]
 
             - name: "npm version"
               command: "npm"
@@ -147,7 +147,15 @@ jobs:
 
           # Run tests (skip if config creation failed)
           if [ -f container-test.yaml ]; then
-            container-structure-test test --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} --config container-test.yaml || true
+            echo "Running container structure tests..."
+            if ! container-structure-test test --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }} --config container-test.yaml; then
+              echo "::error::Container structure tests failed - image may not meet requirements"
+              exit 1
+            fi
+            echo "Container structure tests passed!"
+          else
+            echo "::error::container-test.yaml was not created"
+            exit 1
           fi
 
       - name: Generate SBOM

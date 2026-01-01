@@ -1,0 +1,137 @@
+name: Deploy to Development
+
+# Auto-deploy to development environment on push to develop branch
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: development
+      url: https://dev-birthday-app.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop || echo "No existing image found"
+
+      # NOTE: Actual deployment implementation depends on infrastructure
+      # Options: SSH deployment, Kubernetes, Docker Swarm, Cloud Run, etc.
+      # This is a template that should be customized based on deployment target
+
+      - name: Deploy notification start
+        run: |
+          echo "Starting deployment to development environment"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+      # Example: SSH deployment (uncomment and configure as needed)
+      # - name: Deploy via SSH
+      #   uses: appleboy/ssh-action@v1.0.0
+      #   with:
+      #     host: ${{ secrets.DEV_HOST }}
+      #     username: ${{ secrets.DEV_USER }}
+      #     key: ${{ secrets.DEV_SSH_KEY }}
+      #     script: |
+      #       cd /opt/birthday-app
+      #       docker compose pull
+      #       docker compose up -d --no-build
+      #       docker compose exec -T api npm run db:migrate
+
+      # Example: Kubernetes deployment (uncomment and configure as needed)
+      # - name: Set up kubectl
+      #   uses: azure/setup-kubectl@v3
+      #
+      # - name: Configure kubectl
+      #   run: |
+      #     echo "${{ secrets.KUBE_CONFIG_DEV }}" | base64 -d > kubeconfig
+      #     export KUBECONFIG=./kubeconfig
+      #
+      # - name: Deploy to Kubernetes
+      #   run: |
+      #     kubectl set image deployment/birthday-api api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop -n development
+      #     kubectl rollout status deployment/birthday-api -n development --timeout=5m
+
+      # Placeholder for deployment (replace with actual deployment logic)
+      - name: Deployment placeholder
+        run: |
+          echo "::notice::Deployment placeholder - configure actual deployment method"
+          echo "::notice::Options: SSH, Kubernetes, Docker Swarm, Cloud Run, etc."
+          echo "::notice::Update this workflow with your deployment infrastructure details"
+
+      # Health check after deployment
+      - name: Health check
+        run: |
+          echo "Performing health check..."
+          # Uncomment when actual deployment is configured:
+          # max_attempts=30
+          # for i in $(seq 1 $max_attempts); do
+          #   if curl -f -s https://dev-birthday-app.example.com/health > /dev/null; then
+          #     echo "Health check passed!"
+          #     exit 0
+          #   fi
+          #   echo "Attempt $i/$max_attempts failed, retrying..."
+          #   sleep 10
+          # done
+          # echo "Health check failed after $max_attempts attempts"
+          # exit 1
+          echo "Health check placeholder - configure with actual dev URL"
+
+      # Smoke tests
+      - name: Smoke tests
+        run: |
+          echo "Running smoke tests..."
+          # Uncomment when actual deployment is configured:
+          # curl -f https://dev-birthday-app.example.com/health
+          # curl -f https://dev-birthday-app.example.com/docs/json
+          echo "Smoke tests placeholder - configure with actual dev URL"
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment to Development Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:develop\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment URL:** https://dev-birthday-app.example.com" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** Configure actual deployment method in workflow" >> $GITHUB_STEP_SUMMARY
+
+  notify-on-failure:
+    name: Notify on Failure
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Notify deployment failure
+        run: |
+          echo "::error::Deployment to development failed"
+          echo "Check the deployment job logs for details"

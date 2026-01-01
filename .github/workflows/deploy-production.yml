@@ -1,0 +1,260 @@
+name: Deploy to Production
+
+# Manual deployment to production via release tags
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to deploy (e.g., v1.2.3)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_deploy: ${{ steps.validate.outputs.should_deploy }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying version: $VERSION"
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Check version format (must be v*.*.*)
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format: $VERSION (expected: v*.*.*, e.g., v1.2.3)"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check if image exists for this version
+          docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION > /dev/null 2>&1 || {
+            echo "::error::Docker image not found for version: $VERSION"
+            echo "::error::Ensure the image is built and tagged with this version"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 1
+          }
+
+          echo "Version validation passed: $VERSION"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+  deploy:
+    name: Deploy to Production
+    needs: [validate-release]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: needs.validate-release.outputs.should_deploy == 'true'
+    environment:
+      name: production
+      url: https://birthday-app.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull production image
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION
+
+      - name: Pre-deployment notification
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          echo "## Starting Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      # NOTE: Production deployment requires careful consideration
+      # Recommended: Blue-Green or Canary deployment strategy
+
+      # Example: Blue-Green Deployment with Kubernetes
+      # - name: Set up kubectl
+      #   uses: azure/setup-kubectl@v3
+      #
+      # - name: Configure kubectl for production
+      #   run: |
+      #     echo "${{ secrets.KUBE_CONFIG_PROD }}" | base64 -d > kubeconfig
+      #     export KUBECONFIG=./kubeconfig
+      #
+      # - name: Deploy to green environment
+      #   run: |
+      #     VERSION="${{ needs.validate-release.outputs.version }}"
+      #     kubectl set image deployment/birthday-api-green api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION -n production
+      #     kubectl rollout status deployment/birthday-api-green -n production --timeout=15m
+      #
+      # - name: Run database migrations (if needed)
+      #   run: |
+      #     kubectl exec -n production deployment/birthday-api-green -- npm run db:migrate
+      #
+      # - name: Validate green environment
+      #   run: |
+      #     # Run health checks and smoke tests against green environment
+      #     GREEN_URL="https://green-birthday-app.example.com"
+      #     for i in {1..30}; do
+      #       if curl -f -s $GREEN_URL/health > /dev/null; then
+      #         echo "Green environment health check passed"
+      #         break
+      #       fi
+      #       sleep 10
+      #     done
+      #
+      # - name: Switch traffic to green (blue-green swap)
+      #   run: |
+      #     # Update service selector to point to green deployment
+      #     kubectl patch service birthday-api -n production -p '{"spec":{"selector":{"version":"green"}}}'
+      #     echo "Traffic switched to green environment"
+      #
+      # - name: Monitor new deployment
+      #   run: |
+      #     echo "Monitoring deployment for 5 minutes..."
+      #     sleep 300
+      #     # Check metrics, error rates, latency
+      #
+      # - name: Scale down blue environment
+      #   run: |
+      #     kubectl scale deployment/birthday-api-blue --replicas=0 -n production
+      #     echo "Blue environment scaled down (kept for quick rollback)"
+
+      # Placeholder for production deployment
+      - name: Production deployment placeholder
+        run: |
+          echo "::warning::Production deployment placeholder - configure actual deployment method"
+          echo "::warning::CRITICAL: Production requires careful deployment strategy"
+          echo "::warning::Recommended: Blue-Green or Canary deployment"
+          echo "::warning::Update this workflow with your production infrastructure details"
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          echo "Would deploy version: $VERSION"
+
+      # Health check
+      - name: Production health check
+        run: |
+          echo "Performing production health check..."
+          # Uncomment when actual deployment is configured:
+          # max_attempts=120
+          # for i in $(seq 1 $max_attempts); do
+          #   if curl -f -s https://birthday-app.example.com/health > /dev/null; then
+          #     echo "Production health check passed!"
+          #     exit 0
+          #   fi
+          #   echo "Attempt $i/$max_attempts failed, retrying..."
+          #   sleep 10
+          # done
+          # echo "::error::Production health check failed after $max_attempts attempts"
+          # exit 1
+          echo "Health check placeholder - configure with actual production URL"
+
+      # Critical smoke tests
+      - name: Production smoke tests
+        run: |
+          echo "Running critical production smoke tests..."
+          # Uncomment when actual deployment is configured:
+          # PROD_URL="https://birthday-app.example.com"
+          # curl -f $PROD_URL/health || exit 1
+          # curl -f $PROD_URL/docs/json || exit 1
+          # Verify critical user flows work
+          echo "Smoke tests placeholder - configure with actual production URL"
+
+      - name: Deployment success summary
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          echo "## Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment URL:** https://birthday-app.example.com" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Post-Deployment Checklist" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Monitor application metrics and error rates" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Verify critical user flows are working" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Check database query performance" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Ensure message scheduling is functioning" >> $GITHUB_STEP_SUMMARY
+          echo "- [ ] Monitor for any user-reported issues" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** Configure actual deployment method in workflow" >> $GITHUB_STEP_SUMMARY
+
+  rollback-on-failure:
+    name: Emergency Rollback
+    needs: [validate-release, deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Emergency rollback
+        run: |
+          echo "::error::Production deployment failed - initiating emergency rollback"
+          # Uncomment when actual deployment is configured:
+          # Example for blue-green:
+          # kubectl patch service birthday-api -n production -p '{"spec":{"selector":{"version":"blue"}}}'
+          # kubectl scale deployment/birthday-api-blue --replicas=3 -n production
+          # Example for standard deployment:
+          # kubectl rollout undo deployment/birthday-api -n production
+          # kubectl rollout status deployment/birthday-api -n production --timeout=10m
+          echo "Rollback mechanism not yet configured"
+
+      - name: Verify rollback
+        run: |
+          echo "Verifying rollback health..."
+          # Uncomment when actual deployment is configured:
+          # curl -f https://birthday-app.example.com/health || exit 1
+          echo "Rollback verification placeholder"
+
+      - name: Alert team
+        run: |
+          echo "::error::PRODUCTION DEPLOYMENT FAILED - ROLLBACK EXECUTED"
+          echo "::error::Immediate investigation required"
+          # Add alerting mechanism (Slack, PagerDuty, etc.)
+
+  notify-success:
+    name: Notify Success
+    needs: [validate-release, deploy]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Success notification
+        run: |
+          VERSION="${{ needs.validate-release.outputs.version }}"
+          echo "Production deployment successful: $VERSION"
+          # Add notification mechanism (Slack, email, etc.)
