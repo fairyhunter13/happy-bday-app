@@ -1,0 +1,154 @@
+name: Deploy to Staging
+
+# Auto-deploy to staging environment on push to main branch
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: staging
+      url: https://staging-birthday-app.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main || echo "No existing image found"
+
+      - name: Deployment notification start
+        run: |
+          echo "Starting deployment to staging environment"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+
+      # NOTE: Actual deployment implementation depends on infrastructure
+      # Options: SSH deployment, Kubernetes, Docker Swarm, Cloud Run, etc.
+
+      # Example: Kubernetes deployment (recommended for staging)
+      # - name: Set up kubectl
+      #   uses: azure/setup-kubectl@v3
+      #
+      # - name: Configure kubectl
+      #   run: |
+      #     echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+      #     export KUBECONFIG=./kubeconfig
+      #
+      # - name: Deploy to Kubernetes
+      #   run: |
+      #     kubectl set image deployment/birthday-api api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main -n staging
+      #     kubectl rollout status deployment/birthday-api -n staging --timeout=10m
+      #
+      # - name: Run database migrations
+      #   run: |
+      #     kubectl exec -n staging deployment/birthday-api -- npm run db:migrate
+
+      # Placeholder for deployment (replace with actual deployment logic)
+      - name: Deployment placeholder
+        run: |
+          echo "::notice::Deployment placeholder - configure actual deployment method"
+          echo "::notice::Options: SSH, Kubernetes, Docker Swarm, Cloud Run, etc."
+          echo "::notice::Update this workflow with your deployment infrastructure details"
+
+      # Health check with retries
+      - name: Health check
+        run: |
+          echo "Performing health check with retries..."
+          # Uncomment when actual deployment is configured:
+          # max_attempts=60
+          # for i in $(seq 1 $max_attempts); do
+          #   if curl -f -s https://staging-birthday-app.example.com/health > /dev/null; then
+          #     echo "Health check passed!"
+          #     exit 0
+          #   fi
+          #   echo "Attempt $i/$max_attempts failed, retrying..."
+          #   sleep 10
+          # done
+          # echo "::error::Health check failed after $max_attempts attempts"
+          # exit 1
+          echo "Health check placeholder - configure with actual staging URL"
+
+      # Comprehensive smoke tests for staging
+      - name: Smoke tests
+        run: |
+          echo "Running comprehensive smoke tests..."
+          # Uncomment when actual deployment is configured:
+          # API_URL="https://staging-birthday-app.example.com"
+          # curl -f $API_URL/health || exit 1
+          # curl -f $API_URL/docs/json || exit 1
+          # curl -f -X GET $API_URL/api/v1/users -H "Authorization: Bearer ${{ secrets.STAGING_API_TOKEN }}" || exit 1
+          echo "Smoke tests placeholder - configure with actual staging URL"
+
+      # Integration tests against staging
+      - name: Run integration tests against staging
+        run: |
+          echo "Running integration tests against staging environment..."
+          # Uncomment when actual deployment is configured:
+          # npm ci
+          # API_URL="https://staging-birthday-app.example.com" npm run test:integration:staging || exit 1
+          echo "Integration tests placeholder"
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment to Staging Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment URL:** https://staging-birthday-app.example.com" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Verify staging environment is functioning correctly" >> $GITHUB_STEP_SUMMARY
+          echo "2. Run manual QA tests if needed" >> $GITHUB_STEP_SUMMARY
+          echo "3. Create a release tag to deploy to production" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> **Note:** Configure actual deployment method in workflow" >> $GITHUB_STEP_SUMMARY
+
+  rollback-on-failure:
+    name: Rollback on Failure
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: failure()
+
+    steps:
+      - name: Attempt rollback
+        run: |
+          echo "::error::Deployment to staging failed - rollback required"
+          echo "::notice::Rollback mechanism not yet configured"
+          # Uncomment when actual deployment is configured:
+          # - Get previous successful deployment SHA
+          # - Rollback to previous image version
+          # - Verify health after rollback
+          # Example for Kubernetes:
+          # kubectl rollout undo deployment/birthday-api -n staging
+          # kubectl rollout status deployment/birthday-api -n staging
+
+      - name: Notify team
+        run: |
+          echo "::warning::Staging deployment failed - manual intervention may be required"

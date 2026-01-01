@@ -21,6 +21,7 @@ import { cacheService } from './cache.service.js';
 import { logger } from '../config/logger.js';
 import packageJson from '../../package.json' with { type: 'json' };
 import { metricsService } from './metrics.service.js';
+import { RabbitMQConnection } from '../queue/connection.js';
 
 const { version } = packageJson;
 
@@ -123,12 +124,10 @@ export class HealthCheckService {
   /**
    * Check RabbitMQ health
    *
-   * Note: This is a basic implementation.
-   * For full RabbitMQ health check, we would need to:
-   * 1. Check connection status
-   * 2. Check queue existence
-   * 3. Check message counts
-   * 4. Check consumer count
+   * Uses the RabbitMQ connection manager's built-in health check:
+   * 1. Checks connection status
+   * 2. Verifies channel availability
+   * 3. Validates connection health via waitForConnect
    *
    * @returns RabbitMQ health status
    */
@@ -136,23 +135,55 @@ export class HealthCheckService {
     const startTime = Date.now();
 
     try {
-      // TODO: Implement actual RabbitMQ connection check
-      // This would require access to RabbitMQ connection instance
-      // For now, we assume healthy if no errors
+      // Get RabbitMQ connection instance
+      let rabbitMQ: RabbitMQConnection;
+      try {
+        rabbitMQ = RabbitMQConnection.getInstance();
+      } catch {
+        // Connection not initialized yet
+        const latency = Date.now() - startTime;
+        return {
+          healthy: false,
+          message: 'RabbitMQ connection not initialized',
+          details: {
+            connected: false,
+            initialized: false,
+          },
+          latency,
+        };
+      }
 
+      // Use the built-in health check method
+      const healthResult = await rabbitMQ.healthCheck();
       const latency = Date.now() - startTime;
 
-      logger.debug({ latency }, 'RabbitMQ health check passed');
+      if (healthResult.status === 'healthy') {
+        logger.debug({ latency }, 'RabbitMQ health check passed');
 
-      return {
-        healthy: true,
-        message: 'RabbitMQ connection OK',
-        details: {
-          connected: true,
-          // TODO: Add queue depth, consumer count, etc.
-        },
-        latency,
-      };
+        return {
+          healthy: true,
+          message: 'RabbitMQ connection OK',
+          details: {
+            connected: true,
+            initialized: true,
+            isHealthy: rabbitMQ.isHealthy(),
+          },
+          latency,
+        };
+      } else {
+        logger.warn({ latency, error: healthResult.error }, 'RabbitMQ health check failed');
+
+        return {
+          healthy: false,
+          message: 'RabbitMQ connection unhealthy',
+          error: healthResult.error,
+          details: {
+            connected: false,
+            initialized: true,
+          },
+          latency,
+        };
+      }
     } catch (error) {
       const latency = Date.now() - startTime;
 

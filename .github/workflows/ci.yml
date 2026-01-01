@@ -878,7 +878,6 @@ jobs:
     needs:
       - lint-and-type-check
       - unit-tests
-      - unit-tests
       - integration-tests
       - e2e-tests
       - chaos-tests
@@ -894,7 +893,6 @@ jobs:
       - name: Check all jobs
         run: |
           if [[ "${{ needs.lint-and-type-check.result }}" != "success" ||
-                "${{ needs.unit-tests.result }}" != "success" ||
                 "${{ needs.unit-tests.result }}" != "success" ||
                 "${{ needs.integration-tests.result }}" != "success" ||
                 "${{ needs.e2e-tests.result }}" != "success" ||
