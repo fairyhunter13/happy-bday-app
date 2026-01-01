@@ -1038,7 +1038,6 @@ coverage-report:
     # GATE 2: Coverage diff (prevent regressions)
     - name: Download base coverage
       if: github.event_name == 'pull_request'
-      continue-on-error: true
       run: |
         gh api repos/${{ github.repository }}/actions/artifacts \
           --jq '.artifacts[] | select(.name == "coverage-main") | .archive_download_url' \

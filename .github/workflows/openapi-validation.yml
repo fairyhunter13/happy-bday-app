@@ -83,14 +83,12 @@ jobs:
           npx redocly lint http://localhost:3000/docs/json \
             --skip-rule operation-operationId-unique \
             --format stylish
-        continue-on-error: false
 
       - name: Lint OpenAPI spec with Spectral
         run: |
           npx spectral lint http://localhost:3000/docs/json \
             --fail-severity warn \
             --format pretty
-        continue-on-error: false
 
       - name: Export OpenAPI specification
         run: |

@@ -25,11 +25,11 @@ const DAILY_SCHEDULER_CONFIG = isCI
 
 const MINUTE_SCHEDULER_CONFIG = isCI
   ? {
-      rate: 100, // CI: 100 messages per minute
+      rate: 150, // CI: 150 messages per minute
       timeUnit: '1m',
-      duration: '3m',
-      preAllocatedVUs: 10,
-      maxVUs: 20,
+      duration: '5m',
+      preAllocatedVUs: 15,
+      maxVUs: 30,
       startTime: '3m',
     }
   : {
@@ -43,9 +43,8 @@ const MINUTE_SCHEDULER_CONFIG = isCI
 
 const DATABASE_QUERY_STAGES = isCI
   ? [
-      { duration: '1m', target: 5 },
-      { duration: '2m', target: 10 },
-      { duration: '1m', target: 5 },
+      { duration: '1m', target: 10 },
+      { duration: '1m', target: 10 },
     ]
   : [
       { duration: '2m', target: 10 },
@@ -53,7 +52,7 @@ const DATABASE_QUERY_STAGES = isCI
       { duration: '3m', target: 10 },
     ];
 
-const DATABASE_QUERY_START = isCI ? '6m' : '25m';
+const DATABASE_QUERY_START = isCI ? '8m' : '25m';
 
 /**
  * K6 Performance Test: Scheduler Load Test
@@ -66,8 +65,8 @@ const DATABASE_QUERY_START = isCI ? '6m' : '25m';
  *
  * CI mode (~10 min total):
  * - Daily scheduler: 3 minutes
- * - Minute scheduler: 100 msg/min for 3 minutes
- * - Database queries: 5-10 concurrent for 4 minutes
+ * - Minute scheduler: 150 msg/min for 5 minutes
+ * - Database queries: 10 concurrent for 2 minutes
  *
  * Full mode (~35 min total):
  * - Daily scheduler: 10 minutes with 10,000 birthdays
@@ -396,8 +395,8 @@ export function setup() {
 
   if (isCI) {
     console.log('  1. Daily scheduler: 3 minutes');
-    console.log('  2. Minute scheduler: 100 messages/minute for 3 minutes');
-    console.log('  3. Database queries: 5-10 concurrent for 4 minutes');
+    console.log('  2. Minute scheduler: 150 messages/minute for 5 minutes');
+    console.log('  3. Database queries: 10 concurrent for 2 minutes');
   } else {
     console.log('  1. Daily scheduler: 10,000 birthdays/day for 10 minutes');
     console.log('  2. Minute scheduler: 500 messages/minute for 15 minutes');

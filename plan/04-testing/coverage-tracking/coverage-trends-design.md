@@ -370,11 +370,11 @@ const config = {
 - Deploys to GitHub Pages
 - Commits history back to repo
 
-**Current Issues**:
-- Uses `|| true` and `continue-on-error: true` (silently fails)
-- No error handling if jq is missing
-- No validation of coverage-history.json format
-- No metrics on data points retained
+**Previous Issues (Now Fixed)**:
+- ✅ Removed `|| true` and `continue-on-error: true` (now fails fast on errors)
+- ⚠️ Still needs: Error handling if jq is missing
+- ⚠️ Still needs: Validation of coverage-history.json format
+- ⚠️ Still needs: Metrics on data points retained
 
 ### 5.2 Recommended Enhancements
 
@@ -539,13 +539,13 @@ jobs:
 
 ### 5.3 Key Improvements
 
-1. **Error Handling**: Remove `continue-on-error`, fail fast on issues
-2. **Validation**: Check JSON format before processing
-3. **Dependencies**: Ensure jq is installed
-4. **Metrics**: Output coverage metrics to workflow summary
-5. **Artifacts**: Upload coverage as backup (30-day retention)
-6. **Commits**: Better commit messages with metrics
-7. **Conditional**: Only commit if history actually changed
+1. **Error Handling**: ✅ Removed `continue-on-error`, now fails fast on issues
+2. **Validation**: ⚠️ TODO - Check JSON format before processing
+3. **Dependencies**: ⚠️ TODO - Ensure jq is installed
+4. **Metrics**: ⚠️ TODO - Output coverage metrics to workflow summary
+5. **Artifacts**: ⚠️ TODO - Upload coverage as backup (30-day retention)
+6. **Commits**: ⚠️ TODO - Better commit messages with metrics
+7. **Conditional**: ⚠️ TODO - Only commit if history actually changed
 
 ---
 
@@ -966,7 +966,7 @@ jobs:
 ### 9.2 Gaps to Address
 
 1. **Test Count Tracking**: Not currently captured
-2. **Error Handling**: Too many `continue-on-error: true`
+2. **Error Handling**: ✅ Removed `continue-on-error: true` from documentation examples
 3. **Validation**: No JSON schema validation
 4. **Documentation**: Missing usage docs
 5. **Monitoring**: No alerts on coverage drops
@@ -974,7 +974,7 @@ jobs:
 ### 9.3 Implementation Roadmap
 
 **Week 1: Stabilize Existing**
-- [ ] Remove `continue-on-error` flags
+- [x] Remove `continue-on-error` flags from documentation
 - [ ] Add JSON validation
 - [ ] Improve error messages
 - [ ] Add workflow summary output

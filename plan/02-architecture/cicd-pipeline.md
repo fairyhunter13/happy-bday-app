@@ -603,7 +603,6 @@ jobs:
 
       - name: Run npm audit
         run: npm audit --audit-level=moderate
-        continue-on-error: true
 
       - name: Run Snyk security scan
         uses: snyk/actions/node@master
@@ -611,7 +610,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
           args: --severity-threshold=high
-        continue-on-error: true
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -912,7 +910,6 @@ services:
 ```yaml
 - name: Run npm audit
   run: npm audit --audit-level=moderate
-  continue-on-error: true
 ```
 
 **2. Snyk (Advanced Vulnerability Detection)**

@@ -1935,7 +1935,6 @@ jobs:
       # 9. Run linting
       - name: Run linter
         run: npm run lint
-        continue-on-error: true
 
       # 10. Run tests
       - name: Run unit tests

@@ -315,8 +315,7 @@ EOF
 - name: Update coverage history
   run: |
     chmod +x scripts/coverage/update-history.sh
-    ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
-  continue-on-error: true
+    ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json
 ```
 
 2. Add report generation step (after coverage history):
@@ -324,8 +323,7 @@ EOF
 - name: Generate coverage report
   run: |
     chmod +x scripts/coverage/generate-coverage-report.sh
-    ./scripts/coverage/generate-coverage-report.sh docs/coverage-history.json docs/COVERAGE_REPORT.md || true
-  continue-on-error: true
+    ./scripts/coverage/generate-coverage-report.sh docs/coverage-history.json docs/COVERAGE_REPORT.md
 ```
 
 3. Update site creation (line 70-139):
@@ -353,9 +351,8 @@ fi
       git config --local user.name "github-actions[bot]"
       git add docs/coverage-history.json docs/coverage-badge.json docs/COVERAGE_REPORT.md
       git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
-      git push || true
+      git push
     fi
-  continue-on-error: true
 ```
 
 ### 4.3 Phase 3: Badge Integration (Priority: High)

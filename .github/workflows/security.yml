@@ -282,7 +282,7 @@ jobs:
       - name: Check all security scans
         run: |
           # Only fail on actual job failures (cancelled, skipped due to error)
-          # Jobs that complete but find issues (with continue-on-error) are considered informative
+          # Jobs that complete but find issues are considered informative
           echo "Security Scan Results:"
           echo "npm-audit: ${{ needs.npm-audit.result }}"
           echo "snyk-scan: ${{ needs.snyk-scan.result }}"
