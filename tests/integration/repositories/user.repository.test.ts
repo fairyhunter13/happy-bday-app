@@ -445,7 +445,8 @@ describe('UserRepository', () => {
         lastName: 'Different',
         email: 'different@example.com',
         timezone: 'UTC',
-        birthdayDate: new Date(1990, 0, 1), // Jan 1
+        // Use July 15 to avoid date collision (e.g., if tests run on Jan 1)
+        birthdayDate: new Date(Date.UTC(1990, 6, 15)),
       };
 
       await repository.create(userWithBdayToday);
@@ -532,7 +533,8 @@ describe('UserRepository', () => {
         lastName: 'Different',
         email: 'different@example.com',
         timezone: 'UTC',
-        anniversaryDate: new Date(2015, 0, 1), // Jan 1
+        // Use July 15 to avoid date collision (e.g., if tests run on Jan 1)
+        anniversaryDate: new Date(Date.UTC(2015, 6, 15)),
       };
 
       await repository.create(userWithAnnivToday);

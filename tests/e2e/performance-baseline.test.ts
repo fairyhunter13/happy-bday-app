@@ -13,15 +13,19 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { TestEnvironment, waitFor, cleanDatabase, purgeQueues } from '../helpers/testcontainers.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
-import { SchedulerService } from '../../src/services/scheduler.service.js';
-import { MessageWorker } from '../../src/workers/message-worker.js';
-import { MessagePublisher } from '../../src/queue/publisher.js';
-import { MessageStatus } from '../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import type { Pool } from 'pg';
 import type { Connection } from 'amqplib';
+
+// Type-only imports - these don't trigger module initialization
+import type { SchedulerService as SchedulerServiceType } from '../../src/services/scheduler.service.js';
+import type { MessageWorker as MessageWorkerType } from '../../src/workers/message-worker.js';
+import type { MessagePublisher as MessagePublisherType } from '../../src/queue/publisher.js';
+
+// Import MessageStatus directly (enum value, safe to import statically)
+import { MessageStatus } from '../../src/db/schema/message-logs.js';
 
 /**
  * Performance metrics
@@ -76,8 +80,16 @@ describe('E2E: Performance Baseline', () => {
   let env: TestEnvironment;
   let pool: Pool;
   let amqpConnection: Connection;
-  let scheduler: SchedulerService;
-  let publisher: MessagePublisher;
+  let scheduler: SchedulerServiceType;
+  let publisher: MessagePublisherType;
+  let MessageWorker: new () => MessageWorkerType;
+
+  // Module references for dynamic imports
+  let initializeRabbitMQ: () => Promise<unknown>;
+  let RabbitMQConnection: {
+    getInstance: () => { close: () => Promise<void> };
+    resetInstance: () => void;
+  };
 
   const performanceMetrics: PerformanceMetrics[] = [];
 
@@ -91,19 +103,57 @@ describe('E2E: Performance Baseline', () => {
   beforeAll(async () => {
     env = new TestEnvironment();
     await env.setup();
+
+    // Set environment variables BEFORE importing app modules
+    process.env.DATABASE_URL = env.postgresConnectionString;
+    process.env.RABBITMQ_URL = env.rabbitmqConnectionString;
+    process.env.ENABLE_DB_METRICS = 'false';
+    process.env.DATABASE_POOL_MAX = '2';
+
     await env.runMigrations();
 
     pool = env.getPostgresPool();
     amqpConnection = env.getRabbitMQConnection();
 
-    scheduler = new SchedulerService();
-    publisher = new MessagePublisher();
+    // Dynamically import modules AFTER env vars are set
+    const queueModule = await import('../../src/queue/connection.js');
+    initializeRabbitMQ = queueModule.initializeRabbitMQ;
+    RabbitMQConnection = queueModule.RabbitMQConnection;
+
+    // Initialize RabbitMQ connection singleton
+    await initializeRabbitMQ();
+
+    // Now import modules that depend on RabbitMQ
+    const schedulerModule = await import('../../src/services/scheduler.service.js');
+    const publisherModule = await import('../../src/queue/publisher.js');
+    const workerModule = await import('../../src/workers/message-worker.js');
+
+    scheduler = new schedulerModule.SchedulerService();
+    publisher = new publisherModule.MessagePublisher();
+    MessageWorker = workerModule.MessageWorker;
+
     await publisher.initialize();
   }, 180000);
 
   afterAll(async () => {
     // Generate performance report
     await generatePerformanceReport(performanceMetrics);
+
+    // Close RabbitMQ connection first
+    try {
+      const rabbitMQ = RabbitMQConnection.getInstance();
+      await rabbitMQ.close();
+    } catch {
+      // Ignore errors if not connected
+    }
+
+    // Close app's singleton database connection
+    try {
+      const dbConnection = await import('../../src/db/connection.js');
+      await dbConnection.closeConnection();
+    } catch {
+      // Ignore errors if connection already closed
+    }
 
     await env.teardown();
   }, 60000);
