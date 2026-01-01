@@ -76,9 +76,19 @@ describe('E2E: Complete Birthday Message Flow', () => {
   }, 60000);
 
   beforeEach(async () => {
+    // Stop worker if running from previous test
+    if (worker?.isRunning()) {
+      await worker.stop();
+    }
     // Clean database and purge queues before each test
+    // Note: Queue names must match actual queue names (birthday-messages, not birthday-queue)
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    await purgeQueues(amqpConnection, [
+      'birthday-messages',
+      'birthday-dlq',
+      'anniversary-queue',
+      'dlq',
+    ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to avoid test pollution

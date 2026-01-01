@@ -72,7 +72,12 @@ describe('E2E: Error Handling and Recovery', () => {
 
   beforeEach(async () => {
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    await purgeQueues(amqpConnection, [
+      'birthday-messages',
+      'birthday-dlq',
+      'anniversary-queue',
+      'dlq',
+    ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to ensure consistent test behavior
