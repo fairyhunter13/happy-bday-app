@@ -162,10 +162,16 @@ jobs:
         run: rm -f .env.test
 
   e2e-tests:
-    name: E2E Tests
+    name: E2E Tests (Shard ${{ matrix.shard }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 10  # Must complete in < 10 minutes
+    strategy:
+      fail-fast: false
+      matrix:
+        # Split E2E tests into 2 shards for parallel execution
+        shard: [1, 2]
+        total: [2]
 
     services:
       postgres:
@@ -229,9 +235,9 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
-      # OPTIMIZATION: Use optimized E2E config WITHOUT coverage (coverage only from unit tests)
-      - name: Run E2E tests (optimized)
-        run: npm run test:e2e:optimized
+      # OPTIMIZATION: Use sharding to split E2E tests across parallel runners
+      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total }})
+        run: npm run test:e2e:optimized -- --shard=${{ matrix.shard }}/${{ matrix.total }}
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
