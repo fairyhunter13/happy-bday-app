@@ -25,7 +25,7 @@ const __dirname = path.dirname(__filename);
  */
 export async function createApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: logger as unknown as boolean,
+    logger: env.NODE_ENV === 'test' ? false : logger,
     trustProxy: true,
     requestIdLogLabel: 'requestId',
     disableRequestLogging: false,
