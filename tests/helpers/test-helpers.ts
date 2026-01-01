@@ -154,9 +154,10 @@ export async function insertMessageLog(
     `
     INSERT INTO message_logs (
       user_id, message_type, scheduled_send_time, status,
-      message_content, idempotency_key, retry_count
+      message_content, idempotency_key, retry_count, error_message,
+      api_response_code, api_response_body, last_retry_at
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *
   `,
     [
@@ -167,6 +168,10 @@ export async function insertMessageLog(
       messageLog.messageContent,
       messageLog.idempotencyKey,
       messageLog.retryCount || 0,
+      messageLog.errorMessage || null,
+      messageLog.apiResponseCode || null,
+      messageLog.apiResponseBody || null,
+      messageLog.lastRetryAt || null,
     ]
   );
 
