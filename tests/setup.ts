@@ -11,24 +11,25 @@ process.env.LOG_LEVEL = 'error';
 process.env.PORT = '3001';
 process.env.HOST = '0.0.0.0';
 
-// Database - will be overridden by test containers
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5433/birthday_test';
-process.env.DATABASE_HOST = 'localhost';
-process.env.DATABASE_PORT = '5432';
-process.env.DATABASE_USER = 'test';
-process.env.DATABASE_PASSWORD = 'test';
-process.env.DATABASE_NAME = 'birthday_test';
-process.env.DATABASE_POOL_MIN = '1';
-process.env.DATABASE_POOL_MAX = '5';
-process.env.DATABASE_SSL = 'false';
+// Database - only set defaults if not already defined (CI provides these)
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL || 'postgresql://test:test@localhost:5433/birthday_test';
+process.env.DATABASE_HOST = process.env.DATABASE_HOST || 'localhost';
+process.env.DATABASE_PORT = process.env.DATABASE_PORT || '5432';
+process.env.DATABASE_USER = process.env.DATABASE_USER || 'test';
+process.env.DATABASE_PASSWORD = process.env.DATABASE_PASSWORD || 'test';
+process.env.DATABASE_NAME = process.env.DATABASE_NAME || 'birthday_test';
+process.env.DATABASE_POOL_MIN = process.env.DATABASE_POOL_MIN || '1';
+process.env.DATABASE_POOL_MAX = process.env.DATABASE_POOL_MAX || '5';
+process.env.DATABASE_SSL = process.env.DATABASE_SSL || 'false';
 
-// RabbitMQ - will be overridden by test containers
-process.env.RABBITMQ_URL = 'amqp://test:test@localhost:5673';
-process.env.RABBITMQ_HOST = 'localhost';
-process.env.RABBITMQ_PORT = '5672';
-process.env.RABBITMQ_USER = 'test';
-process.env.RABBITMQ_PASSWORD = 'test';
-process.env.RABBITMQ_VHOST = '/';
+// RabbitMQ - only set defaults if not already defined (CI provides these)
+process.env.RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://test:test@localhost:5673';
+process.env.RABBITMQ_HOST = process.env.RABBITMQ_HOST || 'localhost';
+process.env.RABBITMQ_PORT = process.env.RABBITMQ_PORT || '5672';
+process.env.RABBITMQ_USER = process.env.RABBITMQ_USER || 'test';
+process.env.RABBITMQ_PASSWORD = process.env.RABBITMQ_PASSWORD || 'test';
+process.env.RABBITMQ_VHOST = process.env.RABBITMQ_VHOST || '/';
 process.env.RABBITMQ_QUEUE_NAME = 'birthday-messages';
 process.env.RABBITMQ_EXCHANGE_NAME = 'birthday-exchange';
 process.env.RABBITMQ_DLX_NAME = 'birthday-dlx';
