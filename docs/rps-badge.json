@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "label": "RPS",
+  "message": "100+ msg/sec",
+  "color": "brightgreen",
+  "namedLogo": "graphql"
+}

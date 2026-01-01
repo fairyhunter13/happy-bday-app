@@ -8,13 +8,32 @@ const messageProcessingTime = new Trend('message_processing_time');
 const messagesProcessed = new Counter('messages_processed');
 const messagesFailed = new Counter('messages_failed');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
 /**
  * K6 Performance Test: Peak Load (100+ msg/sec)
  *
- * This test simulates:
- * - Ramp up from 12 msg/sec (baseline) to 100+ msg/sec (peak)
- * - Sustain peak load for 5 minutes
+ * This test simulates peak load scenarios:
+ * - Ramp up from baseline to 100+ msg/sec (peak)
+ * - Sustain peak load
  * - Ramp down to baseline
+ *
+ * CI mode (~5 min total):
+ * - Baseline: 1 min at 12 msg/sec
+ * - Ramp up: 30s to 100 msg/sec
+ * - Peak: 2 min at 100 msg/sec
+ * - Stress: 30s at 120 msg/sec
+ * - Ramp down: 1 min to baseline
+ *
+ * Full mode (~11 min total):
+ * - Baseline: 2 min at 12 msg/sec
+ * - Ramp up: 1 min to 100 msg/sec
+ * - Peak: 5 min at 100 msg/sec
+ * - Stress: 1 min at 120 msg/sec
+ * - Ramp down: 2 min to baseline
+ *
+ * Thresholds:
  * - Target: <1s p95, <2s p99 latency during peak
  * - Target: <5% error rate
  */
@@ -24,14 +43,20 @@ export const options = {
       executor: 'ramping-arrival-rate',
       startRate: 12,
       timeUnit: '1s',
-      preAllocatedVUs: 100,
-      maxVUs: 200,
-      stages: [
-        { duration: '2m', target: 12 }, // Baseline: 2 minutes at 12 msg/sec
-        { duration: '1m', target: 100 }, // Ramp up: 1 minute to 100 msg/sec
-        { duration: '5m', target: 100 }, // Peak: 5 minutes at 100 msg/sec
-        { duration: '1m', target: 120 }, // Stress: 1 minute at 120 msg/sec
-        { duration: '2m', target: 12 }, // Ramp down: 2 minutes back to baseline
+      preAllocatedVUs: isCI ? 75 : 100,
+      maxVUs: isCI ? 150 : 200,
+      stages: isCI ? [
+        { duration: '1m', target: 12 },   // Baseline: 1 minute at 12 msg/sec
+        { duration: '30s', target: 100 }, // Ramp up: 30s to 100 msg/sec
+        { duration: '2m', target: 100 },  // Peak: 2 minutes at 100 msg/sec
+        { duration: '30s', target: 120 }, // Stress: 30s at 120 msg/sec
+        { duration: '1m', target: 12 },   // Ramp down: 1 minute back to baseline
+      ] : [
+        { duration: '2m', target: 12 },   // Baseline: 2 minutes at 12 msg/sec
+        { duration: '1m', target: 100 },  // Ramp up: 1 minute to 100 msg/sec
+        { duration: '5m', target: 100 },  // Peak: 5 minutes at 100 msg/sec
+        { duration: '1m', target: 120 },  // Stress: 1 minute at 120 msg/sec
+        { duration: '2m', target: 12 },   // Ramp down: 2 minutes back to baseline
       ],
     },
   },
@@ -114,10 +139,17 @@ export default function () {
  * Setup function
  */
 export function setup() {
-  console.log('Starting peak load test...');
+  console.log('=== Starting Peak Load Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Peak target: 100 messages/second');
   console.log('Stress target: 120 messages/second');
+
+  if (isCI) {
+    console.log('CI mode: 5 minute test (reduced duration)');
+  } else {
+    console.log('Full mode: 11 minute test (comprehensive)');
+  }
 
   // Warmup
   const warmupRes = http.get(`${API_BASE_URL}/health`);

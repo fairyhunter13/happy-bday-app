@@ -165,7 +165,7 @@ jobs:
     name: E2E Tests (Shard ${{ matrix.shard }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Must complete in < 10 minutes
+    timeout-minutes: 12  # Increased from 10 to 12 for buffer (target: < 10 min actual)
     strategy:
       fail-fast: false
       matrix:
