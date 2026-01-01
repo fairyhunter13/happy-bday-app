@@ -1,0 +1,735 @@
+# ============================================================================
+# Birthday Scheduler Alert Rules
+# ============================================================================
+# Comprehensive Prometheus alert rules for the Birthday Message Scheduler
+# service. These alerts cover critical operational metrics and ensure
+# timely detection of issues affecting birthday message delivery.
+#
+# Alert Severity Levels:
+#   - critical (P0): Immediate action required, service-impacting
+#   - warning (P1): Action required within hours, degraded performance
+#   - info (P2): Awareness and monitoring, no immediate action needed
+#
+# Runbook URLs point to internal documentation for incident response.
+# ============================================================================
+
+groups:
+  # ==========================================================================
+  # CRITICAL ALERTS (P0) - Immediate Response Required
+  # ==========================================================================
+  - name: birthday-scheduler-critical
+    rules:
+      # ----------------------------------------------------------------------
+      # High Error Rate Alert
+      # Triggers when more than 5% of API requests are failing with 5xx errors
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerHighErrorRate
+        expr: |
+          (
+            sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(birthday_scheduler_api_requests_total[5m]))
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          service: birthday-scheduler
+          category: reliability
+        annotations:
+          summary: "High error rate detected on Birthday Scheduler"
+          description: |
+            Error rate is {{ $value | printf "%.2f" }}% (threshold: 5%).
+            More than 5% of API requests are failing with server errors.
+            This is affecting user-facing operations and birthday message scheduling.
+            Instance: {{ $labels.instance }}
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/high-error-rate"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/overview"
+          impact: "Users cannot schedule or manage birthday messages"
+          action: "Check application logs, database connectivity, and external dependencies"
+
+      # ----------------------------------------------------------------------
+      # Queue Depth Too High Alert
+      # Triggers when message queue exceeds 1000 messages
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerQueueDepthHigh
+        expr: birthday_scheduler_queue_depth > 1000
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          service: birthday-scheduler
+          category: queue
+        annotations:
+          summary: "Message queue depth critically high"
+          description: |
+            Queue {{ $labels.queue_name | default "main" }} has {{ $value | printf "%.0f" }} messages pending.
+            Threshold: 1000 messages.
+            Messages are accumulating faster than they can be processed.
+            Birthday messages may be significantly delayed.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/queue-depth-high"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/queues"
+          impact: "Birthday messages will be delayed, potentially missing delivery windows"
+          action: |
+            1. Check worker health and scaling
+            2. Verify RabbitMQ connectivity
+            3. Review consumer error logs
+            4. Consider scaling up workers
+            5. Check for blocked/slow consumers
+
+      # ----------------------------------------------------------------------
+      # Birthday Processing Lag Alert
+      # Triggers when messages are not processed within 1 hour (3600 seconds)
+      # Uses message age metric or time-to-delivery histogram
+      # ----------------------------------------------------------------------
+      - alert: BirthdayProcessingLagCritical
+        expr: |
+          birthday_scheduler_message_age_seconds{queue_name=~"birthday.*"} > 3600
+          or
+          histogram_quantile(0.99,
+            sum(rate(birthday_scheduler_message_time_to_delivery_bucket[15m])) by (le)
+          ) > 3600
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          service: birthday-scheduler
+          category: latency
+        annotations:
+          summary: "Birthday message processing severely delayed"
+          description: |
+            Birthday messages are taking more than 1 hour to be processed and sent.
+            Current lag: {{ $value | printf "%.0f" }} seconds ({{ $value | printf "%.1f" | divf 60 }} minutes).
+            Threshold: 3600 seconds (1 hour).
+            Birthday greetings may miss their intended delivery time.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/processing-lag"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/latency"
+          impact: "Birthday messages are being sent late, degrading user experience"
+          action: |
+            1. Check scheduler job status
+            2. Verify worker processing capacity
+            3. Review message queue backlog
+            4. Check for timezone processing delays
+            5. Investigate any external API slowness
+
+      # ----------------------------------------------------------------------
+      # Scheduler Job Lag Alert
+      # Alternative metric for detecting processing delays
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerJobLagCritical
+        expr: birthday_scheduler_scheduler_job_lag > 3600
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          service: birthday-scheduler
+          category: scheduler
+        annotations:
+          summary: "Scheduler job lag exceeds 1 hour"
+          description: |
+            The birthday scheduler is running {{ $value | printf "%.0f" }} seconds behind schedule.
+            Jobs are significantly delayed and birthday messages may not be sent on time.
+            Job type: {{ $labels.job_type | default "birthday_scan" }}
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/job-lag"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/scheduler"
+          impact: "Birthday scans are delayed, messages will not be sent at 9 AM local time"
+          action: |
+            1. Check scheduler lock status
+            2. Verify no stuck jobs in progress
+            3. Review scheduler execution logs
+            4. Check database query performance
+            5. Consider manual job trigger if needed
+
+      # ----------------------------------------------------------------------
+      # Circuit Breaker Open Alert
+      # Triggers when circuit breaker is in open state (value == 1)
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerCircuitBreakerOpen
+        expr: |
+          birthday_scheduler_circuit_breaker_open == 1
+          or
+          birthday_scheduler_api_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+          service: birthday-scheduler
+          category: circuit-breaker
+        annotations:
+          summary: "Circuit breaker is OPEN for {{ $labels.service | default 'external dependency' }}"
+          description: |
+            Circuit breaker for {{ $labels.service | default "an external service" }} is in OPEN state.
+            Requests to this dependency are being rejected to prevent cascade failures.
+            Instance: {{ $labels.instance }}
+            Service affected: {{ $labels.service | default "unknown" }}
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/circuit-breaker"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/dependencies"
+          impact: "External service calls are failing, message delivery may be affected"
+          action: |
+            1. Check the health of the downstream service
+            2. Review error logs for the failing service
+            3. Verify network connectivity
+            4. Check if the dependency is experiencing an outage
+            5. Consider fallback mechanisms if available
+
+      # ----------------------------------------------------------------------
+      # Database Connection Pool Exhaustion Alert
+      # Triggers when no connections are available
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerDBPoolExhausted
+        expr: |
+          birthday_scheduler_database_connections == birthday_scheduler_database_pool_size
+          or
+          birthday_scheduler_database_pool_idle_connections == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: database
+          priority: P0
+          service: birthday-scheduler
+          category: database
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: |
+            All database connections are in use. No idle connections available.
+            Total connections: {{ $value | printf "%.0f" }}
+            Pool size: {{ $labels.pool_size | default "unknown" }}
+            New database operations will fail or timeout.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/db-pool-exhausted"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/database"
+          impact: "Database operations failing, all API requests will fail"
+          action: |
+            1. Check for long-running queries
+            2. Review connection leak detection
+            3. Consider increasing pool size temporarily
+            4. Check database server health
+            5. Review application connection handling
+
+      # ----------------------------------------------------------------------
+      # Database Connection Pool Waiting Requests Critical
+      # Triggers when many requests are waiting for connections
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerDBPoolWaitingCritical
+        expr: birthday_scheduler_database_pool_waiting_requests > 50
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+          priority: P0
+          service: birthday-scheduler
+          category: database
+        annotations:
+          summary: "Many requests waiting for database connections"
+          description: |
+            {{ $value | printf "%.0f" }} requests are waiting for database connections.
+            This indicates severe connection pool pressure.
+            Requests will timeout if connections are not freed.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/db-pool-waiting"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/database"
+          impact: "API requests timing out waiting for database"
+          action: |
+            1. Kill long-running transactions
+            2. Scale up connection pool
+            3. Check for connection leaks
+            4. Review query performance
+
+  # ==========================================================================
+  # WARNING ALERTS (P1) - Action Required Within Hours
+  # ==========================================================================
+  - name: birthday-scheduler-warning
+    rules:
+      # ----------------------------------------------------------------------
+      # API Response Time Too Slow Alert
+      # Triggers when P99 latency exceeds 5 seconds
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerAPISlowP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(birthday_scheduler_api_response_time_bucket[5m])) by (le, endpoint)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: latency
+        annotations:
+          summary: "API P99 response time exceeds 5 seconds"
+          description: |
+            P99 response time for endpoint {{ $labels.endpoint | default "overall" }} is {{ $value | printf "%.2f" }}s.
+            Threshold: 5 seconds.
+            Users are experiencing slow responses for some requests.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/slow-api"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/api-performance"
+          impact: "User experience degraded, timeouts possible for slow requests"
+          action: |
+            1. Check database query performance
+            2. Review slow query logs
+            3. Check external API latency
+            4. Verify cache hit rates
+            5. Consider adding caching for slow endpoints
+
+      # ----------------------------------------------------------------------
+      # API Response Time Histogram-based Alert (Alternative)
+      # Uses the endpoint-specific latency histogram
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerEndpointLatencyHigh
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(birthday_scheduler_api_endpoint_latency_bucket[5m])) by (le, route, method)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: latency
+        annotations:
+          summary: "High latency on {{ $labels.method }} {{ $labels.route }}"
+          description: |
+            P99 latency for {{ $labels.method }} {{ $labels.route }} is {{ $value | printf "%.2f" }}s.
+            This endpoint is responding slower than acceptable limits.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/endpoint-latency"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/api-performance"
+          impact: "Specific API endpoint is slow, affecting dependent functionality"
+          action: |
+            1. Profile the specific endpoint
+            2. Check N+1 query patterns
+            3. Review middleware performance
+            4. Consider endpoint-specific optimizations
+
+      # ----------------------------------------------------------------------
+      # Queue Depth Warning (Lower Threshold)
+      # Early warning before reaching critical level
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerQueueDepthWarning
+        expr: birthday_scheduler_queue_depth > 500
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: queue
+        annotations:
+          summary: "Message queue depth elevated"
+          description: |
+            Queue {{ $labels.queue_name | default "main" }} has {{ $value | printf "%.0f" }} messages.
+            Threshold: 500 messages.
+            Queue is building up but not yet critical.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/queue-depth-warning"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/queues"
+          impact: "Message processing may become delayed if trend continues"
+          action: |
+            1. Monitor queue growth rate
+            2. Check worker health
+            3. Consider preemptive scaling
+            4. Review message processing errors
+
+      # ----------------------------------------------------------------------
+      # Birthday Processing Lag Warning
+      # Triggers when messages are delayed more than 30 minutes
+      # ----------------------------------------------------------------------
+      - alert: BirthdayProcessingLagWarning
+        expr: |
+          birthday_scheduler_message_age_seconds{queue_name=~"birthday.*"} > 1800
+          or
+          histogram_quantile(0.95,
+            sum(rate(birthday_scheduler_message_time_to_delivery_bucket[15m])) by (le)
+          ) > 1800
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: latency
+        annotations:
+          summary: "Birthday message processing delayed"
+          description: |
+            Birthday messages are taking more than 30 minutes to process.
+            Current P95 processing time: {{ $value | printf "%.0f" }} seconds.
+            Threshold: 1800 seconds (30 minutes).
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/processing-lag-warning"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/latency"
+          impact: "Birthday messages may be sent later than expected"
+          action: |
+            1. Check current queue depth
+            2. Verify worker capacity
+            3. Review any slow external calls
+            4. Check timezone batch processing
+
+      # ----------------------------------------------------------------------
+      # Database Connection Pool Low Alert
+      # Warning before pool exhaustion
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerDBPoolLow
+        expr: |
+          (
+            birthday_scheduler_database_pool_idle_connections
+            /
+            birthday_scheduler_database_pool_size
+          ) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          priority: P1
+          service: birthday-scheduler
+          category: database
+        annotations:
+          summary: "Database connection pool running low"
+          description: |
+            Only {{ $value | printf "%.1f" }}% of database connections are idle.
+            Pool exhaustion is approaching.
+            Idle connections: {{ $labels.idle | default "unknown" }}
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/db-pool-low"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/database"
+          impact: "Database operations may start queueing"
+          action: |
+            1. Check for long-running transactions
+            2. Review connection usage patterns
+            3. Consider pool size adjustment
+            4. Check for connection leaks
+
+      # ----------------------------------------------------------------------
+      # Circuit Breaker Half-Open Alert
+      # Circuit breaker is testing if service recovered
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerCircuitBreakerHalfOpen
+        expr: birthday_scheduler_api_circuit_breaker_state == 0.5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: circuit-breaker
+        annotations:
+          summary: "Circuit breaker in half-open state"
+          description: |
+            Circuit breaker for {{ $labels.service | default "external service" }} is testing recovery.
+            The service has been failing and is being probed for availability.
+            If probe fails, circuit will reopen.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/circuit-breaker-recovery"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/dependencies"
+          impact: "Limited traffic to dependency, monitoring recovery"
+          action: |
+            1. Monitor dependency health
+            2. Check if probe requests are succeeding
+            3. Prepare for potential circuit reopen
+
+      # ----------------------------------------------------------------------
+      # High Error Rate Warning (Lower Threshold)
+      # Early warning for increasing errors
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerErrorRateElevated
+        expr: |
+          (
+            sum(rate(birthday_scheduler_api_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(birthday_scheduler_api_requests_total[5m]))
+          ) * 100 > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: reliability
+        annotations:
+          summary: "Error rate elevated on Birthday Scheduler"
+          description: |
+            Error rate is {{ $value | printf "%.2f" }}% (warning threshold: 1%).
+            Error rate is increasing but not yet critical.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/error-rate-warning"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/overview"
+          impact: "Some requests failing, may escalate to critical"
+          action: |
+            1. Review recent deployments
+            2. Check error logs for patterns
+            3. Monitor for escalation
+
+      # ----------------------------------------------------------------------
+      # DLQ Messages Accumulating
+      # Dead letter queue has failed messages
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerDLQAccumulating
+        expr: birthday_scheduler_dlq_depth > 50
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: queue
+        annotations:
+          summary: "Dead letter queue has unprocessed messages"
+          description: |
+            DLQ has {{ $value | printf "%.0f" }} messages that failed processing.
+            These messages need manual review and potential reprocessing.
+            Queue: {{ $labels.queue_name | default "birthday-dlq" }}
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/dlq-messages"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/queues"
+          impact: "Some birthday messages permanently failed"
+          action: |
+            1. Review DLQ messages for failure patterns
+            2. Fix underlying issues
+            3. Requeue valid messages
+            4. Alert affected users if needed
+
+  # ==========================================================================
+  # INFO ALERTS (P2) - Awareness and Monitoring
+  # ==========================================================================
+  - name: birthday-scheduler-info
+    rules:
+      # ----------------------------------------------------------------------
+      # API Response Time Elevated
+      # Informational alert for latency trending up
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerAPILatencyTrending
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(birthday_scheduler_api_response_time_bucket[5m])) by (le)
+          ) > 2
+        for: 15m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: latency
+        annotations:
+          summary: "API latency trending higher than normal"
+          description: |
+            P95 response time is {{ $value | printf "%.2f" }}s.
+            Latency is elevated but within acceptable limits.
+            Monitor for continued degradation.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/latency-trending"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/api-performance"
+          impact: "User experience slightly degraded"
+          action: "Monitor trend, investigate if it continues"
+
+      # ----------------------------------------------------------------------
+      # Queue Consumer Count Low
+      # Fewer consumers than expected
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerConsumerCountLow
+        expr: birthday_scheduler_consumer_count < 2
+        for: 10m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: queue
+        annotations:
+          summary: "Low number of queue consumers"
+          description: |
+            Only {{ $value | printf "%.0f" }} consumers connected to message queue.
+            Processing capacity may be reduced.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/low-consumers"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/queues"
+          impact: "Reduced processing capacity"
+          action: "Check worker pod status, verify scaling"
+
+      # ----------------------------------------------------------------------
+      # Scheduled Jobs Pending
+      # Jobs building up in scheduler
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerJobsPending
+        expr: birthday_scheduler_scheduler_pending_jobs > 100
+        for: 15m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: scheduler
+        annotations:
+          summary: "Scheduler has pending jobs"
+          description: |
+            {{ $value | printf "%.0f" }} jobs are pending execution.
+            Scheduler may be running behind.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/jobs-pending"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/scheduler"
+          impact: "Job execution may be delayed"
+          action: "Monitor job completion rate"
+
+      # ----------------------------------------------------------------------
+      # Birthday Scan Duration Long
+      # Scans taking longer than usual
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerScanDurationHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(birthday_scheduler_birthday_scan_duration_bucket[1h])) by (le)
+          ) > 300
+        for: 30m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: scheduler
+        annotations:
+          summary: "Birthday scan taking longer than usual"
+          description: |
+            P95 birthday scan duration is {{ $value | printf "%.0f" }}s.
+            Scans are taking more than 5 minutes which may delay processing.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/slow-scan"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/scheduler"
+          impact: "Birthday detection may be slightly delayed"
+          action: "Check database query performance for user scans"
+
+      # ----------------------------------------------------------------------
+      # Cache Hit Rate Low
+      # Cache effectiveness reduced
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerCacheHitRateLow
+        expr: birthday_scheduler_cache_hit_rate < 70
+        for: 30m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: performance
+        annotations:
+          summary: "Cache hit rate below optimal"
+          description: |
+            Cache hit rate is {{ $value | printf "%.1f" }}%.
+            More requests are hitting the database than expected.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/low-cache-hit"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/cache"
+          impact: "Increased database load"
+          action: "Review cache TTL and warming strategies"
+
+      # ----------------------------------------------------------------------
+      # Database Replication Lag
+      # Read replicas slightly behind
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerReplicationLag
+        expr: birthday_scheduler_replication_lag > 5
+        for: 10m
+        labels:
+          severity: info
+          team: database
+          priority: P2
+          service: birthday-scheduler
+          category: database
+        annotations:
+          summary: "Database replication lag detected"
+          description: |
+            Replication lag is {{ $value | printf "%.1f" }}s.
+            Read queries may return slightly stale data.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/replication-lag"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/database"
+          impact: "Minor data consistency delay"
+          action: "Monitor for continued increase"
+
+      # ----------------------------------------------------------------------
+      # Active Workers Below Minimum
+      # Worker count lower than expected
+      # ----------------------------------------------------------------------
+      - alert: BirthdaySchedulerWorkersLow
+        expr: birthday_scheduler_active_workers < 3
+        for: 5m
+        labels:
+          severity: info
+          team: platform
+          priority: P2
+          service: birthday-scheduler
+          category: capacity
+        annotations:
+          summary: "Active worker count low"
+          description: |
+            Only {{ $value | printf "%.0f" }} workers are active.
+            Minimum expected: 3.
+            Processing capacity may be reduced.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/low-workers"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/workers"
+          impact: "Reduced message processing capacity"
+          action: "Check worker deployment status"
+
+  # ==========================================================================
+  # SLO ALERTS - Birthday-Specific Service Level Objectives
+  # ==========================================================================
+  - name: birthday-scheduler-slo
+    rules:
+      # ----------------------------------------------------------------------
+      # Birthday Message On-Time Delivery SLO
+      # Messages should be sent within 15 minutes of scheduled time
+      # ----------------------------------------------------------------------
+      - alert: BirthdayOnTimeDeliverySLOBreach
+        expr: |
+          (
+            sum(rate(birthday_scheduler_messages_sent_total{on_time="true"}[1h]))
+            /
+            sum(rate(birthday_scheduler_messages_sent_total[1h]))
+          ) * 100 < 95
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: slo
+          slo: on_time_delivery
+        annotations:
+          summary: "Birthday on-time delivery SLO breach"
+          description: |
+            Only {{ $value | printf "%.1f" }}% of birthday messages are delivered on time.
+            SLO target: 95% on-time delivery.
+            Users are not receiving birthday greetings at 9 AM local time.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/on-time-slo"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/slo"
+          slo_target: "95% of messages within 15 minutes of 9 AM local"
+          impact: "Birthday greetings are delayed"
+          action: |
+            1. Check scheduler execution timing
+            2. Review queue processing delays
+            3. Verify timezone handling
+            4. Check message delivery performance
+
+      # ----------------------------------------------------------------------
+      # Message Delivery Success Rate SLO
+      # 99% of messages should be successfully delivered
+      # ----------------------------------------------------------------------
+      - alert: BirthdayDeliverySuccessSLOBreach
+        expr: |
+          (
+            sum(rate(birthday_scheduler_messages_sent_total{status_code=~"2.."}[1h]))
+            /
+            sum(rate(birthday_scheduler_messages_scheduled_total[1h]))
+          ) * 100 < 99
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+          service: birthday-scheduler
+          category: slo
+          slo: delivery_success
+        annotations:
+          summary: "Birthday delivery success SLO breach"
+          description: |
+            Message delivery success rate is {{ $value | printf "%.2f" }}%.
+            SLO target: 99% successful delivery.
+            Some birthday messages are failing to send.
+          runbook_url: "https://wiki.internal/runbooks/birthday-scheduler/delivery-slo"
+          dashboard_url: "https://grafana.internal/d/birthday-scheduler/slo"
+          slo_target: "99% successful delivery"
+          impact: "Some users not receiving birthday messages"
+          action: |
+            1. Check email/SMS service health
+            2. Review delivery error patterns
+            3. Check message content validation
+            4. Verify recipient data quality

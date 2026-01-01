@@ -69,12 +69,16 @@ export class EmailServiceClient {
 
       const duration = (Date.now() - startTime) / 1000; // Convert to seconds
       metricsService.recordApiResponseTime('POST', '/send-email', 200, duration);
+      metricsService.recordExternalApiCall('email_service', '/send-email', 200, duration);
+      metricsService.recordHttpRequestDuration('email_service', 'POST', 200, duration);
 
       logger.info({ messageId: result.messageId, duration }, 'Email sent successfully');
       return result;
     } catch (error) {
       const duration = (Date.now() - startTime) / 1000; // Convert to seconds
       metricsService.recordApiResponseTime('POST', '/send-email', 500, duration);
+      metricsService.recordExternalApiCall('email_service', '/send-email', 500, duration);
+      metricsService.recordHttpRequestDuration('email_service', 'POST', 500, duration);
 
       logger.error({ error, data, duration }, 'Failed to send email');
       throw this.mapError(error);
@@ -114,8 +118,16 @@ export class EmailServiceClient {
 
         if (attempt === options.maxRetries) {
           logger.warn({ attempt, error }, 'Max retries reached');
+          // Record timeout metric if timeout error
+          if (lastError.message.includes('timeout')) {
+            metricsService.recordHttpClientTimeout('email_service', 'POST', 'request');
+          }
           break;
         }
+
+        // Record retry metric
+        metricsService.recordHttpClientRetry('email_service', 'POST', 0);
+        metricsService.recordMessageRetry('email', lastError.message.slice(0, 50));
 
         const delay = Math.min(
           options.baseDelay * Math.pow(options.factor, attempt),
@@ -137,18 +149,25 @@ export class EmailServiceClient {
     if (error instanceof Error) {
       // Map specific vendor error codes to application errors
       if (error.message.includes('rate limit')) {
+        metricsService.recordRateLimitHit('/send-email', 'email_service');
         return new Error('Email service rate limit exceeded');
       }
       if (error.message.includes('invalid email')) {
+        metricsService.recordApiValidationError('/send-email', 'invalid_email');
         return new Error('Invalid email address');
       }
       if (error.message.includes('timeout')) {
+        metricsService.recordHttpClientTimeout('email_service', 'POST', 'request_timeout');
         return new Error('Email service timeout');
       }
 
+      // Record generic vendor error
+      metricsService.recordExternalApiError('email_service', 'POST', 'vendor_error');
       return error;
     }
 
+    // Record unknown error
+    metricsService.recordExternalApiError('email_service', 'POST', 'unknown_error');
     return new Error('Unknown email service error');
   }
 
@@ -176,6 +195,8 @@ export class EmailServiceClient {
 
     circuit.on('fallback', () => {
       logger.warn({ operation }, 'Circuit breaker fallback triggered');
+      // Record circuit breaker fallback metric
+      metricsService.recordCircuitBreakerTrip('email_service', operation);
     });
   }
 

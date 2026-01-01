@@ -119,9 +119,13 @@ Mutation testing runs automatically on:
 The workflow (`.github/workflows/mutation.yml`):
 1. Runs unit tests first to ensure they pass
 2. Executes mutation testing with incremental mode
-3. Uploads mutation reports as artifacts
-4. Comments mutation score on PRs
-5. Fails if score drops below 50%
+3. Uploads mutation reports as artifacts (retained for 14 days)
+4. Comments mutation score on PRs with detailed metrics
+5. Enforces thresholds:
+   - Score >= 80%: Excellent (passes)
+   - Score >= 60%: Good (passes)
+   - Score >= 50%: Warning (passes)
+   - Score < 50%: Fails the build
 
 ### PR Comments
 
@@ -178,9 +182,27 @@ it('should increment count correctly', () => {
 ## Performance Tips
 
 1. **Use Incremental Mode**: For development, use `npm run test:mutation:incremental`
+   - Incremental mode is enabled by default in the configuration
+   - Only re-runs mutations affected by code changes
+   - Significantly faster for iterative development
+
 2. **Limit Scope**: During development, temporarily limit `mutate` patterns
+   ```javascript
+   // In stryker.config.mjs (temporary)
+   mutate: ['src/services/specific-service.ts']
+   ```
+
 3. **Parallel Execution**: Stryker runs with concurrency (default: 4)
+   - Adjust `concurrency` in config based on your CPU cores
+   - Higher values = faster but more memory usage
+
 4. **Coverage Analysis**: Uses `perTest` coverage for smarter test selection
+   - Only runs tests that cover mutated code
+   - Reduces unnecessary test executions
+
+5. **TypeScript Build**: The `buildCommand` ensures code is compiled before testing
+   - Mutation testing runs on TypeScript source files
+   - Type checking is disabled for performance (handled separately)
 
 ## Troubleshooting
 

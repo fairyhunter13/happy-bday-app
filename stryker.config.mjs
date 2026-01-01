@@ -62,6 +62,9 @@ const config = {
   // - UpdateOperator: ++, --
 
   // Thresholds for mutation score
+  // - high (80%+): Excellent mutation coverage - most mutations are caught
+  // - low (60%+): Acceptable mutation coverage - room for improvement
+  // - break (50%): Minimum acceptable - CI will warn below this
   thresholds: {
     high: 80,
     low: 60,
@@ -98,8 +101,12 @@ const config = {
   // Coverage analysis for performance
   coverageAnalysis: 'perTest',
 
-  // Disable telemetry
+  // Disable type checking for faster mutation testing
+  // Type errors are caught by TypeScript compilation, not mutation testing
   disableTypeChecks: 'src/**/*.ts',
+
+  // Disable telemetry for privacy
+  disableTelemetry: true,
 
   // Ignore patterns
   ignorePatterns: [

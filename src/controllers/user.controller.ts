@@ -76,6 +76,8 @@ export class UserController {
     const validationResult = createUserSchema.safeParse(request.body);
 
     if (!validationResult.success) {
+      // Record validation error metrics
+      metricsService.recordApiValidationError('/api/v1/users', 'create_user');
       throw new ValidationError('Invalid user data', {
         errors: validationResult.error.format(),
       });
@@ -116,6 +118,9 @@ export class UserController {
     // Use cached repository for read operations
     const user = await this._cachedUserRepository.findById(id);
 
+    // Record user read activity metric
+    metricsService.recordUserActivity('user_read', user ? 'active' : 'unknown');
+
     if (!user) {
       await reply.status(404).send({
         error: {
@@ -151,6 +156,8 @@ export class UserController {
     const validationResult = updateUserSchema.safeParse(request.body);
 
     if (!validationResult.success) {
+      // Record validation error metrics
+      metricsService.recordApiValidationError('/api/v1/users/:id', 'update_user');
       throw new ValidationError('Invalid user data', {
         errors: validationResult.error.format(),
       });
@@ -211,6 +218,8 @@ export class UserController {
           },
           'Message rescheduling failed, but user update succeeded'
         );
+        // Record message reschedule failure metrics
+        metricsService.recordSchedulerJobFailure('message_reschedule', 'reschedule_error');
       }
     }
 

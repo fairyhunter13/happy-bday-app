@@ -20,10 +20,79 @@ Synchronize, maintain, and organize all documentation in: **docs/**, **plan/**, 
 
 ### Source of Truth
 
-1. **src/** - Source code implementation
-2. **tests/** - Test implementations
-3. **package.json** - Dependencies and scripts
-4. **.github/workflows/** - CI/CD configuration
+1. **project_data/** - **PRIMARY REQUIREMENTS** (Assessment specification)
+2. **src/** - Source code implementation
+3. **tests/** - Test implementations
+4. **package.json** - Dependencies and scripts
+5. **.github/workflows/** - CI/CD configuration
+
+---
+
+# PHASE 0: REQUIREMENTS CONFORMANCE
+
+## Project Requirements from project_data/
+
+All plan and documentation files MUST conform to the core requirements defined in `project_data/`:
+
+### Core Requirements Checklist
+
+**Mandatory Features:**
+- [ ] TypeScript codebase
+- [ ] POST /user - Create user endpoint
+- [ ] DELETE /user - Delete user endpoint
+- [ ] PUT /user - Edit user endpoint (Bonus)
+- [ ] User fields: firstName, lastName, birthday, location/timezone, email
+- [ ] Birthday message at 9am local time
+- [ ] Message format: "Hey, {full_name} it's your birthday"
+- [ ] Integration with email-service.digitalenvision.com.au
+- [ ] Recovery mechanism for unsent messages after downtime
+- [ ] Handle API random errors and timeouts
+
+**Quality Requirements:**
+- [ ] Scalable code with good abstraction
+- [ ] Support for future message types (e.g., anniversary)
+- [ ] Code is tested and testable
+- [ ] No race conditions / duplicate messages
+- [ ] Handle thousands of birthdays per day
+
+### Conformance Verification Steps
+
+1. **Read** `project_data/*.txt` and `project_data/*.rtf` files
+2. **Extract** all requirements and constraints
+3. **Compare** plan files against requirements
+4. **Flag** any plan items that:
+   - Contradict core requirements
+   - Add scope beyond assessment requirements
+   - Miss required features
+5. **Update** plan files to align with requirements
+
+### Conformance Report Section
+
+Add to sync report:
+
+```markdown
+## Requirements Conformance
+
+### project_data/ Requirements Status
+
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| TypeScript codebase | ✅ Verified | src/**/*.ts |
+| POST /user endpoint | ✅ Verified | src/controllers/user.controller.ts |
+| DELETE /user endpoint | ✅ Verified | src/controllers/user.controller.ts |
+| PUT /user endpoint | ✅ Verified | src/controllers/user.controller.ts |
+| 9am local time sending | ✅ Verified | src/services/timezone.service.ts |
+| Message format correct | ✅ Verified | src/strategies/birthday-message.strategy.ts |
+| Recovery mechanism | ✅ Verified | src/schedulers/recovery.scheduler.ts |
+| Error/timeout handling | ✅ Verified | src/services/message-sender.service.ts |
+| Scalable abstraction | ✅ Verified | src/strategies/ (Strategy pattern) |
+| No duplicate messages | ✅ Verified | src/services/idempotency.service.ts |
+
+### Scope Alignment
+
+- Items IN SCOPE: [list items matching requirements]
+- Items OUT OF SCOPE: [list items beyond assessment - flag for review]
+```
 
 ---
 
@@ -178,9 +247,10 @@ plan/
 ├── 06-phase-reports/           # Phase completions
 ├── 07-monitoring/              # Monitoring plans
 ├── 08-operations/              # Operational procedures
-├── 09-reports/                 # Status reports
-└── 99-archive/                 # Completed/deprecated
+└── 09-reports/                 # Status reports & gap analysis
 ```
+
+**Note:** Archive directory (99-archive/) has been removed. Obsolete files should be deleted rather than archived.
 
 ## STEP 7: File Naming Conventions
 

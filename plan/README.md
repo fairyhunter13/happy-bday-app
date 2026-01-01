@@ -31,8 +31,7 @@ plan/
 ├── 06-phase-reports/         # Phase completion reports (tracked in git history)
 ├── 07-monitoring/            # Monitoring, metrics, and observability plans
 ├── 08-operations/            # Deployment and operational plans
-├── 09-reports/               # Analysis reports and gap assessments
-└── 99-archive/               # Archived/superseded documents
+└── 09-reports/               # Analysis reports and gap assessments
 ```
 
 **Note:** This directory contains planning, research, architecture, strategy documents, and analysis reports. All directories now have comprehensive INDEX.md files for easy navigation.
@@ -168,15 +167,8 @@ plan/
 | Document | Description | Status |
 |----------|-------------|--------|
 | [`INDEX.md`](./09-reports/INDEX.md) | Reports directory index | ✅ |
-| [`GAP_ANALYSIS_REPORT.md`](./09-reports/GAP_ANALYSIS_REPORT.md) | Comprehensive gap analysis (88% complete) | ✅ Final |
-
-### 99. Archive
-**Focus:** Historical reference
-
-| Document | Description |
-|----------|-------------|
-| [`ARCHIVE_INDEX.md`](./99-archive/ARCHIVE_INDEX.md) | Archive index and policy |
-| [`INDEX.md`](./99-archive/INDEX.md) | Historical document index |
+| [`GAP_ANALYSIS_2026-01-01.md`](./09-reports/GAP_ANALYSIS_2026-01-01.md) | Latest gap analysis | ✅ Final |
+| [`DOCS_SYNC_2026-01-01.md`](./09-reports/DOCS_SYNC_2026-01-01.md) | Documentation sync report | ✅ Final |
 
 ---
 
@@ -319,7 +311,6 @@ plan/
 - Monitoring → `07-monitoring/`
 - Operations → `08-operations/`
 - Analysis Reports → `09-reports/`
-- Archive → `99-archive/`
 
 **By Task:**
 - Understand system architecture → `02-architecture/architecture-overview.md`
