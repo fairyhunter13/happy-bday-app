@@ -8,6 +8,7 @@ import { logger, logStartup } from './config/logger.js';
 import { schedulerManager } from './schedulers/index.js';
 import { systemMetricsService } from './services/system-metrics.service.js';
 import { initializeRabbitMQ, getRabbitMQ } from './queue/connection.js';
+import { cacheService } from './services/cache.service.js';
 
 /**
  * Main application entry point
@@ -60,6 +61,15 @@ async function main(): Promise<void> {
           logger.info('RabbitMQ connection closed');
         } catch (error) {
           logger.warn({ error }, 'Error closing RabbitMQ connection (may already be closed)');
+        }
+
+        // Close Redis connection
+        logger.info('Closing Redis connection...');
+        try {
+          await cacheService.close();
+          logger.info('Redis connection closed');
+        } catch (error) {
+          logger.warn({ error }, 'Error closing Redis connection (may already be closed)');
         }
 
         // Shutdown server

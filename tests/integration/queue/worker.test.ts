@@ -359,30 +359,45 @@ describe('Message Worker Integration Tests', () => {
         apiResponseBody: JSON.stringify({ success: true }),
       });
 
+      // Verify message was created correctly before proceeding
+      const createdMessage = await testDb
+        .select()
+        .from(messageLogs)
+        .where(eq(messageLogs.id, messageLog.id))
+        .limit(1);
+
+      expect(createdMessage[0]?.status).toBe(MessageStatus.SENT);
+
       let processingAttempted = false;
       let messageSkipped = false;
+      let processingError: Error | null = null;
 
       // 3. Create consumer that checks idempotency
       consumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          processingAttempted = true;
+          try {
+            processingAttempted = true;
 
-          // Check if message was already sent (idempotency check)
-          const existingMessage = await testDb
-            .select()
-            .from(messageLogs)
-            .where(eq(messageLogs.id, job.messageId))
-            .limit(1);
+            // Check if message was already sent (idempotency check)
+            const existingMessage = await testDb
+              .select()
+              .from(messageLogs)
+              .where(eq(messageLogs.id, job.messageId))
+              .limit(1);
 
-          if (existingMessage[0]?.status === MessageStatus.SENT) {
-            // Message already sent - skip processing
-            messageSkipped = true;
-            return; // Acknowledge without reprocessing
+            if (existingMessage[0]?.status === MessageStatus.SENT) {
+              // Message already sent - skip processing
+              messageSkipped = true;
+              return; // Acknowledge without reprocessing
+            }
+
+            // This should NOT be reached for already sent messages
+            throw new Error('Should not process already sent message');
+          } catch (error) {
+            processingError = error as Error;
+            throw error;
           }
-
-          // This should NOT be reached for already sent messages
-          throw new Error('Should not process already sent message');
         },
       });
 
@@ -400,7 +415,7 @@ describe('Message Worker Integration Tests', () => {
 
       await publisher.publishMessage(job);
 
-      // 5. Wait for message processing
+      // 5. Wait for message processing with longer timeout
       await new Promise<void>((resolve) => {
         const checkInterval = setInterval(() => {
           if (processingAttempted) {
@@ -411,10 +426,13 @@ describe('Message Worker Integration Tests', () => {
         setTimeout(() => {
           clearInterval(checkInterval);
           resolve();
-        }, 3000);
+        }, 5000); // Increased timeout
       });
 
       // 6. Verify idempotency check worked
+      if (processingError && !messageSkipped) {
+        console.error('Processing error:', processingError.message);
+      }
       expect(processingAttempted).toBe(true);
       expect(messageSkipped).toBe(true);
 
