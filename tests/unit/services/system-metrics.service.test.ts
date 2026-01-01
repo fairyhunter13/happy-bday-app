@@ -264,7 +264,8 @@ describe('SystemMetricsService - Comprehensive Tests', () => {
 
       cpuInfo.forEach((cpu) => {
         expect(cpu.model).toBeDefined();
-        expect(cpu.speed).toBeGreaterThan(0);
+        // In some CI environments (containers/VMs), CPU speed may report as 0
+        expect(cpu.speed).toBeGreaterThanOrEqual(0);
       });
     });
 

@@ -190,9 +190,7 @@ describe('CacheService', () => {
       }
 
       // Should not throw
-      await expect(
-        cache.set('test:key', { data: 'value' }, { ttl: 60 })
-      ).resolves.not.toThrow();
+      await expect(cache.set('test:key', { data: 'value' }, { ttl: 60 })).resolves.not.toThrow();
     });
 
     it('should handle Redis connection loss during delete operation', async () => {
@@ -428,13 +426,7 @@ describe('CacheService', () => {
     it('should handle similar cache keys without conflicts', async () => {
       const cache = new CacheService();
 
-      const keys = [
-        'user:123',
-        'user:1234',
-        'user:12345',
-        'user:123:profile',
-        'user:123:settings',
-      ];
+      const keys = ['user:123', 'user:1234', 'user:12345', 'user:123:profile', 'user:123:settings'];
 
       // Set all keys
       for (let i = 0; i < keys.length; i++) {
@@ -459,12 +451,7 @@ describe('CacheService', () => {
       const cache = new CacheService();
 
       // Set keys with similar patterns
-      const keys = [
-        'user:v1:123',
-        'user:v2:123',
-        'user:v1:456',
-        'userdata:v1:123',
-      ];
+      const keys = ['user:v1:123', 'user:v2:123', 'user:v1:456', 'userdata:v1:123'];
 
       for (const key of keys) {
         await cache.set(key, { data: 'value' }, { ttl: 60 });
