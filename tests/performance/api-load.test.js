@@ -15,6 +15,25 @@ const usersUpdated = new Counter('users_updated');
 const usersDeleted = new Counter('users_deleted');
 const operationsFailed = new Counter('operations_failed');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
+// Load stages based on environment
+const LOAD_STAGES = isCI
+  ? [
+      { duration: '1m', target: 50 },    // CI: Ramp to 50 users
+      { duration: '2m', target: 200 },   // CI: Ramp to 200 users
+      { duration: '5m', target: 200 },   // CI: Sustain 200 users for 5 minutes
+      { duration: '2m', target: 0 },     // CI: Ramp down
+    ]
+  : [
+      { duration: '2m', target: 100 },   // Full: Ramp up to 100 users
+      { duration: '3m', target: 500 },   // Full: Ramp up to 500 users
+      { duration: '5m', target: 1000 },  // Full: Ramp up to 1000 users
+      { duration: '30m', target: 1000 }, // Full: Sustain 1000 users for 30 minutes
+      { duration: '5m', target: 0 },     // Full: Ramp down
+    ];
+
 /**
  * K6 Performance Test: API Load Test
  *
@@ -24,7 +43,12 @@ const operationsFailed = new Counter('operations_failed');
  * - PUT /api/v1/users/:id (update users)
  * - DELETE /api/v1/users/:id (delete users)
  *
- * Load profile:
+ * Load profile (CI mode: ~10 min total):
+ * - Ramp up: 0 → 50 → 200 users over 3 minutes
+ * - Sustained: 5 minutes at 200 concurrent users
+ * - Ramp down: 2 minutes
+ *
+ * Load profile (Full mode: ~45 min total):
  * - Ramp up: 0 → 100 → 500 → 1000 users over 10 minutes
  * - Sustained: 30 minutes at 1000 concurrent users
  * - Ramp down: 5 minutes
@@ -39,13 +63,7 @@ export const options = {
     api_crud_load_test: {
       executor: 'ramping-vus',
       startVUs: 0,
-      stages: [
-        { duration: '2m', target: 100 },   // Ramp up to 100 users
-        { duration: '3m', target: 500 },   // Ramp up to 500 users
-        { duration: '5m', target: 1000 },  // Ramp up to 1000 users
-        { duration: '30m', target: 1000 }, // Sustain 1000 users for 30 minutes
-        { duration: '5m', target: 0 },     // Ramp down
-      ],
+      stages: LOAD_STAGES,
       gracefulRampDown: '30s',
     },
   },
@@ -332,10 +350,18 @@ export default function () {
 export function setup() {
   console.log('=== Starting API Load Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Test scenario: CRUD operations on /api/v1/users');
-  console.log('Load profile: 0 → 100 → 500 → 1000 users over 10 minutes');
-  console.log('Sustained load: 1000 users for 30 minutes');
-  console.log('Expected operations: ~100,000 total requests');
+
+  if (isCI) {
+    console.log('Load profile: 0 → 50 → 200 users over 3 minutes');
+    console.log('Sustained load: 200 users for 5 minutes');
+    console.log('Expected operations: ~5,000 total requests');
+  } else {
+    console.log('Load profile: 0 → 100 → 500 → 1000 users over 10 minutes');
+    console.log('Sustained load: 1000 users for 30 minutes');
+    console.log('Expected operations: ~100,000 total requests');
+  }
 
   // Health check
   const warmupRes = http.get(`${API_BASE_URL}/health`);

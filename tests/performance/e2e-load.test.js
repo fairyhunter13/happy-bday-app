@@ -17,6 +17,26 @@ const stepsSucceeded = new Counter('steps_succeeded');
 const stepsFailed = new Counter('steps_failed');
 const concurrentFlows = new Gauge('concurrent_flows');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
+// Load stages based on environment
+const E2E_STAGES = isCI
+  ? [
+      { duration: '1m', target: 50 },    // CI: Ramp to 50 flows
+      { duration: '2m', target: 100 },   // CI: Ramp to 100 flows
+      { duration: '5m', target: 100 },   // CI: Sustain 100 flows
+      { duration: '2m', target: 0 },     // CI: Ramp down
+    ]
+  : [
+      { duration: '2m', target: 100 },   // Full: Ramp to 100 flows
+      { duration: '3m', target: 500 },   // Full: Ramp to 500 flows
+      { duration: '5m', target: 1000 },  // Full: Ramp to 1000 flows
+      { duration: '20m', target: 1000 }, // Full: Sustain 1000 flows
+      { duration: '5m', target: 100 },   // Full: Ramp down
+      { duration: '2m', target: 0 },     // Full: Complete ramp down
+    ];
+
 /**
  * K6 Performance Test: End-to-End Load Test
  *
@@ -27,10 +47,15 @@ const concurrentFlows = new Gauge('concurrent_flows');
  * 4. Worker processes message
  * 5. Email sent via external service
  *
- * Load profile:
- * - 1000 concurrent birthday flows
- * - Realistic user behavior simulation
- * - All components tested together
+ * Load profile (CI mode: ~10 min total):
+ * - Ramp up: 0 → 50 → 100 flows over 3 minutes
+ * - Sustained: 100 flows for 5 minutes
+ * - Ramp down: 2 minutes
+ *
+ * Load profile (Full mode: ~37 min total):
+ * - Ramp up: 0 → 100 → 500 → 1000 flows over 10 minutes
+ * - Sustained: 1000 flows for 20 minutes
+ * - Ramp down: 7 minutes
  *
  * Thresholds:
  * - p99 < 5s (end-to-end latency)
@@ -39,18 +64,11 @@ const concurrentFlows = new Gauge('concurrent_flows');
  */
 export const options = {
   scenarios: {
-    // Gradual ramp-up to 1000 concurrent flows
+    // Gradual ramp-up to peak concurrent flows
     e2e_birthday_flows: {
       executor: 'ramping-vus',
       startVUs: 0,
-      stages: [
-        { duration: '2m', target: 100 },   // Ramp to 100 flows
-        { duration: '3m', target: 500 },   // Ramp to 500 flows
-        { duration: '5m', target: 1000 },  // Ramp to 1000 flows
-        { duration: '20m', target: 1000 }, // Sustain 1000 flows
-        { duration: '5m', target: 100 },   // Ramp down
-        { duration: '2m', target: 0 },     // Complete ramp down
-      ],
+      stages: E2E_STAGES,
       gracefulRampDown: '30s',
     },
   },
@@ -452,15 +470,23 @@ export default function () {
 export function setup() {
   console.log('=== Starting End-to-End Load Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Test flow:');
   console.log('  1. Create user with birthday today');
   console.log('  2. Scheduler pre-calculates birthday');
   console.log('  3. Message enqueued to RabbitMQ');
   console.log('  4. Worker processes message');
   console.log('  5. Email sent and verified');
-  console.log('Load profile: 0 → 100 → 500 → 1000 concurrent flows');
-  console.log('Sustained: 1000 flows for 20 minutes');
-  console.log('Expected flows: ~30,000 total');
+
+  if (isCI) {
+    console.log('Load profile: 0 → 50 → 100 concurrent flows');
+    console.log('Sustained: 100 flows for 5 minutes');
+    console.log('Expected flows: ~1,500 total');
+  } else {
+    console.log('Load profile: 0 → 100 → 500 → 1000 concurrent flows');
+    console.log('Sustained: 1000 flows for 20 minutes');
+    console.log('Expected flows: ~30,000 total');
+  }
 
   // Health check
   const warmupRes = http.get(`${API_BASE_URL}/health`);

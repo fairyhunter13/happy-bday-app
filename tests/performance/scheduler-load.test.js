@@ -15,14 +15,64 @@ const duplicatesSkipped = new Counter('duplicates_skipped');
 const schedulerErrors = new Counter('scheduler_errors');
 const activeSchedulers = new Gauge('active_schedulers');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
+// Scenario configurations based on environment
+const DAILY_SCHEDULER_CONFIG = isCI
+  ? { vus: 1, duration: '3m' } // CI: 3 minutes
+  : { vus: 1, duration: '10m' }; // Full: 10 minutes
+
+const MINUTE_SCHEDULER_CONFIG = isCI
+  ? {
+      rate: 100, // CI: 100 messages per minute
+      timeUnit: '1m',
+      duration: '3m',
+      preAllocatedVUs: 10,
+      maxVUs: 20,
+      startTime: '3m',
+    }
+  : {
+      rate: 500, // Full: 500 messages per minute
+      timeUnit: '1m',
+      duration: '15m',
+      preAllocatedVUs: 50,
+      maxVUs: 100,
+      startTime: '10m',
+    };
+
+const DATABASE_QUERY_STAGES = isCI
+  ? [
+      { duration: '1m', target: 5 },
+      { duration: '2m', target: 10 },
+      { duration: '1m', target: 5 },
+    ]
+  : [
+      { duration: '2m', target: 10 },
+      { duration: '5m', target: 50 },
+      { duration: '3m', target: 10 },
+    ];
+
+const DATABASE_QUERY_START = isCI ? '6m' : '25m';
+
 /**
  * K6 Performance Test: Scheduler Load Test
  *
  * Simulates scheduler performance under production load:
- * - Daily scheduler: 10,000 birthdays/day
- * - Minute scheduler: 500 messages/minute processing
+ * - Daily scheduler: Process birthdays
+ * - Minute scheduler: Message enqueuing
  * - Database query performance measurement
  * - Enqueue rate measurement
+ *
+ * CI mode (~10 min total):
+ * - Daily scheduler: 3 minutes
+ * - Minute scheduler: 100 msg/min for 3 minutes
+ * - Database queries: 5-10 concurrent for 4 minutes
+ *
+ * Full mode (~35 min total):
+ * - Daily scheduler: 10 minutes with 10,000 birthdays
+ * - Minute scheduler: 500 msg/min for 15 minutes
+ * - Database queries: 10-50 concurrent for 10 minutes
  *
  * Thresholds:
  * - Scheduler execution < 30s for 10,000 records
@@ -32,38 +82,34 @@ const activeSchedulers = new Gauge('active_schedulers');
  */
 export const options = {
   scenarios: {
-    // Test daily scheduler with 10,000 birthdays
+    // Test daily scheduler
     daily_scheduler_load: {
       executor: 'constant-vus',
-      vus: 1,
-      duration: '10m',
+      vus: DAILY_SCHEDULER_CONFIG.vus,
+      duration: DAILY_SCHEDULER_CONFIG.duration,
       exec: 'testDailyScheduler',
       tags: { scheduler: 'daily' },
     },
-    // Test minute scheduler with high enqueue rate
+    // Test minute scheduler with message enqueuing
     minute_scheduler_load: {
       executor: 'constant-arrival-rate',
-      rate: 500, // 500 messages per minute
-      timeUnit: '1m',
-      duration: '15m',
-      preAllocatedVUs: 50,
-      maxVUs: 100,
+      rate: MINUTE_SCHEDULER_CONFIG.rate,
+      timeUnit: MINUTE_SCHEDULER_CONFIG.timeUnit,
+      duration: MINUTE_SCHEDULER_CONFIG.duration,
+      preAllocatedVUs: MINUTE_SCHEDULER_CONFIG.preAllocatedVUs,
+      maxVUs: MINUTE_SCHEDULER_CONFIG.maxVUs,
       exec: 'testMinuteScheduler',
       tags: { scheduler: 'minute' },
-      startTime: '10m', // Start after daily test
+      startTime: MINUTE_SCHEDULER_CONFIG.startTime,
     },
     // Test database query performance
     database_query_load: {
       executor: 'ramping-vus',
       startVUs: 1,
-      stages: [
-        { duration: '2m', target: 10 },
-        { duration: '5m', target: 50 },
-        { duration: '3m', target: 10 },
-      ],
+      stages: DATABASE_QUERY_STAGES,
       exec: 'testDatabaseQueries',
       tags: { scheduler: 'database' },
-      startTime: '25m', // Start after minute test
+      startTime: DATABASE_QUERY_START,
     },
   },
   thresholds: {
@@ -345,10 +391,18 @@ export function testDatabaseQueries() {
 export function setup() {
   console.log('=== Starting Scheduler Load Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Test scenarios:');
-  console.log('  1. Daily scheduler: 10,000 birthdays/day');
-  console.log('  2. Minute scheduler: 500 messages/minute');
-  console.log('  3. Database queries: High concurrency');
+
+  if (isCI) {
+    console.log('  1. Daily scheduler: 3 minutes');
+    console.log('  2. Minute scheduler: 100 messages/minute for 3 minutes');
+    console.log('  3. Database queries: 5-10 concurrent for 4 minutes');
+  } else {
+    console.log('  1. Daily scheduler: 10,000 birthdays/day for 10 minutes');
+    console.log('  2. Minute scheduler: 500 messages/minute for 15 minutes');
+    console.log('  3. Database queries: 10-50 concurrent for 10 minutes');
+  }
 
   // Health check
   const warmupRes = http.get(`${API_BASE_URL}/health`);
@@ -359,7 +413,8 @@ export function setup() {
   // Create test users for scheduler testing
   console.log('Creating test users (this may take a few minutes)...');
 
-  const userBatches = 100; // Create 10,000 users in batches of 100
+  // CI mode: create fewer test users for faster setup
+  const userBatches = isCI ? 10 : 100; // CI: 1,000 users, Full: 10,000 users
   const batchSize = 100;
   let totalCreated = 0;
 

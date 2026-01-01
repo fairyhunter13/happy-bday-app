@@ -85,24 +85,30 @@ describe('Worker Error Recovery Integration Tests', () => {
 
   beforeAll(async () => {
     const usingCI = isCI();
+    console.log('[worker-error-recovery] beforeAll: Starting test setup...');
+    console.log(`[worker-error-recovery] CI mode: ${usingCI}`);
 
     if (usingCI) {
       const ciStrings = getCIConnectionStrings();
       rabbitMQUrl = ciStrings.rabbitmq;
+      console.log(`[worker-error-recovery] RabbitMQ URL: ${rabbitMQUrl.replace(/:[^:@]+@/, ':***@')}`);
+      console.log(`[worker-error-recovery] PostgreSQL URL: ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`);
 
       pgClient = postgres(ciStrings.postgres, {
         max: 3,
         idle_timeout: 20,
-        connect_timeout: 5,
+        connect_timeout: 10, // Increased from 5 to 10 seconds for CI reliability
       });
 
       // Wait for database
-      let retries = 10;
+      console.log('[worker-error-recovery] Connecting to PostgreSQL...');
+      let retries = 15; // Increased from 10 to 15 retries
       let delay = 500;
       while (retries > 0) {
         try {
           const result = await pgClient`SELECT 1 as test`;
           if (result && result.length > 0) {
+            console.log('[worker-error-recovery] PostgreSQL connection successful');
             break;
           }
           throw new Error('Empty result from SELECT 1');
@@ -110,14 +116,16 @@ describe('Worker Error Recovery Integration Tests', () => {
           retries--;
           if (retries === 0) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error(`Failed to connect to PostgreSQL after 10 attempts: ${errorMessage}`);
+            throw new Error(`Failed to connect to PostgreSQL after all attempts: ${errorMessage}`);
           }
+          console.log(`[worker-error-recovery] Waiting for PostgreSQL (${retries} retries left)...`);
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay = Math.min(delay * 1.5, 5000);
         }
       }
 
       testDb = drizzle(pgClient, { schema });
+      console.log('[worker-error-recovery] Database client initialized');
     } else {
       // Local mode
       rabbitContainer = await new RabbitMQContainer('rabbitmq:3.13-management-alpine')
@@ -176,8 +184,10 @@ describe('Worker Error Recovery Integration Tests', () => {
       `;
     }
 
-    // Wait for RabbitMQ
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Wait for RabbitMQ to be fully ready
+    console.log('[worker-error-recovery] Waiting for RabbitMQ to be ready...');
+    await new Promise((resolve) => setTimeout(resolve, 5000)); // Increased from 2000ms to 5000ms for CI reliability
+    console.log('[worker-error-recovery] beforeAll completed successfully');
   }, 120000);
 
   afterAll(async () => {
@@ -201,28 +211,38 @@ describe('Worker Error Recovery Integration Tests', () => {
   }, 30000);
 
   beforeEach(async () => {
+    console.log('[worker-error-recovery] beforeEach: Setting up test...');
+
     if (!connection) {
+      console.log('[worker-error-recovery] Creating RabbitMQ connection...');
       connection = RabbitMQConnection.getInstance({
         url: rabbitMQUrl,
       });
       await connection.connect();
+      console.log('[worker-error-recovery] RabbitMQ connection established');
     }
 
+    console.log('[worker-error-recovery] Initializing publisher...');
     publisher = new MessagePublisher();
     await publisher.initialize();
+    console.log('[worker-error-recovery] Publisher initialized');
 
     // Purge queues
+    console.log('[worker-error-recovery] Purging queues...');
     try {
       const publisherChannel = connection.getPublisherChannel();
       await publisherChannel.purgeQueue(QUEUES.BIRTHDAY_MESSAGES);
       await publisherChannel.purgeQueue(QUEUES.BIRTHDAY_DLQ);
-    } catch {
-      // Ignore if queues don't exist
+      console.log('[worker-error-recovery] Queues purged successfully');
+    } catch (error) {
+      console.log('[worker-error-recovery] Queue purge skipped (queues may not exist)');
     }
 
     // Clean database
+    console.log('[worker-error-recovery] Cleaning database...');
     await testDb.delete(messageLogs);
     await testDb.delete(users);
+    console.log('[worker-error-recovery] beforeEach completed successfully');
   });
 
   afterEach(async () => {
@@ -340,7 +360,7 @@ describe('Worker Error Recovery Integration Tests', () => {
       const channel = connection.getConsumerChannel();
       let foundOurMessage = false;
       const startTime = Date.now();
-      const maxWaitTime = 10000; // 10 seconds max
+      const maxWaitTime = 20000; // 20 seconds max (increased for CI reliability)
 
       while (!foundOurMessage && Date.now() - startTime < maxWaitTime) {
         // Try to find our message in the DLQ
@@ -405,7 +425,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       // Stop crashed worker - give RabbitMQ time to detect disconnection
       await firstConsumer.stopConsuming();
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Increased from 2000ms for CI reliability
 
       // Start new worker
       consumer = new MessageConsumer({
@@ -427,7 +447,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       // Poll for message processing with timeout
       const startTime = Date.now();
-      const maxWaitTime = 10000; // 10 seconds max
+      const maxWaitTime = 20000; // 20 seconds max (increased for CI reliability)
       while (!secondWorkerProcessed && Date.now() - startTime < maxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }

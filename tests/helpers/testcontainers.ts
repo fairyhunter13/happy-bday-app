@@ -49,26 +49,27 @@ export class PostgresTestContainer {
       // CI mode: connect to docker-compose services
       // Use minimal pool to avoid connection exhaustion when multiple test files run in parallel
       this.connectionString = getCIConnectionStrings().postgres;
+      console.log('[PostgreSQL] CI mode: Initializing connection...');
       console.log(
-        `CI mode: connecting to PostgreSQL at ${this.connectionString.replace(/:[^:@]+@/, ':***@')}`
+        `[PostgreSQL] Connection string: ${this.connectionString.replace(/:[^:@]+@/, ':***@')}`
       );
 
       this.pool = new Pool({
         connectionString: this.connectionString,
-        max: 2, // Small pool - multiple test files share the same PostgreSQL
+        max: 5, // Increased pool size for CI mode to handle concurrent tests
         min: 0, // Don't keep idle connections
         idleTimeoutMillis: 5000, // Release idle connections quickly
-        connectionTimeoutMillis: 10000, // 10 second timeout per attempt
+        connectionTimeoutMillis: 30000, // 30 second timeout per attempt (increased for CI)
         allowExitOnIdle: true, // Allow process to exit when pool is idle
       });
 
       // Wait for database to be ready with exponential backoff
-      let retries = 15;
+      let retries = 20; // Increased retry count for CI reliability
       let delay = 500;
       while (retries > 0) {
         try {
           await this.pool.query('SELECT 1');
-          console.log('PostgreSQL connection established (CI mode)');
+          console.log('[PostgreSQL] Connection established successfully (CI mode)');
           break;
         } catch (error: unknown) {
           retries--;
@@ -77,13 +78,14 @@ export class PostgresTestContainer {
             throw new Error(`Failed to connect to PostgreSQL: ${errorMessage}`);
           }
           console.log(
-            `Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`
+            `[PostgreSQL] Waiting for connection... (${retries} retries left, error: ${errorMessage})`
           );
           await new Promise((resolve) => setTimeout(resolve, delay));
-          delay = Math.min(delay * 1.5, 3000); // Exponential backoff up to 3s
+          delay = Math.min(delay * 1.5, 5000); // Exponential backoff up to 5s (increased for CI)
         }
       }
 
+      console.log('[PostgreSQL] Container initialization completed successfully');
       return {
         container: null,
         connectionString: this.connectionString,
@@ -283,7 +285,7 @@ export class TestEnvironment {
   }
 
   async setup(): Promise<void> {
-    console.log(`Starting test environment... (CI mode: ${this.usingCI})`);
+    console.log(`[TestEnvironment] Starting test environment... (CI mode: ${this.usingCI})`);
 
     if (this.usingCI) {
       // In CI/CD, connect to external docker-compose services
@@ -293,18 +295,23 @@ export class TestEnvironment {
       await this.setupLocalEnvironment();
     }
 
-    console.log('Test environment started successfully');
+    console.log('[TestEnvironment] Test environment started successfully');
   }
 
   /**
    * Setup for CI/CD environment using docker-compose services
    */
   private async setupCIEnvironment(): Promise<void> {
+    console.log('[TestEnvironment] Configuring CI environment...');
     const ciStrings = getCIConnectionStrings();
 
     this.postgresConnectionString = ciStrings.postgres;
     this.rabbitmqConnectionString = ciStrings.rabbitmq;
     this.redisConnectionString = ciStrings.redis;
+
+    console.log(`[TestEnvironment] PostgreSQL: ${this.postgresConnectionString.replace(/:[^:@]+@/, ':***@')}`);
+    console.log(`[TestEnvironment] RabbitMQ: ${this.rabbitmqConnectionString.replace(/:[^:@]+@/, ':***@')}`);
+    console.log(`[TestEnvironment] Redis: ${this.redisConnectionString}`);
 
     // Create pool for CI database with minimal connections
     // to avoid exhausting the shared PostgreSQL instance when multiple test files run in parallel
@@ -318,38 +325,42 @@ export class TestEnvironment {
     });
 
     // Wait for database to be ready
+    console.log('[TestEnvironment] Connecting to PostgreSQL...');
     let retries = 30;
     while (retries > 0) {
       try {
         await this.pool.query('SELECT 1');
-        console.log('PostgreSQL connection established');
+        console.log('[TestEnvironment] PostgreSQL connection established successfully');
         break;
       } catch (error) {
         retries--;
         if (retries === 0) {
           throw new Error(`Failed to connect to PostgreSQL: ${error}`);
         }
-        console.log(`Waiting for PostgreSQL... (${retries} retries left)`);
+        console.log(`[TestEnvironment] Waiting for PostgreSQL... (${retries} retries left)`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
 
     // Connect to RabbitMQ
+    console.log('[TestEnvironment] Connecting to RabbitMQ...');
     retries = 30;
     while (retries > 0) {
       try {
         this.amqpConnection = await amqp.connect(this.rabbitmqConnectionString);
-        console.log('RabbitMQ connection established');
+        console.log('[TestEnvironment] RabbitMQ connection established successfully');
         break;
       } catch (error) {
         retries--;
         if (retries === 0) {
           throw new Error(`Failed to connect to RabbitMQ: ${error}`);
         }
-        console.log(`Waiting for RabbitMQ... (${retries} retries left)`);
+        console.log(`[TestEnvironment] Waiting for RabbitMQ... (${retries} retries left)`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
     }
+
+    console.log('[TestEnvironment] CI environment setup completed successfully');
   }
 
   /**

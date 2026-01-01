@@ -29,7 +29,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint -- --format json --output-file eslint-report.json
-        continue-on-error: true
 
       - name: Annotate code with ESLint results
         uses: ataylorme/eslint-annotate-action@v2
