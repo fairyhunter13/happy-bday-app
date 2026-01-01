@@ -12,6 +12,7 @@ import {
   UpdateUserRouteSchema,
   DeleteUserRouteSchema,
 } from '../schemas/index.js';
+import { env } from '../config/environment.js';
 
 /**
  * Register user routes with Fastify
@@ -22,6 +23,7 @@ export async function userRoutes(
 ): Promise<void> {
   /**
    * POST /api/v1/users - Create new user
+   * Rate limit configurable via RATE_LIMIT_CREATE_USER_MAX env var
    */
   fastify.post(
     '/users',
@@ -29,7 +31,7 @@ export async function userRoutes(
       schema: CreateUserRouteSchema,
       config: {
         rateLimit: {
-          max: 10,
+          max: env.RATE_LIMIT_CREATE_USER_MAX,
           timeWindow: '1 minute',
         },
       },
@@ -39,6 +41,7 @@ export async function userRoutes(
 
   /**
    * GET /api/v1/users/:id - Get user by ID
+   * Rate limit configurable via RATE_LIMIT_READ_USER_MAX env var
    */
   fastify.get(
     '/users/:id',
@@ -46,7 +49,7 @@ export async function userRoutes(
       schema: GetUserRouteSchema,
       config: {
         rateLimit: {
-          max: 100,
+          max: env.RATE_LIMIT_READ_USER_MAX,
           timeWindow: '1 minute',
         },
       },
@@ -56,6 +59,7 @@ export async function userRoutes(
 
   /**
    * PUT /api/v1/users/:id - Update user
+   * Rate limit configurable via RATE_LIMIT_UPDATE_USER_MAX env var
    */
   fastify.put(
     '/users/:id',
@@ -63,7 +67,7 @@ export async function userRoutes(
       schema: UpdateUserRouteSchema,
       config: {
         rateLimit: {
-          max: 20,
+          max: env.RATE_LIMIT_UPDATE_USER_MAX,
           timeWindow: '1 minute',
         },
       },
@@ -73,6 +77,7 @@ export async function userRoutes(
 
   /**
    * DELETE /api/v1/users/:id - Soft delete user
+   * Rate limit configurable via RATE_LIMIT_DELETE_USER_MAX env var
    */
   fastify.delete(
     '/users/:id',
@@ -80,7 +85,7 @@ export async function userRoutes(
       schema: DeleteUserRouteSchema,
       config: {
         rateLimit: {
-          max: 10,
+          max: env.RATE_LIMIT_DELETE_USER_MAX,
           timeWindow: '1 minute',
         },
       },

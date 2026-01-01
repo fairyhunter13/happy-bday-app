@@ -65,9 +65,15 @@ const environmentSchema = z.object({
   CIRCUIT_BREAKER_RESET_TIMEOUT: z.coerce.number().int().positive().default(30000),
   CIRCUIT_BREAKER_VOLUME_THRESHOLD: z.coerce.number().int().positive().default(10),
 
-  // Rate Limiting
+  // Rate Limiting - Global defaults
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+
+  // Rate Limiting - Per-endpoint limits (for performance testing)
+  RATE_LIMIT_CREATE_USER_MAX: z.coerce.number().int().positive().default(10),
+  RATE_LIMIT_READ_USER_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_UPDATE_USER_MAX: z.coerce.number().int().positive().default(20),
+  RATE_LIMIT_DELETE_USER_MAX: z.coerce.number().int().positive().default(10),
 
   // Monitoring
   ENABLE_METRICS: z.coerce.boolean().default(true),

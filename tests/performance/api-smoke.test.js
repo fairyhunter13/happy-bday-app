@@ -197,10 +197,29 @@ export function teardown(data) {
  * Handle summary data
  */
 export function handleSummary(data) {
-  const passed = !data.root_group.checks?.some(c => c.fails > 0);
-  const thresholdsPassed = !Object.values(data.metrics).some(m => m.thresholds?.some(t => !t.ok));
+  // Safely check if any checks failed
+  let checksPassed = true;
+  if (data.root_group && data.root_group.checks) {
+    const checks = Array.isArray(data.root_group.checks)
+      ? data.root_group.checks
+      : Object.values(data.root_group.checks);
+    checksPassed = !checks.some(c => c && c.fails > 0);
+  }
 
-  console.log(`\nSmoke Test: ${passed && thresholdsPassed ? 'PASSED' : 'FAILED'}`);
+  // Safely check if any thresholds failed
+  let thresholdsPassed = true;
+  if (data.metrics) {
+    const metricValues = Object.values(data.metrics);
+    thresholdsPassed = !metricValues.some(m => {
+      if (!m || !m.thresholds) return false;
+      const thresholds = Array.isArray(m.thresholds)
+        ? m.thresholds
+        : Object.values(m.thresholds);
+      return thresholds.some(t => t && !t.ok);
+    });
+  }
+
+  console.log(`\nSmoke Test: ${checksPassed && thresholdsPassed ? 'PASSED' : 'FAILED'}`);
 
   return {
     'perf-results/smoke-test-summary.json': JSON.stringify(data, null, 2),
