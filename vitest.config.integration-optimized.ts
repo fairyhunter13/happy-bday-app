@@ -44,12 +44,12 @@ export default mergeConfig(
       fileParallelism: true,
       maxConcurrency: isCI ? 2 : 3,
 
-      // OPTIMIZATION 3: Pool limits to prevent connection exhaustion
-      // Tests should reuse connections efficiently
-      poolMatchGlobs: [
-        ['**/database-*.test.ts', { maxThreads: 1 }], // Database tests run sequentially
-        ['**/queue-*.test.ts', { maxThreads: 2 }], // Queue tests can run in parallel
-      ],
+      // OPTIMIZATION 3: Sequence specific test patterns
+      // Note: poolMatchGlobs was removed in Vitest 2.x, using sequence instead
+      sequence: {
+        // Database tests should run sequentially to prevent connection exhaustion
+        shuffle: false,
+      },
 
       // OPTIMIZATION 4: Retry flaky tests
       retry: 1,

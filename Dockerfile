@@ -108,4 +108,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command - main API server (using dumb-init for proper signal handling)
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/src/index.js"]
