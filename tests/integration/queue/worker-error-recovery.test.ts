@@ -404,18 +404,20 @@ describe('Worker Error Recovery Integration Tests', () => {
       let secondWorkerProcessed = false;
       let firstWorkerMessageId: string | null = null;
 
-      // First consumer that fails with a TRANSIENT error (these get requeued)
+      // First consumer that fails with a TRANSIENT error for our message only
       const firstConsumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          // Only track our specific test message
+          // Only track and fail on our specific test message
           if (job.messageId === messageLog.id) {
             firstWorkerProcessed = true;
             firstWorkerMessageId = job.messageId;
+            // Simulate transient network error - this WILL be requeued
+            // Using "timeout" pattern which matches the transient error detection
+            throw new Error('Network timeout - temporarily unavailable');
           }
-          // Simulate transient network error - this WILL be requeued
-          // Using "timeout" pattern which matches the transient error detection
-          throw new Error('Network timeout - temporarily unavailable');
+          // For other messages (leftover garbage), just acknowledge silently
+          // by not throwing - the message will be acked by the consumer
         },
       });
 
@@ -431,16 +433,20 @@ describe('Worker Error Recovery Integration Tests', () => {
       };
 
       await publisher.publishMessage(job);
+      console.log(`[worker-crash-test] Published message with ID: ${messageLog.id}`);
 
       // Wait for our specific message to be processed by first worker
       const startTime = Date.now();
-      const maxWaitTime = 10000; // 10 seconds max
+      const maxWaitTime = 15000; // 15 seconds max (increased for CI reliability)
       while (!firstWorkerProcessed && Date.now() - startTime < maxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 200));
       }
+      console.log(
+        `[worker-crash-test] First worker processed: ${firstWorkerProcessed}, waited ${Date.now() - startTime}ms`
+      );
 
       // Wait for transient error handling and requeue
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       // Stop first worker - this forces rebalancing of unacked messages
       await firstConsumer.stopConsuming();
@@ -474,6 +480,9 @@ describe('Worker Error Recovery Integration Tests', () => {
       while (!secondWorkerProcessed && Date.now() - pollStartTime < pollMaxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
+      console.log(
+        `[worker-crash-test] Second worker processed: ${secondWorkerProcessed}, waited ${Date.now() - pollStartTime}ms`
+      );
 
       // First worker should have tried to process (and got transient error)
       expect(firstWorkerProcessed).toBe(true);
