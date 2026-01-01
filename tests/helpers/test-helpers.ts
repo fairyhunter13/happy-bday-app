@@ -33,6 +33,9 @@ export interface TestMessageLog {
   idempotencyKey: string;
   errorMessage?: string | null;
   retryCount?: number;
+  apiResponseCode?: number | null;
+  apiResponseBody?: string | null;
+  lastRetryAt?: Date | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -220,6 +223,9 @@ export async function findMessageLogsByUserId(
     idempotencyKey: row.idempotency_key,
     errorMessage: row.error_message,
     retryCount: row.retry_count,
+    apiResponseCode: row.api_response_code,
+    apiResponseBody: row.api_response_body,
+    lastRetryAt: row.last_retry_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
