@@ -82,7 +82,7 @@ const config = {
   },
 
   // Incremental mode for faster subsequent runs
-  incremental: false,
+  incremental: true,
   incrementalFile: '.stryker-tmp/incremental.json',
 
   // Concurrency settings

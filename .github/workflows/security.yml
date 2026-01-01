@@ -82,6 +82,7 @@ jobs:
 
       - name: Run Snyk to check for vulnerabilities
         if: env.SNYK_TOKEN != ''
+        id: snyk-scan
         uses: snyk/actions/node@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -89,7 +90,7 @@ jobs:
           args: --severity-threshold=high --sarif-file-output=snyk.sarif
 
       - name: Upload Snyk results to GitHub Code Scanning
-        if: always()
+        if: always() && steps.snyk-scan.outcome != 'skipped'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: snyk.sarif
