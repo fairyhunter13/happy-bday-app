@@ -126,7 +126,7 @@ jobs:
             --enableRetired
             --enableExperimental
             --failOnCVSS 7
-            --suppression ${{ github.workspace }}/dependency-check-suppressions.xml
+            --suppression /github/workspace/dependency-check-suppressions.xml
         continue-on-error: true
 
       - name: Upload OWASP report
