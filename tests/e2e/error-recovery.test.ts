@@ -578,6 +578,8 @@ describe('E2E: Error Handling and Recovery', () => {
         anniversaryDate: null,
       });
 
+      const errorMessage = 'HTTP 500: Internal Server Error - Connection refused';
+
       await insertMessageLog(pool, {
         userId: user.id,
         messageType: 'BIRTHDAY',
@@ -586,12 +588,19 @@ describe('E2E: Error Handling and Recovery', () => {
         messageContent: 'Happy birthday!',
         idempotencyKey: `error-${user.id}`,
         retryCount: 2,
-        errorMessage: 'HTTP 500: Internal Server Error - Connection refused',
+        errorMessage,
       });
 
       const messages = await findMessageLogsByUserId(pool, user.id);
-      expect(messages[0].errorMessage).toContain('HTTP 500');
-      expect(messages[0].errorMessage).toContain('Connection refused');
+
+      // Verify message was inserted
+      expect(messages).toHaveLength(1);
+
+      // Verify errorMessage was stored correctly
+      // Note: In some cases the errorMessage may be null if the INSERT failed to include it
+      expect(messages[0]!.errorMessage).not.toBeNull();
+      expect(messages[0]!.errorMessage).toContain('HTTP 500');
+      expect(messages[0]!.errorMessage).toContain('Connection refused');
     });
 
     it('should track API response codes', async () => {
