@@ -3950,7 +3950,8 @@ export class MetricsService {
    * Record external API error
    */
   recordExternalApiError(apiName: string, method: string, errorType: string): void {
-    this.apiErrorsTotal.inc({ api_name: apiName, method, error_type: errorType });
+    // Use the correct label names matching the counter definition
+    this.apiErrorsTotal.inc({ endpoint: apiName, method, error_code: errorType });
   }
 
   /**
