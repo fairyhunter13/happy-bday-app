@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 import amqp from 'amqplib';
+import { initializeRabbitMQ, RabbitMQConnection } from '../../src/queue/connection.js';
 
 const { Pool } = pg;
 
@@ -393,7 +394,14 @@ export class TestEnvironment {
     while (retries > 0) {
       try {
         this.amqpConnection = await amqp.connect(this.rabbitmqConnectionString);
-        console.log('[TestEnvironment] RabbitMQ ready');
+        console.log('[TestEnvironment] RabbitMQ raw connection ready');
+
+        // IMPORTANT: Also initialize the RabbitMQ singleton used by MessagePublisher
+        // Set environment variable and initialize singleton
+        process.env.RABBITMQ_URL = this.rabbitmqConnectionString;
+        await initializeRabbitMQ();
+        console.log('[TestEnvironment] RabbitMQ singleton initialized');
+
         return;
       } catch (error) {
         retries--;
@@ -415,6 +423,11 @@ export class TestEnvironment {
 
     this.rabbitmqConnectionString = rabbitmqResult.connectionString;
     this.amqpConnection = rabbitmqResult.connection;
+
+    // IMPORTANT: Also initialize the RabbitMQ singleton used by MessagePublisher
+    process.env.RABBITMQ_URL = this.rabbitmqConnectionString;
+    await initializeRabbitMQ();
+    console.log('[TestEnvironment] RabbitMQ singleton initialized (local)');
   }
 
   async runMigrations(migrationsFolder: string = './drizzle'): Promise<void> {
@@ -427,6 +440,23 @@ export class TestEnvironment {
 
   async teardown(): Promise<void> {
     console.log('[TestEnvironment] Cleanup');
+
+    // Close and reset the RabbitMQ singleton
+    try {
+      const rabbitMQ = RabbitMQConnection.getInstance();
+      await rabbitMQ.close();
+      RabbitMQConnection.resetInstance();
+      console.log('[TestEnvironment] RabbitMQ singleton closed and reset');
+    } catch (e) {
+      // Ignore close errors - singleton may not be initialized
+      // Still try to reset the instance
+      try {
+        RabbitMQConnection.resetInstance();
+      } catch {
+        // Ignore
+      }
+    }
+
     if (this.amqpConnection) {
       try {
         await this.amqpConnection.close();
