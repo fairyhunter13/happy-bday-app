@@ -25,6 +25,9 @@ const config = {
     '!src/clients/generated/**/*.ts',
     '!src/db/migrate.ts',
     '!src/db/seed.ts',
+    // Excluded due to import attributes syntax (with { type: 'json' })
+    // Stryker's Babel instrumenter doesn't support this syntax yet
+    '!src/services/health-check.service.ts',
   ],
 
   // Test file patterns
