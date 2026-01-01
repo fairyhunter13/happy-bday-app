@@ -403,13 +403,14 @@ describe('Worker Error Recovery Integration Tests', () => {
       let firstWorkerProcessed = false;
       let secondWorkerProcessed = false;
 
-      // First consumer that "crashes"
+      // First consumer that fails with a TRANSIENT error (these get requeued)
       const firstConsumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
           firstWorkerProcessed = true;
-          // Simulate crash - throw error before ACK
-          throw new Error('Worker crashed before ACK');
+          // Simulate transient network error - this WILL be requeued
+          // Using "timeout" pattern which matches the transient error detection
+          throw new Error('Network timeout - temporarily unavailable');
         },
       });
 
@@ -426,12 +427,12 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await publisher.publishMessage(job);
 
-      // Wait for crash
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait for transient error handling and requeue
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Stop crashed worker - give RabbitMQ time to detect disconnection
+      // Stop first worker - this forces rebalancing of unacked messages
       await firstConsumer.stopConsuming();
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Increased from 2000ms for CI reliability
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Start new worker
       consumer = new MessageConsumer({
@@ -453,17 +454,18 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       // Poll for message processing with timeout
       const startTime = Date.now();
-      const maxWaitTime = 20000; // 20 seconds max (increased for CI reliability)
+      const maxWaitTime = 15000; // 15 seconds max
       while (!secondWorkerProcessed && Date.now() - startTime < maxWaitTime) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
+      // First worker should have tried to process (and got transient error)
       expect(firstWorkerProcessed).toBe(true);
-      // The second worker may or may not process if message went to DLQ
-      // This test validates first worker crash handling, not strict requeue behavior
-      expect(firstWorkerProcessed || secondWorkerProcessed).toBe(true);
 
-      // Verify message was eventually processed
+      // Second worker should have successfully processed the requeued message
+      expect(secondWorkerProcessed).toBe(true);
+
+      // Verify message was eventually processed and marked SENT
       const updatedMessage = await testDb
         .select()
         .from(messageLogs)
