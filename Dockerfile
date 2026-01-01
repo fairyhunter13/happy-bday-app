@@ -7,7 +7,7 @@
 # ==============================================================================
 # Stage 1: Dependencies
 # ==============================================================================
-FROM node:20-alpine3.20 AS deps
+FROM node:22-alpine3.20 AS deps
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN npm ci --ignore-scripts && \
 # ==============================================================================
 # Stage 2: Builder
 # ==============================================================================
-FROM node:20-alpine3.20 AS builder
+FROM node:22-alpine3.20 AS builder
 
 WORKDIR /app
 
@@ -50,7 +50,7 @@ RUN npm prune --production && \
 # ==============================================================================
 # Stage 3: Production Runner
 # ==============================================================================
-FROM node:20-alpine3.20 AS runner
+FROM node:22-alpine3.20 AS runner
 
 # Build arguments for labels
 ARG NODE_ENV=production
