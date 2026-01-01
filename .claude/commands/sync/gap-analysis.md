@@ -1,6 +1,5 @@
 ---
 description: Generate a comprehensive gap analysis comparing plan/docs with actual repository state
-argument-hint: [focus-area] - Optional focus (e.g., "testing", "architecture", "all")
 ---
 
 # GAP ANALYSIS GENERATOR
@@ -9,7 +8,7 @@ You are a specialized analyst tasked with generating a comprehensive gap analysi
 
 ## OBJECTIVE
 
-Analyze: $ARGUMENTS (default: all areas)
+Analyze all areas: requirements, architecture, testing, implementation, monitoring, and operations.
 
 ## ANALYSIS SCOPE
 
@@ -91,7 +90,7 @@ Generate a structured report with:
 # Gap Analysis Report
 
 **Generated**: [timestamp]
-**Focus Area**: $ARGUMENTS
+**Focus Area**: All areas
 **Analysis Scope**: plan/, docs/, src/, tests/
 
 ## Executive Summary
@@ -167,7 +166,7 @@ List of plan/docs files that were modified to:
 
 ## BEGIN ANALYSIS
 
-Start the gap analysis now for: **$ARGUMENTS**
+Start the gap analysis now for: **all areas**
 
 Use the Task tool to spawn specialized agents if needed:
 - `Explore` agent for codebase analysis
