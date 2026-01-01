@@ -1,23 +1,22 @@
 ---
 description: Synchronize, maintain, and organize documentation and plans with current repository state
-argument-hint: [scope] - Optional scope (e.g., "docs", "plan", "all")
 ---
 
-# DOCUMENTATION SYNCHRONIZATION & MAINTENANCE COMMAND
+# DOCUMENTATION SYNCHRONIZATION & ORGANIZATION COMMAND
 
-You are a documentation synchronization and maintenance agent tasked with ensuring all documentation and plan files accurately reflect the current state of the repository, are well-organized, and properly maintained.
+You are a documentation synchronization and organization agent tasked with ensuring all documentation and plan files accurately reflect the current state of the repository, are well-organized, and properly maintained.
 
 ## OBJECTIVE
 
-Synchronize & Maintain: $ARGUMENTS (default: all)
+Synchronize, maintain, and organize all documentation in: **docs/**, **plan/**, and root **.md** files.
 
-## SYNCHRONIZATION SCOPE
+## SCOPE
 
 ### Target Directories
 
 1. **docs/** - Technical documentation
-2. **plan/** - Project plans and research
-3. **README.md** - Root readme
+2. **plan/** - Project plans, research, and reports
+3. **Root .md files** - README, CONTRIBUTING, etc.
 
 ### Source of Truth
 
@@ -26,9 +25,11 @@ Synchronize & Maintain: $ARGUMENTS (default: all)
 3. **package.json** - Dependencies and scripts
 4. **.github/workflows/** - CI/CD configuration
 
-## SYNCHRONIZATION PROTOCOL
+---
 
-### STEP 1: Identify Outdated Content
+# PHASE 1: SYNCHRONIZATION
+
+## STEP 1: Identify Outdated Content
 
 Scan documentation for:
 1. References to non-existent files
@@ -37,7 +38,7 @@ Scan documentation for:
 4. Incorrect file paths
 5. Stale configuration examples
 
-### STEP 2: Identify Unfeasible Checklists
+## STEP 2: Identify Unfeasible Checklists
 
 **REMOVE** any checklist items matching these patterns:
 
@@ -71,7 +72,7 @@ Scan documentation for:
 - "Configure email service" (unless test mock exists)
 - "Set up analytics"
 
-### STEP 3: Update Documentation
+## STEP 3: Update Documentation
 
 For each outdated item:
 1. **Verify** against current codebase
@@ -80,7 +81,7 @@ For each outdated item:
 4. **Remove** if unfeasible
 5. **Add Note** explaining any removal
 
-### STEP 4: Update Plan Files
+## STEP 4: Update Plan Files
 
 For plan directory files:
 1. Mark `[x]` for completed items
@@ -88,7 +89,7 @@ For plan directory files:
 3. Remove unfeasible items with tracking comment
 4. Update status sections
 
-## UNFEASIBLE ITEM HANDLING
+### Unfeasible Item Handling
 
 When removing unfeasible items:
 
@@ -104,70 +105,6 @@ Or replace with:
 ```markdown
 - ~~[original item]~~ - Removed: Outside project scope
 ```
-
-## CHECKLIST PATTERNS TO DETECT
-
-### Completion Indicators
-```markdown
-# Already completed - update to [x]
-- [ ] Implement timezone service  # Check if src/services/timezone.service.ts exists
-- [ ] Add unit tests             # Check if tests/unit/... exists
-- [ ] Configure CI/CD            # Check if .github/workflows/ exists
-```
-
-### Unfeasible Indicators
-```markdown
-# These should be REMOVED
-- [ ] Create YouTube tutorial
-- [ ] Deploy to AWS ECS
-- [ ] Set up Datadog monitoring (external service)
-- [ ] Purchase enterprise license
-- [ ] Schedule demo with stakeholders
-```
-
-## OUTPUT ACTIONS
-
-### Files to Update
-Document all changes made:
-
-```markdown
-## Documentation Sync Summary
-
-**Date**: [timestamp]
-**Scope**: $ARGUMENTS
-
-### Files Modified
-
-| File | Changes | Items Updated |
-|------|---------|---------------|
-| plan/04-testing/testing-strategy.md | Marked 5 items complete | [list] |
-| docs/DEVELOPER_SETUP.md | Updated paths | [list] |
-
-### Items Marked Complete
-- [x] Implement timezone handling - `src/services/timezone.service.ts`
-- [x] Add unit tests - `tests/unit/services/`
-
-### Items Removed (Unfeasible)
-- ~~Create demo video~~ - External resource
-- ~~Deploy to production~~ - Outside scope
-
-### Items Still Pending
-- [ ] Add mutation testing - Priority: Medium
-- [ ] Improve cache hit rate - Priority: Low
-```
-
-## EXECUTION STEPS
-
-1. **Scan** all docs/*.md and plan/**/*.md files
-2. **Read** each file and identify checklists
-3. **Compare** against source code existence
-4. **Update** files with current status:
-   - Mark completed items `[x]`
-   - Add file references
-   - Remove unfeasible items
-5. **Generate** sync summary report
-
-## AUTOMATION RULES
 
 ### Auto-Complete Detection
 
@@ -187,34 +124,181 @@ Check these paths to auto-mark items:
 - Code review items
 - Documentation review
 
-## SYNC REPORT LOCATION
+---
 
-Save sync summary to: `plan/09-reports/DOCUMENTATION_SYNC_[DATE].md`
+# PHASE 2: ORGANIZATION
 
-## MAINTENANCE OPERATIONS
+## STEP 5: Audit Current Structure
 
-### Content Quality
+Analyze existing documentation for:
+1. **Duplicate Content** - Same information in multiple files
+2. **Orphaned Files** - Files not linked from any index
+3. **Empty/Stub Files** - Files with minimal content
+4. **Outdated Files** - Files referencing deprecated features
+5. **Naming Inconsistencies** - Files not following naming conventions
+6. **Missing Index Files** - Directories without README/INDEX.md
+
+## STEP 6: Target Directory Structures
+
+**docs/ Directory Structure:**
+```
+docs/
+├── README.md                    # Documentation index
+├── getting-started/            # Onboarding docs
+│   ├── README.md
+│   ├── DEVELOPER_SETUP.md
+│   └── QUICKSTART.md
+├── architecture/               # System design
+│   ├── README.md
+│   ├── OVERVIEW.md
+│   └── DECISIONS.md
+├── api/                        # API documentation
+│   ├── README.md
+│   └── ENDPOINTS.md
+├── operations/                 # Ops and runbooks
+│   ├── README.md
+│   ├── RUNBOOK.md
+│   └── MONITORING.md
+├── testing/                    # Test documentation
+│   ├── README.md
+│   └── STRATEGIES.md
+└── vendor-specs/               # External integrations
+    └── README.md
+```
+
+**plan/ Directory Structure:**
+```
+plan/
+├── README.md                   # Plan index with links
+├── 01-requirements/            # Requirements
+├── 02-architecture/            # Architecture decisions
+├── 03-research/                # Research findings
+├── 04-testing/                 # Testing strategy
+├── 05-implementation/          # Implementation plans
+├── 06-phase-reports/           # Phase completions
+├── 07-monitoring/              # Monitoring plans
+├── 08-operations/              # Operational procedures
+├── 09-reports/                 # Status reports
+└── 99-archive/                 # Completed/deprecated
+```
+
+## STEP 7: File Naming Conventions
+
+**Apply these naming rules:**
+
+| Pattern | Example | Usage |
+|---------|---------|-------|
+| UPPERCASE.md | README.md, RUNBOOK.md | Primary index/reference docs |
+| kebab-case.md | testing-strategy.md | Topic-specific documents |
+| CATEGORY_TOPIC.md | ARCHITECTURE_SCOPE.md | Scoped documents |
+| INDEX.md | INDEX.md | Directory index files |
+
+**Avoid:**
+- Spaces in filenames
+- Mixed case (e.g., TestingStrategy.md)
+- Underscores for word separation
+- Overly long names (>50 chars)
+
+## STEP 8: Content Organization
+
+**Each file should have:**
+1. **Clear Title** - H1 heading matching purpose
+2. **Purpose Statement** - What this document covers
+3. **Table of Contents** - For files >100 lines
+4. **Consistent Sections** - Standard structure
+5. **Cross-References** - Links to related docs
+6. **Last Updated** - Date of last revision
+
+**Standard Document Template:**
+```markdown
+# Document Title
+
+> Brief description of this document's purpose
+
+## Overview
+
+[High-level summary]
+
+## Details
+
+[Main content sections]
+
+## Related Documents
+
+- [Link to related doc](./path/to/doc.md)
+
+---
+*Last updated: YYYY-MM-DD*
+```
+
+## STEP 9: Consolidation Rules
+
+**Merge files when:**
+- Same topic split across multiple files
+- Files < 50 lines that could be combined
+- Redundant content in similar files
+
+**Archive files when:**
+- Content is >6 months old and unchanged
+- Feature is fully implemented
+- Research is complete and implemented
+- Phase is finished
+
+**Delete files when:**
+- Empty or stub files with <10 lines
+- Duplicate of another file
+- No longer relevant to project
+
+## STEP 10: Index File Updates
+
+**Update all INDEX.md and README.md files to:**
+1. List all files in directory
+2. Provide brief description of each
+3. Link to related directories
+4. Show completion status if applicable
+
+**Example INDEX.md:**
+```markdown
+# Section Title
+
+## Documents in this Section
+
+| Document | Description | Status |
+|----------|-------------|--------|
+| [document-1.md](./document-1.md) | Description | Complete |
+| [document-2.md](./document-2.md) | Description | In Progress |
+
+## Related Sections
+
+- [Related Section](../related-section/)
+```
+
+---
+
+# PHASE 3: MAINTENANCE
+
+## Content Quality
 
 1. **Fix Broken Links** - Update or remove dead links
 2. **Update Code Examples** - Ensure examples match current API
 3. **Correct File Paths** - Fix references to moved/renamed files
 4. **Remove Stale Content** - Archive outdated sections
 
-### Organization
+## Organization
 
 1. **Consistent Headers** - Ensure H1, H2, H3 hierarchy
 2. **Add TOC** - For files >100 lines
 3. **Cross-References** - Link related documents
 4. **Timestamps** - Add/update "Last updated" dates
 
-### File Health
+## File Health
 
 1. **Remove Empty Files** - Delete files <10 lines with no content
 2. **Merge Duplicates** - Consolidate redundant files
 3. **Archive Old** - Move completed/old items to 99-archive/
 4. **Naming Conventions** - Rename files to kebab-case or UPPERCASE
 
-## RECENT CHANGES INTEGRATION
+## Recent Changes Integration
 
 Track and incorporate recent changes from:
 
@@ -230,12 +314,114 @@ Update documentation to reflect:
 - Configuration changes
 - API modifications
 
-## BEGIN SYNCHRONIZATION
+---
 
-Start synchronizing: **$ARGUMENTS**
+# EXECUTION WORKFLOW
+
+## Phase 1: Analysis
+1. **Glob** all .md files in target directories
+2. **Read** each file to understand content
+3. **Compare** against source code existence
+4. **Identify** issues (duplicates, orphans, stubs, unfeasible items)
+
+## Phase 2: Cleanup
+1. **Remove** unfeasible checklist items
+2. **Mark** completed items with `[x]`
+3. **Delete** empty/stub files
+4. **Archive** outdated files to 99-archive/
+
+## Phase 3: Restructure
+1. **Rename** files to follow conventions
+2. **Move** files to appropriate directories
+3. **Merge** duplicate content
+4. **Create** missing index files
+
+## Phase 4: Update
+1. **Update** all cross-references
+2. **Fix** broken links
+3. **Add** missing sections
+4. **Update** timestamps
+
+## Phase 5: Verify & Report
+1. **Verify** all links work
+2. **Check** no orphaned files
+3. **Ensure** all directories have indexes
+4. **Generate** sync & organization report
+
+---
+
+# OUTPUT REPORT
+
+Save comprehensive report to: `plan/09-reports/DOCS_SYNC_[DATE].md`
+
+```markdown
+# Documentation Sync & Organization Report
+
+**Date**: [timestamp]
+
+## Executive Summary
+
+- **Files Analyzed**: X
+- **Checklists Marked Complete**: Y
+- **Unfeasible Items Removed**: Z
+- **Files Renamed**: A
+- **Files Moved**: B
+- **Files Archived**: C
+- **Files Deleted**: D
+
+## Synchronization Results
+
+### Items Marked Complete
+- [x] Implement timezone handling - `src/services/timezone.service.ts`
+- [x] Add unit tests - `tests/unit/services/`
+
+### Items Removed (Unfeasible)
+| File | Item Removed | Reason |
+|------|--------------|--------|
+| plan.md | Create demo video | External resource |
+| plan.md | Deploy to production | Outside scope |
+
+### Items Still Pending
+- [ ] Add mutation testing - Priority: Medium
+- [ ] Improve cache hit rate - Priority: Low
+
+## Organization Results
+
+### Files Renamed
+| Original | New Name | Reason |
+|----------|----------|--------|
+| old-name.md | new-name.md | Naming convention |
+
+### Files Moved
+| File | From | To | Reason |
+|------|------|-----|--------|
+| file.md | docs/ | docs/testing/ | Better organization |
+
+### Files Archived
+| File | Reason |
+|------|--------|
+| old-plan.md | Fully implemented |
+
+### Files Deleted
+| File | Reason |
+|------|--------|
+| stub.md | Empty file |
+
+## New Structure
+
+[Tree view of new structure]
+
+## Recommendations
+
+1. [Suggestions for future improvements]
+```
+
+---
+
+## BEGIN SYNCHRONIZATION & ORGANIZATION
 
 Use Task tool agents as needed:
-- `haiku` for file existence checks
-- `sonnet` for content analysis and updates
-- `Explore` for codebase scanning
+- `Explore` agent for comprehensive codebase scanning
+- `haiku` for file existence checks and simple operations
+- `sonnet` for content analysis, updates, and restructuring
 - `opus` for complex restructuring decisions
