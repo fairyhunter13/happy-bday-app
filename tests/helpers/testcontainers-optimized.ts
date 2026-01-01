@@ -562,29 +562,31 @@ export async function resetCircuitBreaker(): Promise<void> {
 
 /**
  * Helper to purge all RabbitMQ queues
- * Uses checkQueue to avoid precondition_failed errors from mismatched queue arguments
- * (e.g., quorum queues with x-dead-letter-exchange)
+ * Creates a new channel for each queue to handle checkQueue failures gracefully
+ * (checkQueue closes the channel if the queue doesn't exist)
  */
 export async function purgeQueues(connection: amqp.Connection, queues: string[]): Promise<void> {
-  const channel = await connection.createChannel();
-  try {
-    // OPTIMIZATION: Check and purge queues in parallel
-    // Use checkQueue instead of assertQueue to avoid precondition_failed errors
-    await Promise.all(
-      queues.map(async (queue) => {
+  // OPTIMIZATION: Purge queues in parallel, each with its own channel
+  // This is necessary because checkQueue closes the channel on 404 errors
+  await Promise.all(
+    queues.map(async (queue) => {
+      try {
+        const channel = await connection.createChannel();
         try {
-          // checkQueue only verifies the queue exists without asserting its properties
+          // Use checkQueue to verify queue exists without asserting properties
           await channel.checkQueue(queue);
+          // If queue exists, purge it
           await channel.purgeQueue(queue);
+          await channel.close();
         } catch (error) {
-          // Queue doesn't exist or other error - skip silently
+          // Queue doesn't exist or other error - channel is already closed by RabbitMQ
           // This is expected for queues that haven't been created yet
         }
-      })
-    );
-  } finally {
-    await channel.close();
-  }
+      } catch (error) {
+        // Ignore connection errors for individual queues
+      }
+    })
+  );
 }
 
 /**
