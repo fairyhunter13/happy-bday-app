@@ -130,10 +130,12 @@ describe('E2E: Complete Birthday Message Flow', () => {
       expect(sendTime.hour).toBe(9);
       expect(sendTime.minute).toBe(0);
 
-      // Step 4: Update scheduled_send_time to NOW to trigger immediate processing
-      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1', [
-        message.id,
-      ]);
+      // Step 4: Update scheduled_send_time to a time in the immediate future to trigger processing
+      // We use NOW() + 1 second to ensure it's within the enqueue window (now, now + 1 hour)
+      await pool.query(
+        "UPDATE message_logs SET scheduled_send_time = NOW() + INTERVAL '1 second' WHERE id = $1",
+        [message.id]
+      );
 
       // Step 5: Trigger minute scheduler to enqueue message
       const enqueuedCount = await scheduler.enqueueUpcomingMessages();
@@ -381,10 +383,11 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const messages = await findMessageLogsByUserId(pool, user.id);
       const scheduledTime = messages[0].scheduledSendTime;
 
-      // Update to trigger immediate processing
-      await pool.query('UPDATE message_logs SET scheduled_send_time = NOW() WHERE id = $1', [
-        messages[0].id,
-      ]);
+      // Update to trigger immediate processing (use future time to stay within enqueue window)
+      await pool.query(
+        "UPDATE message_logs SET scheduled_send_time = NOW() + INTERVAL '1 second' WHERE id = $1",
+        [messages[0].id]
+      );
 
       await scheduler.enqueueUpcomingMessages();
       await publisher.publishMessage({
