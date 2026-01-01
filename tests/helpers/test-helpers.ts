@@ -383,3 +383,25 @@ export function isSameDay(date1: Date, date2: Date, timezone: string = 'UTC'): b
 export function formatDateForDb(date: Date): string {
   return DateTime.fromJSDate(date).toISO() || '';
 }
+
+/**
+ * Create a birthday date for today in UTC timezone
+ *
+ * This helper ensures the date is created with UTC timezone alignment,
+ * which is critical for E2E tests where the scheduler uses UTC to find
+ * users with birthdays today.
+ *
+ * @param year - Birth year (defaults to 1990)
+ * @returns Date object representing today's date in UTC with the given year
+ *
+ * @example
+ * // Create birthday for today (born in 1990)
+ * const birthdayDate = createTodayBirthdayUTC();
+ *
+ * // Create birthday for today (born in 1985)
+ * const birthdayDate = createTodayBirthdayUTC(1985);
+ */
+export function createTodayBirthdayUTC(year: number = 1990): Date {
+  const todayInUTC = DateTime.now().setZone('UTC');
+  return todayInUTC.set({ year }).toJSDate();
+}
