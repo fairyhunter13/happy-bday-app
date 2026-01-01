@@ -224,7 +224,10 @@ export class BirthdayMessageStrategy implements MessageStrategy {
 
     // Check for potential issues (warnings)
     if (user.birthdayDate) {
-      const year = user.birthdayDate.getFullYear();
+      // Handle both Date objects and string representations (PostgreSQL returns dates as strings)
+      const birthdayDate =
+        user.birthdayDate instanceof Date ? user.birthdayDate : new Date(user.birthdayDate);
+      const year = birthdayDate.getFullYear();
       const currentYear = new Date().getFullYear();
 
       if (year > currentYear) {
