@@ -10,7 +10,7 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { DateTime } from 'luxon';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 
 // Import types only - no runtime dependencies on app modules
 import type { SchedulerManager as SchedulerManagerType } from '../../../src/schedulers/index.js';
@@ -25,7 +25,7 @@ describe('Scheduler Integration Tests', () => {
   let testEnv: TestEnvironment;
   let SchedulerManager: typeof SchedulerManagerType;
   let manager: SchedulerManagerType;
-  let db: ReturnType<typeof drizzle<typeof schema>>;
+  let db: PostgresJsDatabase<typeof schema>;
   let initializeRabbitMQ: () => Promise<void>;
   let RabbitMQConnection: { getInstance: () => { close: () => Promise<void> } };
 
@@ -40,19 +40,21 @@ describe('Scheduler Integration Tests', () => {
     process.env.ENABLE_DB_METRICS = 'false'; // Disable metrics during tests
     process.env.DATABASE_POOL_MAX = '2'; // Limit pool size in CI to prevent exhaustion
 
-    // Create drizzle instance for tests (uses test container)
-    db = drizzle(testEnv.getPostgresPool(), { schema });
-
     // Run migrations
     await testEnv.runMigrations('./drizzle');
 
     // Now dynamically import app modules after env vars are set
+    // This ensures the app's db singleton uses the test database
     const schedulerModule = await import('../../../src/schedulers/index.js');
     SchedulerManager = schedulerModule.SchedulerManager;
 
     const queueModule = await import('../../../src/queue/connection.js');
     initializeRabbitMQ = queueModule.initializeRabbitMQ;
     RabbitMQConnection = queueModule.RabbitMQConnection;
+
+    // Import the app's database connection (uses our test DATABASE_URL)
+    const dbModule = await import('../../../src/db/connection.js');
+    db = dbModule.db;
 
     // Initialize RabbitMQ connection for tests
     await initializeRabbitMQ();
