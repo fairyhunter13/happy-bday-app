@@ -31,7 +31,7 @@ jobs:
         run: npm run lint -- --format json --output-file eslint-report.json
 
       - name: Annotate code with ESLint results
-        if: always()
+        if: always() && github.event_name == 'pull_request'
         uses: ataylorme/eslint-annotate-action@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
