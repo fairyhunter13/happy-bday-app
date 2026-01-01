@@ -15,21 +15,145 @@ const messagesRetried = new Counter('messages_retried');
 const activeWorkers = new Gauge('active_workers');
 const queueDepth = new Gauge('queue_depth');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
+// Scenario configurations based on environment
+const WORKER_SCENARIOS = isCI
+  ? {
+      // CI mode: shortened scenarios (~10 min total)
+      single_worker_baseline: {
+        executor: 'constant-arrival-rate',
+        rate: 50, // 50 messages/min
+        timeUnit: '1m',
+        duration: '2m',
+        preAllocatedVUs: 5,
+        maxVUs: 10,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '1', scenario: 'baseline' },
+        env: { WORKER_COUNT: '1' },
+      },
+      five_workers_medium: {
+        executor: 'constant-arrival-rate',
+        rate: 100, // 100 messages/min
+        timeUnit: '1m',
+        duration: '2m',
+        preAllocatedVUs: 10,
+        maxVUs: 20,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '5', scenario: 'medium' },
+        env: { WORKER_COUNT: '5' },
+        startTime: '2m',
+      },
+      ten_workers_high: {
+        executor: 'constant-arrival-rate',
+        rate: 200, // 200 messages/min
+        timeUnit: '1m',
+        duration: '3m',
+        preAllocatedVUs: 20,
+        maxVUs: 40,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '10', scenario: 'high' },
+        env: { WORKER_COUNT: '10' },
+        startTime: '4m',
+      },
+      failure_retry_test: {
+        executor: 'constant-arrival-rate',
+        rate: 50, // 50 messages/min
+        timeUnit: '1m',
+        duration: '2m',
+        preAllocatedVUs: 10,
+        maxVUs: 20,
+        exec: 'testFailureRetry',
+        tags: { workers: '10', scenario: 'failure' },
+        env: { WORKER_COUNT: '10' },
+        startTime: '7m',
+      },
+    }
+  : {
+      // Full mode: original scenarios (~30 min total)
+      single_worker_baseline: {
+        executor: 'constant-arrival-rate',
+        rate: 100,
+        timeUnit: '1m',
+        duration: '5m',
+        preAllocatedVUs: 10,
+        maxVUs: 20,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '1', scenario: 'baseline' },
+        env: { WORKER_COUNT: '1' },
+      },
+      five_workers_medium: {
+        executor: 'constant-arrival-rate',
+        rate: 500,
+        timeUnit: '1m',
+        duration: '5m',
+        preAllocatedVUs: 50,
+        maxVUs: 100,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '5', scenario: 'medium' },
+        env: { WORKER_COUNT: '5' },
+        startTime: '5m',
+      },
+      ten_workers_high: {
+        executor: 'constant-arrival-rate',
+        rate: 1000,
+        timeUnit: '1m',
+        duration: '10m',
+        preAllocatedVUs: 100,
+        maxVUs: 200,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '10', scenario: 'high' },
+        env: { WORKER_COUNT: '10' },
+        startTime: '10m',
+      },
+      ten_workers_peak: {
+        executor: 'constant-arrival-rate',
+        rate: 2000,
+        timeUnit: '1m',
+        duration: '5m',
+        preAllocatedVUs: 200,
+        maxVUs: 300,
+        exec: 'testWorkerProcessing',
+        tags: { workers: '10', scenario: 'peak' },
+        env: { WORKER_COUNT: '10' },
+        startTime: '20m',
+      },
+      failure_retry_test: {
+        executor: 'constant-arrival-rate',
+        rate: 200,
+        timeUnit: '1m',
+        duration: '5m',
+        preAllocatedVUs: 30,
+        maxVUs: 50,
+        exec: 'testFailureRetry',
+        tags: { workers: '10', scenario: 'failure' },
+        env: { WORKER_COUNT: '10' },
+        startTime: '25m',
+      },
+    };
+
 /**
  * K6 Performance Test: Worker Throughput Test
  *
  * Tests worker pool processing performance:
- * - 10 workers processing 1000 messages
+ * - Multiple workers processing messages
  * - Throughput measurement (messages/second)
  * - Failed message handling and retry logic
  * - Worker scaling efficiency
  *
- * Test scenarios:
- * 1. Baseline: 1 worker, 100 messages/min
- * 2. Medium: 5 workers, 500 messages/min
- * 3. High: 10 workers, 1000 messages/min
- * 4. Peak: 10 workers, 2000 messages/min
- * 5. Failure: Simulate failures and test retry
+ * CI mode (~10 min total):
+ * 1. Baseline: 1 worker, 50 messages/min for 2 minutes
+ * 2. Medium: 5 workers, 100 messages/min for 2 minutes
+ * 3. High: 10 workers, 200 messages/min for 3 minutes
+ * 4. Failure: Retry testing 50 messages/min for 2 minutes
+ *
+ * Full mode (~30 min total):
+ * 1. Baseline: 1 worker, 100 messages/min for 5 minutes
+ * 2. Medium: 5 workers, 500 messages/min for 5 minutes
+ * 3. High: 10 workers, 1000 messages/min for 10 minutes
+ * 4. Peak: 10 workers, 2000 messages/min for 5 minutes
+ * 5. Failure: Retry testing 200 messages/min for 5 minutes
  *
  * Thresholds:
  * - Throughput > 50 msg/s (10 workers)
@@ -38,72 +162,7 @@ const queueDepth = new Gauge('queue_depth');
  * - Error rate < 1%
  */
 export const options = {
-  scenarios: {
-    // Scenario 1: Single worker baseline
-    single_worker_baseline: {
-      executor: 'constant-arrival-rate',
-      rate: 100,
-      timeUnit: '1m',
-      duration: '5m',
-      preAllocatedVUs: 10,
-      maxVUs: 20,
-      exec: 'testWorkerProcessing',
-      tags: { workers: '1', scenario: 'baseline' },
-      env: { WORKER_COUNT: '1' },
-    },
-    // Scenario 2: 5 workers medium load
-    five_workers_medium: {
-      executor: 'constant-arrival-rate',
-      rate: 500,
-      timeUnit: '1m',
-      duration: '5m',
-      preAllocatedVUs: 50,
-      maxVUs: 100,
-      exec: 'testWorkerProcessing',
-      tags: { workers: '5', scenario: 'medium' },
-      env: { WORKER_COUNT: '5' },
-      startTime: '5m',
-    },
-    // Scenario 3: 10 workers high load
-    ten_workers_high: {
-      executor: 'constant-arrival-rate',
-      rate: 1000,
-      timeUnit: '1m',
-      duration: '10m',
-      preAllocatedVUs: 100,
-      maxVUs: 200,
-      exec: 'testWorkerProcessing',
-      tags: { workers: '10', scenario: 'high' },
-      env: { WORKER_COUNT: '10' },
-      startTime: '10m',
-    },
-    // Scenario 4: 10 workers peak load
-    ten_workers_peak: {
-      executor: 'constant-arrival-rate',
-      rate: 2000,
-      timeUnit: '1m',
-      duration: '5m',
-      preAllocatedVUs: 200,
-      maxVUs: 300,
-      exec: 'testWorkerProcessing',
-      tags: { workers: '10', scenario: 'peak' },
-      env: { WORKER_COUNT: '10' },
-      startTime: '20m',
-    },
-    // Scenario 5: Failure and retry testing
-    failure_retry_test: {
-      executor: 'constant-arrival-rate',
-      rate: 200,
-      timeUnit: '1m',
-      duration: '5m',
-      preAllocatedVUs: 30,
-      maxVUs: 50,
-      exec: 'testFailureRetry',
-      tags: { workers: '10', scenario: 'failure' },
-      env: { WORKER_COUNT: '10' },
-      startTime: '25m',
-    },
-  },
+  scenarios: WORKER_SCENARIOS,
   thresholds: {
     'worker_throughput{workers:10}': ['avg>50'], // >50 msg/s with 10 workers
     'message_processing_time{scenario:baseline}': ['p(95)<500'],
@@ -335,13 +394,23 @@ export function testFailureRetry() {
 export function setup() {
   console.log('=== Starting Worker Throughput Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
   console.log('Test scenarios:');
-  console.log('  1. Baseline: 1 worker @ 100 msg/min (5m)');
-  console.log('  2. Medium: 5 workers @ 500 msg/min (5m)');
-  console.log('  3. High: 10 workers @ 1000 msg/min (10m)');
-  console.log('  4. Peak: 10 workers @ 2000 msg/min (5m)');
-  console.log('  5. Failure: Retry testing @ 200 msg/min (5m)');
-  console.log('Expected total: ~10,000 messages processed');
+
+  if (isCI) {
+    console.log('  1. Baseline: 1 worker @ 50 msg/min (2m)');
+    console.log('  2. Medium: 5 workers @ 100 msg/min (2m)');
+    console.log('  3. High: 10 workers @ 200 msg/min (3m)');
+    console.log('  4. Failure: Retry testing @ 50 msg/min (2m)');
+    console.log('Expected total: ~600 messages processed');
+  } else {
+    console.log('  1. Baseline: 1 worker @ 100 msg/min (5m)');
+    console.log('  2. Medium: 5 workers @ 500 msg/min (5m)');
+    console.log('  3. High: 10 workers @ 1000 msg/min (10m)');
+    console.log('  4. Peak: 10 workers @ 2000 msg/min (5m)');
+    console.log('  5. Failure: Retry testing @ 200 msg/min (5m)');
+    console.log('Expected total: ~10,000 messages processed');
+  }
 
   // Health check
   const warmupRes = http.get(`${API_BASE_URL}/health`);
