@@ -17,6 +17,7 @@ import {
   cleanDatabase,
   purgeQueues,
   clearBirthdayCache,
+  resetCircuitBreaker,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
 import { DateTime } from 'luxon';
@@ -169,6 +170,8 @@ describe('E2E: Performance Baseline', () => {
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
+    // Reset circuit breaker to closed state to avoid test pollution
+    await resetCircuitBreaker();
   });
 
   describe('End-to-end latency measurement', () => {
