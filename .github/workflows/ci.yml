@@ -467,6 +467,164 @@ jobs:
         if: always()
         run: docker compose -f docker-compose.test.yml down -v
 
+  mutation-testing:
+    name: Mutation Testing
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
+
+      - name: Create reports directory
+        run: mkdir -p reports/mutation
+
+      - name: Run mutation testing
+        id: mutation
+        run: |
+          npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
+          exit_code=${PIPESTATUS[0]}
+
+          # Extract mutation score from output
+          mutation_score=$(grep -oP 'Mutation score.*?(\d+\.?\d*)%' mutation-output.txt | grep -oP '\d+\.?\d*' | tail -1 || echo "0")
+          echo "mutation_score=$mutation_score" >> $GITHUB_OUTPUT
+
+          # Extract killed/survived/timeout counts
+          killed=$(grep -oP 'Killed:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          survived=$(grep -oP 'Survived:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          timeout=$(grep -oP 'Timeout:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          no_coverage=$(grep -oP 'No Coverage:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+
+          echo "killed=$killed" >> $GITHUB_OUTPUT
+          echo "survived=$survived" >> $GITHUB_OUTPUT
+          echo "timeout=$timeout" >> $GITHUB_OUTPUT
+          echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
+
+          exit $exit_code
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            reports/mutation/
+            mutation-output.txt
+          retention-days: 14
+        if: always()
+
+      - name: Comment mutation score on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const mutationScore = '${{ steps.mutation.outputs.mutation_score }}' || '0';
+            const killed = '${{ steps.mutation.outputs.killed }}' || '0';
+            const survived = '${{ steps.mutation.outputs.survived }}' || '0';
+            const timeout = '${{ steps.mutation.outputs.timeout }}' || '0';
+            const noCoverage = '${{ steps.mutation.outputs.no_coverage }}' || '0';
+
+            let statusEmoji = '';
+            const score = parseFloat(mutationScore);
+            if (score >= 80) statusEmoji = ':white_check_mark:';
+            else if (score >= 60) statusEmoji = ':warning:';
+            else statusEmoji = ':x:';
+
+            const body = `## ${statusEmoji} Mutation Testing Results
+
+            | Metric | Value |
+            |--------|-------|
+            | **Mutation Score** | ${mutationScore}% |
+            | Killed | ${killed} |
+            | Survived | ${survived} |
+            | Timeout | ${timeout} |
+            | No Coverage | ${noCoverage} |
+
+            ### Thresholds
+            - :white_check_mark: High: >= 80%
+            - :warning: Low: >= 60%
+            - :x: Break: < 50%
+
+            <details>
+            <summary>What is mutation testing?</summary>
+
+            Mutation testing introduces small changes (mutations) to your code and checks if your tests catch them. A higher score means better test quality.
+
+            - **Killed**: Tests detected the mutation
+            - **Survived**: Mutation went undetected (potential test gap)
+            - **Timeout**: Test took too long (usually indicates infinite loop detection)
+            - **No Coverage**: Code not covered by tests
+            </details>
+
+            [View full report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Mutation Testing Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Check mutation score threshold
+        run: |
+          score="${{ steps.mutation.outputs.mutation_score }}"
+          if [ -z "$score" ]; then
+            echo "Warning: Could not determine mutation score"
+            exit 0
+          fi
+
+          echo "Mutation score: $score%"
+          if (( $(echo "$score >= 80" | bc -l) )); then
+            echo "✓ Excellent! Mutation score meets the high threshold (>=80%)."
+            exit 0
+          elif (( $(echo "$score >= 60" | bc -l) )); then
+            echo "✓ Good. Mutation score is acceptable but could be improved (>=60%)."
+            exit 0
+          elif (( $(echo "$score >= 50" | bc -l) )); then
+            echo "⚠ Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
+            exit 0
+          else
+            echo "✗ Error: Mutation score ($score%) is below the break threshold (50%)"
+            echo "This indicates significant gaps in test coverage quality."
+            echo "Please review survived mutants and improve tests."
+            exit 1
+          fi
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
   performance-load-tests:
     name: Performance Load Tests (${{ matrix.test }})
     needs: [unit-tests]
@@ -807,13 +965,157 @@ jobs:
             bash scripts/coverage/update-history.sh
           fi
 
-      - name: Comment coverage on PR
+      - name: Download base coverage (from main branch)
         if: github.event_name == 'pull_request'
-        uses: romeovs/lcov-reporter-action@v0.3.1
+        id: download-base-coverage
+        continue-on-error: true
+        run: |
+          # Try to download coverage from main branch
+          gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt
+          if [ -s run-id.txt ]; then
+            RUN_ID=$(cat run-id.txt)
+            echo "Found run ID: $RUN_ID"
+            gh run download "$RUN_ID" --name coverage-unit --dir base-coverage || echo "Failed to download base coverage"
+            if [ -f base-coverage/coverage-summary.json ]; then
+              echo "base_coverage_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No successful run found on main branch"
+            echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate coverage diff report
+        if: github.event_name == 'pull_request'
+        id: coverage-diff
+        run: |
+          # Generate coverage diff between base and current PR
+          node -e "
+          const fs = require('fs');
+
+          function loadCoverage(path) {
+            try {
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            } catch (e) {
+              return null;
+            }
+          }
+
+          const currentCoverage = loadCoverage('coverage/coverage-summary.json');
+          const baseCoverage = loadCoverage('base-coverage/coverage-summary.json');
+
+          if (!currentCoverage) {
+            console.error('Current coverage not found');
+            process.exit(1);
+          }
+
+          const formatPct = (pct) => pct.toFixed(2);
+          const formatDiff = (current, base) => {
+            if (!base) return '(new)';
+            const diff = current - base;
+            const sign = diff >= 0 ? '+' : '';
+            const emoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
+            return \`\${sign}\${formatPct(diff)}% \${emoji}\`;
+          };
+
+          const c = currentCoverage.total;
+          const b = baseCoverage?.total;
+
+          let report = '## 📊 Coverage Report\\n\\n';
+
+          if (baseCoverage) {
+            report += '### Coverage Diff vs Base Branch\\n\\n';
+            report += '| Metric | Current | Base | Diff |\\n';
+            report += '|--------|---------|------|------|\\n';
+            report += \`| Lines | \${formatPct(c.lines.pct)}% | \${formatPct(b.lines.pct)}% | \${formatDiff(c.lines.pct, b.lines.pct)} |\\n\`;
+            report += \`| Statements | \${formatPct(c.statements.pct)}% | \${formatPct(b.statements.pct)}% | \${formatDiff(c.statements.pct, b.statements.pct)} |\\n\`;
+            report += \`| Functions | \${formatPct(c.functions.pct)}% | \${formatPct(b.functions.pct)}% | \${formatDiff(c.functions.pct, b.functions.pct)} |\\n\`;
+            report += \`| Branches | \${formatPct(c.branches.pct)}% | \${formatPct(b.branches.pct)}% | \${formatDiff(c.branches.pct, b.branches.pct)} |\\n\`;
+            report += '\\n';
+
+            // Overall status
+            const totalDiff = c.statements.pct - b.statements.pct;
+            if (totalDiff > 0) {
+              report += '✅ **Coverage improved!** Great work on adding tests.\\n';
+            } else if (totalDiff < -1) {
+              report += '⚠️ **Coverage decreased.** Consider adding tests for new code.\\n';
+            } else {
+              report += '✅ **Coverage maintained.** No significant change.\\n';
+            }
+          } else {
+            report += '### Current Coverage\\n\\n';
+            report += '| Metric | Coverage |\\n';
+            report += '|--------|----------|\\n';
+            report += \`| Lines | \${formatPct(c.lines.pct)}% |\\n\`;
+            report += \`| Statements | \${formatPct(c.statements.pct)}% |\\n\`;
+            report += \`| Functions | \${formatPct(c.functions.pct)}% |\\n\`;
+            report += \`| Branches | \${formatPct(c.branches.pct)}% |\\n\`;
+            report += '\\n';
+            report += '> Base coverage not available for comparison\\n';
+          }
+
+          report += '\\n### Thresholds\\n\\n';
+          report += '| Metric | Current | Threshold | Status |\\n';
+          report += '|--------|---------|-----------|--------|\\n';
+
+          const checkThreshold = (name, value, threshold) => {
+            const status = value >= threshold ? '✅ Pass' : '❌ Fail';
+            return \`| \${name} | \${formatPct(value)}% | \${threshold}% | \${status} |\\n\`;
+          };
+
+          report += checkThreshold('Lines', c.lines.pct, 80);
+          report += checkThreshold('Statements', c.statements.pct, 80);
+          report += checkThreshold('Functions', c.functions.pct, 50);
+          report += checkThreshold('Branches', c.branches.pct, 75);
+
+          report += '\\n---\\n';
+          report += '*Coverage collected from unit tests only. Integration and E2E tests run without coverage for faster CI.*\\n';
+
+          fs.writeFileSync('coverage-diff.md', report);
+          console.log(report);
+          "
+
+      - name: Comment coverage diff on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
         with:
-          lcov-file: ./coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          delete-old-comments: true
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('coverage-diff.md', 'utf8');
+
+            // Find existing coverage comment
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('📊 Coverage Report')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report
+              });
+            }
 
   security-scan:
     name: Security Scan
@@ -874,6 +1176,7 @@ jobs:
       - integration-tests
       - e2e-tests
       - chaos-tests
+      - mutation-testing
       - performance-smoke-test
       - performance-load-tests
       - coverage-report
@@ -895,6 +1198,7 @@ jobs:
 
           # Check optional jobs (don't fail CI if these fail, but warn)
           if [[ "${{ needs.chaos-tests.result }}" != "success" ]]; then echo "::warning::chaos-tests did not pass"; fi
+          if [[ "${{ needs.mutation-testing.result }}" != "success" ]]; then echo "::warning::mutation-testing did not pass"; fi
           if [[ "${{ needs.performance-smoke-test.result }}" != "success" ]]; then echo "::warning::performance-smoke-test did not pass"; fi
           if [[ "${{ needs.performance-load-tests.result }}" != "success" ]]; then echo "::warning::performance-load-tests did not pass"; fi
           if [[ "${{ needs.coverage-report.result }}" != "success" ]]; then echo "::warning::coverage-report did not pass"; fi
