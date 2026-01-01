@@ -487,21 +487,22 @@ export async function cleanDatabase(pool: pg.Pool): Promise<void> {
 
 /**
  * Helper to purge all RabbitMQ queues
- * Ensures queues exist before purging to avoid 404 errors
+ * Uses checkQueue to avoid precondition_failed errors from mismatched queue arguments
+ * (e.g., quorum queues with x-dead-letter-exchange)
  */
 export async function purgeQueues(connection: amqp.Connection, queues: string[]): Promise<void> {
   const channel = await connection.createChannel();
   try {
     for (const queue of queues) {
       try {
-        // First, ensure the queue exists by declaring it
-        // assertQueue is idempotent - it creates if not exists, or returns existing queue
-        await channel.assertQueue(queue, { durable: true });
+        // Use checkQueue instead of assertQueue to avoid precondition_failed errors
+        // checkQueue only verifies the queue exists without asserting its properties
+        await channel.checkQueue(queue);
         // Now purge the queue
         await channel.purgeQueue(queue);
       } catch (error) {
-        // Log but don't fail - some queues may have issues
-        console.warn(`Warning: Could not purge queue ${queue}:`, (error as Error).message);
+        // Queue doesn't exist or other error - skip silently
+        // This is expected for queues that haven't been created yet
       }
     }
   } finally {
