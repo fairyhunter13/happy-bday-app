@@ -76,7 +76,9 @@ export class PostgresTestContainer {
           if (retries === 0) {
             throw new Error(`Failed to connect to PostgreSQL: ${errorMessage}`);
           }
-          console.log(`Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`);
+          console.log(
+            `Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay = Math.min(delay * 1.5, 3000); // Exponential backoff up to 3s
         }

@@ -104,7 +104,9 @@ describe('Message Worker Integration Tests', () => {
       const ciStrings = getCIConnectionStrings();
       rabbitMQUrl = ciStrings.rabbitmq;
 
-      console.log(`CI mode: connecting to PostgreSQL at ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`);
+      console.log(
+        `CI mode: connecting to PostgreSQL at ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`
+      );
 
       // Setup test database connection using CI PostgreSQL
       // Use shorter timeouts to fail fast
@@ -132,7 +134,9 @@ describe('Message Worker Integration Tests', () => {
           if (retries === 0) {
             throw new Error(`Failed to connect to PostgreSQL after 10 attempts: ${errorMessage}`);
           }
-          console.log(`Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`);
+          console.log(
+            `Waiting for PostgreSQL... (${retries} retries left, error: ${errorMessage})`
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay = Math.min(delay * 1.5, 5000); // Exponential backoff up to 5s
         }
