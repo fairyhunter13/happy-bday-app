@@ -120,10 +120,11 @@ export class MessageConsumer {
       });
 
       // Wrap message processing with metrics instrumentation
+      const messageJob = job; // Capture for closure - guaranteed to be defined at this point
       await queueMetricsInstrumentation.instrumentConsume(
         async () => {
           // Call message handler
-          await this.onMessage(job!);
+          await this.onMessage(messageJob);
         },
         msg,
         QUEUES.BIRTHDAY_MESSAGES
@@ -158,18 +159,14 @@ export class MessageConsumer {
       }
 
       // Handle retry logic with instrumented ack/nack
-      await this.handleMessageError(msg, channel, error);
+      this.handleMessageError(msg, channel, error);
     }
   }
 
   /**
    * Handle message processing error
    */
-  private async handleMessageError(
-    msg: ConsumeMessage,
-    channel: Channel,
-    error: unknown
-  ): Promise<void> {
+  private handleMessageError(msg: ConsumeMessage, channel: Channel, error: unknown): void {
     const retryCount = (msg.properties.headers?.['x-retry-count'] as number) || 0;
     const isTransientError = this.isTransientError(error);
 

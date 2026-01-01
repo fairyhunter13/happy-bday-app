@@ -100,7 +100,7 @@ export class RabbitMQConnection {
     // Create publisher channel with confirms
     this.publisherChannel = this.connection.createChannel({
       json: false,
-      setup: async (_channel: Channel) => {
+      setup: (_channel: Channel) => {
         // Enable publisher confirms for reliability
         // Note: confirmSelect is not available in ChannelWrapper, but publisher confirms
         // are handled by amqp-connection-manager automatically when using channel.publish
@@ -123,7 +123,7 @@ export class RabbitMQConnection {
     // Create consumer channel
     this.consumerChannel = this.connection.createChannel({
       json: false,
-      setup: async (_channel: Channel) => {
+      setup: (_channel: Channel) => {
         logger.info('Consumer channel configured');
       },
     });
