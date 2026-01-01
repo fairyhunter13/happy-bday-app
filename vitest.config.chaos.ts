@@ -23,6 +23,17 @@ export default mergeConfig(
       // Only include chaos tests
       include: ['tests/chaos/**/*.test.ts'],
 
+      // Pass through CI environment variables to test processes
+      // CRITICAL: Tests need CI/GITHUB_ACTIONS to detect CI mode and use GitHub Actions services
+      env: {
+        NODE_ENV: 'test',
+        CI: process.env.CI || 'false',
+        GITHUB_ACTIONS: process.env.GITHUB_ACTIONS || 'false',
+        DATABASE_URL: process.env.DATABASE_URL || '',
+        RABBITMQ_URL: process.env.RABBITMQ_URL || '',
+        REDIS_URL: process.env.REDIS_URL || '',
+      },
+
       // Long timeout for chaos tests (they involve container restarts, etc.)
       testTimeout: 120000, // 2 minutes
       hookTimeout: 120000,

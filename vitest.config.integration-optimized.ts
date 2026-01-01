@@ -23,6 +23,17 @@ export default mergeConfig(
       // Only include integration tests
       include: ['tests/integration/**/*.test.ts'],
 
+      // Pass through CI environment variables to test processes
+      // CRITICAL: Tests need CI/GITHUB_ACTIONS to detect CI mode and use GitHub Actions services
+      env: {
+        NODE_ENV: 'test',
+        CI: process.env.CI || 'false',
+        GITHUB_ACTIONS: process.env.GITHUB_ACTIONS || 'false',
+        DATABASE_URL: process.env.DATABASE_URL || '',
+        RABBITMQ_URL: process.env.RABBITMQ_URL || '',
+        REDIS_URL: process.env.REDIS_URL || '',
+      },
+
       // Optimized timeout for integration tests
       testTimeout: 45000, // Reduced from 60s to 45s
       hookTimeout: 45000,

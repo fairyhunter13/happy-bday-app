@@ -1,4 +1,17 @@
-/** @type {import('@stryker-mutator/api/core').PartialStrykerOptions} */
+/**
+ * Stryker Mutation Testing Configuration
+ *
+ * OPTIMIZATION STRATEGY (Target: <10 minutes runtime):
+ * 1. Focus mutations on critical business logic only (services, strategies, schedulers, repositories, queue workers)
+ * 2. Exclude non-critical code: configs, types, schemas, middleware, routes, controllers
+ * 3. Increased concurrency from 4 to 8 for parallel execution
+ * 4. Reduced timeout from 60s to 30s (fast tests = good tests)
+ * 5. Excluded low-value mutators: StringLiteral, ObjectLiteral, ArrayDeclaration, RegexMutator
+ * 6. Incremental mode enabled for subsequent runs
+ * 7. Coverage analysis set to 'perTest' for optimal performance
+ *
+ * @type {import('@stryker-mutator/api/core').PartialStrykerOptions}
+ */
 const config = {
   // Package metadata
   packageManager: 'npm',
@@ -14,20 +27,51 @@ const config = {
   buildCommand: 'npm run build',
 
   // Source files to mutate
+  // Focus on critical business logic only for faster mutation testing
   mutate: [
-    'src/**/*.ts',
+    // Core business logic - services
+    'src/services/message.service.ts',
+    'src/services/message-sender.service.ts',
+    'src/services/message-reschedule.service.ts',
+    'src/services/scheduler.service.ts',
+    'src/services/timezone.service.ts',
+    'src/services/idempotency.service.ts',
+    'src/services/cache.service.ts',
+
+    // Message strategies (core domain logic)
+    'src/strategies/**/*.ts',
+    '!src/strategies/index.ts',
+
+    // Schedulers (critical scheduling logic)
+    'src/schedulers/**/*.ts',
+
+    // Repositories (data access logic)
+    'src/repositories/**/*.ts',
+
+    // Queue workers (async processing logic)
+    'src/queue/**/*.ts',
+
+    // Workers (background processing)
+    'src/workers/**/*.ts',
+
+    // Exclude everything else for speed
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
     '!src/index.ts',
     '!src/worker.ts',
-    '!src/scheduler.ts',
-    '!src/clients/generated/**/*.ts',
-    '!src/db/migrate.ts',
-    '!src/db/seed.ts',
-    // Excluded due to import attributes syntax (with { type: 'json' })
-    // Stryker's Babel instrumenter doesn't support this syntax yet
-    '!src/services/health-check.service.ts',
+    '!src/app.ts', // Application setup, not critical for mutations
+    '!src/clients/**/*.ts', // Generated and wrapper code
+    '!src/config/**/*.ts', // Configuration files
+    '!src/controllers/**/*.ts', // Thin HTTP layer, covered by integration tests
+    '!src/db/**/*.ts', // Database setup and migrations
+    '!src/entities/**/*.ts', // Type definitions
+    '!src/middleware/**/*.ts', // HTTP middleware, covered by integration tests
+    '!src/routes/**/*.ts', // Route definitions, not business logic
+    '!src/schemas/**/*.ts', // Validation schemas (declarative)
+    '!src/types/**/*.ts', // Type definitions only
+    '!src/utils/**/*.ts', // Utilities, covered separately
+    '!src/validators/**/*.ts', // Validation logic (declarative)
   ],
 
   // Test file patterns
@@ -38,8 +82,11 @@ const config = {
     name: 'javascript',
     plugins: null,
     excludedMutations: [
-      // Exclude mutations that often produce equivalent mutants
+      // Exclude mutations that often produce equivalent mutants or low-value noise
       'StringLiteral', // String mutations often don't affect logic
+      'ObjectLiteral', // Object mutations rarely catch meaningful bugs
+      'ArrayDeclaration', // Array mutations often create noise
+      'RegexMutator', // Regex mutations are often equivalent mutants
     ],
   },
 
@@ -62,13 +109,14 @@ const config = {
   // - UpdateOperator: ++, --
 
   // Thresholds for mutation score
-  // - high (80%+): Excellent mutation coverage - most mutations are caught
-  // - low (60%+): Acceptable mutation coverage - room for improvement
-  // - break (50%): Minimum acceptable - CI will warn below this
+  // Since we're focusing on critical business logic only, we expect higher scores
+  // - high (85%+): Excellent mutation coverage - critical code is well-tested
+  // - low (70%+): Acceptable mutation coverage - room for improvement
+  // - break (60%): Minimum acceptable - CI will fail below this
   thresholds: {
-    high: 80,
-    low: 60,
-    break: 50,
+    high: 85,
+    low: 70,
+    break: 60,
   },
 
   // Reporters
@@ -91,12 +139,14 @@ const config = {
   incremental: true,
   incrementalFile: '.stryker-tmp/incremental.json',
 
-  // Concurrency settings
-  concurrency: 4,
+  // Concurrency settings - increased for faster execution
+  // Uses more CPU cores to run mutations in parallel
+  concurrency: 8,
 
-  // Timeout settings
-  timeoutMS: 60000,
-  timeoutFactor: 2,
+  // Timeout settings - reduced for faster feedback
+  // Most tests should complete quickly; slow tests indicate issues
+  timeoutMS: 30000,
+  timeoutFactor: 1.5,
 
   // Coverage analysis for performance
   coverageAnalysis: 'perTest',

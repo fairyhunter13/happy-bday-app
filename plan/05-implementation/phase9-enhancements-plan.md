@@ -33,6 +33,12 @@ Phase 9 addresses critical quality improvements identified by comprehensive audi
 6. **DRY Violations Remediation** - Fix 47 violations across repository
 7. **GitHub Secrets Automation** - Automated secret setup with gh CLI
 
+**Removed (Out of Scope - User Request)**:
+- OpenTelemetry integration (optional enhancement, requires additional infrastructure)
+- Distributed tracing (optional enhancement, requires OpenTelemetry)
+- Log aggregation setup (requires external ELK/CloudWatch services)
+- Performance regression automation (optional enhancement without clear ROI)
+
 ---
 
 ## 🎯 Success Criteria
@@ -224,7 +230,7 @@ tests/helpers/edge-case-factory.ts       # Test data factory
 1. Implement 100+ metrics (from 40% to 100% coverage)
 2. Create 6 comprehensive Grafana dashboards
 3. Configure 20+ alert rules with runbooks
-4. Optional: OpenTelemetry distributed tracing
+4. ~~Optional: OpenTelemetry distributed tracing~~ - Removed from scope
 
 #### Tasks
 
@@ -246,11 +252,11 @@ tests/helpers/edge-case-factory.ts       # Test data factory
 - [ ] Create Security dashboard
 - [ ] Create Cost Optimization dashboard
 
-**Week 7: Observability Stack (Optional)**
-- [ ] Set up OpenTelemetry Collector
-- [ ] Configure distributed tracing (Jaeger)
-- [ ] Set up Grafana Loki for logs
-- [ ] Integrate traces + logs + metrics
+**Week 7: Observability Stack (Removed - Out of Scope)**
+- ~~Set up OpenTelemetry Collector~~ - Removed: Optional enhancement
+- ~~Configure distributed tracing (Jaeger)~~ - Removed: Depends on OpenTelemetry, optional enhancement
+- ~~Set up Grafana Loki for logs~~ - Removed: Requires external infrastructure
+- ~~Integrate traces + logs + metrics~~ - Removed: Not required for core functionality
 
 #### Implementation Files
 

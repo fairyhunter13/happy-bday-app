@@ -18,7 +18,7 @@ async function main(): Promise<void> {
     // Log startup information
     logStartup();
 
-    // Start the server
+    // Start the server first (basic HTTP server)
     const app = await startServer();
 
     // Start system metrics collection
@@ -26,15 +26,24 @@ async function main(): Promise<void> {
     systemMetricsService.start();
     logger.info('System metrics collection started successfully');
 
-    // Initialize RabbitMQ connection (required by schedulers)
+    // Initialize RabbitMQ connection in background (non-blocking)
+    // This allows the server to start even if RabbitMQ is slow to connect
     logger.info('Initializing RabbitMQ connection...');
-    await initializeRabbitMQ();
-    logger.info('RabbitMQ connection established');
+    initializeRabbitMQ()
+      .then(() => {
+        logger.info('RabbitMQ connection established');
 
-    // Start schedulers
-    logger.info('Initializing CRON schedulers...');
-    await schedulerManager.start();
-    logger.info('CRON schedulers initialized successfully');
+        // Start schedulers after RabbitMQ is ready
+        logger.info('Initializing CRON schedulers...');
+        return schedulerManager.start();
+      })
+      .then(() => {
+        logger.info('CRON schedulers initialized successfully');
+      })
+      .catch((error) => {
+        logger.error({ error }, 'Failed to initialize RabbitMQ or schedulers');
+        logger.warn('Server will continue running but schedulers will not be active');
+      });
 
     // Graceful shutdown handlers
     const signals = ['SIGTERM', 'SIGINT', 'SIGUSR2'] as const;

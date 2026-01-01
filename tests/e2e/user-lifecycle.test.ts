@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { createTestServer, closeTestServer } from '../helpers/test-server.js';
-import { PostgresTestContainer, cleanDatabase } from '../helpers/testcontainers.js';
+import { PostgresTestContainer, cleanDatabase } from '../helpers/testcontainers-optimized.js';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { users } from '../../src/db/schema/users.js';

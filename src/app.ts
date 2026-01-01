@@ -315,9 +315,19 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
  * Start the Fastify server
  */
 export async function startServer(): Promise<FastifyInstance> {
+  logger.info('Creating Fastify application...');
   const app = await createApp();
+  logger.info('Fastify application created');
 
   try {
+    logger.info(
+      {
+        port: env.PORT,
+        host: env.HOST,
+      },
+      'Starting server...'
+    );
+
     await app.listen({
       port: env.PORT,
       host: env.HOST,
@@ -329,8 +339,9 @@ export async function startServer(): Promise<FastifyInstance> {
         host: env.HOST,
         env: env.NODE_ENV,
         docs: `http://${env.HOST}:${env.PORT}/docs`,
+        health: `http://${env.HOST}:${env.PORT}/health`,
       },
-      'Server started successfully'
+      'Server started successfully and ready to accept connections'
     );
 
     return app;

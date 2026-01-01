@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { TestEnvironment, waitFor, cleanDatabase, purgeQueues } from '../helpers/testcontainers.js';
+import {
+  TestEnvironment,
+  waitFor,
+  cleanDatabase,
+  purgeQueues,
+} from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';

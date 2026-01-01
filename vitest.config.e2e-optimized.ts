@@ -23,6 +23,18 @@ export default mergeConfig(
       // Only include e2e tests
       include: ['tests/e2e/**/*.test.ts'],
 
+      // Pass through CI environment variables to test processes
+      // CRITICAL: Tests need CI/GITHUB_ACTIONS to detect CI mode and use GitHub Actions services
+      env: {
+        NODE_ENV: 'test',
+        CI: process.env.CI || 'false',
+        GITHUB_ACTIONS: process.env.GITHUB_ACTIONS || 'false',
+        DATABASE_URL: process.env.DATABASE_URL || '',
+        RABBITMQ_URL: process.env.RABBITMQ_URL || '',
+        REDIS_URL: process.env.REDIS_URL || '',
+        API_URL: process.env.API_URL || 'http://localhost:3000',
+      },
+
       // Optimized timeout for e2e tests
       testTimeout: 90000, // Reduced from 120s to 90s (1.5 minutes)
       hookTimeout: 90000,
