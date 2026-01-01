@@ -27,22 +27,23 @@ export default mergeConfig(
       testTimeout: 45000, // Reduced from 60s to 45s
       hookTimeout: 45000,
 
-      // OPTIMIZATION 1: Improved parallelism
+      // OPTIMIZATION 1: Thread configuration
       poolOptions: {
         threads: {
-          // CI: Use 2 threads instead of 1 for faster execution
-          // Local: Use 4 threads for maximum speed
-          singleThread: false,
-          maxThreads: isCI ? 2 : 4, // Increased from 1/3 to 2/4
+          // CI: Use single thread to ensure test isolation
+          // Local: Use 4 threads for maximum speed with testcontainers
+          singleThread: isCI,
+          maxThreads: isCI ? 1 : 4,
           minThreads: 1,
         },
       },
 
       // OPTIMIZATION 2: Controlled file parallelism
-      // In CI: Allow 2 files in parallel with shared connection pool
-      // Local: Allow 3 files in parallel with testcontainers
-      fileParallelism: true,
-      maxConcurrency: isCI ? 2 : 3,
+      // IMPORTANT: Disabled in CI to prevent test interference
+      // Queue tests share the same PostgreSQL database and can interfere with each other
+      // when running in parallel (one test's beforeEach cleanup affects another test's data)
+      fileParallelism: !isCI,
+      maxConcurrency: isCI ? 1 : 3,
 
       // OPTIMIZATION 3: Sequence specific test patterns
       // Note: poolMatchGlobs was removed in Vitest 2.x, using sequence instead
