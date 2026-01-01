@@ -72,10 +72,13 @@ WORKDIR /app
 # Set environment
 ENV NODE_ENV=${NODE_ENV}
 
-# Apply security updates and remove unnecessary packages
+# Apply security updates, update npm to fix vulnerabilities, and remove unnecessary packages
+# npm update fixes: cross-spawn@7.0.3 -> 7.0.6, glob@10.4.2 -> 10.5.0+
 RUN apk update && \
     apk upgrade --no-cache && \
     apk add --no-cache dumb-init && \
+    npm install -g npm@latest && \
+    npm cache clean --force && \
     rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
 # Create non-root user for security
