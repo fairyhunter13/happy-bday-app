@@ -1,13 +1,16 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
 import baseConfig from './vitest.config.base';
 
+// Check if running in CI/CD environment
+const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
 /**
  * OPTIMIZED End-to-End Test Configuration
  *
  * Performance Optimizations:
- * - Increased pool worker threads for parallel test execution
+ * - Increased pool worker threads for parallel test execution (local only)
  * - Reduced timeouts while maintaining reliability
- * - Enabled test file parallelism with resource management
+ * - Sequential file execution in CI to prevent resource conflicts
  * - Added sequence setup to prevent resource conflicts
  * - Optimized retry and bail strategies
  *
@@ -24,17 +27,19 @@ export default mergeConfig(
       testTimeout: 90000, // Reduced from 120s to 90s (1.5 minutes)
       hookTimeout: 90000,
 
-      // OPTIMIZATION 1: Enable controlled parallelism for test FILES
-      // Run up to 2 test files in parallel to balance speed and resource usage
-      // Each file gets its own TestEnvironment with isolated containers
-      fileParallelism: true,
-      maxConcurrency: 2, // Limit concurrent test files to prevent resource exhaustion
+      // OPTIMIZATION 1: Controlled file parallelism
+      // IMPORTANT: Disabled in CI to prevent RabbitMQConnection singleton conflicts
+      // E2E tests share the same RabbitMQ connection singleton and can interfere
+      fileParallelism: !isCI,
+      maxConcurrency: isCI ? 1 : 2,
 
-      // OPTIMIZATION 2: Parallel execution within each test file
+      // OPTIMIZATION 2: Thread configuration
       poolOptions: {
         threads: {
-          singleThread: false, // Enable parallelism
-          maxThreads: 3, // Up to 3 threads per file
+          // CI: Use single thread to ensure test isolation
+          // Local: Allow parallelism with testcontainers
+          singleThread: isCI,
+          maxThreads: isCI ? 1 : 3,
           minThreads: 1,
         },
       },
