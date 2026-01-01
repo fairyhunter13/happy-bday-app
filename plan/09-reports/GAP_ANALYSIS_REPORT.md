@@ -124,10 +124,10 @@ This comprehensive gap analysis evaluates the current state of the Birthday Mess
 - ✅ **Hive Mind Swarm Analysis** - Deployed Queen coordinator with 8 specialized agents (researcher, coder, analyst, tester, architect, reviewer, optimizer, documenter)
 - ✅ **Implemented Actual RabbitMQ Health Check** - Fixed health-check.service.ts to use RabbitMQConnection.getInstance().healthCheck() instead of TODO placeholder
 - ✅ **Fixed Docker Container Structure Tests** - Updated docker-build.yml to properly fail on container structure test failures (removed silent `|| true`)
-- ✅ **Added 4 New Deployment Workflows** - Created cleanup.yml, deploy-dev.yml, deploy-staging.yml, deploy-production.yml (total: 13 workflows)
+- ✅ **Added Cleanup Workflow** - Created cleanup.yml for artifact/image cleanup (total: 10 workflows)
 - ✅ **Updated Master Plan Checklists** - Marked all phases complete, updated BullMQ → RabbitMQ references per ADR-003
 - ✅ **Consolidated Gap Analysis Documentation** - Synced completion percentages across 3 gap analysis files to 97%
-- ✅ **Final Documentation Sync** - Verified all statistics (992 tests, 59 suites, 268 metrics, 13 workflows)
+- ✅ **Final Documentation Sync** - Verified all statistics (992 tests, 59 suites, 268 metrics, 10 workflows)
 - ✅ **Created Session Summary** - Documented all hive mind findings and fixes
 
 ---
@@ -284,7 +284,7 @@ Per `plan/04-testing/testing-strategy.md`:
 
 ### Current State: 98%
 
-**Implemented Workflows:** (13 workflows)
+**Implemented Workflows:** (10 workflows)
 
 | Workflow | Status | Purpose | Frequency | Latest Changes |
 |----------|--------|---------|-----------|----------------|
@@ -297,10 +297,7 @@ Per `plan/04-testing/testing-strategy.md`:
 | **performance.yml** | ✅ Optimized | k6 load tests (CI mode) | Scheduled/manual | Session 8: CI mode detection |
 | **security.yml** | ✅ Hardened | npm audit, Snyk (conditional), scanning | Daily/PR | Session 8: Fixed Snyk conditional |
 | **sonar.yml** | ✅ Hardened | SonarCloud code quality analysis | PR/push to main | Session 8: Token validation |
-| **cleanup.yml** | ✅ NEW | Cleanup resources and artifacts | Manual | Session 9: Added |
-| **deploy-dev.yml** | ✅ NEW | Deploy to development environment | Manual | Session 9: Added |
-| **deploy-staging.yml** | ✅ NEW | Deploy to staging environment | Manual | Session 9: Added |
-| **deploy-production.yml** | ✅ NEW | Deploy to production environment | Manual | Session 9: Added |
+| **cleanup.yml** | ✅ NEW | Cleanup old artifacts and Docker images | Weekly/manual | Session 9: Added |
 
 **Session 8 CI/CD Impact:**
 - **Pipeline Success Rate:** 75% → 100% (78 consecutive successful runs)
@@ -1139,7 +1136,7 @@ All infrastructure components configured and documented.
 | **Testing** | Test Files | 46 | 40+ | ✅ Exceeded | - |
 | **Testing** | Total Tests | 460+ | 400+ | ✅ Exceeded | - |
 | **Testing** | Coverage | 81% | 80% | ✅ Met | - |
-| **CI/CD** | Workflows | 13 | 8+ | ✅ Exceeded | - |
+| **CI/CD** | Workflows | 10 | 8+ | ✅ Exceeded | - |
 | **CI/CD** | Build Time | < 10 min | < 15 min | ✅ Better | - |
 | **Monitoring** | Metrics Declared | 268 | 100+ | ✅ Exceeded | - |
 | **Monitoring** | Metrics Active | ~30 | 100+ | 🟡 -70 | High |
@@ -1386,10 +1383,10 @@ All infrastructure components configured and documented.
 - Performance: 20+ services
 - Production: 12 services
 
-**Workflows**: (13 GitHub Actions)
+**Workflows**: (10 GitHub Actions)
 - CI/CD: 6 workflows (ci, docker-build, mutation, performance, security, sonar)
 - Quality: 3 workflows (code-quality, openapi-validation, docs)
-- Deployment: 4 workflows (cleanup, deploy-dev, deploy-staging, deploy-production)
+- Maintenance: 1 workflow (cleanup)
 
 **Documentation**: (75+ files)
 - Core docs: 19 files
@@ -1443,7 +1440,7 @@ The Birthday Message Scheduler project has achieved **97% overall completion** a
 - ✅ Full infrastructure automation (Docker, CI/CD)
 - ✅ Performance targets exceeded (1M+ msg/day verified)
 - ✅ Security best practices (SOPS, Helmet, rate limiting)
-- ✅ 13 GitHub Actions workflows (all hardened)
+- ✅ 10 GitHub Actions workflows (all hardened)
 
 **Final Status:**
 - **Production Readiness**: ✅ COMPLETE for local/CI environments
@@ -1461,7 +1458,7 @@ The Birthday Message Scheduler project has achieved **97% overall completion** a
 **Data Sources**:
 - Source code inspection (85 TS files)
 - Test execution results (992 tests, 59 suites)
-- CI/CD workflow analysis (13 workflows)
+- CI/CD workflow analysis (10 workflows)
 - Documentation review (75+ files)
 - Metrics service analysis (268 metrics)
 - Package.json scripts (69 commands)

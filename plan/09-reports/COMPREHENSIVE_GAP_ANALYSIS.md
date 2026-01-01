@@ -33,7 +33,7 @@ This comprehensive gap analysis compares the current implementation state agains
 - ✅ RabbitMQ Quorum Queues (zero data loss guarantee)
 - ✅ Strategy Pattern for message types (birthday, anniversary, custom)
 - ✅ Comprehensive test suite (992 passing tests, 59 suites)
-- ✅ Complete CI/CD pipeline (13 workflows)
+- ✅ Complete CI/CD pipeline (10 workflows)
 - ✅ Monitoring infrastructure (268 metrics, 5 dashboards, 40+ alert rules)
 - ✅ SOPS secret management operational
 - ✅ OpenAPI 3.1 documentation with GitHub Pages deployment
@@ -83,7 +83,7 @@ This comprehensive gap analysis compares the current implementation state agains
 | **Test Suites** | 59 suites | Vitest test suites |
 | **Test Cases** | 992 passing | 209 skipped in CI |
 | **Test Assertions** | ~4,795 | Estimated from test runs |
-| **GitHub Actions Workflows** | 13 workflows | `.github/workflows/` |
+| **GitHub Actions Workflows** | 10 workflows | `.github/workflows/` |
 | **Documentation Files** | 13 docs | `docs/` directory (.md files) |
 | **Planning Documents** | 60+ docs | `plan/` directory |
 | **Grafana Dashboards** | 16 files | `grafana/` directory |

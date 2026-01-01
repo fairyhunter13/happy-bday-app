@@ -129,13 +129,18 @@ This document outlines the comprehensive CI/CD pipeline architecture for the Bir
 .github/
 └── workflows/
     ├── ci.yml                      # Main CI pipeline
-    ├── deploy-dev.yml              # Dev deployment
-    ├── deploy-staging.yml          # Staging deployment
-    ├── deploy-production.yml       # Production deployment
-    ├── performance.yml             # Performance tests (manual trigger)
-    ├── security-scan.yml           # Security scanning
-    └── cleanup.yml                 # Cleanup old artifacts
+    ├── code-quality.yml            # ESLint, Prettier, jscpd
+    ├── docker-build.yml            # Docker image build & push
+    ├── docs.yml                    # GitHub Pages documentation
+    ├── mutation.yml                # Stryker mutation testing
+    ├── openapi-validation.yml      # OpenAPI spec validation
+    ├── performance.yml             # k6 load tests (manual trigger)
+    ├── security.yml                # npm audit, Snyk scanning
+    ├── sonar.yml                   # SonarCloud analysis
+    └── cleanup.yml                 # Cleanup old artifacts/images
 ```
+
+> **Note:** This project is scoped for local/CI environments only. Cloud deployment workflows (deploy-dev, deploy-staging, deploy-production) are intentionally not included per `docs/ARCHITECTURE_SCOPE.md`.
 
 ### Complete CI Workflow (ci.yml)
 
@@ -991,9 +996,16 @@ performance-regression:
 
 ## Deployment Strategies
 
-### Deployment Workflow Design
+> **⚠️ REFERENCE DESIGN ONLY:** The deployment workflows described in this section are reference designs for future cloud deployment. This project is currently scoped for **local/CI environments only** per `docs/ARCHITECTURE_SCOPE.md`. The following workflows are NOT implemented:
+> - deploy-dev.yml
+> - deploy-staging.yml
+> - deploy-production.yml
+>
+> For local development, use `docker-compose.yml`. For production simulation, use `docker-compose.prod.yml`.
 
-**Development Deployment (deploy-dev.yml):**
+### Deployment Workflow Design (Reference)
+
+**Development Deployment (deploy-dev.yml) - NOT IMPLEMENTED:**
 ```yaml
 name: Deploy to Development
 
@@ -1034,7 +1046,7 @@ jobs:
           API_BASE_URL: https://dev.birthday-app.example.com
 ```
 
-**Staging Deployment (deploy-staging.yml):**
+**Staging Deployment (deploy-staging.yml) - NOT IMPLEMENTED:**
 ```yaml
 name: Deploy to Staging
 
@@ -1056,7 +1068,7 @@ jobs:
           kubectl rollout status deployment/birthday-api -n staging
 ```
 
-**Production Deployment (deploy-production.yml):**
+**Production Deployment (deploy-production.yml) - NOT IMPLEMENTED:**
 ```yaml
 name: Deploy to Production
 
@@ -1100,7 +1112,9 @@ jobs:
 
 ## Environment Management
 
-### GitHub Environments Configuration
+> **⚠️ REFERENCE DESIGN ONLY:** GitHub Environments described below are reference designs for future cloud deployment, not currently implemented.
+
+### GitHub Environments Configuration (Reference)
 
 ```yaml
 environments:
