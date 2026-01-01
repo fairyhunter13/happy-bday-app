@@ -49,6 +49,9 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage || true
 
+      - name: Install jq and bc for coverage tracking
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+
       - name: Update coverage history
         run: |
           chmod +x scripts/coverage/update-history.sh

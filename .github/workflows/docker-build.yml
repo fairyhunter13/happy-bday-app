@@ -134,7 +134,7 @@ jobs:
             - name: 'App files exist'
               path: '/app/dist'
               shouldExist: true
-              permissions: '-rwxr-xr-x'
+              permissions: 'drwxr-xr-x'
 
             - name: 'node_modules exist'
               path: '/app/node_modules'
