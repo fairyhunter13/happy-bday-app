@@ -145,5 +145,9 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "esbuild": "^0.27.2",
+    "tmp": "^0.2.4"
   }
 }
