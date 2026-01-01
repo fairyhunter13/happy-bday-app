@@ -23,6 +23,8 @@
     "**/docs/**",
     "**/plan/**",
     "**/backups/**",
+    "**/grafana/**",
+    "**/prometheus/**",
     "**/*.gen.ts",
     "**/*.gen.js"
   ],

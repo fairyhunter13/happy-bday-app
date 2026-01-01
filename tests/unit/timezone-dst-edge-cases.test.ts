@@ -665,7 +665,12 @@ describe('Timezone DST Edge Cases', () => {
       const birthday = new Date('1990-03-09');
 
       // Calculate for multiple timezones (west to east for proper ordering)
-      const zones = ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'];
+      const zones = [
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Los_Angeles',
+      ];
 
       const results = zones.map((timezone) => {
         const result = service.calculateSendTime(birthday, timezone);

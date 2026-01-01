@@ -25,11 +25,7 @@ import {
   QUEUES,
   RETRY_CONFIG,
 } from '../../../src/queue/index.js';
-import {
-  MessageType,
-  MessageStatus,
-  messageLogs,
-} from '../../../src/db/schema/message-logs.js';
+import { MessageType, MessageStatus, messageLogs } from '../../../src/db/schema/message-logs.js';
 import { users } from '../../../src/db/schema/users.js';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { eq } from 'drizzle-orm';
@@ -263,12 +259,9 @@ describe('Worker Error Recovery Integration Tests', () => {
       const channel = connection.getPublisherChannel();
       const malformedPayload = '{ invalid json }';
 
-      await channel.publish(
-        '',
-        QUEUES.BIRTHDAY_MESSAGES,
-        Buffer.from(malformedPayload),
-        { persistent: true }
-      );
+      await channel.publish('', QUEUES.BIRTHDAY_MESSAGES, Buffer.from(malformedPayload), {
+        persistent: true,
+      });
 
       // Wait for processing
       await new Promise((resolve) => setTimeout(resolve, 2000));

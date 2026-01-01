@@ -795,9 +795,7 @@ describe('MessageRescheduleService', () => {
     });
 
     it('should propagate critical database errors during user fetch', async () => {
-      mockUserRepo.findById.mockRejectedValue(
-        new Error('FATAL: database connection terminated')
-      );
+      mockUserRepo.findById.mockRejectedValue(new Error('FATAL: database connection terminated'));
 
       await expect(
         service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' })
@@ -809,9 +807,7 @@ describe('MessageRescheduleService', () => {
     it('should handle database error wrapping correctly', async () => {
       mockMessageLogRepo.findAll.mockRejectedValue(new Error('Connection timeout'));
 
-      const error = await service
-        .deleteFutureMessagesForUser(mockUser.id)
-        .catch((e) => e);
+      const error = await service.deleteFutureMessagesForUser(mockUser.id).catch((e) => e);
 
       expect(error).toBeInstanceOf(DatabaseError);
       expect(error.message).toContain('Failed to delete future messages');
@@ -857,26 +853,18 @@ describe('MessageRescheduleService', () => {
 
   describe('getMessageStats - additional error paths', () => {
     it('should wrap database errors correctly', async () => {
-      mockMessageLogRepo.findAll.mockRejectedValue(
-        new Error('Query execution failed')
-      );
+      mockMessageLogRepo.findAll.mockRejectedValue(new Error('Query execution failed'));
 
-      const error = await service
-        .getMessageStats(mockUser.id)
-        .catch((e) => e);
+      const error = await service.getMessageStats(mockUser.id).catch((e) => e);
 
       expect(error).toBeInstanceOf(DatabaseError);
       expect(error.message).toContain('Failed to get message stats');
     });
 
     it('should handle connection timeout during stats retrieval', async () => {
-      mockMessageLogRepo.findAll.mockRejectedValue(
-        new Error('Connection timeout after 30s')
-      );
+      mockMessageLogRepo.findAll.mockRejectedValue(new Error('Connection timeout after 30s'));
 
-      await expect(
-        service.getMessageStats(mockUser.id)
-      ).rejects.toThrow(DatabaseError);
+      await expect(service.getMessageStats(mockUser.id)).rejects.toThrow(DatabaseError);
     });
   });
 

@@ -680,7 +680,10 @@ describe('SchedulerService', () => {
 
     it('should handle scheduler restart during DST transition period', async () => {
       // Simulate messages already scheduled before DST
-      const existingMessage = { ...mockMessageLog, scheduledSendTime: new Date('2025-03-09T14:00:00Z') };
+      const existingMessage = {
+        ...mockMessageLog,
+        scheduledSendTime: new Date('2025-03-09T14:00:00Z'),
+      };
       mockMessageLogRepo.checkIdempotency.mockResolvedValue(existingMessage);
 
       const userOnDSTDate = {
@@ -701,8 +704,16 @@ describe('SchedulerService', () => {
     it('should maintain message ordering across DST boundaries', async () => {
       // Messages from before, during, and after DST transition
       const messages = [
-        { ...mockMessageLog, id: 'msg-before', scheduledSendTime: new Date('2025-03-08T14:00:00Z') },
-        { ...mockMessageLog, id: 'msg-during', scheduledSendTime: new Date('2025-03-09T13:00:00Z') }, // EDT (1 hour earlier UTC)
+        {
+          ...mockMessageLog,
+          id: 'msg-before',
+          scheduledSendTime: new Date('2025-03-08T14:00:00Z'),
+        },
+        {
+          ...mockMessageLog,
+          id: 'msg-during',
+          scheduledSendTime: new Date('2025-03-09T13:00:00Z'),
+        }, // EDT (1 hour earlier UTC)
         { ...mockMessageLog, id: 'msg-after', scheduledSendTime: new Date('2025-03-10T13:00:00Z') },
       ];
       mockMessageLogRepo.findScheduled.mockResolvedValue(messages);
@@ -772,9 +783,10 @@ describe('SchedulerService', () => {
       await service.preCalculateTodaysBirthdays();
 
       // Capture the idempotency key from the first call
-      const firstCallArgs = mockIdempotencyService.generateKey.mock.calls[
-        mockIdempotencyService.generateKey.mock.calls.length - 1
-      ];
+      const firstCallArgs =
+        mockIdempotencyService.generateKey.mock.calls[
+          mockIdempotencyService.generateKey.mock.calls.length - 1
+        ];
 
       // Reset mocks for second call
       vi.clearAllMocks();
@@ -785,9 +797,10 @@ describe('SchedulerService', () => {
       await service.preCalculateTodaysBirthdays();
 
       // Capture the idempotency key from the second call
-      const secondCallArgs = mockIdempotencyService.generateKey.mock.calls[
-        mockIdempotencyService.generateKey.mock.calls.length - 1
-      ];
+      const secondCallArgs =
+        mockIdempotencyService.generateKey.mock.calls[
+          mockIdempotencyService.generateKey.mock.calls.length - 1
+        ];
 
       // For the same user, birthday, and timezone, the arguments should be consistent
       expect(firstCallArgs[0]).toEqual(secondCallArgs[0]); // userId
