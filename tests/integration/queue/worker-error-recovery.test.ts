@@ -337,13 +337,21 @@ describe('Worker Error Recovery Integration Tests', () => {
       const messageLog = await createTestMessageLog(user.id);
 
       let processingAttempts = 0;
+      let ourMessageProcessed = false;
 
       consumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          processingAttempts++;
-          // Simulate persistent validation error
-          throw new Error('Invalid message format - permanent error');
+          // Only count our specific message, ignore leftover garbage
+          if (job.messageId === messageLog.id) {
+            processingAttempts++;
+            ourMessageProcessed = true;
+            console.log(`[poison-pill-test] Processing our message, attempt ${processingAttempts}`);
+            // Simulate persistent validation error (matches /invalid/i pattern)
+            throw new Error('Invalid message format - permanent error');
+          }
+          // For other messages (leftover garbage), acknowledge silently
+          console.log(`[poison-pill-test] Ignoring leftover message: ${job.messageId}`);
         },
       });
 
@@ -360,13 +368,14 @@ describe('Worker Error Recovery Integration Tests', () => {
         timestamp: Date.now(),
       };
 
+      console.log(`[poison-pill-test] Publishing message with ID: ${messageLog.id}`);
       await publisher.publishMessage(job);
 
       // Poll for message in DLQ with timeout
       const channel = connection.getConsumerChannel();
       let foundOurMessage = false;
       const startTime = Date.now();
-      const maxWaitTime = 20000; // 20 seconds max (increased for CI reliability)
+      const maxWaitTime = 10000; // 10 seconds max (must be less than test timeout of 20s)
 
       while (!foundOurMessage && Date.now() - startTime < maxWaitTime) {
         // Try to find our message in the DLQ
@@ -374,25 +383,37 @@ describe('Worker Error Recovery Integration Tests', () => {
           const dlqMessage = await channel.get(QUEUES.BIRTHDAY_DLQ, { noAck: false });
           if (dlqMessage === false) break;
 
-          const content = JSON.parse(dlqMessage.content.toString());
-          if (content.messageId === messageLog.id) {
-            foundOurMessage = true;
-            channel.ack(dlqMessage);
-            break;
-          } else {
-            // Ack and continue looking
+          try {
+            const content = JSON.parse(dlqMessage.content.toString());
+            if (content.messageId === messageLog.id) {
+              foundOurMessage = true;
+              console.log(
+                `[poison-pill-test] Found our message in DLQ after ${Date.now() - startTime}ms`
+              );
+              channel.ack(dlqMessage);
+              break;
+            } else {
+              // Ack and continue looking (leftover garbage)
+              channel.ack(dlqMessage);
+            }
+          } catch {
+            // Malformed message, just ack it
             channel.ack(dlqMessage);
           }
         }
 
         if (!foundOurMessage) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 300));
         }
       }
 
+      console.log(
+        `[poison-pill-test] Result: processed=${ourMessageProcessed}, attempts=${processingAttempts}, foundInDLQ=${foundOurMessage}`
+      );
+      expect(ourMessageProcessed).toBe(true);
       expect(processingAttempts).toBeGreaterThanOrEqual(1);
       expect(foundOurMessage).toBe(true);
-    }, 15000);
+    }, 20000);
   });
 
   describe('2. Worker Crash Simulation and Restart', () => {

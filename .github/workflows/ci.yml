@@ -409,8 +409,9 @@ jobs:
           for i in {1..30}; do
             echo "Attempt $i/30 at $(date +%H:%M:%S)..."
 
-            # Try curl without silent mode to see errors
-            RESPONSE=$(curl -s --max-time 5 http://localhost:3000/health 2>&1) || CURL_EXIT=$?
+            # Use 127.0.0.1 instead of localhost to avoid IPv6 resolution issues
+            # Server listens on 0.0.0.0 (IPv4 only)
+            RESPONSE=$(curl -4 -s --max-time 5 http://127.0.0.1:3000/health 2>&1) || CURL_EXIT=$?
             echo "Curl response: $RESPONSE"
             echo "Curl exit code: ${CURL_EXIT:-0}"
 
@@ -720,8 +721,9 @@ jobs:
           for i in {1..30}; do
             echo "Attempt $i/30 at $(date +%H:%M:%S)..."
 
-            # Try curl without silent mode to see errors
-            RESPONSE=$(curl -s --max-time 5 http://localhost:3000/health 2>&1) || CURL_EXIT=$?
+            # Use 127.0.0.1 instead of localhost to avoid IPv6 resolution issues
+            # Server listens on 0.0.0.0 (IPv4 only)
+            RESPONSE=$(curl -4 -s --max-time 5 http://127.0.0.1:3000/health 2>&1) || CURL_EXIT=$?
             echo "Curl response: $RESPONSE"
             echo "Curl exit code: ${CURL_EXIT:-0}"
 
