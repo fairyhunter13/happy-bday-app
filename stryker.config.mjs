@@ -106,6 +106,7 @@ const config = {
     '.stryker-tmp',
     'reports',
     'src/clients/generated',
+    'drizzle', // SQL migration files - Stryker EISDIR fix
   ],
 
   // Clear text reporter options

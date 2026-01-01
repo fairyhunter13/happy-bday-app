@@ -309,8 +309,12 @@ export class TestEnvironment {
     this.rabbitmqConnectionString = ciStrings.rabbitmq;
     this.redisConnectionString = ciStrings.redis;
 
-    console.log(`[TestEnvironment] PostgreSQL: ${this.postgresConnectionString.replace(/:[^:@]+@/, ':***@')}`);
-    console.log(`[TestEnvironment] RabbitMQ: ${this.rabbitmqConnectionString.replace(/:[^:@]+@/, ':***@')}`);
+    console.log(
+      `[TestEnvironment] PostgreSQL: ${this.postgresConnectionString.replace(/:[^:@]+@/, ':***@')}`
+    );
+    console.log(
+      `[TestEnvironment] RabbitMQ: ${this.rabbitmqConnectionString.replace(/:[^:@]+@/, ':***@')}`
+    );
     console.log(`[TestEnvironment] Redis: ${this.redisConnectionString}`);
 
     // Create pool for CI database with minimal connections

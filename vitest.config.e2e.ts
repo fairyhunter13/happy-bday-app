@@ -38,16 +38,11 @@ export default mergeConfig(
         },
       },
 
-      // Coverage - NO individual thresholds for e2e tests
-      // Coverage IS collected and merged in CI coverage-report job
-      // Focus on flow validity; thresholds enforced on merged coverage
+      // Coverage - DISABLED for E2E tests
+      // Only unit tests collect coverage (faster CI, clearer metrics)
+      // E2E tests focus on flow validity, not coverage
       coverage: {
-        thresholds: {
-          lines: 0,
-          functions: 0,
-          branches: 0,
-          statements: 0,
-        },
+        enabled: false,
       },
     },
   })

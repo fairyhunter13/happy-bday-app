@@ -91,8 +91,12 @@ describe('Worker Error Recovery Integration Tests', () => {
     if (usingCI) {
       const ciStrings = getCIConnectionStrings();
       rabbitMQUrl = ciStrings.rabbitmq;
-      console.log(`[worker-error-recovery] RabbitMQ URL: ${rabbitMQUrl.replace(/:[^:@]+@/, ':***@')}`);
-      console.log(`[worker-error-recovery] PostgreSQL URL: ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`);
+      console.log(
+        `[worker-error-recovery] RabbitMQ URL: ${rabbitMQUrl.replace(/:[^:@]+@/, ':***@')}`
+      );
+      console.log(
+        `[worker-error-recovery] PostgreSQL URL: ${ciStrings.postgres.replace(/:[^:@]+@/, ':***@')}`
+      );
 
       pgClient = postgres(ciStrings.postgres, {
         max: 3,
@@ -118,7 +122,9 @@ describe('Worker Error Recovery Integration Tests', () => {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Failed to connect to PostgreSQL after all attempts: ${errorMessage}`);
           }
-          console.log(`[worker-error-recovery] Waiting for PostgreSQL (${retries} retries left)...`);
+          console.log(
+            `[worker-error-recovery] Waiting for PostgreSQL (${retries} retries left)...`
+          );
           await new Promise((resolve) => setTimeout(resolve, delay));
           delay = Math.min(delay * 1.5, 5000);
         }
