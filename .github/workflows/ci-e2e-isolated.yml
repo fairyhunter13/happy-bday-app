@@ -158,7 +158,6 @@ jobs:
           REDIS_URL: redis://localhost:6379
           NODE_ENV: test
           LOG_LEVEL: ${{ env.DEBUG == 'true' && 'debug' || 'info' }}
-        continue-on-error: true
 
       - name: Debug - Show queues after test
         if: env.DEBUG == 'true'

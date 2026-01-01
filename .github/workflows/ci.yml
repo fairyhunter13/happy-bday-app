@@ -940,14 +940,14 @@ jobs:
       - name: Download base coverage (from main branch)
         if: github.event_name == 'pull_request'
         id: download-base-coverage
-        continue-on-error: true
         run: |
-          # Try to download coverage from main branch
-          gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt
-          if [ -s run-id.txt ]; then
+          # Try to download coverage from main branch (best effort, don't fail workflow)
+          set +e  # Don't exit on error for this optional step
+          gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
+          if [ -s run-id.txt ] && [ "$(cat run-id.txt)" != "null" ]; then
             RUN_ID=$(cat run-id.txt)
             echo "Found run ID: $RUN_ID"
-            gh run download "$RUN_ID" --name coverage-unit --dir base-coverage || echo "Failed to download base coverage"
+            gh run download "$RUN_ID" --name coverage-unit --dir base-coverage 2>/dev/null
             if [ -f base-coverage/coverage-summary.json ]; then
               echo "base_coverage_exists=true" >> $GITHUB_OUTPUT
             else
@@ -957,6 +957,7 @@ jobs:
             echo "No successful run found on main branch"
             echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
           fi
+          set -e  # Re-enable exit on error
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
