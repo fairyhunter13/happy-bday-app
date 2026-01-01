@@ -3,6 +3,11 @@ name: SonarCloud
 # Required GitHub Secrets:
 # - SONAR_TOKEN (required): SonarCloud authentication token
 # Setup: Get token from https://sonarcloud.io/account/security and run 'gh secret set SONAR_TOKEN'
+#
+# IMPORTANT: Disable Automatic Analysis in SonarCloud
+# 1. Go to: https://sonarcloud.io/project/analysis_method?id=fairyhunter13_happy-bday-app
+# 2. Under "SonarCloud Automatic Analysis", click "Disable"
+# 3. This allows CI-triggered analysis to work without conflict
 
 on:
   push:
