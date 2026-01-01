@@ -58,12 +58,14 @@ describe('E2E: Complete Birthday Message Flow', () => {
 
   afterAll(async () => {
     // Stop worker
-    if (worker.isRunning()) {
+    if (worker?.isRunning()) {
       await worker.stop();
     }
 
     // Teardown test environment
-    await env.teardown();
+    if (env) {
+      await env.teardown();
+    }
   }, 60000);
 
   beforeEach(async () => {
