@@ -1,0 +1,112 @@
+# ========================================
+# Prometheus Configuration
+# Birthday Message Scheduler
+# ========================================
+# Scrapes metrics from the Birthday Scheduler application
+# and loads alert rules from the prometheus/rules directory
+
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'birthday-scheduler-dev'
+    environment: 'development'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - 'alertmanager:9093'
+
+# Load alert rules from mounted directory
+rule_files:
+  - '/etc/prometheus/rules/*.yml'
+  - '/etc/prometheus/rules/*.yaml'
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          namespace: 'monitoring'
+
+  # Birthday Scheduler Application
+  # Replace 'birthday-app:3000' with your actual application service and metrics port
+  - job_name: 'birthday-scheduler-api'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          # Update this to your application's host:port
+          # For docker-compose: use service name
+          # Example: ['birthday-app-api:3000']
+          - 'host.docker.internal:3000'  # For local development
+        labels:
+          service: 'birthday-scheduler-api'
+          namespace: 'production'
+          component: 'api'
+
+  # Birthday Scheduler Workers
+  - job_name: 'birthday-scheduler-workers'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+          # Update with your worker service endpoints
+          # Example: ['birthday-worker-1:3001', 'birthday-worker-2:3001']
+          - 'host.docker.internal:3001'  # For local development
+        labels:
+          service: 'birthday-scheduler-worker'
+          namespace: 'production'
+          component: 'worker'
+
+  # PostgreSQL Exporter (optional - if using postgres_exporter)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+  #       labels:
+  #         service: 'postgres'
+  #         namespace: 'production'
+
+  # RabbitMQ Metrics (optional - if RabbitMQ prometheus plugin is enabled)
+  # - job_name: 'rabbitmq'
+  #   static_configs:
+  #     - targets: ['rabbitmq:15692']
+  #       labels:
+  #         service: 'rabbitmq'
+  #         namespace: 'production'
+
+  # Redis Exporter (optional - if using redis_exporter)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+  #       labels:
+  #         service: 'redis'
+  #         namespace: 'production'
+
+  # Node Exporter (optional - for host metrics)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         namespace: 'infrastructure'
+
+# Remote write configuration (optional - for long-term storage)
+# remote_write:
+#   - url: "http://thanos-receiver:19291/api/v1/receive"
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 50
+#       min_shards: 1
+#       max_samples_per_send: 5000
+#       batch_send_deadline: 5s
+#       min_backoff: 30ms
+#       max_backoff: 100ms

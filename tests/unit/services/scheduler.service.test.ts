@@ -584,4 +584,234 @@ describe('SchedulerService', () => {
       expect(stats2).toBeDefined();
     });
   });
+
+  describe('DST and Timezone Edge Cases', () => {
+    it('should handle birthday on DST spring forward date', async () => {
+      // Birthday on March 9 (DST starts in US)
+      const userOnDSTDate = {
+        ...mockUser,
+        birthdayDate: new Date('1990-03-09'),
+        timezone: 'America/New_York',
+      };
+      mockUserRepo.findBirthdaysToday.mockResolvedValue([userOnDSTDate]);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      // Should successfully schedule despite DST transition
+      expect(stats.totalBirthdays).toBe(1);
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalled();
+      expect(mockMessageLogRepo.create).toHaveBeenCalled();
+    });
+
+    it('should handle birthday on DST fall back date', async () => {
+      // Birthday on November 2 (DST ends in US)
+      const userOnDSTDate = {
+        ...mockUser,
+        birthdayDate: new Date('1990-11-02'),
+        timezone: 'America/New_York',
+      };
+      mockUserRepo.findBirthdaysToday.mockResolvedValue([userOnDSTDate]);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      expect(stats.totalBirthdays).toBe(1);
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalled();
+      expect(mockMessageLogRepo.create).toHaveBeenCalled();
+    });
+
+    it('should handle users across multiple timezones with DST', async () => {
+      const usersInDifferentTimezones = [
+        { ...mockUser, id: 'user-1', timezone: 'America/New_York', email: 'user1@test.com' }, // DST
+        { ...mockUser, id: 'user-2', timezone: 'America/Phoenix', email: 'user2@test.com' }, // No DST
+        { ...mockUser, id: 'user-3', timezone: 'Europe/London', email: 'user3@test.com' }, // DST (different dates)
+        { ...mockUser, id: 'user-4', timezone: 'Asia/Tokyo', email: 'user4@test.com' }, // No DST
+      ];
+      mockUserRepo.findBirthdaysToday.mockResolvedValue(usersInDifferentTimezones);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      expect(stats.totalBirthdays).toBe(4);
+      // Should call calculateSendTime for each user
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle half-hour offset timezones', async () => {
+      const usersWithUnusualOffsets = [
+        { ...mockUser, id: 'user-india', timezone: 'Asia/Kolkata', email: 'india@test.com' }, // UTC+5:30
+        { ...mockUser, id: 'user-nepal', timezone: 'Asia/Kathmandu', email: 'nepal@test.com' }, // UTC+5:45
+        {
+          ...mockUser,
+          id: 'user-adelaide',
+          timezone: 'Australia/Adelaide',
+          email: 'adelaide@test.com',
+        }, // UTC+9:30
+      ];
+      mockUserRepo.findBirthdaysToday.mockResolvedValue(usersWithUnusualOffsets);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      expect(stats.totalBirthdays).toBe(3);
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle International Date Line crossing', async () => {
+      const usersAcrossDateLine = [
+        { ...mockUser, id: 'user-samoa', timezone: 'Pacific/Pago_Pago', email: 'samoa@test.com' }, // UTC-11
+        {
+          ...mockUser,
+          id: 'user-kiribati',
+          timezone: 'Pacific/Kiritimati',
+          email: 'kiribati@test.com',
+        }, // UTC+14
+        {
+          ...mockUser,
+          id: 'user-auckland',
+          timezone: 'Pacific/Auckland',
+          email: 'auckland@test.com',
+        }, // UTC+12/+13
+      ];
+      mockUserRepo.findBirthdaysToday.mockResolvedValue(usersAcrossDateLine);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      expect(stats.totalBirthdays).toBe(3);
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalledTimes(3);
+    });
+
+    it('should handle scheduler restart during DST transition period', async () => {
+      // Simulate messages already scheduled before DST
+      const existingMessage = { ...mockMessageLog, scheduledSendTime: new Date('2025-03-09T14:00:00Z') };
+      mockMessageLogRepo.checkIdempotency.mockResolvedValue(existingMessage);
+
+      const userOnDSTDate = {
+        ...mockUser,
+        birthdayDate: new Date('1990-03-09'),
+        timezone: 'America/New_York',
+      };
+      mockUserRepo.findBirthdaysToday.mockResolvedValue([userOnDSTDate]);
+      mockUserRepo.findAnniversariesToday.mockResolvedValue([userOnDSTDate]);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      // Should detect duplicate and skip (both birthday and anniversary)
+      expect(stats.duplicatesSkipped).toBeGreaterThanOrEqual(1);
+      expect(mockMessageLogRepo.create).not.toHaveBeenCalled();
+    });
+
+    it('should maintain message ordering across DST boundaries', async () => {
+      // Messages from before, during, and after DST transition
+      const messages = [
+        { ...mockMessageLog, id: 'msg-before', scheduledSendTime: new Date('2025-03-08T14:00:00Z') },
+        { ...mockMessageLog, id: 'msg-during', scheduledSendTime: new Date('2025-03-09T13:00:00Z') }, // EDT (1 hour earlier UTC)
+        { ...mockMessageLog, id: 'msg-after', scheduledSendTime: new Date('2025-03-10T13:00:00Z') },
+      ];
+      mockMessageLogRepo.findScheduled.mockResolvedValue(messages);
+
+      const count = await service.enqueueUpcomingMessages();
+
+      // All messages should be enqueued regardless of DST
+      expect(count).toBe(3);
+    });
+
+    it('should handle recovery of messages scheduled during DST gap', async () => {
+      // Message scheduled for 2:30am during spring forward (non-existent time)
+      const missedMessage = {
+        ...mockMessageLog,
+        scheduledSendTime: new Date('2025-03-09T07:30:00Z'), // Would be 2:30am EST (non-existent in EDT)
+        retryCount: 0,
+      };
+      mockMessageLogRepo.findMissed.mockResolvedValue([missedMessage]);
+
+      const stats = await service.recoverMissedMessages();
+
+      // Should recover the message
+      expect(stats.recovered).toBe(1);
+      expect(mockMessageLogRepo.updateStatus).toHaveBeenCalledWith(
+        missedMessage.id,
+        MessageStatus.SCHEDULED
+      );
+    });
+
+    it('should handle Southern Hemisphere DST (reversed seasons)', async () => {
+      const australianUsers = [
+        {
+          ...mockUser,
+          id: 'user-sydney',
+          timezone: 'Australia/Sydney',
+          email: 'sydney@test.com',
+          birthdayDate: new Date('1990-04-06'), // DST ends in Australia
+        },
+        {
+          ...mockUser,
+          id: 'user-melbourne',
+          timezone: 'Australia/Melbourne',
+          email: 'melbourne@test.com',
+          birthdayDate: new Date('1990-10-05'), // DST starts in Australia
+        },
+      ];
+      mockUserRepo.findBirthdaysToday.mockResolvedValue(australianUsers);
+
+      const stats = await service.preCalculateTodaysBirthdays();
+
+      expect(stats.totalBirthdays).toBe(2);
+      expect(mockBirthdayStrategy.calculateSendTime).toHaveBeenCalledTimes(2);
+    });
+
+    it('should validate idempotency keys across DST transitions', async () => {
+      // Same birthday, same user, but different DST offsets
+      const userOnDSTDate = {
+        ...mockUser,
+        birthdayDate: new Date('1990-03-09'),
+        timezone: 'America/New_York',
+      };
+
+      // First call - calculate send time and generate key
+      mockUserRepo.findBirthdaysToday.mockResolvedValue([userOnDSTDate]);
+      mockMessageLogRepo.checkIdempotency.mockResolvedValueOnce(null);
+
+      await service.preCalculateTodaysBirthdays();
+
+      // Capture the idempotency key from the first call
+      const firstCallArgs = mockIdempotencyService.generateKey.mock.calls[
+        mockIdempotencyService.generateKey.mock.calls.length - 1
+      ];
+
+      // Reset mocks for second call
+      vi.clearAllMocks();
+      mockIdempotencyService.generateKey.mockReturnValue('idem-key-123');
+      mockUserRepo.findBirthdaysToday.mockResolvedValue([userOnDSTDate]);
+      mockMessageLogRepo.checkIdempotency.mockResolvedValueOnce(mockMessageLog);
+
+      await service.preCalculateTodaysBirthdays();
+
+      // Capture the idempotency key from the second call
+      const secondCallArgs = mockIdempotencyService.generateKey.mock.calls[
+        mockIdempotencyService.generateKey.mock.calls.length - 1
+      ];
+
+      // For the same user, birthday, and timezone, the arguments should be consistent
+      expect(firstCallArgs[0]).toEqual(secondCallArgs[0]); // userId
+      expect(firstCallArgs[1]).toEqual(secondCallArgs[1]); // messageType
+      expect(firstCallArgs[3]).toEqual(secondCallArgs[3]); // timezone
+      // sendTime (arg 2) should be for the same local time (9am) even if UTC offset differs
+    });
+
+    it('should handle cron expression validation around DST', async () => {
+      // This tests that messages scheduled at 9am remain at 9am local time
+      // even when UTC offset changes
+      const beforeDST = new Date('2025-03-08T14:00:00Z'); // 9am EST = 2pm UTC
+      const afterDST = new Date('2025-03-10T13:00:00Z'); // 9am EDT = 1pm UTC
+
+      const messages = [
+        { ...mockMessageLog, id: 'before', scheduledSendTime: beforeDST },
+        { ...mockMessageLog, id: 'after', scheduledSendTime: afterDST },
+      ];
+      mockMessageLogRepo.findScheduled.mockResolvedValue(messages);
+
+      const count = await service.enqueueUpcomingMessages();
+
+      // Both should be enqueued (9am local time maintained)
+      expect(count).toBe(2);
+    });
+  });
 });

@@ -135,6 +135,7 @@ export class MessageWorker {
         metricsService.recordMessageSent(job.messageType, 200);
         metricsService.recordMessageDeliveryDuration(job.messageType, 'success', durationSeconds);
         metricsService.recordMessageProcessing(job.messageType, durationSeconds);
+        metricsService.recordMessageProcessingLatency(job.messageType, 'success', durationSeconds);
         metricsService.recordBirthdayProcessingDuration('success', strategyName, durationSeconds);
         metricsService.recordBirthdayMessageByStrategy(strategyName, 'success');
 
@@ -176,6 +177,7 @@ export class MessageWorker {
       // Record metrics
       metricsService.recordMessageFailed(job.messageType, errorType, job.retryCount);
       metricsService.recordMessageDeliveryDuration(job.messageType, 'failure', durationSeconds);
+      metricsService.recordMessageProcessingLatency(job.messageType, 'failure', durationSeconds);
       metricsService.recordBirthdayProcessingDuration('failure', strategyName, durationSeconds);
       metricsService.recordBirthdayMessageByStrategy(strategyName, 'failure');
 

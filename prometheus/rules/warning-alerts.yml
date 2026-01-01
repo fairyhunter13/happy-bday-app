@@ -1,0 +1,203 @@
+# Warning Alerts (P1) - Action required within hours
+# These alerts indicate degraded performance or approaching thresholds
+
+groups:
+  - name: warning-alerts
+    rules:
+      # High Latency - P99 latency exceeds 5 seconds
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(birthday_scheduler_http_request_duration_seconds_bucket[5m])) by (le, endpoint)
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High request latency detected"
+          description: "P99 latency for {{ $labels.endpoint }} is {{ $value | printf \"%.2f\" }}s (threshold: 5s). User experience may be degraded."
+          runbook_url: "https://wiki.internal/runbooks/high-latency"
+
+      # Memory Usage High - Memory exceeds 85%
+      - alert: MemoryUsageHigh
+        expr: |
+          (
+            birthday_scheduler_memory_used_bytes
+            /
+            birthday_scheduler_memory_limit_bytes
+          ) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% (threshold: 85%). Consider scaling or investigating memory leaks."
+          runbook_url: "https://wiki.internal/runbooks/high-memory"
+
+      # CPU Usage High - CPU exceeds 80%
+      - alert: CPUUsageHigh
+        expr: |
+          (
+            rate(birthday_scheduler_cpu_seconds_total[5m])
+            /
+            birthday_scheduler_cpu_limit
+          ) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% (threshold: 80%). Consider scaling or optimizing workloads."
+          runbook_url: "https://wiki.internal/runbooks/high-cpu"
+
+      # Queue Depth Warning - Message queue is backing up
+      - alert: QueueDepthWarning
+        expr: birthday_scheduler_queue_depth > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "Elevated queue depth"
+          description: "Queue {{ $labels.queue_name }} has {{ $value }} messages (threshold: 1000). Message processing is delayed."
+          runbook_url: "https://wiki.internal/runbooks/queue-depth-warning"
+
+      # Retry Rate High - High number of retries
+      - alert: RetryRateHigh
+        expr: |
+          (
+            sum(rate(birthday_scheduler_retries_total[5m]))
+            /
+            sum(rate(birthday_scheduler_requests_total[5m]))
+          ) * 100 > 10
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High retry rate detected"
+          description: "Retry rate is {{ $value | printf \"%.2f\" }}% (threshold: 10%). Indicates transient failures or flaky dependencies."
+          runbook_url: "https://wiki.internal/runbooks/high-retry-rate"
+
+      # Slow Database Queries - Query time exceeds 1 second
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(birthday_scheduler_db_query_duration_seconds_bucket[5m])) by (le, query_type)
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          priority: P1
+        annotations:
+          summary: "Slow database queries detected"
+          description: "P95 query time for {{ $labels.query_type }} is {{ $value | printf \"%.2f\" }}s (threshold: 1s). Database performance is degraded."
+          runbook_url: "https://wiki.internal/runbooks/slow-db-queries"
+
+      # Database Connection Pool Low
+      - alert: DatabaseConnectionPoolLow
+        expr: |
+          (
+            birthday_scheduler_db_connections_available
+            /
+            birthday_scheduler_db_connections_max
+          ) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          priority: P1
+        annotations:
+          summary: "Database connection pool running low"
+          description: "Only {{ $value | printf \"%.1f\" }}% of database connections available on {{ $labels.instance }}. Pool exhaustion imminent."
+          runbook_url: "https://wiki.internal/runbooks/db-pool-low"
+
+      # Disk Usage High
+      - alert: DiskUsageHigh
+        expr: |
+          (
+            birthday_scheduler_disk_used_bytes
+            /
+            birthday_scheduler_disk_total_bytes
+          ) * 100 > 80
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}% (threshold: 80%). Consider cleanup or expansion."
+          runbook_url: "https://wiki.internal/runbooks/high-disk"
+
+      # Goroutine Count High
+      - alert: GoroutineCountHigh
+        expr: birthday_scheduler_goroutines_count > 10000
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "High goroutine count"
+          description: "{{ $value }} goroutines on {{ $labels.instance }} (threshold: 10000). Possible goroutine leak."
+          runbook_url: "https://wiki.internal/runbooks/goroutine-leak"
+
+      # Request Rate Anomaly - Traffic significantly above normal
+      - alert: RequestRateAnomalyHigh
+        expr: |
+          sum(rate(birthday_scheduler_http_requests_total[5m]))
+          >
+          (avg_over_time(sum(rate(birthday_scheduler_http_requests_total[5m]))[24h:5m]) * 2)
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "Unusual traffic spike detected"
+          description: "Current request rate is more than 2x the 24h average. May indicate traffic attack or viral event."
+          runbook_url: "https://wiki.internal/runbooks/traffic-spike"
+
+      # Cache Hit Rate Low
+      - alert: CacheHitRateLow
+        expr: |
+          (
+            sum(rate(birthday_scheduler_cache_hits_total[5m]))
+            /
+            sum(rate(birthday_scheduler_cache_requests_total[5m]))
+          ) * 100 < 80
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | printf \"%.1f\" }}% (threshold: 80%). Database load may be elevated."
+          runbook_url: "https://wiki.internal/runbooks/cache-hit-rate"
+
+      # External API Response Time High
+      - alert: ExternalAPISlowResponse
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(birthday_scheduler_external_api_duration_seconds_bucket[5m])) by (le, api)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          priority: P1
+        annotations:
+          summary: "External API slow response"
+          description: "P95 response time for {{ $labels.api }} is {{ $value | printf \"%.2f\" }}s (threshold: 2s). Consider caching or circuit breaker."
+          runbook_url: "https://wiki.internal/runbooks/external-api-slow"

@@ -20,6 +20,7 @@ import cron from 'node-cron';
 import { schedulerService } from '../services/scheduler.service.js';
 import { logger } from '../config/logger.js';
 import { env } from '../config/environment.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export class RecoveryScheduler {
   private task: ReturnType<typeof cron.schedule> | null = null;
@@ -109,6 +110,16 @@ export class RecoveryScheduler {
         failed: stats.failed,
         errorCount: stats.errors.length,
       };
+
+      // Record DLQ processing metrics
+      // Messages recovered are requeued from DLQ
+      for (let i = 0; i < stats.recovered; i++) {
+        metricsService.recordDlqMessageProcessed('birthday_messages', 'retry');
+      }
+      // Messages that failed permanently are discarded
+      for (let i = 0; i < stats.failed; i++) {
+        metricsService.recordDlqMessageProcessed('birthday_messages', 'discarded');
+      }
 
       // Log results
       if (stats.totalMissed > 0) {

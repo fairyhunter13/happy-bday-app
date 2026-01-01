@@ -188,6 +188,10 @@ export class MessageConsumer {
         QUEUES.BIRTHDAY_MESSAGES,
         'max_retries_exceeded'
       );
+
+      // Record DLQ addition
+      metricsService.recordDlqMessageAdded(QUEUES.BIRTHDAY_MESSAGES);
+
       return;
     }
 
@@ -223,6 +227,9 @@ export class MessageConsumer {
         QUEUES.BIRTHDAY_MESSAGES,
         'permanent_error'
       );
+
+      // Record DLQ addition
+      metricsService.recordDlqMessageAdded(QUEUES.BIRTHDAY_MESSAGES);
     }
   }
 

@@ -3201,6 +3201,20 @@ export class MetricsService {
   }
 
   /**
+   * Record DLQ message processing
+   */
+  recordDlqMessageProcessed(queueName: string, action: 'requeued' | 'discarded' | 'retry'): void {
+    this.dlqMessagesProcessedTotal.inc({ queue_name: queueName, action });
+  }
+
+  /**
+   * Record DLQ message added
+   */
+  recordDlqMessageAdded(queueName: string): void {
+    this.dlqMessagesAddedTotal.inc({ queue_name: queueName });
+  }
+
+  /**
    * Set message age
    */
   setMessageAge(queueName: string, ageSeconds: number): void {
