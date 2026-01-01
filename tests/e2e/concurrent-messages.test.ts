@@ -20,6 +20,7 @@ import {
   resetCircuitBreaker,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
+import { QUEUES } from '../../src/queue/config.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageWorker } from '../../src/workers/message-worker.js';
 import { MessagePublisher } from '../../src/queue/publisher.js';
@@ -54,12 +55,8 @@ describe('E2E: Concurrent Message Processing', () => {
 
   beforeEach(async () => {
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, [
-      'birthday-messages',
-      'birthday-dlq',
-      'anniversary-queue',
-      'dlq',
-    ]);
+    // Use queue names from config to ensure consistency
+    await purgeQueues(amqpConnection, [QUEUES.BIRTHDAY_MESSAGES, QUEUES.BIRTHDAY_DLQ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to avoid test pollution

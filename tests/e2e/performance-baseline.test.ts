@@ -20,6 +20,7 @@ import {
   resetCircuitBreaker,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, sleep } from '../helpers/test-helpers.js';
+import { QUEUES } from '../../src/queue/config.js';
 import { DateTime } from 'luxon';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -167,12 +168,8 @@ describe('E2E: Performance Baseline', () => {
 
   beforeEach(async () => {
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, [
-      'birthday-messages',
-      'birthday-dlq',
-      'anniversary-queue',
-      'dlq',
-    ]);
+    // Use queue names from config to ensure consistency
+    await purgeQueues(amqpConnection, [QUEUES.BIRTHDAY_MESSAGES, QUEUES.BIRTHDAY_DLQ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
     // Reset circuit breaker to closed state to avoid test pollution

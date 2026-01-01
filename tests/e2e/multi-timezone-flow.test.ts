@@ -18,6 +18,7 @@ import {
   clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, findMessageLogsByUserId } from '../helpers/test-helpers.js';
+import { QUEUES } from '../../src/queue/config.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
 import { MessageStatus } from '../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
@@ -66,12 +67,8 @@ describe('E2E: Multi-Timezone Message Flow', () => {
 
   beforeEach(async () => {
     await cleanDatabase(pool);
-    await purgeQueues(amqpConnection, [
-      'birthday-messages',
-      'birthday-dlq',
-      'anniversary-queue',
-      'dlq',
-    ]);
+    // Use queue names from config to ensure consistency
+    await purgeQueues(amqpConnection, [QUEUES.BIRTHDAY_MESSAGES, QUEUES.BIRTHDAY_DLQ]);
     // Clear birthday/anniversary cache to ensure newly created users are found
     await clearBirthdayCache();
   });
