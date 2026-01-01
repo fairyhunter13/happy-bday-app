@@ -7,25 +7,30 @@
 # ==============================================================================
 # Stage 1: Dependencies
 # ==============================================================================
-FROM node:20-alpine AS deps
+FROM node:20-alpine3.20 AS deps
 
 WORKDIR /app
 
-# Install dependencies for native modules (if any)
-RUN apk add --no-cache libc6-compat
+# Install dependencies for native modules (if any) and security updates
+RUN apk add --no-cache libc6-compat && \
+    apk upgrade --no-cache
 
 # Copy package files
 COPY package*.json ./
 
 # Install all dependencies (including dev for build)
-RUN npm ci
+RUN npm ci --ignore-scripts && \
+    npm cache clean --force
 
 # ==============================================================================
 # Stage 2: Builder
 # ==============================================================================
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.20 AS builder
 
 WORKDIR /app
+
+# Apply security updates
+RUN apk upgrade --no-cache
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -35,12 +40,13 @@ COPY . .
 RUN npm run build
 
 # Prune dev dependencies
-RUN npm prune --production
+RUN npm prune --production && \
+    npm cache clean --force
 
 # ==============================================================================
 # Stage 3: Production Runner
 # ==============================================================================
-FROM node:20-alpine AS runner
+FROM node:20-alpine3.20 AS runner
 
 # Build arguments for labels
 ARG NODE_ENV=production
@@ -61,6 +67,11 @@ WORKDIR /app
 
 # Set environment
 ENV NODE_ENV=${NODE_ENV}
+
+# Apply security updates and remove unnecessary packages
+RUN apk upgrade --no-cache && \
+    apk add --no-cache dumb-init && \
+    rm -rf /var/cache/apk/* /tmp/* /var/tmp/*
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
@@ -87,5 +98,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
-# Default command - main API server
+# Default command - main API server (using dumb-init for proper signal handling)
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["node", "dist/index.js"]
