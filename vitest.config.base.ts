@@ -27,7 +27,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
 
-      // Coverage thresholds (enforced in CI/CD)
+      // Coverage thresholds (ENFORCED in CI/CD via .github/workflows/ci.yml)
+      // CI ENFORCEMENT: coverage-report job fails if merged coverage < thresholds
+      // Script: scripts/coverage/check-thresholds.sh
       // NOTE: These thresholds are disabled in vitest.config.unit-ci.ts for sharded runs
       // and re-enforced in coverage-report job after merging all coverage reports
       thresholds: {

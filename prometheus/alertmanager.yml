@@ -1,0 +1,171 @@
+# ========================================
+# Alertmanager Configuration
+# Birthday Message Scheduler Alert Routing
+# ========================================
+
+global:
+  # Default timeout for API calls
+  resolve_timeout: 5m
+
+  # SMTP configuration for email notifications
+  smtp_smarthost: 'localhost:1025'
+  smtp_from: 'alertmanager@birthday-app.local'
+  smtp_require_tls: false
+
+# Templates for alert notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Alert routing configuration
+route:
+  # Default receiver for all alerts
+  receiver: 'default-receiver'
+
+  # Group alerts by these labels
+  group_by: ['alertname', 'cluster', 'service']
+
+  # Wait time before sending initial notification
+  group_wait: 10s
+
+  # Wait time before sending notification about new alerts in an existing group
+  group_interval: 10s
+
+  # Wait time before re-sending notification for an alert
+  repeat_interval: 12h
+
+  # Child routes for specific alert types
+  routes:
+    # Critical alerts (P0) - Immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      group_interval: 5s
+      repeat_interval: 1h
+      continue: false
+      routes:
+        # Database-specific critical alerts
+        - match:
+            team: database
+          receiver: 'database-critical'
+          continue: true
+
+    # Warning alerts (P1) - Standard notification
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 6h
+      continue: false
+
+    # Info alerts (P2) - Batched notification
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 5m
+      group_interval: 10m
+      repeat_interval: 24h
+      continue: false
+
+    # SLO alerts - Dedicated receiver
+    - match_re:
+        slo: '.+'
+      receiver: 'slo-alerts'
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 12h
+      continue: false
+
+# Inhibition rules - Suppress dependent alerts
+inhibit_rules:
+  # Suppress warning alerts if critical alert is firing for the same service
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ['service', 'instance']
+
+  # Suppress info alerts if warning/critical alert is firing
+  - source_match_re:
+      severity: '(critical|warning)'
+    target_match:
+      severity: info
+    equal: ['service', 'instance']
+
+  # Suppress high latency alerts if service is down
+  - source_match:
+      alertname: ServiceDown
+    target_match:
+      alertname: HighLatency
+    equal: ['service', 'instance']
+
+  # Suppress queue depth alerts if service is down
+  - source_match:
+      alertname: ServiceDown
+    target_match_re:
+      alertname: 'Queue.*'
+    equal: ['service', 'instance']
+
+# Alert receivers (notification channels)
+receivers:
+  # Default receiver - logs only
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://logger:8080/alerts'
+        send_resolved: true
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    # Email notification
+    email_configs:
+      - to: 'oncall-platform@birthday-app.local'
+        send_resolved: true
+        headers:
+          Subject: '[CRITICAL] {{ .GroupLabels.alertname }} - {{ .GroupLabels.service }}'
+        html: |
+          <h2>Critical Alert Fired</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Service:</strong> {{ .GroupLabels.service }}</p>
+          <p><strong>Priority:</strong> P0</p>
+          {{ range .Alerts }}
+          <hr>
+          <p><strong>Summary:</strong> {{ .Annotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+          <p><strong>Runbook:</strong> <a href="{{ .Annotations.runbook_url }}">{{ .Annotations.runbook_url }}</a></p>
+          {{ end }}
+
+    # Webhook for PagerDuty/Slack integration (placeholder)
+    webhook_configs:
+      - url: 'http://notification-service:8080/critical'
+        send_resolved: true
+
+  # Database critical alerts
+  - name: 'database-critical'
+    email_configs:
+      - to: 'oncall-database@birthday-app.local'
+        send_resolved: true
+        headers:
+          Subject: '[DB-CRITICAL] {{ .GroupLabels.alertname }}'
+
+  # Warning alerts
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'team-platform@birthday-app.local'
+        send_resolved: true
+        headers:
+          Subject: '[WARNING] {{ .GroupLabels.alertname }} - {{ .GroupLabels.service }}'
+
+  # Info alerts
+  - name: 'info-alerts'
+    webhook_configs:
+      - url: 'http://notification-service:8080/info'
+        send_resolved: true
+
+  # SLO alerts
+  - name: 'slo-alerts'
+    email_configs:
+      - to: 'sre-team@birthday-app.local'
+        send_resolved: true
+        headers:
+          Subject: '[SLO] {{ .GroupLabels.alertname }} - Error Budget Impact'

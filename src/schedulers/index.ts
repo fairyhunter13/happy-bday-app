@@ -26,6 +26,7 @@ import { dailyBirthdayScheduler } from './daily-birthday.scheduler.js';
 import { minuteEnqueueScheduler } from './minute-enqueue.scheduler.js';
 import { recoveryScheduler } from './recovery.scheduler.js';
 import { logger } from '../config/logger.js';
+import { metricsService } from '../services/metrics.service.js';
 
 export interface SchedulerHealth {
   name: string;
@@ -81,6 +82,11 @@ export class SchedulerManager {
       this.startTime = new Date();
       this.isStarted = true;
 
+      // Track scheduler workers in metrics
+      metricsService.setActiveWorkers('daily_scheduler', 1);
+      metricsService.setActiveWorkers('minute_scheduler', 1);
+      metricsService.setActiveWorkers('recovery_scheduler', 1);
+
       logger.info('='.repeat(80));
       logger.info('All schedulers started successfully');
       logger.info('='.repeat(80));
@@ -132,6 +138,11 @@ export class SchedulerManager {
       logger.info('RecoveryScheduler stopped');
 
       this.isStarted = false;
+
+      // Clear scheduler worker metrics
+      metricsService.setActiveWorkers('daily_scheduler', 0);
+      metricsService.setActiveWorkers('minute_scheduler', 0);
+      metricsService.setActiveWorkers('recovery_scheduler', 0);
 
       logger.info('='.repeat(80));
       logger.info('All schedulers stopped successfully');

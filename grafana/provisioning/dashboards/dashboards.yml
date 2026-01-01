@@ -1,0 +1,33 @@
+# ========================================
+# Grafana Dashboard Provisioning Configuration
+# Birthday Message Scheduler
+# ========================================
+# This configuration automatically loads all dashboard JSON files
+# from the specified directory when Grafana starts.
+
+apiVersion: 1
+
+providers:
+  # Birthday Scheduler Application Dashboards
+  - name: 'Birthday Scheduler Dashboards'
+    orgId: 1
+    folder: 'Birthday Scheduler'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
+
+  # Alert Rules (optional - if alert rules are stored as JSON)
+  - name: 'Birthday Scheduler Alerts'
+    orgId: 1
+    folder: 'Alerts'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/alerts
+      foldersFromFilesStructure: false

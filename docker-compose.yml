@@ -118,6 +118,118 @@ services:
     networks:
       - birthday-app-network
 
+  # Prometheus - Metrics Collection & Storage
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: birthday-app-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      <<: *logging
+    networks:
+      - birthday-app-network
+
+  # Alertmanager - Alert Routing & Notification
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: birthday-app-alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--cluster.advertise-address=0.0.0.0:9093'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      <<: *logging
+    networks:
+      - birthday-app-network
+
+  # Grafana - Metrics Visualization & Dashboards
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: birthday-app-grafana
+    restart: unless-stopped
+    environment:
+      # Admin credentials
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: grafana_dev_password
+      # Server settings
+      GF_SERVER_ROOT_URL: http://localhost:3001
+      GF_SERVER_SERVE_FROM_SUB_PATH: 'false'
+      # Anonymous access (disable in production)
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Disable user signup
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      # Provisioning
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      # Logging
+      GF_LOG_MODE: console
+      GF_LOG_LEVEL: info
+      # Dashboards
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/overview-dashboard.json
+      # Feature toggles
+      GF_FEATURE_TOGGLES_ENABLE: tempoSearch tempoBackendSearch
+      # Performance
+      GF_DATABASE_WAL: 'true'
+      GF_DATAPROXY_TIMEOUT: 60
+      GF_DATAPROXY_KEEP_ALIVE_SECONDS: 30
+    ports:
+      - "3001:3000"
+    volumes:
+      # Grafana data persistence
+      - grafana_data:/var/lib/grafana
+      # Provisioning configurations
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      # Dashboard JSON files
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      # Alert rules
+      - ./grafana/alerts:/var/lib/grafana/alerts:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      <<: *logging
+    networks:
+      - birthday-app-network
+
 volumes:
   postgres_data:
     driver: local
@@ -126,6 +238,12 @@ volumes:
   redis_data:
     driver: local
   pgadmin_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:

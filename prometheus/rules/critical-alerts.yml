@@ -1,0 +1,153 @@
+# Critical Alerts (P0) - Immediate action required
+# These alerts indicate service-impacting issues that require immediate response
+
+groups:
+  - name: critical-alerts
+    rules:
+      # Service Down - Service is not responding to health checks
+      - alert: ServiceDown
+        expr: up{job="birthday-scheduler"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Birthday Scheduler service is down"
+          description: "The birthday-scheduler service {{ $labels.instance }} has been down for more than 1 minute. Immediate investigation required."
+          runbook_url: "https://wiki.internal/runbooks/service-down"
+
+      # High Error Rate - Error rate exceeds 5%
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(birthday_scheduler_http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(birthday_scheduler_http_requests_total[5m]))
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | printf \"%.2f\" }}% (threshold: 5%). This indicates a significant number of requests are failing."
+          runbook_url: "https://wiki.internal/runbooks/high-error-rate"
+
+      # Database Connection Pool Exhausted
+      - alert: DatabaseConnectionPoolExhausted
+        expr: birthday_scheduler_db_connections_available == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: database
+          priority: P0
+        annotations:
+          summary: "Database connection pool exhausted"
+          description: "No available database connections on {{ $labels.instance }}. All {{ $labels.pool_size }} connections are in use. New requests will fail."
+          runbook_url: "https://wiki.internal/runbooks/db-connection-pool"
+
+      # Queue Depth Critical - Message queue is severely backed up
+      - alert: QueueDepthCritical
+        expr: birthday_scheduler_queue_depth > 10000
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Critical queue depth reached"
+          description: "Queue {{ $labels.queue_name }} has {{ $value }} messages (threshold: 10000). Message processing is severely delayed."
+          runbook_url: "https://wiki.internal/runbooks/queue-depth-critical"
+
+      # Circuit Breaker Open - External service protection triggered
+      - alert: CircuitBreakerOpen
+        expr: birthday_scheduler_circuit_breaker_state == 1
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Circuit breaker is open"
+          description: "Circuit breaker for {{ $labels.service }} is open on {{ $labels.instance }}. Requests to this dependency are being rejected."
+          runbook_url: "https://wiki.internal/runbooks/circuit-breaker"
+
+      # Dead Letter Queue Depth High - Failed messages accumulating
+      - alert: DLQDepthHigh
+        expr: birthday_scheduler_dlq_depth > 100
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Dead letter queue depth is high"
+          description: "DLQ {{ $labels.queue_name }} has {{ $value }} messages (threshold: 100). Messages are failing permanently and require manual intervention."
+          runbook_url: "https://wiki.internal/runbooks/dlq-high"
+
+      # HTTP 5xx Spike - Sudden increase in server errors
+      - alert: HTTP5xxSpike
+        expr: |
+          (
+            sum(increase(birthday_scheduler_http_requests_total{status=~"5.."}[5m]))
+          ) > 100
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "HTTP 5xx error spike detected"
+          description: "{{ $value }} server errors in the last 5 minutes. Investigate application logs immediately."
+          runbook_url: "https://wiki.internal/runbooks/http-5xx-spike"
+
+      # Out of Memory Risk - Memory critically low
+      - alert: OutOfMemoryRisk
+        expr: |
+          (
+            birthday_scheduler_memory_used_bytes
+            /
+            birthday_scheduler_memory_limit_bytes
+          ) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Service at risk of OOM"
+          description: "Memory usage on {{ $labels.instance }} is {{ $value | printf \"%.1f\" }}%. Service may be killed by OOM killer imminently."
+          runbook_url: "https://wiki.internal/runbooks/oom-risk"
+
+      # Message Delivery Failure Rate Critical
+      - alert: MessageDeliveryFailureCritical
+        expr: |
+          (
+            sum(rate(birthday_scheduler_messages_failed_total[5m]))
+            /
+            sum(rate(birthday_scheduler_messages_processed_total[5m]))
+          ) * 100 > 10
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          priority: P0
+        annotations:
+          summary: "Critical message delivery failure rate"
+          description: "{{ $value | printf \"%.2f\" }}% of birthday messages are failing delivery (threshold: 10%). Users are not receiving notifications."
+          runbook_url: "https://wiki.internal/runbooks/message-delivery-failure"
+
+      # Database Replication Lag Critical
+      - alert: DatabaseReplicationLagCritical
+        expr: birthday_scheduler_db_replication_lag_seconds > 30
+        for: 2m
+        labels:
+          severity: critical
+          team: database
+          priority: P0
+        annotations:
+          summary: "Critical database replication lag"
+          description: "Database replication lag is {{ $value }}s (threshold: 30s). Read replicas may be serving stale data."
+          runbook_url: "https://wiki.internal/runbooks/db-replication-lag"

@@ -222,6 +222,16 @@ All planning, architecture, research, and implementation documentation is in the
 - **Message Queue:** RabbitMQ 3.x (Quorum Queues for zero data loss)
 - **Runtime:** Node.js ≥20.0.0
 
+### Caching (Redis)
+
+- **Status:** Infrastructure ready, cache-aside pattern implemented
+- **Implementation:** CachedUserRepository with Redis backend
+- **Features:**
+  - User data caching with configurable TTL
+  - Cache invalidation on updates
+  - Health check integration
+- **Configuration:** See `docs/CACHE_IMPLEMENTATION.md`
+
 ### Testing & Quality
 
 - **Testing Framework:** Vitest with v8 coverage
@@ -233,7 +243,7 @@ All planning, architecture, research, and implementation documentation is in the
 
 ### Monitoring & Observability
 
-- **Metrics:** Prometheus (258 custom metrics)
+- **Metrics:** Prometheus (268 custom metrics)
 - **Visualization:** Grafana dashboards
 - **Metrics Categories:**
   - Business metrics (15 metrics)
@@ -350,7 +360,7 @@ npm run test:performance
 
 ### Key Architecture Features
 
-- **258 Prometheus Metrics** - Comprehensive observability across all system components
+- **268 Prometheus Metrics** - Comprehensive observability across all system components
 - **5 Grafana Dashboards** - API Performance, Database, Infrastructure, Message Processing, Security
 - **Automated Alerting** - 4 alert rule files (Critical, Warning, Info, SLO)
 - **Zero Data Loss** - RabbitMQ Quorum Queues with Raft consensus

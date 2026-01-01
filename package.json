@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Production-ready birthday message scheduler with timezone support",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/src/index.js",
     "worker": "tsx src/worker.ts",
     "scheduler": "tsx src/scheduler.ts",
     "typecheck": "tsc --noEmit",

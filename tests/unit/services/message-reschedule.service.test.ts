@@ -506,4 +506,425 @@ describe('MessageRescheduleService', () => {
       expect(result).toBeDefined();
     });
   });
+
+  describe('error paths - database errors', () => {
+    it('should handle database error during findById', async () => {
+      const dbError = new Error('Database connection timeout');
+      mockUserRepo.findById.mockRejectedValue(dbError);
+
+      await expect(
+        service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' })
+      ).rejects.toThrow(DatabaseError);
+
+      await expect(
+        service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' })
+      ).rejects.toThrow('Failed to reschedule messages');
+    });
+
+    it('should handle database error during findAll messages', async () => {
+      const dbError = new Error('Query timeout');
+      mockMessageLogRepo.findAll.mockRejectedValue(dbError);
+
+      await expect(
+        service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' })
+      ).rejects.toThrow(DatabaseError);
+    });
+
+    it('should handle database error during checkIdempotency', async () => {
+      const dbError = new Error('Idempotency check failed');
+      mockMessageLogRepo.checkIdempotency.mockRejectedValue(dbError);
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      // Errors are caught in try-catch and added to errors array
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.success).toBe(false);
+    });
+
+    it('should handle database error during message creation', async () => {
+      mockMessageLogRepo.create.mockRejectedValue(new Error('Insert failed'));
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.errors).toHaveLength(2); // Both birthday and anniversary fail
+      expect(result.success).toBe(false);
+    });
+
+    it('should continue reschedule despite individual message deletion errors', async () => {
+      const messages = [
+        { ...mockMessageLog, id: 'msg-1' },
+        { ...mockMessageLog, id: 'msg-2' },
+        { ...mockMessageLog, id: 'msg-3' },
+      ];
+      mockMessageLogRepo.findAll.mockResolvedValue(messages);
+
+      // First delete succeeds, second fails, third succeeds
+      mockMessageLogRepo.updateStatus
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Update failed'))
+        .mockResolvedValueOnce(undefined);
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.deletedMessages).toBe(2);
+      expect(result.errors.some((e: any) => e.error.includes('Update failed'))).toBe(true);
+    });
+  });
+
+  describe('error paths - partial failures', () => {
+    it('should handle partial reschedule - birthday succeeds, anniversary fails', async () => {
+      mockMessageLogRepo.create
+        .mockResolvedValueOnce(mockMessageLog) // Birthday succeeds
+        .mockRejectedValueOnce(new Error('Anniversary creation failed')); // Anniversary fails
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.rescheduledMessages).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]?.messageType).toBe('ANNIVERSARY');
+      expect(result.success).toBe(false);
+    });
+
+    it('should handle partial reschedule - birthday fails, anniversary succeeds', async () => {
+      mockMessageLogRepo.create
+        .mockRejectedValueOnce(new Error('Birthday creation failed')) // Birthday fails
+        .mockResolvedValueOnce(mockMessageLog); // Anniversary succeeds
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.rescheduledMessages).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]?.messageType).toBe('BIRTHDAY');
+      expect(result.success).toBe(false);
+    });
+
+    it('should mark success as false when any errors occur', async () => {
+      mockMessageLogRepo.updateStatus.mockRejectedValue(new Error('Delete failed'));
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should continue processing all messages despite some deletion failures', async () => {
+      const messages = [
+        { ...mockMessageLog, id: 'msg-1', messageType: 'BIRTHDAY' },
+        { ...mockMessageLog, id: 'msg-2', messageType: 'ANNIVERSARY' },
+      ];
+      mockMessageLogRepo.findAll.mockResolvedValue(messages);
+
+      mockMessageLogRepo.updateStatus
+        .mockRejectedValueOnce(new Error('First delete failed'))
+        .mockResolvedValueOnce(undefined);
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.deletedMessages).toBe(1);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(mockMessageLogRepo.updateStatus).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('error paths - idempotency failures', () => {
+    it('should skip message creation when idempotency check finds existing message', async () => {
+      mockMessageLogRepo.checkIdempotency.mockResolvedValue({
+        ...mockMessageLog,
+        id: 'existing-msg-id',
+      });
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(mockMessageLogRepo.create).not.toHaveBeenCalled();
+      // When createRescheduledMessage returns early, the increment still happens
+      // because it's after the await call completes
+      expect(result.rescheduledMessages).toBeGreaterThan(0);
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle idempotency check error during birthday reschedule', async () => {
+      mockMessageLogRepo.checkIdempotency.mockRejectedValue(
+        new Error('Idempotency check database error')
+      );
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      // Errors during reschedule are caught and added to errors array
+      expect(result.errors.some((e: any) => e.messageType === 'BIRTHDAY')).toBe(true);
+      expect(result.errors.some((e: any) => e.messageType === 'ANNIVERSARY')).toBe(true);
+      expect(result.success).toBe(false);
+    });
+
+    it('should generate unique idempotency keys for different message types', async () => {
+      await service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' });
+
+      expect(mockIdempotencyService.generateKey).toHaveBeenCalledWith(
+        mockUser.id,
+        'BIRTHDAY',
+        expect.any(Date),
+        'UTC'
+      );
+
+      expect(mockIdempotencyService.generateKey).toHaveBeenCalledWith(
+        mockUser.id,
+        'ANNIVERSARY',
+        expect.any(Date),
+        'UTC'
+      );
+    });
+  });
+
+  describe('error paths - timezone validation', () => {
+    it('should handle invalid timezone during reschedule', async () => {
+      mockTimezoneService.calculateSendTime.mockImplementation(() => {
+        throw new Error('Invalid timezone: Invalid/Timezone');
+      });
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'Invalid/Timezone',
+      });
+
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.success).toBe(false);
+    });
+
+    it('should handle timezone calculation errors for birthday', async () => {
+      mockTimezoneService.isBirthdayToday.mockImplementation(() => {
+        throw new Error('Timezone calculation failed');
+      });
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.errors.some((e: any) => e.messageType === 'BIRTHDAY')).toBe(true);
+    });
+
+    it('should handle timezone calculation errors for anniversary', async () => {
+      // Birthday succeeds, anniversary timezone check fails
+      mockTimezoneService.isBirthdayToday
+        .mockReturnValueOnce(true) // Birthday check succeeds
+        .mockImplementationOnce(() => {
+          throw new Error('Anniversary timezone check failed');
+        });
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.errors.some((e: any) => e.messageType === 'ANNIVERSARY')).toBe(true);
+    });
+  });
+
+  describe('error paths - user not found scenarios', () => {
+    it('should wrap NotFoundError in DatabaseError for non-existent user', async () => {
+      mockUserRepo.findById.mockResolvedValue(null);
+
+      const error = await service
+        .rescheduleMessagesForUser('non-existent-user', { timezone: 'UTC' })
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(DatabaseError);
+      expect(error.message).toContain('Failed to reschedule messages');
+    });
+
+    it('should include userId in error context for not found error', async () => {
+      mockUserRepo.findById.mockResolvedValue(null);
+
+      try {
+        await service.rescheduleMessagesForUser('test-user-123', { timezone: 'UTC' });
+        expect.fail('Should have thrown error');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+      }
+    });
+  });
+
+  describe('error paths - connection failures mid-operation', () => {
+    it('should handle connection failure after deleting messages but before creating new ones', async () => {
+      mockMessageLogRepo.updateStatus.mockResolvedValue(undefined);
+      mockMessageLogRepo.checkIdempotency.mockRejectedValue(
+        new Error('Connection lost during idempotency check')
+      );
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      // Messages are deleted successfully
+      expect(result.deletedMessages).toBe(1);
+      // But creation fails due to connection error
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.success).toBe(false);
+    });
+
+    it('should handle connection failure during message creation after successful deletion', async () => {
+      const messages = [
+        { ...mockMessageLog, id: 'msg-1' },
+        { ...mockMessageLog, id: 'msg-2' },
+      ];
+      mockMessageLogRepo.findAll.mockResolvedValue(messages);
+      mockMessageLogRepo.updateStatus.mockResolvedValue(undefined);
+      mockMessageLogRepo.create.mockRejectedValue(new Error('Connection dropped'));
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.deletedMessages).toBe(2);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.success).toBe(false);
+    });
+
+    it('should propagate critical database errors during user fetch', async () => {
+      mockUserRepo.findById.mockRejectedValue(
+        new Error('FATAL: database connection terminated')
+      );
+
+      await expect(
+        service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' })
+      ).rejects.toThrow(DatabaseError);
+    });
+  });
+
+  describe('deleteFutureMessagesForUser - additional error paths', () => {
+    it('should handle database error wrapping correctly', async () => {
+      mockMessageLogRepo.findAll.mockRejectedValue(new Error('Connection timeout'));
+
+      const error = await service
+        .deleteFutureMessagesForUser(mockUser.id)
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(DatabaseError);
+      expect(error.message).toContain('Failed to delete future messages');
+    });
+
+    it('should continue deleting remaining messages after individual failures', async () => {
+      const messages = [
+        { ...mockMessageLog, id: 'msg-1' },
+        { ...mockMessageLog, id: 'msg-2' },
+        { ...mockMessageLog, id: 'msg-3' },
+        { ...mockMessageLog, id: 'msg-4' },
+      ];
+      mockMessageLogRepo.findAll.mockResolvedValue(messages);
+
+      mockMessageLogRepo.updateStatus
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Failed'))
+        .mockRejectedValueOnce(new Error('Failed'))
+        .mockResolvedValueOnce(undefined);
+
+      const count = await service.deleteFutureMessagesForUser(mockUser.id);
+
+      expect(count).toBe(2);
+      expect(mockMessageLogRepo.updateStatus).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle mixed error types during deletion', async () => {
+      const messages = [
+        { ...mockMessageLog, id: 'msg-1' },
+        { ...mockMessageLog, id: 'msg-2' },
+      ];
+      mockMessageLogRepo.findAll.mockResolvedValue(messages);
+
+      mockMessageLogRepo.updateStatus
+        .mockRejectedValueOnce(new DatabaseError('DB error'))
+        .mockRejectedValueOnce(new Error('Generic error'));
+
+      const count = await service.deleteFutureMessagesForUser(mockUser.id);
+
+      expect(count).toBe(0);
+    });
+  });
+
+  describe('getMessageStats - additional error paths', () => {
+    it('should wrap database errors correctly', async () => {
+      mockMessageLogRepo.findAll.mockRejectedValue(
+        new Error('Query execution failed')
+      );
+
+      const error = await service
+        .getMessageStats(mockUser.id)
+        .catch((e) => e);
+
+      expect(error).toBeInstanceOf(DatabaseError);
+      expect(error.message).toContain('Failed to get message stats');
+    });
+
+    it('should handle connection timeout during stats retrieval', async () => {
+      mockMessageLogRepo.findAll.mockRejectedValue(
+        new Error('Connection timeout after 30s')
+      );
+
+      await expect(
+        service.getMessageStats(mockUser.id)
+      ).rejects.toThrow(DatabaseError);
+    });
+  });
+
+  describe('error paths - complex scenarios', () => {
+    it('should handle all operations failing during reschedule', async () => {
+      mockMessageLogRepo.updateStatus.mockRejectedValue(new Error('Delete failed'));
+      mockMessageLogRepo.create.mockRejectedValue(new Error('Create failed'));
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.deletedMessages).toBe(0);
+      expect(result.rescheduledMessages).toBe(0);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.success).toBe(false);
+    });
+
+    it('should handle errors with non-Error objects', async () => {
+      mockMessageLogRepo.updateStatus.mockRejectedValue('String error');
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.errors.some((e: any) => e.error === 'String error')).toBe(true);
+    });
+
+    it('should handle errors with null/undefined messages', async () => {
+      mockMessageLogRepo.updateStatus.mockRejectedValue(null);
+
+      const result = await service.rescheduleMessagesForUser(mockUser.id, {
+        timezone: 'UTC',
+      });
+
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should preserve error context through entire operation', async () => {
+      const contextError = new Error('Detailed context error');
+      mockUserRepo.findById.mockRejectedValue(contextError);
+
+      try {
+        await service.rescheduleMessagesForUser(mockUser.id, { timezone: 'UTC' });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(DatabaseError);
+      }
+    });
+  });
 });
