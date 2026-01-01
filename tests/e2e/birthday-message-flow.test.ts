@@ -22,6 +22,7 @@ import {
   waitFor,
   cleanDatabase,
   purgeQueues,
+  clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, findMessageLogsByUserId, sleep } from '../helpers/test-helpers.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
@@ -72,6 +73,8 @@ describe('E2E: Complete Birthday Message Flow', () => {
     // Clean database and purge queues before each test
     await cleanDatabase(pool);
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    // Clear birthday/anniversary cache to ensure newly created users are found
+    await clearBirthdayCache();
   });
 
   describe('Complete flow: User creation -> Scheduling -> Queue -> Worker -> Email sent', () => {

@@ -15,6 +15,7 @@ import {
   waitFor,
   cleanDatabase,
   purgeQueues,
+  clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
 import { insertUser, findMessageLogsByUserId } from '../helpers/test-helpers.js';
 import { SchedulerService } from '../../src/services/scheduler.service.js';
@@ -66,6 +67,8 @@ describe('E2E: Multi-Timezone Message Flow', () => {
   beforeEach(async () => {
     await cleanDatabase(pool);
     await purgeQueues(amqpConnection, ['birthday-queue', 'anniversary-queue', 'dlq']);
+    // Clear birthday/anniversary cache to ensure newly created users are found
+    await clearBirthdayCache();
   });
 
   describe('Comprehensive timezone coverage', () => {
