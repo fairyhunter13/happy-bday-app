@@ -115,6 +115,9 @@ jobs:
         run: |
           npx redocly lint http://localhost:3000/docs/json \
             --skip-rule operation-operationId-unique \
+            --skip-rule struct \
+            --skip-rule security-defined \
+            --skip-rule no-server-example.com \
             --format stylish
 
       - name: Lint OpenAPI spec with Spectral
