@@ -53,7 +53,8 @@ x-worker-service: &worker-service
     - .env.test
   environment:
     <<: *perf-env
-  command: node dist/src/worker.js
+  command: sh -c "sleep 10 && node dist/src/worker.js"
+  restart: on-failure:5
   depends_on:
     postgres-primary:
       condition: service_started
@@ -61,6 +62,8 @@ x-worker-service: &worker-service
       condition: service_healthy
     redis:
       condition: service_started
+    api-1:
+      condition: service_healthy
   logging:
     <<: *logging
   networks:
