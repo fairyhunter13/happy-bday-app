@@ -1810,7 +1810,7 @@ messages_failed_total{message_type="birthday",reason="timeout"} 5`
 - Circuit breaker and retry strategies defined
 - Error mapping and monitoring plan included
 
-**See:** [Email Service Vendor API Analysis](/docs/vendor-specs/email-service-api-analysis.md)
+**See:** [Email Service API Analysis](/docs/vendor-specs/API_ANALYSIS.md)
 
 **Next Steps:**
 1. Contact vendor for official OpenAPI specification

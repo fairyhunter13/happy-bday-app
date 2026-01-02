@@ -12,8 +12,8 @@
 > **Why the change?** BullMQ's dependency on Redis persistence creates a 1-second data loss window that could lose 12-100 birthday messages during a Redis crash. For birthday messages (once a year), zero tolerance for data loss is required.
 >
 > **For the final decision, see:**
-> - [ARCHITECTURE_CHANGE_RABBITMQ.md](../../ARCHITECTURE_CHANGE_RABBITMQ.md)
-> - [QUEUE_DECISION_SUMMARY.md](./QUEUE_DECISION_SUMMARY.md)
+> - [ARCHITECTURE_CHANGE_RABBITMQ.md](../02-architecture/ARCHITECTURE_CHANGE_RABBITMQ.md)
+> - [RABBITMQ_VS_BULLMQ_ANALYSIS.md](./RABBITMQ_VS_BULLMQ_ANALYSIS.md)
 >
 > The performance analysis and consistency recommendations in this document remain valuable, but BullMQ references should be understood in historical context.
 

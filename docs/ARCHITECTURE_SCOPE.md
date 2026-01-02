@@ -307,9 +307,9 @@ If this project needs to be deployed to production in the future:
 - **Local Setup:** [`docs/DEVELOPER_SETUP.md`](./DEVELOPER_SETUP.md)
 - **Deployment Guide:** [`docs/DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md)
 - **Local Readiness:** [`docs/LOCAL_READINESS.md`](./LOCAL_READINESS.md)
-- **SLA (N/A):** [`docs/SLA.md`](./SLA.md)
+- **SLA:** N/A (Local/CI-CD only - no production deployment)
 - **Runbook:** [`docs/RUNBOOK.md`](./RUNBOOK.md)
-- **Gap Analysis:** [`plan/GAP_ANALYSIS_REPORT.md`](../plan/GAP_ANALYSIS_REPORT.md)
+- **Gap Analysis:** [`plan/09-reports/GAP_ANALYSIS_2026-01-02.md`](../plan/09-reports/GAP_ANALYSIS_2026-01-02.md)
 
 ---
 

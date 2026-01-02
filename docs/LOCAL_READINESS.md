@@ -383,11 +383,11 @@ This comprehensive checklist ensures the Birthday Message Scheduler is fully pre
   - Rollback procedures: ✅
   - File: `docs/DEPLOYMENT_GUIDE.md`
 
-- [x] **Troubleshooting Guide:** Complete
+- [x] **Troubleshooting Guide:** See RUNBOOK.md
   - Common issues: ✅
   - Debug procedures: ✅
   - Tools & commands: ✅
-  - File: `docs/TROUBLESHOOTING.md`
+  - File: `docs/RUNBOOK.md` (includes troubleshooting procedures)
 
 ### 7.2 Architecture Documentation
 
@@ -423,11 +423,11 @@ This comprehensive checklist ensures the Birthday Message Scheduler is fully pre
 
 ### 7.4 Service Documentation
 
-- [x] **SLA Document:** Complete
-  - Uptime targets: 99.9% ✅
-  - Performance targets: ✅
-  - Support response times: ✅
-  - File: `docs/SLA.md`
+- [ ] **SLA Document:** N/A
+  - Uptime targets: N/A (Local/CI-CD only)
+  - Performance targets: See README.md Performance Targets section
+  - Support response times: N/A (no production deployment)
+  - Note: Project is local development + CI/CD testing only
 
 ---
 

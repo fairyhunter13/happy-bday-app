@@ -464,9 +464,9 @@ For every pull request, verify:
 ### Documentation
 
 - [DRY Principle Audit Report](./dry-principle-audit.md)
-- [DRY Guidelines](../../docs/contributing/DRY-GUIDELINES.md)
-- [Shared Utilities Index](../../docs/utilities/INDEX.md)
-- [Refactoring Patterns](../../docs/patterns/REFACTORING.md)
+- DRY Guidelines: See code review guidelines in plan/README.md
+- Shared Utilities: See src/utils/ directory
+- Refactoring Patterns: See plan/03-research/ for architectural patterns
 
 ### Tools & Scripts
 

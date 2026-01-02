@@ -235,9 +235,9 @@ gh secret list
 
 ### Core Documentation
 
-- Runbook: [`/docs/RUNBOOK.md`](/docs/RUNBOOK.md)
+- Runbook: [`/docs/RUNBOOK.md`](/docs/RUNBOOK.md) (includes troubleshooting procedures)
 - Deployment Guide: [`/docs/DEPLOYMENT_GUIDE.md`](/docs/DEPLOYMENT_GUIDE.md)
-- Troubleshooting: [`/docs/TROUBLESHOOTING.md`](/docs/TROUBLESHOOTING.md)
+- Architecture Scope: [`/docs/ARCHITECTURE_SCOPE.md`](/docs/ARCHITECTURE_SCOPE.md)
 
 ---
 
