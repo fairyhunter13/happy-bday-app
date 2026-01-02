@@ -8,6 +8,7 @@ import { logger, logStartup } from './config/logger.js';
 import { schedulerManager } from './schedulers/index.js';
 import { systemMetricsService } from './services/system-metrics.service.js';
 import { initializeRabbitMQ, getRabbitMQ } from './queue/connection.js';
+import { MessagePublisher } from './queue/publisher.js';
 import { cacheService } from './services/cache.service.js';
 
 /**
@@ -33,7 +34,15 @@ async function main(): Promise<void> {
       .then(() => {
         logger.info('RabbitMQ connection established');
 
-        // Start schedulers after RabbitMQ is ready
+        // Initialize queue topology (create exchanges, queues, bindings)
+        logger.info('Initializing RabbitMQ queue topology...');
+        const publisher = new MessagePublisher();
+        return publisher.initialize();
+      })
+      .then(() => {
+        logger.info('RabbitMQ queue topology initialized successfully');
+
+        // Start schedulers after RabbitMQ and queues are ready
         logger.info('Initializing CRON schedulers...');
         return schedulerManager.start();
       })
