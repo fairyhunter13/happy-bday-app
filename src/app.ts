@@ -24,8 +24,11 @@ const __dirname = path.dirname(__filename);
  * Create and configure Fastify application instance
  */
 export async function createApp(): Promise<FastifyInstance> {
+  // Fastify v5 uses loggerInstance for external pino loggers
+  const loggerConfig = env.NODE_ENV === 'test' ? { logger: false } : { loggerInstance: logger };
+
   const app = Fastify({
-    logger: env.NODE_ENV === 'test' ? false : logger,
+    ...loggerConfig,
     trustProxy: true,
     requestIdLogLabel: 'requestId',
     disableRequestLogging: false,
@@ -308,7 +311,9 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
   const { userRoutes } = await import('./routes/user.routes.js');
   await app.register(userRoutes, { prefix: '/api/v1' });
 
-  return app;
+  // Type assertion needed because Fastify v5 loggerInstance creates a more specific type
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return app as any as FastifyInstance;
 }
 
 /**
