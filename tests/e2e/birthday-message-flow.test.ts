@@ -298,17 +298,29 @@ describe('E2E: Complete Birthday Message Flow', () => {
       console.log('[DEBUG] Expected UTC Month:', utcMonth, 'Day:', utcDay);
 
       // First run - should create message
+      console.log('[TEST-IDEMPOTENCY] === FIRST SCHEDULER CALL ===');
       const stats1 = await scheduler.preCalculateTodaysBirthdays();
-      console.log('[DEBUG] Scheduler stats:', stats1);
+      console.log('[TEST-IDEMPOTENCY] First run stats:', stats1);
       expect(stats1.messagesScheduled).toBe(1);
 
+      // Verify message was created before second run
+      const messagesAfterFirst = await findMessageLogsByUserId(pool, user.id);
+      console.log('[TEST-IDEMPOTENCY] Messages after first run:', messagesAfterFirst.length);
+      console.log(
+        '[TEST-IDEMPOTENCY] Message idempotency key:',
+        messagesAfterFirst[0]?.idempotencyKey
+      );
+
       // Second run - should skip (idempotency)
+      console.log('[TEST-IDEMPOTENCY] === SECOND SCHEDULER CALL ===');
       const stats2 = await scheduler.preCalculateTodaysBirthdays();
+      console.log('[TEST-IDEMPOTENCY] Second run stats:', stats2);
       expect(stats2.duplicatesSkipped).toBe(1);
       expect(stats2.messagesScheduled).toBe(0);
 
       // Verify only one message exists
       const messages = await findMessageLogsByUserId(pool, user.id);
+      console.log('[TEST-IDEMPOTENCY] Final message count:', messages.length);
       expect(messages).toHaveLength(1);
     });
 
