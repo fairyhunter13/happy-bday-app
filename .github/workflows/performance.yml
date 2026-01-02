@@ -71,10 +71,28 @@ jobs:
           # Start API and worker services
           docker compose -f docker-compose.perf.yml up -d api-1 api-2 api-3 api-4 api-5 worker-1 worker-2 worker-3 worker-4 worker-5 worker-6 worker-7 worker-8 worker-9 worker-10 nginx
 
+      - name: Verify containers are running
+        run: |
+          echo "Waiting for containers to initialize..."
+          sleep 10
+
+          echo "Checking container status..."
+          docker ps --filter "name=perf-api" --format "table {{.Names}}\t{{.Status}}"
+          docker ps --filter "name=perf-nginx" --format "table {{.Names}}\t{{.Status}}"
+
+          # Check if any containers are unhealthy or restarting
+          if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
+            echo "ERROR: API containers are restarting. Checking logs..."
+            docker logs perf-api-1 2>&1 | tail -50 || true
+            docker logs perf-api-2 2>&1 | tail -50 || true
+            docker logs perf-api-3 2>&1 | tail -50 || true
+            exit 1
+          fi
+
       - name: Wait for API services
         run: |
           echo "Waiting for API services to be ready..."
-          timeout 120 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -v -f http://localhost/health; do echo "Health check failed, retrying in 5s..."; sleep 5; done'
           echo "All services are ready"
 
       - name: Install k6
@@ -130,13 +148,27 @@ jobs:
           path: perf-results/sustained-load.json
           retention-days: 90
 
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== API Container Logs ==="
+          docker logs perf-api-1 2>&1 | tail -100 || true
+          docker logs perf-api-2 2>&1 | tail -100 || true
+          docker logs perf-api-3 2>&1 | tail -100 || true
+          docker logs perf-api-4 2>&1 | tail -100 || true
+          docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Nginx Logs ==="
+          docker logs perf-nginx 2>&1 | tail -100 || true
+          echo "=== Docker Container Status ==="
+          docker ps -a
 
       - name: Cleanup
         if: always()
         run: docker compose -f docker-compose.perf.yml down -v
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
   performance-peak:
     name: Peak Load Test (100+ msg/sec)
@@ -183,10 +215,28 @@ jobs:
           # Start API and worker services
           docker compose -f docker-compose.perf.yml up -d api-1 api-2 api-3 api-4 api-5 worker-1 worker-2 worker-3 worker-4 worker-5 worker-6 worker-7 worker-8 worker-9 worker-10 nginx
 
+      - name: Verify containers are running
+        run: |
+          echo "Waiting for containers to initialize..."
+          sleep 10
+
+          echo "Checking container status..."
+          docker ps --filter "name=perf-api" --format "table {{.Names}}\t{{.Status}}"
+          docker ps --filter "name=perf-nginx" --format "table {{.Names}}\t{{.Status}}"
+
+          # Check if any containers are unhealthy or restarting
+          if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
+            echo "ERROR: API containers are restarting. Checking logs..."
+            docker logs perf-api-1 2>&1 | tail -50 || true
+            docker logs perf-api-2 2>&1 | tail -50 || true
+            docker logs perf-api-3 2>&1 | tail -50 || true
+            exit 1
+          fi
+
       - name: Wait for API services
         run: |
           echo "Waiting for API services to be ready..."
-          timeout 120 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -v -f http://localhost/health; do echo "Health check failed, retrying in 5s..."; sleep 5; done'
           echo "All services are ready"
 
       - name: Install k6
@@ -207,13 +257,27 @@ jobs:
           path: perf-results/
           retention-days: 30
 
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== API Container Logs ==="
+          docker logs perf-api-1 2>&1 | tail -100 || true
+          docker logs perf-api-2 2>&1 | tail -100 || true
+          docker logs perf-api-3 2>&1 | tail -100 || true
+          docker logs perf-api-4 2>&1 | tail -100 || true
+          docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Nginx Logs ==="
+          docker logs perf-nginx 2>&1 | tail -100 || true
+          echo "=== Docker Container Status ==="
+          docker ps -a
 
       - name: Cleanup
         if: always()
         run: docker compose -f docker-compose.perf.yml down -v
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
   performance-worker-scaling:
     name: Worker Scaling Test
@@ -265,10 +329,28 @@ jobs:
           docker compose -f docker-compose.perf.yml up -d api-1 api-2 api-3 api-4 api-5 nginx
           docker compose -f docker-compose.perf.yml up -d --scale worker=${{ matrix.workers }} worker-1
 
+      - name: Verify containers are running
+        run: |
+          echo "Waiting for containers to initialize..."
+          sleep 10
+
+          echo "Checking container status..."
+          docker ps --filter "name=perf-api" --format "table {{.Names}}\t{{.Status}}"
+          docker ps --filter "name=perf-nginx" --format "table {{.Names}}\t{{.Status}}"
+
+          # Check if any containers are unhealthy or restarting
+          if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
+            echo "ERROR: API containers are restarting. Checking logs..."
+            docker logs perf-api-1 2>&1 | tail -50 || true
+            docker logs perf-api-2 2>&1 | tail -50 || true
+            docker logs perf-api-3 2>&1 | tail -50 || true
+            exit 1
+          fi
+
       - name: Wait for API services
         run: |
           echo "Waiting for API services to be ready..."
-          timeout 120 bash -c 'until curl -f http://localhost/health; do sleep 5; done'
+          timeout 120 bash -c 'until curl -v -f http://localhost/health; do echo "Health check failed, retrying in 5s..."; sleep 5; done'
           echo "All services are ready"
 
       - name: Install k6
@@ -287,13 +369,27 @@ jobs:
           path: perf-results/
           retention-days: 30
 
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          echo "=== API Container Logs ==="
+          docker logs perf-api-1 2>&1 | tail -100 || true
+          docker logs perf-api-2 2>&1 | tail -100 || true
+          docker logs perf-api-3 2>&1 | tail -100 || true
+          docker logs perf-api-4 2>&1 | tail -100 || true
+          docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Nginx Logs ==="
+          docker logs perf-nginx 2>&1 | tail -100 || true
+          echo "=== Docker Container Status ==="
+          docker ps -a
 
       - name: Cleanup
         if: always()
         run: docker compose -f docker-compose.perf.yml down -v
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
 
   performance-report:
     name: Generate Performance Report
