@@ -219,15 +219,6 @@ export class MessageLogRepository {
     try {
       const dbInstance = tx || this._database;
 
-      // Check idempotency key
-      const existing = await this.checkIdempotency(data.idempotencyKey, tx);
-      if (existing) {
-        throw new UniqueConstraintError(
-          `Message with idempotency key ${data.idempotencyKey} already exists`,
-          { idempotencyKey: data.idempotencyKey, existingId: existing.id }
-        );
-      }
-
       const newMessageLog: NewMessageLog = {
         userId: data.userId,
         messageType: data.messageType,
@@ -238,7 +229,28 @@ export class MessageLogRepository {
         retryCount: data.retryCount ?? 0,
       };
 
-      const result = await dbInstance.insert(messageLogs).values(newMessageLog).returning();
+      // ATOMIC INSERT with ON CONFLICT DO NOTHING
+      // This eliminates race condition between check and insert
+      // Database-level atomic operation guarantees no duplicate inserts
+      const result = await dbInstance
+        .insert(messageLogs)
+        .values(newMessageLog)
+        .onConflictDoNothing({ target: messageLogs.idempotencyKey })
+        .returning();
+
+      // If no rows returned, idempotency key already exists (conflict occurred)
+      if (!result || result.length === 0) {
+        // Query existing record to provide detailed error
+        const existing = await this.checkIdempotency(data.idempotencyKey, tx);
+        if (existing) {
+          throw new UniqueConstraintError(
+            `Message with idempotency key ${data.idempotencyKey} already exists`,
+            { idempotencyKey: data.idempotencyKey, existingId: existing.id }
+          );
+        }
+        // Should never reach here, but handle gracefully
+        throw new DatabaseError('Failed to create message log: no result returned', { data });
+      }
 
       const created = result[0];
       if (!created) {
@@ -251,6 +263,7 @@ export class MessageLogRepository {
       }
 
       // Check for PostgreSQL unique constraint violation (23505)
+      // This should be rare now with onConflictDoNothing, but handle it for safety
       if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
         throw new UniqueConstraintError(
           `Message with idempotency key ${data.idempotencyKey} already exists`,
