@@ -1274,10 +1274,186 @@ Save comprehensive report to: `plan/09-reports/DOCS_SYNC_[DATE].md`
 
 ---
 
+# KNOWN IMPROVEMENT OPPORTUNITIES
+
+**Last Updated**: 2026-01-02
+
+Based on the most recent comprehensive documentation sync (DOCS_SYNC_2026-01-02_COMPREHENSIVE.md), the following improvement opportunities have been identified:
+
+## High Priority Items
+
+### 1. Duplicate Content Clusters (5 clusters identified)
+
+**Impact**: ~3,000 lines of duplicated content across 9 files
+
+#### Cluster A: Test Optimization Documentation
+- **Files**: `docs/TEST_OPTIMIZATION.md`, `docs/TEST_MIGRATION_GUIDE.md`, `docs/test-performance-analysis.md`
+- **Issue**: 60%+ content overlap on TestContainer caching, parallelism, performance metrics
+- **Action**: Consolidate into single comprehensive guide + migration checklist
+- **Estimated Effort**: 2 hours
+
+#### Cluster B: CI/CD Documentation
+- **Files**: `docs/CI_CD_STRUCTURE.md`, `docs/CI_CD_DEPENDENCY_GRAPH.md`, `docs/CI_CD_QUICK_REFERENCE.md`, `docs/CI_CD_DOCUMENTATION_INDEX.md`
+- **Issue**: Same 9 workflows and 50+ jobs documented across 4 files
+- **Action**: Keep STRUCTURE and QUICK_REFERENCE, archive DEPENDENCY_GRAPH and DOCUMENTATION_INDEX to plan/09-reports/
+- **Estimated Effort**: 1 hour
+
+#### Cluster C: Performance Test Documentation
+- **Files**: `docs/PERFORMANCE_TEST_OPTIMIZATION.md`, `docs/test-performance-analysis.md`
+- **Issue**: Both analyze test duration, optimization strategies, CI config
+- **Action**: Consolidate into PERFORMANCE_TEST_OPTIMIZATION.md
+- **Estimated Effort**: 1 hour
+
+### 2. Orphaned Files (5 files, 2,859 lines)
+
+**Impact**: 7% of total documentation not discoverable through README/INDEX navigation
+
+| File | Lines | Action Required |
+|------|-------|-----------------|
+| `docs/test-performance-analysis.md` | 432 | Merge into PERFORMANCE_TEST_OPTIMIZATION.md OR add to docs/README.md |
+| `docs/test-patterns/RESILIENT-API-TESTING-SUMMARY.md` | 453 | Add reference to docs/README.md |
+| `docs/test-patterns/RESILIENT-API-TESTING-ARCHITECTURE.md` | 466 | Add reference to docs/README.md |
+| `docs/vendor-specs/SUMMARY.md` | 539 | Add reference to docs/README.md |
+| `docs/vendor-specs/API_ANALYSIS.md` | 969 | Add reference to docs/README.md |
+
+**Estimated Effort**: 30 minutes to update docs/README.md
+
+### 3. Missing INDEX.md Files (2 directories)
+
+**Impact**: Subdirectories without proper navigation
+
+| Directory | Status | Action Required |
+|-----------|--------|-----------------|
+| `docs/` | ❌ Missing | Create INDEX.md mirroring README.md structure |
+| `docs/test-patterns/` | ❌ Missing | Create INDEX.md with overview and file links |
+
+**Estimated Effort**: 30 minutes
+
+## Medium Priority Items
+
+### 4. Dynamic Badge JSON Generation
+
+**Impact**: Performance and coverage badges reference non-existent GitHub Pages endpoints
+
+**Required Files**:
+- `docs/coverage-badge.json` - Generate from coverage/coverage-summary.json
+- `docs/security-badge.json` - Generate from security scan results
+- `docs/performance-badge.json` - Generate from k6 test results (use existing scripts/performance/generate-badges.sh)
+
+**Action**: Integrate badge generation into CI/CD workflows
+- Coverage: Add to .github/workflows/ci.yml after test execution
+- Security: Add to .github/workflows/security.yml after scans
+- Performance: Already scripted, ensure integration in .github/workflows/performance.yml
+
+**Estimated Effort**: 2-3 hours
+
+### 5. GitHub Pages Static HTML Content
+
+**Impact**: README badges link to GitHub Pages endpoints that don't exist yet
+
+**Required Pages**:
+1. `index.html` - API Documentation (Redoc/Swagger UI from openapi.json)
+2. `coverage-trends.html` - Historical coverage visualization with charts
+3. `test-reports.html` - Aggregated test results from all test types
+4. `security-summary.html` - Security scan results dashboard
+5. `performance-report.html` - k6 performance metrics visualization
+6. `reports-summary.html` - Central hub linking all reports
+
+**Action**:
+- Create HTML templates in `docs/templates/`
+- Generate pages in .github/workflows/docs.yml
+- Deploy to GitHub Pages
+
+**Estimated Effort**: 3-4 hours
+
+## Low Priority Items
+
+### 6. File Reorganization
+
+**Recommendation**: Move test-patterns/ directory to better location
+
+| Current Location | Recommended Location | Reason |
+|------------------|---------------------|--------|
+| `docs/test-patterns/` | `plan/04-testing/test-patterns/` | Testing strategy documentation belongs with other testing plans |
+
+**Estimated Effort**: 15 minutes + update cross-references
+
+### 7. Cross-Reference Enhancement
+
+**Action**: Add breadcrumb navigation to isolated files
+
+**Affected Files**:
+- `docs/test-patterns/RESILIENT-API-TESTING-*.md` (2 files)
+- `docs/test-performance-analysis.md` (1 file)
+
+**Pattern**: Add `[← Back to Documentation](../README.md)` to top of each file
+
+**Estimated Effort**: 15 minutes
+
+## Progress Tracking
+
+**Overall Documentation Health**: 85% → Target: 95%
+
+**When addressing these items**:
+1. Mark items complete in this section
+2. Update estimated effort remaining
+3. Document completion in plan/09-reports/DOCS_SYNC_[DATE].md
+4. Re-run documentation sync to verify improvements
+
+**Next Sync Recommended**: After completing high-priority items or monthly review
+
+---
+
+## IMPROVEMENT OPPORTUNITIES CHECKLIST
+
+Use this checklist when running docs-sync to track progress:
+
+### High Priority
+- [ ] Consolidate test optimization docs (3 files → 1 + migration guide)
+- [ ] Archive redundant CI/CD docs (4 files → 2 files)
+- [ ] Consolidate performance test docs (2 files → 1 file)
+- [ ] Update docs/README.md with orphaned file references (5 files)
+- [ ] Create docs/INDEX.md
+- [ ] Create docs/test-patterns/INDEX.md
+
+### Medium Priority
+- [ ] Generate coverage-badge.json in CI workflow
+- [ ] Generate security-badge.json in CI workflow
+- [ ] Verify performance-badge.json generation (script exists)
+- [ ] Create index.html for API documentation
+- [ ] Create coverage-trends.html with charts
+- [ ] Create test-reports.html aggregation
+- [ ] Create security-summary.html dashboard
+- [ ] Create performance-report.html visualization
+- [ ] Create reports-summary.html hub page
+
+### Low Priority
+- [ ] Move docs/test-patterns/ to plan/04-testing/test-patterns/
+- [ ] Add breadcrumb navigation to isolated files (3 files)
+- [ ] Create documentation visualization (Mermaid diagrams)
+
+**Last Review**: 2026-01-02
+**Items Completed**: 0/18 (0%)
+**Estimated Total Effort**: 10-12 hours
+
+---
+
 ## BEGIN SYNCHRONIZATION & ORGANIZATION
 
-Use Task tool agents as needed:
-- `Explore` agent for comprehensive codebase scanning
-- `haiku` for file existence checks and simple operations
-- `sonnet` for content analysis, updates, and restructuring
-- `opus` for complex restructuring decisions
+**Pre-Execution Checklist**:
+1. Review "KNOWN IMPROVEMENT OPPORTUNITIES" section above
+2. Check if any items have been addressed since last sync
+3. Plan which improvements to tackle during this sync
+4. Prepare to update improvement tracking after execution
+
+**Execution Strategy**:
+- Use `Explore` agent for comprehensive codebase scanning and duplicate detection
+- Use `haiku` model for file existence checks and simple operations
+- Use `sonnet` model for content analysis, updates, and restructuring
+- Use `opus` model for complex restructuring decisions requiring architectural judgment
+
+**Expected Outputs**:
+1. Updated sync report in plan/09-reports/DOCS_SYNC_[DATE].md
+2. Updated improvement opportunities checklist (mark completed items)
+3. Updated plan/09-reports/INDEX.md with latest report
+4. Any files consolidated, moved, or created during sync
