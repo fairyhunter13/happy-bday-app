@@ -1,5 +1,27 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Cleanup function to kill all vitest processes on exit
+cleanup_vitest() {
+  pkill -P $$ 2>/dev/null || true
+  pkill -f "vitest" 2>/dev/null || true
+}
+
+# Register cleanup on exit (normal or interrupted)
+trap cleanup_vitest EXIT INT TERM
+
 npm run typecheck
-npm run test:unit
+
+# Run tests in single-thread mode to prevent orphaned processes
+# --pool=forks with singleFork ensures clean process termination
+# --reporter=basic for faster output
+# --bail=5 to stop after 5 failures (faster feedback)
+vitest run --config vitest.config.unit.ts \
+  --pool=forks \
+  --poolOptions.forks.singleFork=true \
+  --reporter=basic \
+  --bail=5 \
+  --no-coverage
+
+# Explicit cleanup before exit
+cleanup_vitest
