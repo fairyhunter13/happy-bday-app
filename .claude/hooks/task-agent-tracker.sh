@@ -155,17 +155,16 @@ EXPIRES_AT=$(date -u -v+1H '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -d '+1 h
 INSTANCE_ID="${HIVE_INSTANCE_ID:-$(hostname)-$$}"
 
 # Build metadata JSON with lifecycle information
-# Uses jq to properly structure nested JSON objects
+# IMPORTANT: Use FLAT structure to match cleanup script expectations
+# Cleanup script expects: "lifecycle":"temporary", "protected":0, NOT nested objects
 if command -v jq >/dev/null 2>&1; then
     METADATA=$(jq -n \
         --arg model "$MODEL" \
         --arg spawnedAt "$TIMESTAMP" \
         --arg source "claude-code-task" \
         --arg sessionId "$SESSION_ID" \
-        --arg lifecycleType "ephemeral" \
         --argjson ttl "$TTL" \
         --arg expiresAt "$EXPIRES_AT" \
-        --arg cleanupTrigger "task_complete" \
         --arg spawnedBy "claude-code-task" \
         --arg instanceId "$INSTANCE_ID" \
         '{
@@ -173,22 +172,17 @@ if command -v jq >/dev/null 2>&1; then
             spawnedAt: $spawnedAt,
             source: $source,
             sessionId: $sessionId,
-            lifecycle: {
-                type: $lifecycleType,
-                ttl: $ttl,
-                expires_at: $expiresAt,
-                cleanup_trigger: $cleanupTrigger,
-                protected: false
-            },
-            spawn_context: {
-                spawned_by: $spawnedBy,
-                session_id: $sessionId,
-                instance_id: $instanceId
-            }
+            lifecycle: "temporary",
+            protected: 0,
+            ttl: $ttl,
+            expires_at: $expiresAt,
+            cleanup_trigger: "task_complete",
+            spawned_by: $spawnedBy,
+            instance_id: $instanceId
         }')
 else
-    # Fallback: Basic JSON without nested objects if jq not available
-    METADATA="{\"model\":\"$MODEL\",\"spawnedAt\":\"$TIMESTAMP\",\"source\":\"claude-code-task\",\"sessionId\":\"$SESSION_ID\"}"
+    # Fallback: Basic JSON with flat lifecycle structure
+    METADATA="{\"model\":\"$MODEL\",\"spawnedAt\":\"$TIMESTAMP\",\"source\":\"claude-code-task\",\"sessionId\":\"$SESSION_ID\",\"lifecycle\":\"temporary\",\"protected\":0,\"ttl\":$TTL}"
 fi
 
 # Build SQL statement
