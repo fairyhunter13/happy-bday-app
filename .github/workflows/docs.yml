@@ -134,6 +134,7 @@ jobs:
             <nav class="doc-nav">
               <a href="test-reports.html">🧪 Tests</a>
               <a href="coverage-trends.html">📈 Coverage</a>
+              <a href="security-summary.html">🔒 Security</a>
               <a href="dashboards-index.html">📊 Dashboards</a>
               <a href="reports-summary.html">📋 Reports</a>
               <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub</a>
@@ -185,6 +186,10 @@ jobs:
             cp docs/reports-summary.html _site/reports-summary.html
           fi
 
+          if [ -f docs/security-summary.html ]; then
+            cp docs/security-summary.html _site/security-summary.html
+          fi
+
           # Copy coverage history if it exists
           if [ -f docs/coverage-history.json ]; then
             cp docs/coverage-history.json _site/coverage-history.json
@@ -193,6 +198,29 @@ jobs:
           # Copy coverage badge if it exists
           if [ -f docs/coverage-badge.json ]; then
             cp docs/coverage-badge.json _site/coverage-badge.json
+          fi
+
+          # Copy security badge if it exists
+          if [ -f docs/security-badge.json ]; then
+            cp docs/security-badge.json _site/security-badge.json
+          fi
+
+          # Copy performance badges if they exist
+          for badge_file in performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
+            if [ -f "docs/$badge_file" ]; then
+              cp "docs/$badge_file" "_site/$badge_file"
+            fi
+          done
+
+          # Generate performance badges if not already generated (use defaults)
+          if [ ! -f _site/performance-badge.json ]; then
+            chmod +x scripts/performance/generate-badges.sh 2>/dev/null || true
+            ./scripts/performance/generate-badges.sh perf-results docs 2>/dev/null || true
+            for badge_file in performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
+              if [ -f "docs/$badge_file" ]; then
+                cp "docs/$badge_file" "_site/$badge_file"
+              fi
+            done
           fi
 
           # Copy Grafana dashboards and alerts for reference

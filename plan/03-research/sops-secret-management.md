@@ -1165,9 +1165,9 @@ Timeline:
 - Following week: Production environment
 
 Resources:
-- Setup guide: docs/DEVELOPER_SETUP.md
-- Troubleshooting: docs/SOPS_TROUBLESHOOTING.md
-- Questions: #engineering channel
+- Setup guide: docs/DEVELOPER_SETUP.md (includes SOPS setup and troubleshooting)
+- Runbook: docs/RUNBOOK.md (includes operational troubleshooting)
+- Questions: GitHub issues
 
 Thanks!
 ```

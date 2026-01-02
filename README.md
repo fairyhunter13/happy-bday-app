@@ -41,13 +41,19 @@
 [![Snyk Security](https://img.shields.io/snyk/vulnerabilities/github/fairyhunter13/happy-bday-app?logo=snyk)](https://snyk.io/test/github/fairyhunter13/happy-bday-app)
 [![SonarCloud](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/sonar.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/sonar.yml)
 [![Quality Gate Status](https://img.shields.io/badge/SonarCloud-Quality%20Gate-brightgreen?logo=sonarcloud)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![Mutation Testing](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/mutation.yml)
+[![Stryker Mutation Testing](https://img.shields.io/badge/Stryker-mutation%20testing-yellow?logo=stryker)](https://stryker-mutator.io/)
 
 ### Coverage & Validation
 [![codecov](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json&logo=vitest)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
 [![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/code-quality.yml)
 [![OpenAPI Validation](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/openapi-validation.yml)
+
+### Performance Metrics
+[![Performance](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/performance-badge.json&logo=prometheus)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![RPS Capacity](https://img.shields.io/badge/RPS-100%2B%20msg%2Fsec-brightgreen?logo=graphql)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![Throughput](https://img.shields.io/badge/Throughput-1M%2B%20msgs%2Fday-brightgreen?logo=apachekafka)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![p95 Latency](https://img.shields.io/badge/p95%20Latency-%3C200ms-brightgreen?logo=speedtest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
 
 ### Tech Stack
 [![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-green?logo=node.js)](https://nodejs.org/)

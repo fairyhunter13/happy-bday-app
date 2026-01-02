@@ -2324,15 +2324,15 @@ This project uses [SOPS (Secrets OPerationS)](https://github.com/getsops/sops) w
 
 ### Documentation
 
-- [Developer Setup Guide](docs/DEVELOPER_SETUP.md) - First-time setup instructions
-- [SOPS Troubleshooting](docs/SOPS_TROUBLESHOOTING.md) - Common issues and solutions
+- [Developer Setup Guide](docs/DEVELOPER_SETUP.md) - First-time setup instructions (includes SOPS troubleshooting)
+- [Runbook](docs/RUNBOOK.md) - Operational guide with troubleshooting procedures
 - [Research Document](plan/03-research/sops-secret-management.md) - Comprehensive SOPS guide
 
 ### Need Help?
 
 - **Can't decrypt secrets?** → Check `~/.config/sops/age/keys.txt` exists
 - **Changed secrets?** → Run `npm run secrets:encrypt:dev` before committing
-- **Other issues?** → See [SOPS_TROUBLESHOOTING.md](docs/SOPS_TROUBLESHOOTING.md)
+- **Other issues?** → See [DEVELOPER_SETUP.md](docs/DEVELOPER_SETUP.md) or [RUNBOOK.md](docs/RUNBOOK.md)
 ```
 
 ### Step 7.2: Create Developer Setup Guide

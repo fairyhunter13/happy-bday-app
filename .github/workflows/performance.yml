@@ -270,6 +270,24 @@ jobs:
       - name: Generate consolidated report
         run: npm run perf:report
 
+      - name: Generate performance badges
+        run: |
+          chmod +x scripts/performance/generate-badges.sh
+          ./scripts/performance/generate-badges.sh perf-results docs
+
+      - name: Upload performance badges
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-badges
+          path: |
+            docs/performance-badge.json
+            docs/rps-badge.json
+            docs/latency-badge.json
+            docs/throughput-badge.json
+            docs/error-rate-badge.json
+            docs/performance-metrics.json
+          retention-days: 90
+
       - name: Upload final report
         uses: actions/upload-artifact@v4
         with:
