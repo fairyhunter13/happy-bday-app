@@ -1,7 +1,6 @@
 # New Grafana Dashboards - Implementation Summary
 
 **Created:** January 1, 2026  
-**Author:** RESEARCHER (Queen Collective)  
 **Objective:** Create comprehensive Grafana dashboard templates for Birthday Scheduler monitoring
 
 ## Overview

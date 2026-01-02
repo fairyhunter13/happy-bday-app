@@ -39,11 +39,6 @@ $ USE_EVENT_LOOP=true .claude/hooks/lib/queue-worker.sh --foreground &
 $ sleep 5
 $ ps aux | grep queue-worker
 # Result: 0.0% CPU  ✅
-
-$ cat .hive-mind/queue/.heartbeat | jq
-{
-  "mode": "event-loop",         ✅ Event loop active
-  "events_processed": 15,       ✅ Events being consumed
   "watcher_alive": true,        ✅ File watcher running
   "idle_seconds": 0
 }
@@ -138,7 +133,6 @@ start_file_watcher() {
    - `flock` behavior differs on macOS
    - Lock acquisition hangs in some scenarios
    - **Impact**: Worker fails to start in automated tests
-   - **Solution**: Manual cleanup required (`rm .hive-mind/queue/.lock`)
 
 3. **Process Management**
    - Background worker processes can conflict

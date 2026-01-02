@@ -143,14 +143,6 @@ USE_EVENT_LOOP=false .claude/hooks/lib/queue-worker.sh
 ### Monitoring
 
 ```bash
-# Check mode
-cat .hive-mind/queue/.heartbeat | jq -r '.mode'
-# Should show: "event-loop"
-
-# Check events processed
-cat .hive-mind/queue/.heartbeat | jq -r '.events_processed'
-# Increments when queue entries are added
-
 # Check CPU
 ps aux | grep queue-worker
 # Should show: 0.0% when idle

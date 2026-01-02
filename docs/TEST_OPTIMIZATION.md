@@ -203,7 +203,6 @@ npm run test:fast
 - `vitest.config.e2e-optimized.ts` - Optimized E2E tests
 - `vitest.config.integration-optimized.ts` - Optimized integration tests
 - `vitest.config.performance.ts` - Performance baseline tests
-- `vitest.config.cache.ts` - Test result caching
 
 ### Helper Files
 - `tests/helpers/testcontainers-optimized.ts` - Container optimization

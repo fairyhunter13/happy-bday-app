@@ -80,17 +80,3 @@ Thumbs.db
 
 # Local project data
 project_data
-hive-mind-prompt-*.txt
-
-# Claude Flow
-.claude/settings.local.json
-.mcp.json
-claude-flow.config.json
-claude-flow
-.swarm/
-.hive-mind/
-.claude-flow/
-memory/
-coordination/
-!memory/sessions/README.md
-!memory/agents/README.md

@@ -125,7 +125,6 @@ No changes needed - unit tests don't use TestContainers.
 | `vitest.config.e2e-optimized.ts` | E2E tests | Parallel files, 90s timeout |
 | `vitest.config.integration-optimized.ts` | Integration | 2-4 threads, 45s timeout |
 | `vitest.config.performance.ts` | Performance | Sequential, detailed metrics |
-| `vitest.config.cache.ts` | Caching | Test result caching |
 
 ### Helper Files
 

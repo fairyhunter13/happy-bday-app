@@ -181,8 +181,6 @@ run: npm run test:unit -- --shard=${{ matrix.shard }}/5 --reporter=verbose --cov
 
 ## Model Selection Strategy
 
-Per `.claude/hive-mind-config.json`:
-
 | Task | Complexity | Model |
 |------|------------|-------|
 | Timezone Tests | >= 31 | Sonnet |
