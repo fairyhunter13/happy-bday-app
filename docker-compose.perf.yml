@@ -33,9 +33,12 @@ x-api-service: &api-service
     <<: *perf-env
     PORT: 3000
   depends_on:
-    - postgres-primary
-    - rabbitmq
-    - redis
+    postgres-primary:
+      condition: service_started
+    rabbitmq:
+      condition: service_healthy
+    redis:
+      condition: service_started
   logging:
     <<: *logging
   networks:
@@ -50,11 +53,14 @@ x-worker-service: &worker-service
     - .env.test
   environment:
     <<: *perf-env
-  command: npm run worker
+  command: node dist/src/worker.js
   depends_on:
-    - postgres-primary
-    - rabbitmq
-    - redis
+    postgres-primary:
+      condition: service_started
+    rabbitmq:
+      condition: service_healthy
+    redis:
+      condition: service_started
   logging:
     <<: *logging
   networks:
@@ -259,6 +265,12 @@ services:
       - '15672:15672'
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     logging:
       <<: *logging
     networks:
