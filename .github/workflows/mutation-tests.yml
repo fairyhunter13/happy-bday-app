@@ -84,19 +84,34 @@ jobs:
           npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
           exit_code=${PIPESTATUS[0]}
 
-          # Extract mutation score from output
-          mutation_score=$(grep -oP 'Mutation score.*?(\d+\.?\d*)%' mutation-output.txt | grep -oP '\d+\.?\d*' | tail -1 || echo "0")
+          # Extract mutation score from "Final mutation score XX" or progress line
+          # Stryker outputs: "Final mutation score 37.81 under breaking threshold"
+          mutation_score=$(grep -oP 'Final mutation score \K[\d.]+' mutation-output.txt | tail -1 || echo "")
+          if [ -z "$mutation_score" ]; then
+            # Fallback: try to extract from progress line like "Mutation testing 97%"
+            mutation_score=$(grep -oP 'Mutation testing \K\d+' mutation-output.txt | tail -1 || echo "0")
+          fi
           echo "mutation_score=$mutation_score" >> $GITHUB_OUTPUT
 
-          # Extract killed/survived/timeout counts
-          killed=$(grep -oP 'Killed:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          survived=$(grep -oP 'Survived:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          timeout=$(grep -oP 'Timeout:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          no_coverage=$(grep -oP 'No Coverage:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          # Extract counts from the LAST progress line: "(387 survived, 5 timed out)"
+          # Format: "tested (X survived, Y timed out)"
+          last_progress=$(grep -oP '\d+ survived, \d+ timed out' mutation-output.txt | tail -1 || echo "0 survived, 0 timed out")
+          survived=$(echo "$last_progress" | grep -oP '^\d+' || echo "0")
+          timeout_count=$(echo "$last_progress" | grep -oP '\d+(?= timed out)' || echo "0")
+
+          # Total tested from last progress line: "2092 tested"
+          total_tested=$(grep -oP '\d+/\d+ tested' mutation-output.txt | tail -1 | grep -oP '^\d+' || echo "0")
+
+          # Calculate killed = total_tested - survived - timeout
+          killed=$((total_tested - survived - timeout_count))
+          if [ "$killed" -lt 0 ]; then killed=0; fi
+
+          # No coverage is harder to extract, set to 0 for now
+          no_coverage="0"
 
           echo "killed=$killed" >> $GITHUB_OUTPUT
           echo "survived=$survived" >> $GITHUB_OUTPUT
-          echo "timeout=$timeout" >> $GITHUB_OUTPUT
+          echo "timeout=$timeout_count" >> $GITHUB_OUTPUT
           echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
 
           exit $exit_code
