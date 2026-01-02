@@ -8,6 +8,7 @@ on:
       - 'src/routes/**'
       - 'src/app.ts'
       - '.spectral.yml'
+      - '.github/workflows/openapi-validation.yml'
   pull_request:
     branches: [main, develop]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'src/routes/**'
       - 'src/app.ts'
       - '.spectral.yml'
+  workflow_dispatch:
 
 jobs:
   validate-openapi:
