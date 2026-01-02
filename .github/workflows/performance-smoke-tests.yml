@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Performance Smoke Tests
 
 # Triggered after Unit Tests workflow passes with sufficient coverage
 
@@ -10,11 +10,11 @@ on:
   pull_request:
     paths:
       - 'src/**'
-      - 'tests/e2e/**'
+      - 'tests/performance/**'
   workflow_dispatch:
 
 concurrency:
-  group: e2e-tests-${{ github.ref }}
+  group: perf-smoke-tests-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -50,17 +50,12 @@ jobs:
           # For pull_request, always run
           echo "should_run=true" >> $GITHUB_OUTPUT
 
-  e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }}/${{ matrix.total }})
+  performance-smoke:
+    name: Performance Smoke Test
     needs: [check-trigger]
     if: needs.check-trigger.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-        total: [2]
+    timeout-minutes: 10
 
     services:
       postgres:
@@ -110,14 +105,6 @@ jobs:
       - name: Setup Node.js and dependencies
         uses: ./.github/actions/setup-node-app
 
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
       - name: Wait for services
         uses: ./.github/actions/wait-for-services
         with:
@@ -131,47 +118,81 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total }})
-        run: npm run test:e2e:optimized -- --shard=${{ matrix.shard }}/${{ matrix.total }}
+      - name: Build application
+        run: npm run build
+
+      - name: Start API server
+        run: |
+          npm run start &
+          echo $! > server.pid
+          sleep 10
         env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          REDIS_URL: redis://localhost:6379
-          API_URL: http://localhost:3000
-          ENABLE_DB_METRICS: 'false'
-          CI: 'true'
           NODE_ENV: test
-          TESTCONTAINERS_RYUK_DISABLED: 'true'
+          PORT: 3000
+          DATABASE_URL: postgres://test:test@localhost:5432/test_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: test
+          DATABASE_PASSWORD: test
+          DATABASE_NAME: test_db
+          RABBITMQ_URL: amqp://test:test@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: test
+          RABBITMQ_PASSWORD: test
+          REDIS_URL: redis://localhost:6379
 
-      - name: Cleanup decrypted secrets
+      - name: Verify API is running
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null; then
+              echo "API is ready"
+              exit 0
+            fi
+            echo "Waiting for API... attempt $i"
+            sleep 2
+          done
+          echo "API failed to start"
+          exit 1
+
+      - name: Install k6
+        uses: ./.github/actions/install-k6
+
+      - name: Run smoke test
+        id: smoke-test
+        run: |
+          mkdir -p perf-results
+          k6 run tests/performance/api-smoke.test.js \
+            --out json=perf-results/smoke-results.json \
+            2>&1 | tee smoke-output.log
+        env:
+          API_URL: http://localhost:3000
+
+      - name: Stop API server
         if: always()
-        run: rm -f .env.test
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) 2>/dev/null || true
+          fi
 
-      - name: Upload test results
+      - name: Upload results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-results-shard-${{ matrix.shard }}
+          name: performance-smoke-results
           path: |
-            coverage/
+            perf-results/
+            smoke-output.log
           retention-days: 7
 
-  e2e-summary:
-    name: E2E Summary
-    needs: [e2e-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check results
+      - name: Summary
+        if: always()
         run: |
-          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Performance Smoke Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
-            echo "All E2E tests passed!" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.e2e-tests.result }}" = "skipped" ]; then
-            echo "E2E tests were skipped (Unit Tests did not pass)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.smoke-test.outcome }}" = "success" ]; then
+            echo "Performance smoke test passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "E2E tests failed" >> $GITHUB_STEP_SUMMARY
-            exit 1
+            echo "Performance smoke test failed" >> $GITHUB_STEP_SUMMARY
           fi

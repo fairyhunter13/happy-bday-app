@@ -1,0 +1,130 @@
+name: Unit Tests
+
+# This workflow runs unit tests and enforces coverage gate.
+# Other test workflows are triggered ONLY when this passes with >=81% coverage.
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  COVERAGE_THRESHOLD: 81
+
+jobs:
+  lint-and-type-check:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Check code formatting
+        run: npm run format:check
+
+  unit-tests:
+    name: Unit Tests with Coverage
+    needs: [lint-and-type-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      coverage_passed: ${{ steps.coverage-gate.outputs.passed }}
+      coverage_pct: ${{ steps.coverage-gate.outputs.coverage_pct }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
+
+      - name: Run unit tests with coverage
+        run: npx vitest run --config vitest.config.unit-ci.ts --reporter=verbose --coverage
+
+      - name: Cleanup decrypted secrets
+        if: always()
+        run: rm -f .env.test
+
+      - name: Extract coverage percentage
+        id: coverage-gate
+        run: |
+          # Extract coverage from summary
+          if [ -f coverage/coverage-summary.json ]; then
+            coverage_pct=$(node -e "
+              const summary = require('./coverage/coverage-summary.json');
+              console.log(summary.total.statements.pct.toFixed(2));
+            ")
+            echo "coverage_pct=$coverage_pct" >> $GITHUB_OUTPUT
+
+            # Check if coverage meets threshold
+            threshold=${{ env.COVERAGE_THRESHOLD }}
+            if (( $(echo "$coverage_pct >= $threshold" | bc -l) )); then
+              echo "passed=true" >> $GITHUB_OUTPUT
+              echo "Coverage: $coverage_pct% >= $threshold% threshold"
+            else
+              echo "passed=false" >> $GITHUB_OUTPUT
+              echo "Coverage: $coverage_pct% < $threshold% threshold"
+              echo "::error::Coverage $coverage_pct% is below the required $threshold% threshold"
+              exit 1
+            fi
+          else
+            echo "::error::Coverage summary not found"
+            echo "passed=false" >> $GITHUB_OUTPUT
+            echo "coverage_pct=0" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+          retention-days: 7
+
+      - name: Coverage Summary
+        run: |
+          echo "## Unit Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Coverage** | ${{ steps.coverage-gate.outputs.coverage_pct }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Threshold** | ${{ env.COVERAGE_THRESHOLD }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Status** | ${{ steps.coverage-gate.outputs.passed == 'true' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+
+  # This job signals that unit tests passed with sufficient coverage
+  # Other workflows listen to this via workflow_run
+  coverage-gate:
+    name: Coverage Gate
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    if: needs.unit-tests.outputs.coverage_passed == 'true'
+    steps:
+      - name: Coverage gate passed
+        run: |
+          echo "Unit tests passed with ${{ needs.unit-tests.outputs.coverage_pct }}% coverage"
+          echo "Downstream test workflows will be triggered"
