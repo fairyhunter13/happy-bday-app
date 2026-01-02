@@ -1,0 +1,142 @@
+name: Mutation Testing (Isolated)
+
+# ISOLATED WORKFLOW FOR DEBUGGING
+# This workflow is used to test and fix mutation testing in isolation before reintegrating into main CI
+# Trigger manually or on specific branches with 'mutation-fix' prefix
+
+on:
+  workflow_dispatch:
+    inputs:
+      debug_mode:
+        description: 'Enable debug mode with verbose logging'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+  push:
+    branches:
+      - 'mutation-fix/**'
+      - 'fix/mutation-*'
+
+concurrency:
+  group: mutation-isolated-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  DEBUG: ${{ github.event.inputs.debug_mode || 'true' }}
+
+jobs:
+  mutation-testing-isolated:
+    name: Mutation Testing (Isolated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Setup SOPS
+        uses: ./.github/actions/setup-sops
+        with:
+          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
+
+      - name: Decrypt test secrets
+        run: sops --decrypt .env.test.enc > .env.test
+
+      - name: Create reports directory
+        run: mkdir -p reports/mutation
+
+      - name: Debug - Show environment
+        if: env.DEBUG == 'true'
+        run: |
+          echo "=== DEBUG: Environment ==="
+          echo "Node version: $(node -v)"
+          echo "NPM version: $(npm -v)"
+          echo "=== DEBUG: Stryker config ==="
+          cat stryker.conf.mjs || echo "No stryker.conf.mjs found"
+
+      - name: Run mutation testing
+        id: mutation
+        run: |
+          npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
+          exit_code=${PIPESTATUS[0]}
+
+          # Extract mutation score from output
+          mutation_score=$(grep -oP 'Mutation score.*?(\d+\.?\d*)%' mutation-output.txt | grep -oP '\d+\.?\d*' | tail -1 || echo "0")
+          echo "mutation_score=$mutation_score" >> $GITHUB_OUTPUT
+
+          # Extract killed/survived/timeout counts
+          killed=$(grep -oP 'Killed:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          survived=$(grep -oP 'Survived:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          timeout=$(grep -oP 'Timeout:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          no_coverage=$(grep -oP 'No Coverage:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+
+          echo "killed=$killed" >> $GITHUB_OUTPUT
+          echo "survived=$survived" >> $GITHUB_OUTPUT
+          echo "timeout=$timeout" >> $GITHUB_OUTPUT
+          echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
+
+          exit $exit_code
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report-isolated
+          path: |
+            reports/mutation/
+            mutation-output.txt
+          retention-days: 7
+        if: always()
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Mutation Testing Results (Isolated)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          score="${{ steps.mutation.outputs.mutation_score }}"
+          if [ -n "$score" ]; then
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Mutation Score** | ${score}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Killed | ${{ steps.mutation.outputs.killed }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Survived | ${{ steps.mutation.outputs.survived }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Timeout | ${{ steps.mutation.outputs.timeout }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| No Coverage | ${{ steps.mutation.outputs.no_coverage }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Could not extract mutation score from output" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ -f mutation-output.txt ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Last 50 lines of output" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            tail -50 mutation-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check mutation score threshold
+        run: |
+          score="${{ steps.mutation.outputs.mutation_score }}"
+          if [ -z "$score" ]; then
+            echo "Warning: Could not determine mutation score"
+            exit 0
+          fi
+
+          echo "Mutation score: $score%"
+          if (( $(echo "$score >= 80" | bc -l) )); then
+            echo "✓ Excellent! Mutation score meets the high threshold (>=80%)."
+          elif (( $(echo "$score >= 60" | bc -l) )); then
+            echo "✓ Good. Mutation score is acceptable but could be improved (>=60%)."
+          elif (( $(echo "$score >= 50" | bc -l) )); then
+            echo "⚠ Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
+          else
+            echo "✗ Error: Mutation score ($score%) is below the break threshold (50%)"
+            exit 1
+          fi
