@@ -335,10 +335,17 @@ export class MockEmailServer {
   }
 
   /**
-   * Get server URL
+   * Get server URL (legacy - includes path for backward compatibility)
    */
   getUrl(): string {
     return `http://localhost:${this.port}/api/messages`;
+  }
+
+  /**
+   * Get base URL (for SDK clients that append their own paths)
+   */
+  getBaseUrl(): string {
+    return `http://localhost:${this.port}`;
   }
 
   /**

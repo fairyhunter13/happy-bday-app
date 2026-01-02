@@ -35,10 +35,15 @@ process.env.RABBITMQ_EXCHANGE_NAME = 'birthday-exchange';
 process.env.RABBITMQ_DLX_NAME = 'birthday-dlx';
 process.env.RABBITMQ_DLQ_NAME = 'birthday-dlq';
 
-// Email Service - use REAL email service for E2E/integration tests
-// The email service has ~10% random failure rate - tests should handle this
-process.env.EMAIL_SERVICE_URL = 'https://email-service.digitalenvision.com.au';
-process.env.EMAIL_SERVICE_TIMEOUT = '30000';
+// Redis - only set defaults if not already defined (CI provides these)
+process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
+// Email Service - use MOCK email service for E2E/integration tests by default
+// TestEnvironment will set this to a local mock server URL
+// Only set fallback if not already defined (mock server may set it first)
+process.env.EMAIL_SERVICE_URL =
+  process.env.EMAIL_SERVICE_URL || 'https://email-service.digitalenvision.com.au';
+process.env.EMAIL_SERVICE_TIMEOUT = process.env.EMAIL_SERVICE_TIMEOUT || '30000';
 
 // Legacy (deprecated)
 process.env.MESSAGE_API_URL = 'http://localhost:9999/api/messages';
