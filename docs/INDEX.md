@@ -87,6 +87,16 @@ Comprehensive documentation for the RabbitMQ-based asynchronous message queue sy
    - Resource efficiency
    - Scaling recommendations
 
+### Claude Hooks Queue System
+
+9. **[QUEUE_AUTOSTART_ARCHITECTURE.md](./QUEUE_AUTOSTART_ARCHITECTURE.md)** (~750 lines)
+   - Queue worker auto-start architecture
+   - Cached health checks for sub-millisecond overhead
+   - Atomic mkdir-based startup locking (macOS compatible)
+   - Heartbeat monitoring and self-healing
+   - Integration with PostToolUse hooks
+   - Implementation specifications
+
 ## Documentation Coverage
 
 ### Code Files with Inline Comments
