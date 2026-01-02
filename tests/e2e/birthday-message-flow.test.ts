@@ -246,6 +246,24 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const timezone = 'UTC';
       const birthdayDate = createTodayBirthdayUTC(1985);
 
+      // Debug: Log the birthday date being used
+      const now = new Date();
+      console.log('[DEBUG] Current UTC date:', now.toISOString());
+      console.log('[DEBUG] UTC Month:', now.getUTCMonth() + 1, 'Day:', now.getUTCDate());
+      console.log('[DEBUG] Birthday date to insert:', birthdayDate.toISOString());
+      console.log(
+        '[DEBUG] Birthday LOCAL Month:',
+        birthdayDate.getMonth() + 1,
+        'Day:',
+        birthdayDate.getDate()
+      );
+      console.log(
+        '[DEBUG] Birthday UTC Month:',
+        birthdayDate.getUTCMonth() + 1,
+        'Day:',
+        birthdayDate.getUTCDate()
+      );
+
       const user = await insertUser(pool, {
         firstName: 'Jane',
         lastName: 'Smith',
@@ -255,8 +273,33 @@ describe('E2E: Complete Birthday Message Flow', () => {
         anniversaryDate: null,
       });
 
+      // Debug: Verify user was inserted and check stored birthday_date
+      const storedUser = await pool.query('SELECT id, birthday_date FROM users WHERE id = $1', [
+        user.id,
+      ]);
+      console.log('[DEBUG] Stored user:', storedUser.rows[0]);
+      console.log('[DEBUG] Stored birthday_date raw:', storedUser.rows[0]?.birthday_date);
+
+      // Debug: Check what findBirthdaysToday would return with direct SQL
+      const utcMonth = now.getUTCMonth() + 1;
+      const utcDay = now.getUTCDate();
+      const directQuery = await pool.query(
+        `SELECT id, birthday_date, timezone,
+                EXTRACT(MONTH FROM birthday_date) as bd_month,
+                EXTRACT(DAY FROM birthday_date) as bd_day
+         FROM users
+         WHERE deleted_at IS NULL
+           AND birthday_date IS NOT NULL
+           AND EXTRACT(MONTH FROM birthday_date) = $1
+           AND EXTRACT(DAY FROM birthday_date) = $2`,
+        [utcMonth, utcDay]
+      );
+      console.log('[DEBUG] Direct SQL query result:', directQuery.rows);
+      console.log('[DEBUG] Expected UTC Month:', utcMonth, 'Day:', utcDay);
+
       // First run - should create message
       const stats1 = await scheduler.preCalculateTodaysBirthdays();
+      console.log('[DEBUG] Scheduler stats:', stats1);
       expect(stats1.messagesScheduled).toBe(1);
 
       // Second run - should skip (idempotency)
@@ -310,6 +353,18 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const timezones = ['America/New_York', 'Europe/London', 'Asia/Tokyo', 'Australia/Sydney'];
       const birthdayDate = createTodayBirthdayUTC(1990);
 
+      // Debug: Log the birthday date being used for all timezones
+      const now = new Date();
+      console.log('[DEBUG] Current UTC date:', now.toISOString());
+      console.log('[DEBUG] UTC Month:', now.getUTCMonth() + 1, 'Day:', now.getUTCDate());
+      console.log('[DEBUG] Birthday date to insert:', birthdayDate.toISOString());
+      console.log(
+        '[DEBUG] Birthday LOCAL Month:',
+        birthdayDate.getMonth() + 1,
+        'Day:',
+        birthdayDate.getDate()
+      );
+
       for (const timezone of timezones) {
         // Clear cache before each iteration to ensure newly inserted user is found
         // Without this, the cache from the previous iteration would be stale
@@ -324,7 +379,17 @@ describe('E2E: Complete Birthday Message Flow', () => {
           anniversaryDate: null,
         });
 
-        await scheduler.preCalculateTodaysBirthdays();
+        // Debug: Verify stored birthday date for this user
+        const storedUser = await pool.query('SELECT id, birthday_date FROM users WHERE id = $1', [
+          user.id,
+        ]);
+        console.log(
+          `[DEBUG] Timezone ${timezone}: stored birthday_date:`,
+          storedUser.rows[0]?.birthday_date
+        );
+
+        const stats = await scheduler.preCalculateTodaysBirthdays();
+        console.log(`[DEBUG] Timezone ${timezone}: scheduler stats:`, stats);
 
         const messages = await findMessageLogsByUserId(pool, user.id);
         expect(messages).toHaveLength(1);
