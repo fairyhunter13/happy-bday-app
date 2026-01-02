@@ -397,9 +397,11 @@ soft_delete_agent() {
     fi
 
     # Build SQL for soft delete with metadata update
+    # Sets both the deleted_at column AND metadata for redundancy
     local sql="
         UPDATE agents
         SET status = 'deleted',
+            deleted_at = '$now',
             metadata = json_set(
                 metadata,
                 '\$.deleted_at', '$now',
