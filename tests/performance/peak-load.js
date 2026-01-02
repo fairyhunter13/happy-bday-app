@@ -46,11 +46,11 @@ export const options = {
       preAllocatedVUs: isCI ? 75 : 100,
       maxVUs: isCI ? 150 : 200,
       stages: isCI ? [
-        { duration: '1m', target: 12 },   // Baseline: 1 minute at 12 msg/sec
-        { duration: '30s', target: 100 }, // Ramp up: 30s to 100 msg/sec
-        { duration: '2m', target: 100 },  // Peak: 2 minutes at 100 msg/sec
-        { duration: '30s', target: 120 }, // Stress: 30s at 120 msg/sec
-        { duration: '1m', target: 12 },   // Ramp down: 1 minute back to baseline
+        { duration: '30s', target: 12 },  // Baseline: 30s at 12 msg/sec
+        { duration: '15s', target: 100 }, // Ramp up: 15s to 100 msg/sec
+        { duration: '1m', target: 100 },  // Peak: 1 minute at 100 msg/sec
+        { duration: '15s', target: 120 }, // Stress: 15s at 120 msg/sec
+        { duration: '30s', target: 12 },  // Ramp down: 30s back to baseline
       ] : [
         { duration: '2m', target: 12 },   // Baseline: 2 minutes at 12 msg/sec
         { duration: '1m', target: 100 },  // Ramp up: 1 minute to 100 msg/sec

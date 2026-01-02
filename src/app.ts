@@ -311,6 +311,11 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
   const { userRoutes } = await import('./routes/user.routes.js');
   await app.register(userRoutes, { prefix: '/api/v1' });
 
+  // Register internal routes (for performance testing and system operations)
+  // These routes are blocked from external access via nginx configuration
+  const { internalRoutes } = await import('./routes/internal.routes.js');
+  await app.register(internalRoutes);
+
   // Type assertion needed because Fastify v5 loggerInstance creates a more specific type
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return app as any as FastifyInstance;
