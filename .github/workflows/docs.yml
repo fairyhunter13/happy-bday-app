@@ -15,6 +15,9 @@ on:
       - completed
     branches:
       - main
+    # Only trigger when CI (Full) succeeds (not cancelled/failed)
+    conclusions:
+      - success
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
