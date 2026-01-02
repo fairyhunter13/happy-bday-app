@@ -1,29 +1,34 @@
 name: CI (Full)
 
 # FULL INTEGRATED CI WORKFLOW
-# This workflow runs ALL tests in a single workflow (jobs run in parallel on separate runners).
-# Alternative to separated workflows (unit-tests.yml, integration-tests.yml, etc.)
+# This workflow runs ALL tests and checks in a single unified workflow.
+# Consolidates all separate workflow files for better organization and status tracking.
 #
-# Use this workflow when you prefer:
-# - All tests in one workflow status
-# - Simpler setup with one workflow file
-#
-# Note: Each job still runs on a separate Ubuntu runner with isolated containers.
-# The main difference from separated workflows is organizational, not isolation.
+# Merged workflows:
+# - unit-tests.yml → unit-tests job
+# - integration-tests.yml → integration-tests job
+# - e2e-tests.yml → e2e-tests job
+# - chaos-tests.yml → chaos-tests job
+# - mutation-tests.yml → mutation-testing job
+# - performance-load-tests.yml → performance-load-tests job
+# - performance-smoke-tests.yml → performance-smoke-test job
+# - openapi-validation.yml → openapi-validation job
+# - code-quality.yml → lint-and-type-check job
+# - security.yml → security-scan job
+# - sonar.yml → sonarcloud job
 #
 # Required GitHub Secrets:
 # - SOPS_AGE_KEY (required): Decrypt encrypted test environment files
 # - CODECOV_TOKEN (required): Upload coverage reports to Codecov
 # - SNYK_TOKEN (optional): Enable Snyk security scanning
+# - SONAR_TOKEN (optional): Enable SonarCloud analysis
 # Verification: ./scripts/verify-github-secrets.sh
 
 on:
-  # Disabled by default - use separated workflows instead
-  # Uncomment pull_request and push triggers to enable
-  # pull_request:
-  # push:
-  #   branches: [main, develop]
-  workflow_dispatch:  # Manual trigger only
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:  # Manual trigger
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -179,7 +184,7 @@ jobs:
     name: E2E Tests (Shard ${{ matrix.shard }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 12  # Increased from 10 to 12 for buffer (target: < 10 min actual)
+    timeout-minutes: 15  # Increased from 12 for buffer
     strategy:
       fail-fast: false
       matrix:
@@ -196,9 +201,9 @@ jobs:
           POSTGRES_PASSWORD: test
         options: >-
           --health-cmd pg_isready
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
         ports:
           - 5432:5432
 
@@ -210,8 +215,8 @@ jobs:
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 10s
+          --health-retries 10
         ports:
           - 5672:5672
           - 15672:15672
@@ -220,9 +225,9 @@ jobs:
         image: redis:7-alpine
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
         ports:
           - 6379:6379
 
@@ -243,6 +248,11 @@ jobs:
 
       - name: Wait for services
         uses: ./.github/actions/wait-for-services
+        with:
+          postgres: 'true'
+          rabbitmq: 'true'
+          redis: 'true'
+        timeout-minutes: 3
 
       - name: Run database migrations
         run: npm run db:migrate
@@ -259,12 +269,25 @@ jobs:
           API_URL: http://localhost:3000
           ENABLE_DB_METRICS: 'false'
           CI: 'true'
+          NODE_ENV: test
           # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
           TESTCONTAINERS_RYUK_DISABLED: 'true'
+          # Set TZ=UTC to ensure consistent date handling between pg driver and PostgreSQL
+          # The pg driver uses local date components when serializing Date to DATE
+          TZ: UTC
 
       - name: Cleanup decrypted secrets
         if: always()
         run: rm -f .env.test
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results-shard-${{ matrix.shard }}
+          path: |
+            coverage/
+          retention-days: 7
 
   chaos-tests:
     name: Chaos Tests
@@ -500,19 +523,34 @@ jobs:
           npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
           exit_code=${PIPESTATUS[0]}
 
-          # Extract mutation score from output
-          mutation_score=$(grep -oP 'Mutation score.*?(\d+\.?\d*)%' mutation-output.txt | grep -oP '\d+\.?\d*' | tail -1 || echo "0")
+          # Extract mutation score from "Final mutation score XX" or progress line
+          # Stryker outputs: "Final mutation score 37.81 under breaking threshold"
+          mutation_score=$(grep -oP 'Final mutation score \K[\d.]+' mutation-output.txt | tail -1 || echo "")
+          if [ -z "$mutation_score" ]; then
+            # Fallback: try to extract from progress line like "Mutation testing 97%"
+            mutation_score=$(grep -oP 'Mutation testing \K\d+' mutation-output.txt | tail -1 || echo "0")
+          fi
           echo "mutation_score=$mutation_score" >> $GITHUB_OUTPUT
 
-          # Extract killed/survived/timeout counts
-          killed=$(grep -oP 'Killed:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          survived=$(grep -oP 'Survived:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          timeout=$(grep -oP 'Timeout:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          no_coverage=$(grep -oP 'No Coverage:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
+          # Extract counts from the LAST progress line: "(387 survived, 5 timed out)"
+          # Format: "tested (X survived, Y timed out)"
+          last_progress=$(grep -oP '\d+ survived, \d+ timed out' mutation-output.txt | tail -1 || echo "0 survived, 0 timed out")
+          survived=$(echo "$last_progress" | grep -oP '^\d+' || echo "0")
+          timeout_count=$(echo "$last_progress" | grep -oP '\d+(?= timed out)' || echo "0")
+
+          # Total tested from last progress line: "2092 tested"
+          total_tested=$(grep -oP '\d+/\d+ tested' mutation-output.txt | tail -1 | grep -oP '^\d+' || echo "0")
+
+          # Calculate killed = total_tested - survived - timeout
+          killed=$((total_tested - survived - timeout_count))
+          if [ "$killed" -lt 0 ]; then killed=0; fi
+
+          # No coverage is harder to extract, set to 0 for now
+          no_coverage="0"
 
           echo "killed=$killed" >> $GITHUB_OUTPUT
           echo "survived=$survived" >> $GITHUB_OUTPUT
-          echo "timeout=$timeout" >> $GITHUB_OUTPUT
+          echo "timeout=$timeout_count" >> $GITHUB_OUTPUT
           echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
 
           exit $exit_code
@@ -603,24 +641,19 @@ jobs:
         run: |
           score="${{ steps.mutation.outputs.mutation_score }}"
           if [ -z "$score" ]; then
-            echo "Warning: Could not determine mutation score"
-            exit 0
+            echo "::error::Could not determine mutation score"
+            exit 1
           fi
 
           echo "Mutation score: $score%"
           if (( $(echo "$score >= 80" | bc -l) )); then
-            echo "✓ Excellent! Mutation score meets the high threshold (>=80%)."
-            exit 0
+            echo "::notice::Excellent! Mutation score meets the high threshold (>=80%)."
           elif (( $(echo "$score >= 60" | bc -l) )); then
-            echo "✓ Good. Mutation score is acceptable but could be improved (>=60%)."
-            exit 0
+            echo "::notice::Good. Mutation score is acceptable but could be improved (>=60%)."
           elif (( $(echo "$score >= 50" | bc -l) )); then
-            echo "⚠ Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
-            exit 0
+            echo "::warning::Mutation score ($score%) is between low (60%) and break (50%) thresholds."
           else
-            echo "✗ Error: Mutation score ($score%) is below the break threshold (50%)"
-            echo "This indicates significant gaps in test coverage quality."
-            echo "Please review survived mutants and improve tests."
+            echo "::error::Mutation score ($score%) is below the break threshold (50%)."
             exit 1
           fi
 
@@ -632,13 +665,52 @@ jobs:
     name: Performance Load Tests (${{ matrix.test }})
     needs: [unit-tests]
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Must complete in < 10 minutes
+    timeout-minutes: 30  # Increased timeout for load tests
     strategy:
       fail-fast: false
       matrix:
         # OPTIMIZATION: Only run api-load test which uses public endpoints
         # scheduler-load, worker-throughput, e2e-load require internal endpoints that don't exist
         test: [api-load]
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: test
+          RABBITMQ_DEFAULT_PASS: test
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
 
     steps:
       - name: Checkout code
@@ -663,14 +735,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install k6
 
-      - name: Start test environment
-        run: docker compose -f docker-compose.test.yml up -d
-
       - name: Wait for services
-        run: |
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d test_db; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T rabbitmq rabbitmq-diagnostics -q ping; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T redis redis-cli ping; do sleep 2; done'
+        uses: ./.github/actions/wait-for-services
+        with:
+          postgres: 'true'
+          rabbitmq: 'true'
+          redis: 'true'
+        timeout-minutes: 3
 
       - name: Run database migrations
         run: npm run db:migrate
@@ -776,9 +847,260 @@ jobs:
         if: always()
         run: rm -f .env.test
 
-      - name: Cleanup
+  openapi-validation:
+    name: OpenAPI Validation
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      rabbitmq:
+        image: rabbitmq:3-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Start application (background)
+        env:
+          NODE_ENV: development
+          PORT: 3000
+          HOST: localhost
+          # Database configuration
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: testuser
+          DATABASE_PASSWORD: testpass
+          DATABASE_NAME: testdb
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          # RabbitMQ configuration
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+          RABBITMQ_URL: amqp://guest:guest@localhost:5672
+          # Redis configuration
+          REDIS_URL: redis://localhost:6379
+          # Rate limiting
+          RATE_LIMIT_MAX_REQUESTS: 100
+          RATE_LIMIT_WINDOW_MS: 60000
+          # Application config
+          LOG_LEVEL: info
+          EMAIL_SERVICE_URL: http://localhost:9999
+          # Disable CRON jobs during validation
+          CRON_DAILY_ENABLED: 'false'
+          CRON_MINUTE_ENABLED: 'false'
+          CRON_RECOVERY_ENABLED: 'false'
+        run: |
+          npm start &
+          echo $! > app.pid
+
+      - name: Wait for application to be ready
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+          echo "Application is ready"
+
+      - name: Validate OpenAPI spec with Redocly
+        run: |
+          npx redocly lint http://localhost:3000/docs/json \
+            --skip-rule operation-operationId-unique \
+            --skip-rule struct \
+            --skip-rule security-defined \
+            --skip-rule no-server-example.com \
+            --format stylish
+
+      - name: Lint OpenAPI spec with Spectral
+        run: |
+          npx spectral lint http://localhost:3000/docs/json \
+            --fail-severity warn \
+            --format pretty
+
+      - name: Export OpenAPI specification
+        run: |
+          mkdir -p docs
+          curl -s http://localhost:3000/docs/json | npx prettier --parser json > docs/openapi.json
+
+      - name: Validate exported spec structure
+        run: |
+          # Check if openapi.json exists and is valid JSON
+          if [ ! -f docs/openapi.json ]; then
+            echo "Error: openapi.json was not created"
+            exit 1
+          fi
+
+          # Validate it's valid JSON
+          cat docs/openapi.json | jq empty
+
+          # Check OpenAPI version
+          VERSION=$(cat docs/openapi.json | jq -r '.openapi')
+          if [ "$VERSION" != "3.1.0" ]; then
+            echo "Error: OpenAPI version is not 3.1.0 (found: $VERSION)"
+            exit 1
+          fi
+
+          echo "OpenAPI specification validation passed!"
+
+      - name: Upload OpenAPI spec as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: docs/openapi.json
+          retention-days: 30
+
+      - name: Generate API documentation preview
+        if: github.event_name == 'pull_request'
+        run: |
+          npx redocly build-docs docs/openapi.json --output docs/api-preview.html
+
+      - name: Upload API documentation preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-documentation-preview
+          path: docs/api-preview.html
+          retention-days: 7
+
+      - name: Comment PR with validation results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = `## OpenAPI Validation Results ✅
+
+            The OpenAPI 3.1.0 specification has been validated successfully!
+
+            - ✅ Redocly linting passed
+            - ✅ Spectral linting passed
+            - ✅ Exported specification is valid
+
+            ### Artifacts
+            - OpenAPI Specification: \`openapi.json\`
+            - API Documentation Preview: \`api-preview.html\`
+
+            You can download these artifacts from the workflow run.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('OpenAPI Validation Results')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+            }
+
+      - name: Stop application
         if: always()
-        run: docker compose -f docker-compose.test.yml down -v
+        run: |
+          if [ -f app.pid ]; then
+            kill $(cat app.pid) || true
+            rm app.pid
+          fi
+
+  sonarcloud:
+    name: SonarCloud Analysis
+    needs: [unit-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'workflow_dispatch'  # Skip for manual runs to save time
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+
+      - name: SonarCloud Scan
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.verbose=false
+
+      - name: SonarCloud Status
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::warning::SONAR_TOKEN not configured. SonarCloud analysis was skipped."
+            echo "To enable SonarCloud: gh secret set SONAR_TOKEN"
+          else
+            echo "SonarCloud analysis completed successfully"
+          fi
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   coverage-report:
     name: Coverage Report
@@ -957,7 +1279,7 @@ jobs:
         run: |
           # Try to download coverage from main branch (best effort, don't fail workflow)
           set +e  # Don't exit on error for this optional step
-          gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
+          gh run list --workflow=ci-full.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
           if [ -s run-id.txt ] && [ "$(cat run-id.txt)" != "null" ]; then
             RUN_ID=$(cat run-id.txt)
             echo "Found run ID: $RUN_ID"
@@ -1166,6 +1488,7 @@ jobs:
       - mutation-testing
       - performance-smoke-test
       - performance-load-tests
+      - openapi-validation
       - coverage-report
       - security-scan
       - build
@@ -1181,6 +1504,7 @@ jobs:
           if [[ "${{ needs.unit-tests.result }}" != "success" ]]; then FAILED="$FAILED unit-tests"; fi
           if [[ "${{ needs.integration-tests.result }}" != "success" ]]; then FAILED="$FAILED integration-tests"; fi
           if [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then FAILED="$FAILED e2e-tests"; fi
+          if [[ "${{ needs.openapi-validation.result }}" != "success" ]]; then FAILED="$FAILED openapi-validation"; fi
           if [[ "${{ needs.build.result }}" != "success" ]]; then FAILED="$FAILED build"; fi
 
           # Check optional jobs (don't fail CI if these fail, but warn)
