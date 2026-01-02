@@ -80,7 +80,6 @@ jobs:
 
       - name: Run mutation testing
         id: mutation
-        continue-on-error: true  # Don't fail build on low mutation score during test improvement phase
         run: |
           npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
           exit_code=${PIPESTATUS[0]}
@@ -207,8 +206,8 @@ jobs:
         run: |
           score="${{ steps.mutation.outputs.mutation_score }}"
           if [ -z "$score" ]; then
-            echo "Warning: Could not determine mutation score"
-            exit 0
+            echo "::error::Could not determine mutation score"
+            exit 1
           fi
 
           echo "Mutation score: $score%"
@@ -219,9 +218,8 @@ jobs:
           elif (( $(echo "$score >= 50" | bc -l) )); then
             echo "::warning::Mutation score ($score%) is between low (60%) and break (50%) thresholds."
           else
-            echo "::warning::Mutation score ($score%) is below the break threshold (50%). Consider improving test coverage."
-            # Note: Not failing the build during test improvement phase
-            # TODO: Enable exit 1 once mutation score consistently exceeds 60%
+            echo "::error::Mutation score ($score%) is below the break threshold (50%)."
+            exit 1
           fi
 
       - name: Summary
