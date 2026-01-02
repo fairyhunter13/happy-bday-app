@@ -27,6 +27,8 @@ x-api-service: &api-service
   build:
     context: .
     dockerfile: Dockerfile
+  env_file:
+    - .env.test
   environment:
     <<: *perf-env
     PORT: 3000
@@ -44,6 +46,8 @@ x-worker-service: &worker-service
   build:
     context: .
     dockerfile: Dockerfile
+  env_file:
+    - .env.test
   environment:
     <<: *perf-env
   command: npm run worker
