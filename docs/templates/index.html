@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Birthday Message Scheduler API Documentation</title>
+  <meta name="description" content="API documentation for the Birthday Message Scheduler - timezone-aware message scheduling with exactly-once delivery">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom Redoc styling */
+    .menu-content {
+      background-color: #1a1a2e !important;
+    }
+    .api-content h1 {
+      color: #16213e;
+    }
+    /* Navigation bar */
+    .doc-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 10px 20px;
+      display: flex;
+      gap: 12px;
+      background: rgba(30, 30, 47, 0.98);
+      border-bottom-left-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+    }
+    .doc-nav a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .doc-nav a:hover {
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.1);
+    }
+    @media (max-width: 768px) {
+      .doc-nav {
+        position: relative;
+        justify-content: center;
+        flex-wrap: wrap;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="doc-nav">
+    <a href="test-reports.html">🧪 Tests</a>
+    <a href="coverage-trends.html">📈 Coverage</a>
+    <a href="security-summary.html">🔒 Security</a>
+    <a href="dashboards-index.html">📊 Dashboards</a>
+    <a href="reports-summary.html">📋 Reports</a>
+    <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub</a>
+  </nav>
+  <redoc spec-url="openapi.json"
+         hide-download-button="false"
+         theme='{
+           "colors": {
+             "primary": { "main": "#4f46e5" },
+             "success": { "main": "#10b981" },
+             "warning": { "main": "#f59e0b" },
+             "error": { "main": "#ef4444" }
+           },
+           "typography": {
+             "fontFamily": "Inter, sans-serif",
+             "headings": { "fontFamily": "Inter, sans-serif" }
+           },
+           "sidebar": {
+             "backgroundColor": "#1e1e2f",
+             "textColor": "#ffffff"
+           },
+           "rightPanel": {
+             "backgroundColor": "#263238"
+           }
+         }'>
+  </redoc>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+</body>
+</html>

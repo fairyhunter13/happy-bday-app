@@ -23,6 +23,9 @@ export default mergeConfig(
       // Only include e2e tests
       include: ['tests/e2e/**/*.test.ts'],
 
+      // Setup files for test environment
+      setupFiles: ['./tests/setup/environment.ts'],
+
       // Pass through CI environment variables to test processes
       // CRITICAL: Tests need CI/GITHUB_ACTIONS to detect CI mode and use GitHub Actions services
       env: {

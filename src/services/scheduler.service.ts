@@ -529,7 +529,7 @@ export class SchedulerService {
         limit: 10000,
         offset: 0,
         status: MessageStatus.SCHEDULED,
-        scheduledAfter: now,
+        scheduledAfter: DateTime.now().startOf('day').toJSDate(),
         scheduledBefore: endOfDay,
       });
 

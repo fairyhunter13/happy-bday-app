@@ -181,6 +181,11 @@ All error responses follow [RFC 9457 Problem Details for HTTP APIs](https://www.
           name: 'Metrics',
           description: 'Prometheus metrics endpoints for observability and monitoring',
         },
+        {
+          name: 'internal',
+          description:
+            'Internal endpoints for system operations and performance testing - blocked from external access via nginx',
+        },
       ],
       externalDocs: {
         description: 'Full API Documentation and Integration Guides',

@@ -1513,3 +1513,127 @@ jobs:
             exit 1
           fi
           echo "All required checks passed!"
+
+  deploy-documentation:
+    name: Deploy Documentation to GitHub Pages
+    needs: all-checks-passed
+    runs-on: ubuntu-latest
+    # Only deploy on main branch when all checks passed
+    if: github.ref == 'refs/heads/main' && needs.all-checks-passed.result == 'success'
+
+    # Permissions for GitHub Pages deployment
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    # Allow only one concurrent deployment
+    concurrency:
+      group: 'pages'
+      cancel-in-progress: true
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Generate OpenAPI client
+        run: npm run openapi:generate
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npm run test:coverage || true
+
+      - name: Install jq and bc for coverage tracking
+        run: sudo apt-get update && sudo apt-get install -y jq bc
+
+      - name: Update coverage history
+        run: |
+          chmod +x scripts/coverage/update-history.sh
+          ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
+
+      - name: Generate OpenAPI spec
+        run: |
+          npm run openapi:spec
+          if [ ! -f docs/openapi.json ]; then
+            echo "::error::Failed to generate OpenAPI spec"
+            exit 1
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        with:
+          enablement: true
+
+      - name: Create documentation site
+        run: |
+          mkdir -p _site
+
+          # Copy HTML templates
+          cp docs/templates/index.html _site/index.html
+          cp docs/templates/404.html _site/404.html
+
+          # Copy OpenAPI spec
+          cp docs/openapi.json _site/openapi.json
+
+          # Copy all documentation pages
+          for doc_file in coverage-trends.html test-reports.html dashboards-index.html reports-summary.html security-summary.html; do
+            [ -f "docs/$doc_file" ] && cp "docs/$doc_file" "_site/$doc_file"
+          done
+
+          # Copy JSON files
+          for json_file in coverage-history.json coverage-badge.json security-badge.json performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
+            [ -f "docs/$json_file" ] && cp "docs/$json_file" "_site/$json_file"
+          done
+
+          # Generate performance badges if not already generated
+          if [ ! -f _site/performance-badge.json ]; then
+            chmod +x scripts/performance/generate-badges.sh 2>/dev/null || true
+            ./scripts/performance/generate-badges.sh perf-results docs 2>/dev/null || true
+            for badge_file in performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
+              [ -f "docs/$badge_file" ] && cp "docs/$badge_file" "_site/$badge_file"
+            done
+          fi
+
+          # Copy Grafana dashboards and alerts
+          [ -d grafana/dashboards ] && mkdir -p _site/grafana/dashboards && cp -r grafana/dashboards/*.json _site/grafana/dashboards/ 2>/dev/null || true
+          [ -d grafana/alerts ] && mkdir -p _site/grafana/alerts && cp -r grafana/alerts/*.yml _site/grafana/alerts/ 2>/dev/null || true
+
+          # Copy documentation files
+          for md_file in MUTATION_TESTING.md RUNBOOK.md METRICS.md DEPLOYMENT_GUIDE.md DEVELOPER_SETUP.md ARCHITECTURE_SCOPE.md README.md; do
+            if [ -f "docs/$md_file" ]; then
+              [ "$md_file" = "README.md" ] && cp "docs/$md_file" "_site/DOCS_README.md" || cp "docs/$md_file" "_site/$md_file"
+            fi
+          done
+
+          # Copy Grafana dashboard README
+          [ -f grafana/dashboards/README.md ] && mkdir -p _site/grafana/dashboards && cp grafana/dashboards/README.md _site/grafana/dashboards/README.md
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Commit coverage history and badge
+        run: |
+          if [ -f docs/coverage-history.json ] || [ -f docs/coverage-badge.json ]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add docs/coverage-history.json docs/coverage-badge.json
+            git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
+            git push || true
+          fi
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
