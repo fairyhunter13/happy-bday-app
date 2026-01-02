@@ -63,6 +63,9 @@ jobs:
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
+      - name: Build API and worker Docker images
+        run: docker compose -f docker-compose.perf.yml build
+
       - name: Start API and worker services
         run: |
           # Start API and worker services
@@ -172,6 +175,9 @@ jobs:
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
+      - name: Build API and worker Docker images
+        run: docker compose -f docker-compose.perf.yml build
+
       - name: Start API and worker services
         run: |
           # Start API and worker services
@@ -249,6 +255,9 @@ jobs:
         run: npm run db:migrate
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Build API and worker Docker images
+        run: docker compose -f docker-compose.perf.yml build
 
       - name: Start API and worker services (${{ matrix.workers }} workers)
         run: |
