@@ -90,6 +90,11 @@ const config = {
     ],
   },
 
+  // Ignore static class members during mutation
+  // Static members are initialized when modules load, and mutating them
+  // can cause runtime errors when the mutated module is imported
+  ignoreStatic: true,
+
   // All TypeScript-appropriate mutators are enabled by default:
   // - ArithmeticOperator: +, -, *, /, %
   // - ArrayDeclaration: [] -> ["Stryker was here"]
