@@ -265,7 +265,7 @@ export class HealthCheckService {
    *
    * @returns Circuit breaker health status
    */
-  async checkCircuitBreaker(): Promise<ComponentHealth> {
+  checkCircuitBreaker(): ComponentHealth {
     const startTime = Date.now();
 
     try {
@@ -431,7 +431,7 @@ export class HealthCheckService {
    *
    * @returns Simple health response
    */
-  async getSimpleHealth(): Promise<SimpleHealthResponse> {
+  getSimpleHealth(): SimpleHealthResponse {
     logger.debug('Performing simple health check');
 
     // For simple health, we only check if the service is running
@@ -486,7 +486,7 @@ export class HealthCheckService {
    *
    * @returns True (always, unless the service is completely down)
    */
-  async isLive(): Promise<boolean> {
+  isLive(): boolean {
     logger.debug('Performing liveness check');
 
     // Simple liveness - if we can execute this, we're alive

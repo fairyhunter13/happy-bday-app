@@ -82,7 +82,7 @@ export class QueueMetricsInstrumentation {
   /**
    * Initialize queue metrics instrumentation
    */
-  public async initialize(): Promise<void> {
+  public initialize(): void {
     if (this.isInitialized) {
       logger.warn('QueueMetricsInstrumentation already initialized');
       return;
@@ -105,7 +105,7 @@ export class QueueMetricsInstrumentation {
   /**
    * Shutdown and cleanup
    */
-  public async shutdown(): Promise<void> {
+  public shutdown(): void {
     logger.info('Shutting down queue metrics instrumentation...');
 
     if (this.queueDepthIntervalId) {
@@ -276,10 +276,12 @@ export class QueueMetricsInstrumentation {
     const retryCount = (msg.properties.headers?.['x-retry-count'] as number) || 0;
 
     // Calculate queue wait time if we have message metadata
-    if (messageId && this.messageMetadataMap.has(messageId)) {
-      const metadata = this.messageMetadataMap.get(messageId)!;
-      const waitTimeSeconds = (Date.now() - metadata.publishTimestamp) / 1000;
-      metricsService.recordQueueWaitTime(queueName, waitTimeSeconds);
+    if (messageId) {
+      const metadata = this.messageMetadataMap.get(messageId);
+      if (metadata) {
+        const waitTimeSeconds = (Date.now() - metadata.publishTimestamp) / 1000;
+        metricsService.recordQueueWaitTime(queueName, waitTimeSeconds);
+      }
     }
 
     try {
@@ -372,10 +374,12 @@ export class QueueMetricsInstrumentation {
       metricsService.recordMessageRedelivery(queueName, reason);
 
       const messageId = msg.properties.messageId as string | undefined;
-      if (messageId && this.messageMetadataMap.has(messageId)) {
-        const metadata = this.messageMetadataMap.get(messageId)!;
-        metadata.retryCount = retryCount + 1;
-        this.messageMetadataMap.set(messageId, metadata);
+      if (messageId) {
+        const metadata = this.messageMetadataMap.get(messageId);
+        if (metadata) {
+          metadata.retryCount = retryCount + 1;
+          this.messageMetadataMap.set(messageId, metadata);
+        }
       }
     } else {
       // Message rejected, clean up metadata
@@ -444,12 +448,14 @@ export class QueueMetricsInstrumentation {
     logger.info({ intervalMs: this.config.queueDepthInterval }, 'Starting queue depth monitoring');
 
     this.queueDepthIntervalId = setInterval(() => {
-      this.updateQueueMetrics().catch((error) => {
+      try {
+        this.updateQueueMetrics();
+      } catch (error) {
         logger.error(
           { error: error instanceof Error ? error.message : 'Unknown error' },
           'Failed to update queue metrics'
         );
-      });
+      }
     }, this.config.queueDepthInterval);
   }
 
@@ -459,7 +465,7 @@ export class QueueMetricsInstrumentation {
    * This method should be called periodically or triggered by queue events
    * to keep queue depth and consumer count metrics up to date.
    */
-  public async updateQueueMetrics(): Promise<void> {
+  public updateQueueMetrics(): void {
     try {
       // Note: This requires access to the channel to check queue stats
       // In practice, this would be integrated with the MessagePublisher.getQueueStats()
