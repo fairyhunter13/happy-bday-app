@@ -3966,7 +3966,7 @@ export class MetricsService {
    *
    * @returns Prometheus-formatted metrics string
    */
-  async getMetrics(): Promise<string> {
+  getMetrics(): Promise<string> {
     return this.registry.metrics();
   }
 

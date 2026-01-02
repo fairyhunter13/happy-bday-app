@@ -232,7 +232,7 @@ export class MessageWorker {
   /**
    * Handle processing errors
    */
-  private async handleError(error: Error, job?: MessageJob): Promise<void> {
+  private handleError(error: Error, job?: MessageJob): void {
     logger.error({
       msg: 'Message processing error',
       messageId: job?.messageId,

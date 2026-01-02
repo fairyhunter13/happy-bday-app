@@ -66,7 +66,7 @@ export class BirthdayMessageStrategy implements MessageStrategy {
    * @param date - Date to check (usually today in UTC)
    * @returns Promise<boolean> - true if today is birthday in user's timezone
    */
-  async shouldSend(user: User, _date: Date): Promise<boolean> {
+  shouldSend(user: User, _date: Date): boolean {
     try {
       // Validate user has birthday date
       if (!user.birthdayDate) {
@@ -153,7 +153,7 @@ export class BirthdayMessageStrategy implements MessageStrategy {
    * @param context - Additional context (currently unused, reserved for future enhancements)
    * @returns Promise<string> - Composed birthday message
    */
-  async composeMessage(user: User, _context: MessageContext): Promise<string> {
+  composeMessage(user: User, _context: MessageContext): string {
     const message = `Hey, ${user.firstName} ${user.lastName} it's your birthday`;
 
     logger.debug(

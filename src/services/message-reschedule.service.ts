@@ -419,12 +419,16 @@ export class MessageRescheduleService {
         (m) => m.messageType === 'ANNIVERSARY'
       ).length;
 
-      const nextScheduled =
-        futureMessages.length > 0
-          ? futureMessages.sort(
-              (a, b) => a.scheduledSendTime.getTime() - b.scheduledSendTime.getTime()
-            )[0]!.scheduledSendTime
-          : null;
+      let nextScheduled: Date | null = null;
+      if (futureMessages.length > 0) {
+        const sorted = futureMessages.sort(
+          (a, b) => a.scheduledSendTime.getTime() - b.scheduledSendTime.getTime()
+        );
+        const firstMessage = sorted[0];
+        if (firstMessage) {
+          nextScheduled = firstMessage.scheduledSendTime;
+        }
+      }
 
       return {
         totalScheduled: futureMessages.length,

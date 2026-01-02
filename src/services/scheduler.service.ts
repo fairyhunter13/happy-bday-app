@@ -561,7 +561,8 @@ export class SchedulerService {
         new Date(now.getTime() + 24 * 60 * 60 * 1000)
       );
 
-      const nextScheduled = nextMessages.length > 0 ? nextMessages[0]!.scheduledSendTime : null;
+      const firstNextMessage = nextMessages[0];
+      const nextScheduled = firstNextMessage ? firstNextMessage.scheduledSendTime : null;
 
       return {
         scheduledCount: scheduled.length,

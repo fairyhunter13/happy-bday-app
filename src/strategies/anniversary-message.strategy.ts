@@ -66,7 +66,7 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
    * @param date - Date to check (usually today in UTC)
    * @returns Promise<boolean> - true if today is anniversary in user's timezone
    */
-  async shouldSend(user: User, _date: Date): Promise<boolean> {
+  shouldSend(user: User, _date: Date): boolean {
     try {
       // Validate user has anniversary date
       if (!user.anniversaryDate) {
@@ -159,7 +159,7 @@ export class AnniversaryMessageStrategy implements MessageStrategy {
    * @param context - Additional context (currentYear for calculating years of service)
    * @returns Promise<string> - Composed anniversary message
    */
-  async composeMessage(user: User, context: MessageContext): Promise<string> {
+  composeMessage(user: User, context: MessageContext): string {
     if (!user.anniversaryDate) {
       throw new Error('User has no anniversary date');
     }

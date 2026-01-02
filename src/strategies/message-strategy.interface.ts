@@ -93,11 +93,11 @@ export interface MessageStrategy {
    * @example
    * ```typescript
    * const user = { birthdayDate: new Date('1990-12-30'), timezone: 'America/New_York' };
-   * const shouldSend = await strategy.shouldSend(user, new Date('2025-12-30'));
+   * const shouldSend = strategy.shouldSend(user, new Date('2025-12-30'));
    * // Returns true if today is Dec 30 in New York timezone
    * ```
    */
-  shouldSend(_user: User, _date: Date): Promise<boolean>;
+  shouldSend(_user: User, _date: Date): boolean | Promise<boolean>;
 
   /**
    * Calculate the exact time to send the message in UTC
@@ -132,11 +132,11 @@ export interface MessageStrategy {
    * ```typescript
    * const user = { firstName: 'John', lastName: 'Doe', birthdayDate: new Date('1990-12-30') };
    * const context = { currentYear: 2025, currentDate: new Date('2025-12-30') };
-   * const message = await strategy.composeMessage(user, context);
+   * const message = strategy.composeMessage(user, context);
    * // Returns: "Hey, John Doe it's your birthday! Happy 35th!"
    * ```
    */
-  composeMessage(_user: User, _context: MessageContext): Promise<string>;
+  composeMessage(_user: User, _context: MessageContext): string | Promise<string>;
 
   /**
    * Get the schedule configuration for this message type
