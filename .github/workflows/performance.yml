@@ -151,12 +151,17 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
+          echo "=== RabbitMQ Logs ==="
+          docker logs perf-rabbitmq 2>&1 | tail -200 || true
           echo "=== API Container Logs ==="
           docker logs perf-api-1 2>&1 | tail -100 || true
           docker logs perf-api-2 2>&1 | tail -100 || true
           docker logs perf-api-3 2>&1 | tail -100 || true
           docker logs perf-api-4 2>&1 | tail -100 || true
           docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Worker Logs (sample) ==="
+          docker logs perf-worker-1 2>&1 | tail -50 || true
+          docker logs perf-worker-2 2>&1 | tail -50 || true
           echo "=== Nginx Logs ==="
           docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="
@@ -260,12 +265,17 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
+          echo "=== RabbitMQ Logs ==="
+          docker logs perf-rabbitmq 2>&1 | tail -200 || true
           echo "=== API Container Logs ==="
           docker logs perf-api-1 2>&1 | tail -100 || true
           docker logs perf-api-2 2>&1 | tail -100 || true
           docker logs perf-api-3 2>&1 | tail -100 || true
           docker logs perf-api-4 2>&1 | tail -100 || true
           docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Worker Logs (sample) ==="
+          docker logs perf-worker-1 2>&1 | tail -50 || true
+          docker logs perf-worker-2 2>&1 | tail -50 || true
           echo "=== Nginx Logs ==="
           docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="
@@ -372,12 +382,17 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
+          echo "=== RabbitMQ Logs ==="
+          docker logs perf-rabbitmq 2>&1 | tail -200 || true
           echo "=== API Container Logs ==="
           docker logs perf-api-1 2>&1 | tail -100 || true
           docker logs perf-api-2 2>&1 | tail -100 || true
           docker logs perf-api-3 2>&1 | tail -100 || true
           docker logs perf-api-4 2>&1 | tail -100 || true
           docker logs perf-api-5 2>&1 | tail -100 || true
+          echo "=== Worker Logs (sample) ==="
+          docker logs perf-worker-1 2>&1 | tail -50 || true
+          docker logs perf-worker-2 2>&1 | tail -50 || true
           echo "=== Nginx Logs ==="
           docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="

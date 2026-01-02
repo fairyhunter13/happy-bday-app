@@ -260,11 +260,13 @@ services:
       RABBITMQ_DEFAULT_USER: perf
       RABBITMQ_DEFAULT_PASS: perf
       RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.8
+      RABBITMQ_DEFAULT_VHOST: /
+      RABBITMQ_ERLANG_COOKIE: perf_test_cookie
     ports:
       - '5672:5672'
       - '15672:15672'
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+    tmpfs:
+      - /var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -347,7 +349,6 @@ services:
 volumes:
   postgres_primary_data:
   postgres_replica_data:
-  rabbitmq_data:
   redis_data:
   prometheus_data:
   grafana_data:
