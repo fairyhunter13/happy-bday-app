@@ -16,7 +16,7 @@ const metricsController = new MetricsController(metricsService);
  *
  * @param app - Fastify instance
  */
-export async function metricsRoutes(app: FastifyInstance): Promise<void> {
+export function metricsRoutes(app: FastifyInstance): void {
   /**
    * GET /metrics
    * Prometheus metrics endpoint

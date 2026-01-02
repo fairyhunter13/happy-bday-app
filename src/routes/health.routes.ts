@@ -11,7 +11,7 @@ import {
  * Health check routes
  * Provides endpoints for monitoring and orchestration with comprehensive OpenAPI 3.1 documentation
  */
-export async function healthRoutes(fastify: FastifyInstance): Promise<void> {
+export function healthRoutes(fastify: FastifyInstance): void {
   const healthController = new HealthController();
 
   // Health check endpoint

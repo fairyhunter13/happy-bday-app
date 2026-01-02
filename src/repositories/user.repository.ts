@@ -165,7 +165,11 @@ export class UserRepository {
       // Record user creation metric
       metricsService.recordUserCreation('direct', 'free');
 
-      return result[0]!;
+      const created = result[0];
+      if (!created) {
+        throw new DatabaseError('Failed to create user: no result returned', { data });
+      }
+      return created;
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
         throw error;
@@ -228,7 +232,11 @@ export class UserRepository {
         metricsService.recordUserUpdate(field, 'direct');
       }
 
-      return result[0]!;
+      const updated = result[0];
+      if (!updated) {
+        throw new DatabaseError('Failed to update user: no result returned', { id, data });
+      }
+      return updated;
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof UniqueConstraintError) {
         throw error;
@@ -276,7 +284,11 @@ export class UserRepository {
       // Record user deletion metric
       metricsService.recordUserDeletion('soft_delete', 'free');
 
-      return result[0]!;
+      const deleted = result[0];
+      if (!deleted) {
+        throw new DatabaseError('Failed to delete user: no result returned', { id });
+      }
+      return deleted;
     } catch (error) {
       if (error instanceof NotFoundError) {
         throw error;
