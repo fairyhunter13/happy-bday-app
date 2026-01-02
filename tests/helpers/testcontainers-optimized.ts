@@ -6,6 +6,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 import amqp from 'amqplib';
 import { initializeRabbitMQ, RabbitMQConnection } from '../../src/queue/connection.js';
+import { MockEmailServer } from './mock-email-server.js';
 
 const { Pool } = pg;
 
@@ -328,24 +329,52 @@ export class RabbitMQTestContainer {
 export class TestEnvironment {
   private postgres: PostgresTestContainer;
   private rabbitmq: RabbitMQTestContainer;
+  private mockEmailServer: MockEmailServer | null = null;
   private usingCI: boolean = false;
 
   public postgresConnectionString: string = '';
   public rabbitmqConnectionString: string = '';
+  public emailServiceUrl: string = '';
   public pool: pg.Pool | null = null;
   public amqpConnection: amqp.Connection | null = null;
 
-  constructor(options: { useCache?: boolean } = {}) {
+  constructor(options: { useCache?: boolean; useMockEmailServer?: boolean } = {}) {
     const useCache = options.useCache ?? true;
+    const useMockEmailServer = options.useMockEmailServer ?? true; // Default to mock in tests
     this.postgres = new PostgresTestContainer({ useCache });
     this.rabbitmq = new RabbitMQTestContainer({ useCache });
     this.usingCI = isCI();
+
+    if (useMockEmailServer) {
+      this.mockEmailServer = new MockEmailServer();
+    }
   }
 
   async setup(): Promise<void> {
     console.log(
       `[TestEnvironment] Starting (CI: ${this.usingCI}, cached: ${containerCache.postgres ? 'yes' : 'no'})`
     );
+
+    // Start mock email server first (needed by both CI and local environments)
+    if (this.mockEmailServer) {
+      await this.mockEmailServer.start();
+      // Use getBaseUrl() for SDK clients that append their own paths (e.g., /send-email)
+      this.emailServiceUrl = this.mockEmailServer.getBaseUrl();
+      // Set environment variable so email client uses mock server
+      process.env.EMAIL_SERVICE_URL = this.emailServiceUrl;
+
+      // Reconfigure the already-initialized SDK client to use mock server
+      // This is necessary because the client is initialized at module load time
+      try {
+        const { client } = await import('../../src/clients/generated/client.gen.js');
+        client.setConfig({ baseUrl: this.emailServiceUrl });
+        console.log(`[TestEnvironment] Email client reconfigured to use ${this.emailServiceUrl}`);
+      } catch (e) {
+        console.warn('[TestEnvironment] Could not reconfigure email client:', e);
+      }
+
+      console.log(`[TestEnvironment] Mock email server started at ${this.emailServiceUrl}`);
+    }
 
     if (this.usingCI) {
       await this.setupCIEnvironment();
@@ -441,6 +470,17 @@ export class TestEnvironment {
   async teardown(): Promise<void> {
     console.log('[TestEnvironment] Cleanup');
 
+    // Stop mock email server
+    if (this.mockEmailServer) {
+      try {
+        await this.mockEmailServer.stop();
+        console.log('[TestEnvironment] Mock email server stopped');
+      } catch (e) {
+        // Ignore stop errors
+      }
+      this.mockEmailServer = null;
+    }
+
     // Close and reset the RabbitMQ singleton
     try {
       const rabbitMQ = RabbitMQConnection.getInstance();
@@ -488,6 +528,14 @@ export class TestEnvironment {
 
   isUsingCI(): boolean {
     return this.usingCI;
+  }
+
+  getMockEmailServer(): MockEmailServer | null {
+    return this.mockEmailServer;
+  }
+
+  getEmailServiceUrl(): string {
+    return this.emailServiceUrl;
   }
 }
 
