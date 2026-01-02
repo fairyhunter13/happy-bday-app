@@ -123,7 +123,7 @@ jobs:
       - name: Lint OpenAPI spec with Spectral
         run: |
           npx spectral lint http://localhost:3000/docs/json \
-            --fail-severity warn \
+            --fail-severity error \
             --format pretty
 
       - name: Export OpenAPI specification
