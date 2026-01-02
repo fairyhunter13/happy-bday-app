@@ -133,13 +133,19 @@ export class TimezoneService {
     const birthdayMonth = birthdayDate.getUTCMonth() + 1; // JS months are 0-indexed
     const birthdayDay = birthdayDate.getUTCDate();
 
-    // Get today's date in the user's timezone
-    const today = DateTime.now().setZone(timezone);
+    // Use UTC for today to match the findBirthdaysToday() query which also uses UTC
+    // This ensures consistency between the DB query and the strategy check
+    const now = new Date();
+    const todayMonth = now.getUTCMonth() + 1;
+    const todayDay = now.getUTCDate();
+
+    // Get today in user's timezone for leap year check
+    const todayInTimezone = DateTime.now().setZone(timezone);
 
     // Special handling for leap year birthdays (Feb 29)
     if (birthdayMonth === 2 && birthdayDay === 29) {
       // If it's not a leap year, celebrate on Feb 28
-      if (!today.isInLeapYear && today.month === 2 && today.day === 28) {
+      if (!todayInTimezone.isInLeapYear && todayMonth === 2 && todayDay === 28) {
         logger.info(
           { timezone, birthdayDate },
           'Leap year birthday celebrated on Feb 28 in non-leap year'
@@ -148,12 +154,12 @@ export class TimezoneService {
       }
     }
 
-    const isBirthday = birthdayMonth === today.month && birthdayDay === today.day;
+    const isBirthday = birthdayMonth === todayMonth && birthdayDay === todayDay;
 
     if (isBirthday) {
       logger.debug(
-        { timezone, birthdayDate, today: today.toISO() },
-        'Birthday detected in user timezone'
+        { timezone, birthdayDate, todayUTC: now.toISOString() },
+        'Birthday detected (UTC date match)'
       );
     }
 
