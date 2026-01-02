@@ -21,10 +21,20 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: Cache node_modules
       if: inputs.install-dependencies == 'true'
+      uses: actions/cache@v4
+      id: node-modules-cache
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
+
+    - name: Install dependencies
+      if: inputs.install-dependencies == 'true' && steps.node-modules-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: npm ci
+      run: npm ci --prefer-offline --no-audit
 
     # NOTE: OpenAPI client is pre-committed with correct ESM .js extensions
     # Do NOT regenerate in CI as the generator produces imports without .js extensions
