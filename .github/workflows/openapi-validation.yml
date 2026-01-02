@@ -50,6 +50,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -67,8 +77,14 @@ jobs:
           HOST: localhost
           DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
           RABBITMQ_URL: amqp://guest:guest@localhost:5672
+          REDIS_URL: redis://localhost:6379
           RATE_LIMIT_MAX_REQUESTS: 100
           RATE_LIMIT_WINDOW_MS: 60000
+          LOG_LEVEL: info
+          EMAIL_SERVICE_URL: http://localhost:9999
+          CRON_DAILY_ENABLED: 'false'
+          CRON_MINUTE_ENABLED: 'false'
+          CRON_RECOVERY_ENABLED: 'false'
         run: |
           npm start &
           echo $! > app.pid
