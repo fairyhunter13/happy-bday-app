@@ -28,7 +28,7 @@ export default defineConfig({
     // This provides clear metrics from unit tests without redundant instrumentation
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html', 'lcov'],
+      reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
 
       // Coverage thresholds - UNIT TESTS ONLY
       // (ENFORCED in CI/CD via .github/workflows/ci.yml)
