@@ -202,15 +202,17 @@ describe('Birthday Message E2E Flow', () => {
   describe('timezone edge cases', () => {
     it('should handle users across different timezones on same day', async () => {
       const timezones = [
-        'Pacific/Auckland', // UTC+12
+        'Pacific/Auckland', // UTC+12/+13 (DST)
         'Asia/Tokyo', // UTC+9
-        'Europe/London', // UTC+0
-        'America/New_York', // UTC-5
-        'America/Los_Angeles', // UTC-8
+        'Europe/London', // UTC+0/+1 (DST)
+        'America/New_York', // UTC-5/-4 (DST)
+        'America/Los_Angeles', // UTC-8/-7 (DST)
       ];
 
       const users = [];
-      const today = DateTime.now();
+      // Use tomorrow's date at noon UTC to ensure consistent date across all timezones
+      const targetDate = DateTime.now().setZone('UTC').plus({ days: 1 }).set({ hour: 12 });
+      const utcDateStr = targetDate.toFormat('yyyy-MM-dd');
 
       for (const timezone of timezones) {
         const user = await insertUser(pool, {
@@ -218,14 +220,19 @@ describe('Birthday Message E2E Flow', () => {
           lastName: timezone,
           email: `user-${timezone}@test.com`,
           timezone,
-          birthdayDate: today.setZone(timezone).set({ year: 1990 }).toJSDate(),
+          // Use UTC-aligned birthday to match target date
+          birthdayDate: targetDate.set({ year: 1990 }).toJSDate(),
           anniversaryDate: null,
         });
 
         users.push(user);
 
-        // Schedule message at 9am in user's timezone
-        const sendTime = today.setZone(timezone).set({ hour: 9, minute: 0, second: 0 }).toJSDate();
+        // Schedule message at 9am in user's timezone for the target date
+        // Create 9am on the target date in the user's timezone
+        const sendTime = DateTime.fromObject(
+          { year: targetDate.year, month: targetDate.month, day: targetDate.day, hour: 9 },
+          { zone: timezone }
+        ).toJSDate();
 
         await pool.query(
           `
@@ -241,7 +248,7 @@ describe('Birthday Message E2E Flow', () => {
             sendTime,
             'SCHEDULED',
             'Happy birthday!',
-            `BIRTHDAY-${user.id}-${today.toFormat('yyyy-MM-dd')}`,
+            `BIRTHDAY-${user.id}-${utcDateStr}`,
           ]
         );
       }
@@ -265,12 +272,12 @@ describe('Birthday Message E2E Flow', () => {
 
       expect(allMessages.rows).toHaveLength(timezones.length);
 
-      // Auckland (UTC+12) should be first
+      // Auckland (UTC+12/+13) should be first (9am Auckland = ~20:00-21:00 previous day UTC)
       const firstMessage = allMessages.rows[0];
       const firstUser = users.find((u) => u.id === firstMessage.user_id);
       expect(firstUser?.timezone).toBe('Pacific/Auckland');
 
-      // Los Angeles (UTC-8) should be last
+      // Los Angeles (UTC-8/-7) should be last (9am LA = 16:00-17:00 same day UTC)
       const lastMessage = allMessages.rows[allMessages.rows.length - 1];
       const lastUser = users.find((u) => u.id === lastMessage.user_id);
       expect(lastUser?.timezone).toBe('America/Los_Angeles');
