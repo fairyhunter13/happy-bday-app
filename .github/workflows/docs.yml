@@ -15,9 +15,7 @@ on:
       - completed
     branches:
       - main
-    # Only trigger when CI (Full) succeeds (not cancelled/failed)
-    conclusions:
-      - success
+    # Remove conclusions filter - let job-level condition handle success check
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -69,7 +67,13 @@ jobs:
           ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
 
       - name: Generate OpenAPI spec
-        run: npm run openapi:spec
+        run: |
+          npm run openapi:spec
+          # Verify it was generated
+          if [ ! -f docs/openapi.json ]; then
+            echo "::error::Failed to generate OpenAPI spec"
+            exit 1
+          fi
 
       - name: Setup Pages
         if: always()

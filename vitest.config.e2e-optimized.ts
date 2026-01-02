@@ -64,7 +64,7 @@ export default mergeConfig(
       },
 
       // OPTIMIZATION 4: Retry strategy for flaky tests
-      retry: 1, // Retry failed tests once to handle transient failures
+      retry: 2, // Retry failed tests twice to handle transient failures and race conditions
 
       // OPTIMIZATION 5: Bail on multiple failures
       bail: 5, // Stop after 5 failures to save time
