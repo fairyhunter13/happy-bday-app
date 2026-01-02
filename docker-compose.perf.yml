@@ -261,6 +261,7 @@ services:
       RABBITMQ_DEFAULT_PASS: perf
       RABBITMQ_DEFAULT_VHOST: /
       RABBITMQ_ERLANG_COOKIE: perf_test_cookie
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: -rabbit quorum_cluster_size 1
     ports:
       - '5672:5672'
       - '15672:15672'
