@@ -35,6 +35,14 @@ import type { MessagePublisher as MessagePublisherType } from '../../src/queue/p
 // Import MessageStatus directly (enum value, safe to import statically)
 import { MessageStatus } from '../../src/db/schema/message-logs.js';
 
+// SLA targets - adjusted for real email service with ~10% failure rate
+// Defined at module level so it can be accessed by generatePerformanceReport function
+const SLA_TARGETS = {
+  throughput: 10, // messages per second minimum
+  maxLatency: 15000, // 15 seconds max end-to-end (increased for real API calls)
+  successRate: 0.8, // 80% success rate (accounting for ~10% random failures + retries)
+};
+
 /**
  * Performance metrics
  */
@@ -100,13 +108,6 @@ describe('E2E: Performance Baseline', () => {
   };
 
   const performanceMetrics: PerformanceMetrics[] = [];
-
-  // SLA targets - adjusted for real email service with ~10% failure rate
-  const SLA_TARGETS = {
-    throughput: 10, // messages per second minimum
-    maxLatency: 15000, // 15 seconds max end-to-end (increased for real API calls)
-    successRate: 0.8, // 80% success rate (accounting for ~10% random failures + retries)
-  };
 
   beforeAll(async () => {
     env = new TestEnvironment();
