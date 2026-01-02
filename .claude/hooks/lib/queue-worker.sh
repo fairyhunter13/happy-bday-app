@@ -46,6 +46,105 @@ LAST_PROCESS_TIME=$(date +%s)
 USE_INOTIFY=false
 INOTIFY_PID=""
 
+# Heartbeat configuration (for autostart health monitoring)
+HEARTBEAT_FILE="$QUEUE_BASE_DIR/.heartbeat"
+HEARTBEAT_INTERVAL="${HEARTBEAT_INTERVAL:-5}"
+LAST_HEARTBEAT=0
+
+# Event loop configuration
+USE_EVENT_LOOP="${USE_EVENT_LOOP:-true}"           # Enable true event loop (vs polling)
+EVENT_READ_TIMEOUT="${EVENT_READ_TIMEOUT:-5}"      # Timeout for blocking read (seconds)
+EVENT_PIPE=""                                       # Named pipe for event IPC
+EVENTS_PROCESSED=0                                  # Counter for events processed
+WATCHER_RESTART_COUNT=0                             # Number of watcher restarts
+MAX_WATCHER_RESTARTS=3                              # Max restarts before fallback
+LAST_ORPHAN_CHECK=0                                 # Timestamp of last orphan recovery
+LAST_CLEANUP=0                                      # Timestamp of last cleanup
+
+# =============================================================================
+# Event Pipe Management (for True Event Loop)
+# =============================================================================
+
+# Create named pipe for event IPC
+# Returns: 0 on success, 1 on failure
+create_event_pipe() {
+    EVENT_PIPE="$QUEUE_BASE_DIR/.event_pipe_$$"
+
+    # Remove stale pipe if exists
+    [ -p "$EVENT_PIPE" ] && rm -f "$EVENT_PIPE" 2>/dev/null
+
+    # Create new named pipe
+    if mkfifo "$EVENT_PIPE" 2>/dev/null; then
+        queue_log "info" "Created event pipe: $EVENT_PIPE"
+        return 0
+    else
+        queue_log "error" "Failed to create event pipe: $EVENT_PIPE"
+        EVENT_PIPE=""
+        return 1
+    fi
+}
+
+# Cleanup event pipe
+cleanup_event_pipe() {
+    if [ -n "$EVENT_PIPE" ] && [ -p "$EVENT_PIPE" ]; then
+        rm -f "$EVENT_PIPE" 2>/dev/null
+        queue_log "info" "Cleaned up event pipe"
+    fi
+    EVENT_PIPE=""
+}
+
+# Send event signal to pipe (for testing or manual triggers)
+trigger_event() {
+    if [ -n "$EVENT_PIPE" ] && [ -p "$EVENT_PIPE" ]; then
+        echo "EVENT" > "$EVENT_PIPE" 2>/dev/null &
+    fi
+}
+
+# =============================================================================
+# Heartbeat Function (Enhanced for Event Loop)
+# =============================================================================
+
+# Update heartbeat file with current timestamp and metrics
+# This allows the autostart system to detect stuck workers
+worker_update_heartbeat() {
+    local now
+    now=$(date +%s)
+
+    # Only update if enough time has passed
+    if [ $((now - LAST_HEARTBEAT)) -ge "$HEARTBEAT_INTERVAL" ]; then
+        # Enhanced heartbeat with event loop metrics
+        if [ "$USE_EVENT_LOOP" = "true" ] && [ -n "$EVENT_PIPE" ]; then
+            local watcher_alive="false"
+            if [ -n "$INOTIFY_PID" ] && kill -0 "$INOTIFY_PID" 2>/dev/null; then
+                watcher_alive="true"
+            fi
+
+            # Write JSON heartbeat
+            cat > "$HEARTBEAT_FILE" 2>/dev/null <<EOF
+{
+  "timestamp": $now,
+  "pid": $$,
+  "mode": "event-loop",
+  "iteration": $WORKER_ITERATION,
+  "events_processed": $EVENTS_PROCESSED,
+  "last_event_time": $LAST_PROCESS_TIME,
+  "idle_seconds": $IDLE_SECONDS,
+  "queue_size": $(queue_size),
+  "processing_count": $(queue_processing_count),
+  "watcher_pid": ${INOTIFY_PID:-0},
+  "watcher_alive": $watcher_alive,
+  "watcher_restarts": $WATCHER_RESTART_COUNT
+}
+EOF
+        else
+            # Simple timestamp for polling mode
+            echo "$now" > "$HEARTBEAT_FILE" 2>/dev/null
+        fi
+
+        LAST_HEARTBEAT=$now
+    fi
+}
+
 # =============================================================================
 # Signal Handlers
 # =============================================================================
@@ -70,9 +169,11 @@ shutdown_handler() {
     fi
 
     # Cleanup
+    cleanup_event_pipe
     rm -f "$QUEUE_WORKER_PID" 2>/dev/null
+    rm -f "$HEARTBEAT_FILE" 2>/dev/null
 
-    queue_log "info" "Worker shutdown complete (processed $WORKER_ITERATION iterations)"
+    queue_log "info" "Worker shutdown complete (processed $WORKER_ITERATION iterations, events: $EVENTS_PROCESSED)"
     exit 0
 }
 
@@ -81,7 +182,9 @@ trap shutdown_handler SIGTERM SIGINT SIGHUP
 
 # Cleanup on exit (catch unexpected exits)
 cleanup_on_exit() {
+    cleanup_event_pipe
     rm -f "$QUEUE_WORKER_PID" 2>/dev/null
+    rm -f "$HEARTBEAT_FILE" 2>/dev/null
 
     # Kill inotify/fswatch if running
     if [ -n "$INOTIFY_PID" ] && kill -0 "$INOTIFY_PID" 2>/dev/null; then
@@ -240,7 +343,7 @@ detect_file_watcher() {
 }
 
 # Start file watcher in background
-# Writes to stdout when new files appear in pending/
+# Writes events to named pipe (if USE_EVENT_LOOP=true) or stdout (legacy)
 start_file_watcher() {
     local watcher
     watcher=$(detect_file_watcher)
@@ -249,33 +352,218 @@ start_file_watcher() {
         return 1
     fi
 
+    # Determine output destination
+    local output_dest
+    if [ "$USE_EVENT_LOOP" = "true" ] && [ -n "$EVENT_PIPE" ] && [ -p "$EVENT_PIPE" ]; then
+        output_dest="$EVENT_PIPE"
+        queue_log "info" "File watcher will write events to: $EVENT_PIPE"
+    else
+        output_dest="/dev/null"  # Legacy mode: events not consumed
+    fi
+
     case "$watcher" in
         inotifywait)
             # Linux: use inotifywait
-            inotifywait -m -e create -e moved_to "$QUEUE_PENDING_DIR" 2>/dev/null &
+            # Output simple "EVENT" signal for each file creation
+            inotifywait -m -q -e create -e moved_to --format "EVENT" "$QUEUE_PENDING_DIR" 2>/dev/null > "$output_dest" &
             ;;
         fswatch)
             # macOS: use fswatch
-            fswatch -0 --event Created "$QUEUE_PENDING_DIR" 2>/dev/null | while IFS= read -r -d '' file; do
-                echo "CREATE $file"
-            done &
+            # Convert fswatch output to simple "EVENT" signals
+            fswatch -0 -r --event Created "$QUEUE_PENDING_DIR" 2>/dev/null | \
+                while IFS= read -r -d $'\0' path; do
+                    echo "EVENT"
+                done > "$output_dest" &
             ;;
     esac
 
     INOTIFY_PID=$!
+    queue_log "info" "File watcher started (PID: $INOTIFY_PID, type: $watcher)"
     return 0
+}
+
+# =============================================================================
+# Maintenance Task Handler
+# =============================================================================
+
+# Handle periodic maintenance tasks (orphan recovery, cleanup, etc.)
+# Called on timeout when no events are received
+handle_maintenance_tasks() {
+    local now
+    now=$(date +%s)
+
+    # Orphan recovery (every 60 seconds)
+    if [ $((now - LAST_ORPHAN_CHECK)) -ge 60 ]; then
+        queue_recover_orphans
+        LAST_ORPHAN_CHECK=$now
+        queue_log "debug" "Orphan recovery completed"
+    fi
+
+    # Cleanup old entries (every 5 minutes = 300 seconds)
+    if [ $((now - LAST_CLEANUP)) -ge 300 ]; then
+        queue_cleanup_old 24
+        LAST_CLEANUP=$now
+        queue_log "debug" "Cleanup completed"
+    fi
+
+    # Update heartbeat
+    worker_update_heartbeat
+
+    # Check idle timeout
+    if [ "$QUEUE_IDLE_EXIT" -gt 0 ] && [ "$IDLE_SECONDS" -ge "$QUEUE_IDLE_EXIT" ]; then
+        queue_log "info" "Idle timeout reached (${QUEUE_IDLE_EXIT}s), exiting"
+        WORKER_RUNNING=false
+    fi
+}
+
+# Restart file watcher if it died
+# Returns: 0 if watcher restarted or running, 1 if max restarts reached
+restart_file_watcher() {
+    # Check if watcher is alive
+    if [ -n "$INOTIFY_PID" ] && kill -0 "$INOTIFY_PID" 2>/dev/null; then
+        return 0  # Still running
+    fi
+
+    # Watcher is dead, try to restart
+    WATCHER_RESTART_COUNT=$((WATCHER_RESTART_COUNT + 1))
+
+    if [ "$WATCHER_RESTART_COUNT" -gt "$MAX_WATCHER_RESTARTS" ]; then
+        queue_log "error" "File watcher failed $WATCHER_RESTART_COUNT times, giving up"
+        return 1
+    fi
+
+    queue_log "warn" "File watcher died (restart attempt $WATCHER_RESTART_COUNT/$MAX_WATCHER_RESTARTS)"
+
+    # Wait a bit before restart
+    sleep 1
+
+    # Try to restart
+    if start_file_watcher; then
+        queue_log "info" "File watcher restarted successfully (PID: $INOTIFY_PID)"
+        return 0
+    else
+        queue_log "error" "Failed to restart file watcher"
+        return 1
+    fi
 }
 
 # =============================================================================
 # Worker Main Loops
 # =============================================================================
 
+# True event-driven loop with blocking reads on named pipe
+worker_loop_event_driven() {
+    queue_log "info" "Using TRUE event-driven mode (blocking reads on pipe)"
+
+    # Create event pipe
+    if ! create_event_pipe; then
+        queue_log "warn" "Failed to create event pipe, falling back to polling"
+        worker_loop_polling
+        return
+    fi
+
+    # Start file watcher
+    if ! start_file_watcher; then
+        queue_log "warn" "Failed to start file watcher, falling back to polling"
+        cleanup_event_pipe
+        worker_loop_polling
+        return
+    fi
+
+    # Initialize timestamps
+    LAST_ORPHAN_CHECK=$(date +%s)
+    LAST_CLEANUP=$(date +%s)
+
+    # Initial heartbeat
+    worker_update_heartbeat
+
+    # Process any existing entries first
+    local existing
+    existing=$(queue_size)
+    if [ "$existing" -gt 0 ]; then
+        queue_log "info" "Processing $existing existing entries before event loop"
+        process_queue_batch 100
+    fi
+
+    queue_log "info" "Event loop started (timeout: ${EVENT_READ_TIMEOUT}s)"
+
+    # Event loop - BLOCKS on reading from pipe
+    local event
+    while $WORKER_RUNNING; do
+        WORKER_ITERATION=$((WORKER_ITERATION + 1))
+
+        # BLOCKING READ with timeout
+        # This is the key difference from polling - the process sleeps here
+        # until an event arrives or timeout expires
+        if read -t "$EVENT_READ_TIMEOUT" event < "$EVENT_PIPE" 2>/dev/null; then
+            # ✅ EVENT RECEIVED! Process immediately
+            EVENTS_PROCESSED=$((EVENTS_PROCESSED + 1))
+            IDLE_SECONDS=0
+
+            queue_log "debug" "Event #$EVENTS_PROCESSED received, processing queue"
+
+            # Process queue batch
+            local processed
+            processed=$(process_queue_batch)
+
+            if [ "$processed" -gt 0 ]; then
+                LAST_PROCESS_TIME=$(date +%s)
+                queue_log "debug" "Processed $processed entries"
+            fi
+
+            # Update heartbeat after processing
+            worker_update_heartbeat
+
+        else
+            # TIMEOUT (no events for EVENT_READ_TIMEOUT seconds)
+            # This is NOT an error - it's expected for maintenance
+            IDLE_SECONDS=$((IDLE_SECONDS + EVENT_READ_TIMEOUT))
+
+            queue_log "debug" "Event loop timeout (idle: ${IDLE_SECONDS}s)"
+
+            # Run maintenance tasks
+            handle_maintenance_tasks
+
+            # Check if watcher is still alive, restart if needed
+            if ! restart_file_watcher; then
+                # Max restarts reached, fallback to polling
+                queue_log "warn" "File watcher unstable, falling back to polling"
+                cleanup_event_pipe
+                worker_loop_polling
+                return
+            fi
+        fi
+
+        # Check for broken pipe (worker restart scenario)
+        if [ ! -p "$EVENT_PIPE" ]; then
+            queue_log "error" "Event pipe disappeared, recreating..."
+
+            # Try to recreate pipe and watcher
+            if create_event_pipe && start_file_watcher; then
+                queue_log "info" "Event pipe and watcher recreated"
+            else
+                queue_log "error" "Failed to recreate event infrastructure, falling back to polling"
+                worker_loop_polling
+                return
+            fi
+        fi
+    done
+
+    queue_log "info" "Event loop exiting normally"
+}
+
 # Polling-based main loop (fallback)
 worker_loop_polling() {
     queue_log "info" "Using polling mode (interval: ${QUEUE_POLL_INTERVAL}s)"
 
+    # Initial heartbeat
+    worker_update_heartbeat
+
     while $WORKER_RUNNING; do
         WORKER_ITERATION=$((WORKER_ITERATION + 1))
+
+        # Update heartbeat (allows autostart to detect stuck workers)
+        worker_update_heartbeat
 
         # Periodic maintenance (every 100 iterations)
         if [ $((WORKER_ITERATION % 100)) -eq 0 ]; then
@@ -325,9 +613,14 @@ worker_loop_polling() {
     done
 }
 
-# Event-driven main loop (with inotify/fswatch)
-worker_loop_events() {
-    queue_log "info" "Using event-driven mode"
+# Legacy "event-driven" loop (actually still polling, kept for compatibility)
+# This function is DEPRECATED and will be removed in a future version
+# Use worker_loop_event_driven() for true event-driven processing
+worker_loop_events_legacy() {
+    queue_log "warn" "Using LEGACY event mode (still polling, not true event loop)"
+
+    # Initial heartbeat
+    worker_update_heartbeat
 
     # Start file watcher
     if ! start_file_watcher; then
@@ -352,6 +645,9 @@ worker_loop_events() {
     while $WORKER_RUNNING; do
         WORKER_ITERATION=$((WORKER_ITERATION + 1))
         poll_counter=$((poll_counter + 1))
+
+        # Update heartbeat (allows autostart to detect stuck workers)
+        worker_update_heartbeat
 
         # Periodic maintenance (every 100 iterations)
         if [ $((WORKER_ITERATION % 100)) -eq 0 ]; then
@@ -483,7 +779,7 @@ main() {
 
     # Log startup
     queue_log "info" "Queue worker starting (PID: $$)"
-    queue_log "info" "Config: poll_interval=${QUEUE_POLL_INTERVAL}s, batch_size=$QUEUE_BATCH_SIZE, max_retries=$QUEUE_MAX_RETRIES, idle_exit=${QUEUE_IDLE_EXIT}s"
+    queue_log "info" "Config: event_loop=$USE_EVENT_LOOP, poll_interval=${QUEUE_POLL_INTERVAL}s, batch_size=$QUEUE_BATCH_SIZE, max_retries=$QUEUE_MAX_RETRIES, idle_exit=${QUEUE_IDLE_EXIT}s"
 
     # Run once mode
     if $run_once; then
@@ -498,15 +794,23 @@ main() {
     # Recover any orphaned entries from previous crash
     queue_recover_orphans
 
-    # Choose event loop
-    local watcher
-    watcher=$(detect_file_watcher)
+    # Choose worker loop mode
+    if [ "$USE_EVENT_LOOP" = "true" ]; then
+        # TRUE EVENT LOOP MODE (blocking reads on named pipe)
+        local watcher
+        watcher=$(detect_file_watcher)
 
-    if [ -n "$watcher" ]; then
-        USE_INOTIFY=true
-        worker_loop_events
+        if [ -n "$watcher" ]; then
+            queue_log "info" "Event loop mode: TRUE event-driven (watcher: $watcher)"
+            worker_loop_event_driven
+        else
+            queue_log "warn" "Event loop mode: No file watcher available (fswatch/inotify not found)"
+            queue_log "warn" "Falling back to polling mode"
+            worker_loop_polling
+        fi
     else
-        USE_INOTIFY=false
+        # POLLING MODE (legacy, but reliable)
+        queue_log "info" "Event loop mode: Disabled (using polling)"
         worker_loop_polling
     fi
 

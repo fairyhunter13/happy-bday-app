@@ -152,3 +152,45 @@ else
     echo "  npx claude-flow@alpha hive-mind spawn 'your objective'"
     echo "  npx claude-flow@alpha hive-mind resume <session-id>"
 fi
+
+# =============================================================================
+# Pre-warm Queue Worker
+# =============================================================================
+#
+# Start queue worker proactively on session start.
+# This ensures the worker is ready before any PostToolUse hooks fire,
+# reducing latency for the first database writes.
+
+USE_QUEUE="${USE_QUEUE:-true}"
+
+if [ "$USE_QUEUE" = "true" ]; then
+    QUEUE_LIB="$SCRIPT_DIR/lib/queue-lib.sh"
+
+    if [ -f "$QUEUE_LIB" ]; then
+        # Source queue library (this also loads autostart)
+        source "$QUEUE_LIB" 2>/dev/null
+
+        # Initialize queue directories if needed
+        queue_init_dirs 2>/dev/null || true
+
+        # Check if worker is running and start if not
+        if type queue_worker_is_running &>/dev/null; then
+            if queue_worker_is_running; then
+                echo "  Queue worker: Running"
+            else
+                # Use autostart if available, otherwise fallback
+                if [ "$QUEUE_AUTOSTART_AVAILABLE" = "true" ] && type queue_atomic_start_worker &>/dev/null; then
+                    # Start worker with atomic locking (non-blocking)
+                    queue_atomic_start_worker &
+                    disown 2>/dev/null || true
+                    echo "  Queue worker: Starting (autostart)..."
+                elif type queue_ensure_worker &>/dev/null; then
+                    # Fallback to legacy ensure worker
+                    queue_ensure_worker &
+                    disown 2>/dev/null || true
+                    echo "  Queue worker: Starting..."
+                fi
+            fi
+        fi
+    fi
+fi

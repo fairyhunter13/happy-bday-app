@@ -126,6 +126,56 @@ show_status() {
 
     echo ""
 
+    # Autostart status (if autostart library is available)
+    if [ "$QUEUE_AUTOSTART_AVAILABLE" = "true" ]; then
+        echo -e "${BOLD}Auto-Start System:${NC}"
+        echo -e "  Status: ${GREEN}Enabled${NC}"
+
+        # Health cache status
+        if type queue_health_cache_status &>/dev/null; then
+            local cache_status
+            cache_status=$(queue_health_cache_status)
+            case "$cache_status" in
+                fresh*)
+                    echo -e "  Health Cache: ${GREEN}$cache_status${NC}"
+                    ;;
+                expired*)
+                    echo -e "  Health Cache: ${YELLOW}$cache_status${NC}"
+                    ;;
+                *)
+                    echo -e "  Health Cache: ${CYAN}$cache_status${NC}"
+                    ;;
+            esac
+        fi
+
+        # Heartbeat status
+        if type queue_heartbeat_status &>/dev/null; then
+            local hb_status
+            hb_status=$(queue_heartbeat_status)
+            case "$hb_status" in
+                healthy*)
+                    echo -e "  Heartbeat: ${GREEN}$hb_status${NC}"
+                    ;;
+                stale*)
+                    echo -e "  Heartbeat: ${RED}$hb_status${NC}"
+                    ;;
+                *)
+                    echo -e "  Heartbeat: ${CYAN}$hb_status${NC}"
+                    ;;
+            esac
+        fi
+
+        # Startup lock status
+        local startup_lock_dir="$QUEUE_BASE_DIR/.startup_lock"
+        if [ -d "$startup_lock_dir" ]; then
+            echo -e "  Startup Lock: ${YELLOW}Active (startup in progress)${NC}"
+        else
+            echo -e "  Startup Lock: ${GREEN}Clear${NC}"
+        fi
+
+        echo ""
+    fi
+
     # Recent log entries
     if [ -f "$QUEUE_WORKER_LOG" ]; then
         echo -e "${BOLD}Recent Log Entries:${NC}"
