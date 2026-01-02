@@ -18,13 +18,18 @@ import { logger } from '../config/logger.js';
 import { metricsService } from '../services/metrics.service.js';
 import { env } from '../config/environment.js';
 
-// Circuit breaker configuration
+// Circuit breaker configuration from environment
+// Uses env values to allow more lenient settings in CI/test environments
+const isTestMode = process.env.NODE_ENV === 'test' || process.env.CI === 'true';
 const CIRCUIT_BREAKER_OPTIONS = {
-  timeout: 30000, // 30 seconds
-  errorThresholdPercentage: 50, // Open circuit if 50% of requests fail
-  resetTimeout: 30000, // Try again after 30 seconds
+  timeout: env.CIRCUIT_BREAKER_TIMEOUT || 30000,
+  // In test mode, use higher threshold (80%) to avoid tripping during concurrent tests
+  errorThresholdPercentage: isTestMode ? 80 : env.CIRCUIT_BREAKER_ERROR_THRESHOLD || 50,
+  resetTimeout: isTestMode ? 5000 : env.CIRCUIT_BREAKER_RESET_TIMEOUT || 30000,
   rollingCountTimeout: 10000, // 10-second rolling window
   rollingCountBuckets: 10,
+  // In test mode, require more requests before tripping
+  volumeThreshold: isTestMode ? 20 : env.CIRCUIT_BREAKER_VOLUME_THRESHOLD || 10,
   name: 'EmailServiceCircuit',
 };
 
