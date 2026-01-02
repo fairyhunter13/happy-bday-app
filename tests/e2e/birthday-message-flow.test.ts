@@ -435,20 +435,21 @@ describe('E2E: Complete Birthday Message Flow', () => {
       await scheduler.preCalculateTodaysBirthdays();
 
       const messages = await findMessageLogsByUserId(pool, user.id);
-      const scheduledTime = messages[0].scheduledSendTime;
 
       // Update to trigger immediate processing (use future time to stay within enqueue window)
-      await pool.query(
-        "UPDATE message_logs SET scheduled_send_time = NOW() + INTERVAL '1 second' WHERE id = $1",
-        [messages[0].id]
-      );
+      // Capture the time we're setting as the new scheduled time
+      const nowPlusOneSecond = new Date(Date.now() + 1000);
+      await pool.query('UPDATE message_logs SET scheduled_send_time = $1 WHERE id = $2', [
+        nowPlusOneSecond,
+        messages[0].id,
+      ]);
 
       await scheduler.enqueueUpcomingMessages();
       await publisher.publishMessage({
         messageId: messages[0].id!,
         userId: user.id,
         messageType: 'BIRTHDAY',
-        scheduledSendTime: messages[0].scheduledSendTime.toISOString(),
+        scheduledSendTime: nowPlusOneSecond.toISOString(),
         timestamp: Date.now(),
         retryCount: 0,
       });
@@ -471,13 +472,13 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const sentMessages = await findMessageLogsByUserId(pool, user.id);
       expect(sentMessages[0].actualSendTime).toBeDefined();
 
-      // Verify actual send time is close to scheduled time (within 1 hour for this test)
+      // Verify actual send time is close to the updated scheduled time (within 1 minute)
       const actualTime = DateTime.fromJSDate(sentMessages[0].actualSendTime!);
-      const scheduledDateTime = DateTime.fromJSDate(scheduledTime);
+      const scheduledDateTime = DateTime.fromJSDate(nowPlusOneSecond);
       const diff = Math.abs(actualTime.diff(scheduledDateTime, 'minutes').minutes);
 
       // Should be sent within reasonable time of scheduled time
-      expect(diff).toBeLessThan(60);
+      expect(diff).toBeLessThan(1);
     });
   });
 

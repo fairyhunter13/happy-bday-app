@@ -142,6 +142,9 @@ jobs:
           CI: 'true'
           NODE_ENV: test
           TESTCONTAINERS_RYUK_DISABLED: 'true'
+          # Set TZ=UTC to ensure consistent date handling between pg driver and PostgreSQL
+          # The pg driver uses local date components when serializing Date to DATE
+          TZ: UTC
 
       - name: Cleanup decrypted secrets
         if: always()

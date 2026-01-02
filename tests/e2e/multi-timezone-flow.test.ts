@@ -17,9 +17,14 @@ import {
   purgeQueues,
   clearBirthdayCache,
 } from '../helpers/testcontainers-optimized.js';
-import { insertUser, findMessageLogsByUserId } from '../helpers/test-helpers.js';
+import {
+  insertUser,
+  findMessageLogsByUserId,
+  createTodayBirthdayUTC,
+} from '../helpers/test-helpers.js';
 import { QUEUES } from '../../src/queue/config.js';
-import { SchedulerService } from '../../src/services/scheduler.service.js';
+// Type-only import - doesn't trigger module initialization
+import type { SchedulerService as SchedulerServiceType } from '../../src/services/scheduler.service.js';
 import { MessageStatus } from '../../src/db/schema/message-logs.js';
 import { DateTime } from 'luxon';
 import type { Pool } from 'pg';
@@ -29,7 +34,7 @@ describe('E2E: Multi-Timezone Message Flow', () => {
   let env: TestEnvironment;
   let pool: Pool;
   let amqpConnection: Connection;
-  let scheduler: SchedulerService;
+  let scheduler: SchedulerServiceType;
 
   // Comprehensive timezone test set covering all major regions
   const TIMEZONES = [
@@ -58,7 +63,14 @@ describe('E2E: Multi-Timezone Message Flow', () => {
     pool = env.getPostgresPool();
     amqpConnection = env.getRabbitMQConnection();
 
-    scheduler = new SchedulerService();
+    // Set environment variables BEFORE importing app modules
+    // This is critical because modules like SchedulerService read DATABASE_URL at import time
+    process.env.DATABASE_URL = env.postgresConnectionString;
+    process.env.RABBITMQ_URL = env.rabbitmqConnectionString;
+
+    // Dynamically import SchedulerService AFTER env vars are set
+    const schedulerModule = await import('../../src/services/scheduler.service.js');
+    scheduler = new schedulerModule.SchedulerService();
   }, 180000);
 
   afterAll(async () => {
@@ -75,16 +87,12 @@ describe('E2E: Multi-Timezone Message Flow', () => {
 
   describe('Comprehensive timezone coverage', () => {
     it('should handle 12 users across different timezones on same day', async () => {
-      const today = DateTime.now();
       const userIds: string[] = [];
+      // Use UTC-aligned birthday to ensure all users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
-      // Create users in all timezones
+      // Create users in all timezones with the same UTC-aligned birthday
       for (const tz of TIMEZONES) {
-        const localToday = today.setZone(tz.name);
-        const birthdayDate = localToday
-          .set({ year: 1990, hour: 0, minute: 0, second: 0 })
-          .toJSDate();
-
         const user = await insertUser(pool, {
           firstName: `User`,
           lastName: tz.location,
@@ -128,14 +136,12 @@ describe('E2E: Multi-Timezone Message Flow', () => {
     });
 
     it('should order messages by UTC send time correctly', async () => {
-      const today = DateTime.now();
       const userIds: string[] = [];
+      // Use UTC-aligned birthday to ensure all users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
-      // Create users in different timezones
+      // Create users in different timezones with the same UTC-aligned birthday
       for (const tz of TIMEZONES) {
-        const localToday = today.setZone(tz.name);
-        const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'User',
           lastName: tz.location,
@@ -187,12 +193,10 @@ describe('E2E: Multi-Timezone Message Flow', () => {
         'Pacific/Chatham', // UTC+12:45
       ];
 
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const timezone of edgeTimezones) {
-        const localToday = today.setZone(timezone);
-        const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'User',
           lastName: timezone,
@@ -311,12 +315,10 @@ describe('E2E: Multi-Timezone Message Flow', () => {
         { name: 'Pacific/Midway', description: 'UTC-11 (near IDL)' },
       ];
 
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const tz of idlTimezones) {
-        const localToday = today.setZone(tz.name);
-        const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'IDL',
           lastName: tz.description,
@@ -346,12 +348,10 @@ describe('E2E: Multi-Timezone Message Flow', () => {
         'America/Panama', // No DST
       ];
 
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const timezone of sameOffsetTimezones) {
-        const localToday = today.setZone(timezone);
-        const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'Same',
           lastName: timezone,
@@ -379,12 +379,10 @@ describe('E2E: Multi-Timezone Message Flow', () => {
         { name: 'Etc/GMT+12', offset: -12, description: 'Most behind' },
       ];
 
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const tz of extremeTimezones) {
-        const localToday = today.setZone(tz.name);
-        const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
         const user = await insertUser(pool, {
           firstName: 'Extreme',
           lastName: tz.description,
@@ -427,13 +425,12 @@ describe('E2E: Multi-Timezone Message Flow', () => {
       ];
 
       const userIds: string[] = [];
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure all users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       // Create 100 users with random timezones
       for (let i = 0; i < 100; i++) {
         const timezone = randomTimezones[i % randomTimezones.length];
-        const localToday = today.setZone(timezone);
-        const birthdayDate = localToday.set({ year: 1990 - (i % 50) }).toJSDate();
 
         const user = await insertUser(pool, {
           firstName: `User${i}`,
@@ -470,17 +467,14 @@ describe('E2E: Multi-Timezone Message Flow', () => {
     it('should maintain correct timezone grouping in queue', async () => {
       const timezones = ['America/New_York', 'Europe/London', 'Asia/Tokyo'];
       const usersByTimezone: Record<string, string[]> = {};
-
-      const today = DateTime.now();
+      // Use UTC-aligned birthday to ensure all users are found by findBirthdaysToday()
+      const birthdayDate = createTodayBirthdayUTC(1990);
 
       // Create 10 users per timezone
       for (const timezone of timezones) {
         usersByTimezone[timezone] = [];
 
         for (let i = 0; i < 10; i++) {
-          const localToday = today.setZone(timezone);
-          const birthdayDate = localToday.set({ year: 1990 }).toJSDate();
-
           const user = await insertUser(pool, {
             firstName: `User${i}`,
             lastName: timezone,
