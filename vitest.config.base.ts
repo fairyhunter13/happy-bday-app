@@ -160,11 +160,18 @@ export default defineConfig({
     hookTimeout: 30000,
 
     // Pool options for parallel execution
+    // Reduced thread count to prevent memory exhaustion and orphaned processes
+    // CI environments can override with more threads if needed
     poolOptions: {
       threads: {
         singleThread: false,
-        maxThreads: 5,
+        maxThreads: 3, // Reduced from 5 to prevent memory issues
         minThreads: 1,
+      },
+      forks: {
+        singleFork: false,
+        maxForks: 3, // Match threads for consistency
+        minForks: 1,
       },
     },
   },
