@@ -39,7 +39,7 @@ export class CronScheduler {
   /**
    * Initialize and start all CRON jobs
    */
-  async start(): Promise<void> {
+  start(): void {
     if (this.isInitialized) {
       logger.warn('CronScheduler already initialized');
       return;
@@ -225,7 +225,7 @@ export class CronScheduler {
   /**
    * Stop all CRON jobs
    */
-  async stop(): Promise<void> {
+  stop(): void {
     logger.info('Stopping CRON scheduler...');
 
     for (const [key, config] of this.jobs) {

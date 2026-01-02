@@ -474,7 +474,7 @@ export class CacheService {
       // Parse stats from INFO output
       const parseInfoValue = (infoStr: string, key: string): number => {
         const match = infoStr.match(new RegExp(`${key}:(\\d+)`));
-        return match ? parseInt(match[1]!) : 0;
+        return match ? parseInt(match[1] ?? '0') : 0;
       };
 
       const hits = parseInfoValue(info, 'keyspace_hits');
@@ -486,7 +486,7 @@ export class CacheService {
       // Get total keys count
       const dbInfo = await this.client.info('keyspace');
       const dbMatch = dbInfo.match(/db\d+:keys=(\d+)/);
-      const keysCount = dbMatch ? parseInt(dbMatch[1]!) : 0;
+      const keysCount = dbMatch ? parseInt(dbMatch[1] ?? '0') : 0;
 
       return {
         hits,

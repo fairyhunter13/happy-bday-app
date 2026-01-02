@@ -17,10 +17,7 @@ import { env } from '../config/environment.js';
 /**
  * Register user routes with Fastify
  */
-export async function userRoutes(
-  fastify: FastifyInstance,
-  _options: FastifyPluginOptions
-): Promise<void> {
+export function userRoutes(fastify: FastifyInstance, _options: FastifyPluginOptions): void {
   /**
    * POST /api/v1/users - Create new user
    * Rate limit configurable via RATE_LIMIT_CREATE_USER_MAX env var
