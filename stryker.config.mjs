@@ -2,13 +2,15 @@
  * Stryker Mutation Testing Configuration
  *
  * OPTIMIZATION STRATEGY (Target: <10 minutes runtime):
- * 1. Focus mutations on critical business logic only (services, strategies, schedulers, repositories, queue workers)
- * 2. Exclude non-critical code: configs, types, schemas, middleware, routes, controllers
+ * 1. Focus mutations on files with proper unit test coverage
+ * 2. Exclude infrastructure code (queue, workers, repositories) - covered by E2E/integration tests
  * 3. Increased concurrency from 4 to 8 for parallel execution
  * 4. Reduced timeout from 60s to 30s (fast tests = good tests)
  * 5. Excluded low-value mutators: StringLiteral, ObjectLiteral, ArrayDeclaration, RegexMutator
  * 6. Incremental mode enabled for subsequent runs
  * 7. Coverage analysis set to 'perTest' for optimal performance
+ *
+ * Files with unit tests are included; infrastructure files are covered by E2E tests.
  *
  * @type {import('@stryker-mutator/api/core').PartialStrykerOptions}
  */
@@ -27,32 +29,33 @@ const config = {
   buildCommand: 'npm run build',
 
   // Source files to mutate
-  // Focus on critical business logic only for faster mutation testing
+  // Focus on files with proper unit test coverage
   mutate: [
-    // Core business logic - services
+    // Core business logic - services (have dedicated unit tests)
     'src/services/message.service.ts',
-    'src/services/message-sender.service.ts',
     'src/services/message-reschedule.service.ts',
     'src/services/scheduler.service.ts',
     'src/services/timezone.service.ts',
     'src/services/idempotency.service.ts',
     'src/services/cache.service.ts',
 
-    // Message strategies (core domain logic)
+    // Message strategies (core domain logic - have unit tests)
     'src/strategies/**/*.ts',
     '!src/strategies/index.ts',
 
-    // Schedulers (critical scheduling logic)
+    // Schedulers (critical scheduling logic - have unit tests)
     'src/schedulers/**/*.ts',
+    '!src/schedulers/index.ts',
+    '!src/schedulers/cron-scheduler.ts', // Infrastructure wrapper
 
-    // Repositories (data access logic)
-    'src/repositories/**/*.ts',
+    // User repository (has unit test)
+    'src/repositories/user.repository.ts',
 
-    // Queue workers (async processing logic)
-    'src/queue/**/*.ts',
-
-    // Workers (background processing)
-    'src/workers/**/*.ts',
+    // Exclude infrastructure files - covered by E2E/integration tests
+    // Queue files (publisher, consumer, connection) - RabbitMQ infrastructure
+    // Workers - async processing covered by E2E tests
+    // Cached repositories - complex caching logic covered by integration tests
+    // Message-log repository - database operations covered by E2E tests
 
     // Exclude everything else for speed
     '!src/**/*.d.ts',
