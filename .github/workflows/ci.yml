@@ -1,10 +1,23 @@
 name: CI
 
+# LIGHTWEIGHT CI WORKFLOW
+# This workflow handles core checks: lint, typecheck, build, security scan, coverage report
+# All tests run in separate workflows triggered by the Unit Tests workflow
+#
+# Test Workflow Architecture:
+#   1. Unit Tests (unit-tests.yml) - Primary test workflow with coverage gate
+#   2. Downstream workflows triggered on Unit Tests success (>=81% coverage):
+#      - integration-tests.yml
+#      - chaos-tests.yml
+#      - e2e-tests.yml
+#      - mutation-tests.yml
+#      - performance-smoke-tests.yml
+#      - performance-load-tests.yml
+#
 # Required GitHub Secrets:
 # - SOPS_AGE_KEY (required): Decrypt encrypted test environment files
 # - CODECOV_TOKEN (required): Upload coverage reports to Codecov
 # - SNYK_TOKEN (optional): Enable Snyk security scanning
-# Verification: ./scripts/verify-github-secrets.sh
 
 on:
   pull_request:
@@ -16,6 +29,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Core checks - always run
   lint-and-type-check:
     name: Lint and Type Check
     runs-on: ubuntu-latest
@@ -36,1088 +50,6 @@ jobs:
 
       - name: Check code formatting
         run: npm run format:check
-
-  unit-tests:
-    name: Unit Tests
-    needs: [lint-and-type-check]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      # Required Secret: SOPS_AGE_KEY
-      # Purpose: Decrypt .env.test.enc file for test execution
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      # Run all unit tests with coverage thresholds enforced
-      # NOTE: Only unit tests collect coverage for faster CI
-      - name: Run unit tests with coverage
-        run: npx vitest run --config vitest.config.unit-ci.ts --reporter=verbose --coverage
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-unit
-          path: coverage/
-          retention-days: 7
-
-  # Integration, E2E, Chaos, and Performance tests run in parallel after unit tests pass
-  integration-tests:
-    name: Integration Tests
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      rabbitmq:
-        image: rabbitmq:3.12-management-alpine
-        env:
-          RABBITMQ_DEFAULT_USER: test
-          RABBITMQ_DEFAULT_PASS: test
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5672:5672
-          - 15672:15672
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Wait for services
-        uses: ./.github/actions/wait-for-services
-
-      - name: Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-
-      # OPTIMIZATION: Use optimized config WITHOUT coverage (coverage only from unit tests)
-      - name: Run integration tests (optimized)
-        run: npm run test:integration:optimized
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          REDIS_URL: redis://localhost:6379
-          ENABLE_DB_METRICS: 'false'
-          CI: 'true'
-          # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
-          TESTCONTAINERS_RYUK_DISABLED: 'true'
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-  e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }})
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 12  # Increased from 10 to 12 for buffer (target: < 10 min actual)
-    strategy:
-      fail-fast: false
-      matrix:
-        # Split E2E tests into 2 shards for parallel execution
-        shard: [1, 2]
-        total: [2]
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      rabbitmq:
-        image: rabbitmq:3.12-management-alpine
-        env:
-          RABBITMQ_DEFAULT_USER: test
-          RABBITMQ_DEFAULT_PASS: test
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5672:5672
-          - 15672:15672
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Wait for services
-        uses: ./.github/actions/wait-for-services
-
-      - name: Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-
-      # OPTIMIZATION: Use sharding to split E2E tests across parallel runners
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total }})
-        run: npm run test:e2e:optimized -- --shard=${{ matrix.shard }}/${{ matrix.total }}
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          REDIS_URL: redis://localhost:6379
-          API_URL: http://localhost:3000
-          ENABLE_DB_METRICS: 'false'
-          CI: 'true'
-          # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
-          TESTCONTAINERS_RYUK_DISABLED: 'true'
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-  chaos-tests:
-    name: Chaos Tests
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-      rabbitmq:
-        image: rabbitmq:3.12-management-alpine
-        env:
-          RABBITMQ_DEFAULT_USER: test
-          RABBITMQ_DEFAULT_PASS: test
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5672:5672
-          - 15672:15672
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Wait for services
-        uses: ./.github/actions/wait-for-services
-        with:
-          redis: false
-
-      - name: Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-
-      - name: Run chaos tests
-        run: npm run test:chaos
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          ENABLE_DB_METRICS: 'false'
-          CI: true
-          # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
-          TESTCONTAINERS_RYUK_DISABLED: 'true'
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-  performance-smoke-test:
-    name: Performance Smoke Test
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
-
-      - name: Start test environment
-        run: docker compose -f docker-compose.test.yml up -d
-
-      - name: Wait for services
-        run: |
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d test_db; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T rabbitmq rabbitmq-diagnostics -q ping; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T redis redis-cli ping; do sleep 2; done'
-
-      - name: Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-
-      - name: Start API server
-        run: |
-          npm run build
-          # Load .env.test file using dotenv for any additional configuration
-          node -r dotenv/config dist/src/index.js dotenv_config_path=.env.test > /tmp/api.log 2>&1 &
-          echo $! > /tmp/api.pid
-          echo "API server started with PID $(cat /tmp/api.pid)"
-          sleep 15
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          DATABASE_USER: test
-          DATABASE_PASSWORD: test
-          DATABASE_NAME: test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          RABBITMQ_HOST: localhost
-          RABBITMQ_PORT: 5672
-          RABBITMQ_USER: test
-          RABBITMQ_PASSWORD: test
-          REDIS_URL: redis://localhost:6379
-          HOST: 0.0.0.0
-          PORT: 3000
-          NODE_ENV: test
-          # Higher rate limits for performance testing
-          RATE_LIMIT_CREATE_USER_MAX: 10000
-          RATE_LIMIT_READ_USER_MAX: 10000
-          RATE_LIMIT_UPDATE_USER_MAX: 10000
-          RATE_LIMIT_DELETE_USER_MAX: 10000
-
-      - name: Wait for API
-        run: |
-          echo "Waiting for API to be ready..."
-          for i in {1..30}; do
-            echo "Attempt $i/30 at $(date +%H:%M:%S)..."
-            if curl -s --connect-timeout 3 --max-time 5 http://127.0.0.1:3000/health | grep -q '"status":"ok"'; then
-              echo "API is ready!"
-              exit 0
-            fi
-            # Check if process is still running
-            if [ -f /tmp/api.pid ]; then
-              PID=$(cat /tmp/api.pid)
-              if ! ps -p $PID > /dev/null 2>&1; then
-                echo "ERROR: API process $PID is no longer running!"
-                echo "=== API Server Logs ==="
-                tail -100 /tmp/api.log || echo "No logs found"
-                exit 1
-              fi
-            fi
-            sleep 2
-          done
-          echo "API failed to start within timeout!"
-          echo "=== API Server Logs ==="
-          tail -100 /tmp/api.log || echo "No logs found"
-          exit 1
-
-      - name: Create results directory
-        run: mkdir -p perf-results
-
-      - name: Run performance smoke test
-        run: k6 run tests/performance/api-smoke.test.js
-        env:
-          API_URL: http://localhost:3000
-
-      - name: Stop API server
-        if: always()
-        run: |
-          if [ -f /tmp/api.pid ]; then
-            kill $(cat /tmp/api.pid) || true
-          fi
-
-      - name: Upload performance results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: performance-smoke-results
-          path: perf-results/
-          retention-days: 7
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-      - name: Cleanup
-        if: always()
-        run: docker compose -f docker-compose.test.yml down -v
-
-  mutation-testing:
-    name: Mutation Testing
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Create reports directory
-        run: mkdir -p reports/mutation
-
-      - name: Run mutation testing
-        id: mutation
-        run: |
-          npm run test:mutation:incremental 2>&1 | tee mutation-output.txt
-          exit_code=${PIPESTATUS[0]}
-
-          # Extract mutation score from output
-          mutation_score=$(grep -oP 'Mutation score.*?(\d+\.?\d*)%' mutation-output.txt | grep -oP '\d+\.?\d*' | tail -1 || echo "0")
-          echo "mutation_score=$mutation_score" >> $GITHUB_OUTPUT
-
-          # Extract killed/survived/timeout counts
-          killed=$(grep -oP 'Killed:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          survived=$(grep -oP 'Survived:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          timeout=$(grep -oP 'Timeout:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-          no_coverage=$(grep -oP 'No Coverage:\s*\d+' mutation-output.txt | grep -oP '\d+' || echo "0")
-
-          echo "killed=$killed" >> $GITHUB_OUTPUT
-          echo "survived=$survived" >> $GITHUB_OUTPUT
-          echo "timeout=$timeout" >> $GITHUB_OUTPUT
-          echo "no_coverage=$no_coverage" >> $GITHUB_OUTPUT
-
-          exit $exit_code
-
-      - name: Upload mutation report
-        uses: actions/upload-artifact@v4
-        with:
-          name: mutation-report
-          path: |
-            reports/mutation/
-            mutation-output.txt
-          retention-days: 14
-        if: always()
-
-      - name: Comment mutation score on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const mutationScore = '${{ steps.mutation.outputs.mutation_score }}' || '0';
-            const killed = '${{ steps.mutation.outputs.killed }}' || '0';
-            const survived = '${{ steps.mutation.outputs.survived }}' || '0';
-            const timeout = '${{ steps.mutation.outputs.timeout }}' || '0';
-            const noCoverage = '${{ steps.mutation.outputs.no_coverage }}' || '0';
-
-            let statusEmoji = '';
-            const score = parseFloat(mutationScore);
-            if (score >= 80) statusEmoji = ':white_check_mark:';
-            else if (score >= 60) statusEmoji = ':warning:';
-            else statusEmoji = ':x:';
-
-            const body = `## ${statusEmoji} Mutation Testing Results
-
-            | Metric | Value |
-            |--------|-------|
-            | **Mutation Score** | ${mutationScore}% |
-            | Killed | ${killed} |
-            | Survived | ${survived} |
-            | Timeout | ${timeout} |
-            | No Coverage | ${noCoverage} |
-
-            ### Thresholds
-            - :white_check_mark: High: >= 80%
-            - :warning: Low: >= 60%
-            - :x: Break: < 50%
-
-            <details>
-            <summary>What is mutation testing?</summary>
-
-            Mutation testing introduces small changes (mutations) to your code and checks if your tests catch them. A higher score means better test quality.
-
-            - **Killed**: Tests detected the mutation
-            - **Survived**: Mutation went undetected (potential test gap)
-            - **Timeout**: Test took too long (usually indicates infinite loop detection)
-            - **No Coverage**: Code not covered by tests
-            </details>
-
-            [View full report in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('Mutation Testing Results')
-            );
-
-            if (botComment) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: body
-              });
-            }
-
-      - name: Check mutation score threshold
-        run: |
-          score="${{ steps.mutation.outputs.mutation_score }}"
-          if [ -z "$score" ]; then
-            echo "Warning: Could not determine mutation score"
-            exit 0
-          fi
-
-          echo "Mutation score: $score%"
-          if (( $(echo "$score >= 80" | bc -l) )); then
-            echo "✓ Excellent! Mutation score meets the high threshold (>=80%)."
-            exit 0
-          elif (( $(echo "$score >= 60" | bc -l) )); then
-            echo "✓ Good. Mutation score is acceptable but could be improved (>=60%)."
-            exit 0
-          elif (( $(echo "$score >= 50" | bc -l) )); then
-            echo "⚠ Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
-            exit 0
-          else
-            echo "✗ Error: Mutation score ($score%) is below the break threshold (50%)"
-            echo "This indicates significant gaps in test coverage quality."
-            echo "Please review survived mutants and improve tests."
-            exit 1
-          fi
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-  performance-load-tests:
-    name: Performance Load Tests (${{ matrix.test }})
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10  # Must complete in < 10 minutes
-    strategy:
-      fail-fast: false
-      matrix:
-        # OPTIMIZATION: Only run api-load test which uses public endpoints
-        # scheduler-load, worker-throughput, e2e-load require internal endpoints that don't exist
-        test: [api-load]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Setup SOPS
-        uses: ./.github/actions/setup-sops
-        with:
-          sops-age-key: ${{ secrets.SOPS_AGE_KEY }}
-
-      - name: Decrypt test secrets
-        run: sops --decrypt .env.test.enc > .env.test
-
-      - name: Install k6
-        run: |
-          sudo gpg -k
-          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
-
-      - name: Start test environment
-        run: docker compose -f docker-compose.test.yml up -d
-
-      - name: Wait for services
-        run: |
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U test -d test_db; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T rabbitmq rabbitmq-diagnostics -q ping; do sleep 2; done'
-          timeout 120 bash -c 'until docker compose -f docker-compose.test.yml exec -T redis redis-cli ping; do sleep 2; done'
-
-      - name: Run database migrations
-        run: npm run db:migrate
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-
-      - name: Start API server
-        run: |
-          npm run build
-          # Load .env.test file using dotenv for any additional configuration
-          node -r dotenv/config dist/src/index.js dotenv_config_path=.env.test > /tmp/api.log 2>&1 &
-          echo $! > /tmp/api.pid
-          echo "API server started with PID $(cat /tmp/api.pid)"
-          sleep 15
-        env:
-          DATABASE_URL: postgres://test:test@localhost:5432/test_db
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          DATABASE_USER: test
-          DATABASE_PASSWORD: test
-          DATABASE_NAME: test_db
-          RABBITMQ_URL: amqp://test:test@localhost:5672
-          RABBITMQ_HOST: localhost
-          RABBITMQ_PORT: 5672
-          RABBITMQ_USER: test
-          RABBITMQ_PASSWORD: test
-          REDIS_URL: redis://localhost:6379
-          HOST: 0.0.0.0
-          PORT: 3000
-          NODE_ENV: test
-          # Higher rate limits for performance testing
-          RATE_LIMIT_CREATE_USER_MAX: 10000
-          RATE_LIMIT_READ_USER_MAX: 10000
-          RATE_LIMIT_UPDATE_USER_MAX: 10000
-          RATE_LIMIT_DELETE_USER_MAX: 10000
-
-      - name: Wait for API
-        run: |
-          echo "Waiting for API to be ready..."
-          for i in {1..30}; do
-            echo "Attempt $i/30 at $(date +%H:%M:%S)..."
-            if curl -s --connect-timeout 3 --max-time 5 http://127.0.0.1:3000/health | grep -q '"status":"ok"'; then
-              echo "API is ready!"
-              exit 0
-            fi
-            # Check if process is still running
-            if [ -f /tmp/api.pid ]; then
-              PID=$(cat /tmp/api.pid)
-              if ! ps -p $PID > /dev/null 2>&1; then
-                echo "ERROR: API process $PID is no longer running!"
-                echo "=== API Server Logs ==="
-                tail -100 /tmp/api.log || echo "No logs found"
-                exit 1
-              fi
-            fi
-            sleep 2
-          done
-          echo "API failed to start within timeout!"
-          echo "=== API Server Logs ==="
-          tail -100 /tmp/api.log || echo "No logs found"
-          exit 1
-
-      - name: Create results directory
-        run: mkdir -p perf-results
-
-      - name: Run performance test
-        id: perf-test
-        run: k6 run tests/performance/${{ matrix.test }}.test.js --out json=perf-results/${{ matrix.test }}.json
-        env:
-          API_URL: http://localhost:3000
-
-      - name: Performance Test Summary
-        if: always()
-        run: |
-          echo "## Performance Test Results - ${{ matrix.test }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          test_outcome="${{ steps.perf-test.outcome }}"
-
-          if [ "$test_outcome" == "failure" ]; then
-            echo "- :x: ${{ matrix.test }} **FAILED**" >> $GITHUB_STEP_SUMMARY
-            echo "::warning::${{ matrix.test }} performance test failed - review results before merging"
-          elif [ "$test_outcome" == "success" ]; then
-            echo "- :white_check_mark: ${{ matrix.test }} PASSED" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Stop API server
-        if: always()
-        run: |
-          if [ -f /tmp/api.pid ]; then
-            kill $(cat /tmp/api.pid) || true
-          fi
-
-      - name: Upload performance results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: performance-load-results-${{ matrix.test }}
-          path: perf-results/
-          retention-days: 30
-
-      - name: Cleanup decrypted secrets
-        if: always()
-        run: rm -f .env.test
-
-      - name: Cleanup
-        if: always()
-        run: docker compose -f docker-compose.test.yml down -v
-
-  coverage-report:
-    name: Coverage Report
-    # OPTIMIZATION: Only depends on unit-tests which generates coverage
-    # Integration and E2E tests run without coverage for speed
-    needs: [unit-tests]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Validate Codecov Token
-        id: codecov-check
-        run: |
-          if [ -z "${{ secrets.CODECOV_TOKEN }}" ]; then
-            echo "::warning::CODECOV_TOKEN not configured. Coverage upload will be skipped."
-            echo "To enable Codecov integration:"
-            echo "  1. Get your token from https://codecov.io/"
-            echo "  2. Run: gh secret set CODECOV_TOKEN"
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "CODECOV_TOKEN is configured"
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Download all coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: coverage-*
-          path: coverage-artifacts/
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-
-      - name: Merge coverage reports
-        run: |
-          mkdir -p coverage
-
-          # Merge V8 coverage files from all test types using a simple Node script
-          node -e "
-          const fs = require('fs');
-          const path = require('path');
-
-          // Find all coverage-final.json files recursively
-          function findCoverageFiles(dir) {
-            const files = [];
-            try {
-              const entries = fs.readdirSync(dir, { withFileTypes: true });
-              for (const entry of entries) {
-                const fullPath = path.join(dir, entry.name);
-                if (entry.isDirectory()) {
-                  files.push(...findCoverageFiles(fullPath));
-                } else if (entry.name === 'coverage-final.json') {
-                  files.push(fullPath);
-                }
-              }
-            } catch (e) { /* ignore */ }
-            return files;
-          }
-
-          const merged = {};
-          const coverageFiles = findCoverageFiles('coverage-artifacts');
-
-          for (const file of coverageFiles) {
-            try {
-              const coverage = JSON.parse(fs.readFileSync(file, 'utf8'));
-              // Merge coverage data, preferring higher coverage counts
-              for (const [filePath, data] of Object.entries(coverage)) {
-                if (!merged[filePath]) {
-                  merged[filePath] = data;
-                } else {
-                  // Merge statement, function, and branch counts
-                  const existing = merged[filePath];
-                  if (data.s) {
-                    for (const key of Object.keys(data.s)) {
-                      existing.s[key] = Math.max(existing.s[key] || 0, data.s[key] || 0);
-                    }
-                  }
-                  if (data.f) {
-                    for (const key of Object.keys(data.f)) {
-                      existing.f[key] = Math.max(existing.f[key] || 0, data.f[key] || 0);
-                    }
-                  }
-                  if (data.b) {
-                    for (const key of Object.keys(data.b)) {
-                      existing.b[key] = existing.b[key].map((v, i) => Math.max(v, data.b[key][i] || 0));
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.error('Error processing', file, e.message);
-            }
-          }
-
-          fs.writeFileSync('coverage/coverage-final.json', JSON.stringify(merged, null, 2));
-          console.log('Merged', Object.keys(merged).length, 'files from', coverageFiles.length, 'reports');
-
-          // Generate coverage-summary.json from Istanbul format data
-          let totalStatements = 0, coveredStatements = 0;
-          let totalBranches = 0, coveredBranches = 0;
-          let totalFunctions = 0, coveredFunctions = 0;
-
-          for (const [filePath, data] of Object.entries(merged)) {
-            if (data.s) {
-              for (const [key, count] of Object.entries(data.s)) {
-                totalStatements++;
-                if (count > 0) coveredStatements++;
-              }
-            }
-            if (data.b) {
-              for (const [key, counts] of Object.entries(data.b)) {
-                for (const count of counts) {
-                  totalBranches++;
-                  if (count > 0) coveredBranches++;
-                }
-              }
-            }
-            if (data.f) {
-              for (const [key, count] of Object.entries(data.f)) {
-                totalFunctions++;
-                if (count > 0) coveredFunctions++;
-              }
-            }
-          }
-
-          const pct = (c, t) => t === 0 ? 100 : Math.round((c / t) * 10000) / 100;
-          const summary = {
-            total: {
-              lines: { total: totalStatements, covered: coveredStatements, skipped: 0, pct: pct(coveredStatements, totalStatements) },
-              statements: { total: totalStatements, covered: coveredStatements, skipped: 0, pct: pct(coveredStatements, totalStatements) },
-              functions: { total: totalFunctions, covered: coveredFunctions, skipped: 0, pct: pct(coveredFunctions, totalFunctions) },
-              branches: { total: totalBranches, covered: coveredBranches, skipped: 0, pct: pct(coveredBranches, totalBranches) }
-            }
-          };
-
-          fs.writeFileSync('coverage/coverage-summary.json', JSON.stringify(summary, null, 2));
-          console.log('Coverage:', summary.total.statements.pct + '% statements,', summary.total.functions.pct + '% functions,', summary.total.branches.pct + '% branches');
-          "
-
-      # CRITICAL: Coverage Enforcement
-      # This step FAILS CI if merged coverage drops below thresholds:
-      # - Lines: 80%, Functions: 50%, Branches: 75%, Statements: 80%
-      # Thresholds defined in: scripts/coverage/check-thresholds.sh
-      # Must match: vitest.config.base.ts
-      - name: Check coverage threshold
-        run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
-
-      # Required Secret: CODECOV_TOKEN
-      # Purpose: Upload coverage reports to Codecov for tracking and analysis
-      # Setup: Get token from https://codecov.io/ and run 'gh secret set CODECOV_TOKEN'
-      # Note: This step is skipped if CODECOV_TOKEN is not configured (graceful degradation)
-      - name: Upload merged coverage to Codecov
-        if: steps.codecov-check.outputs.skip != 'true'
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage/lcov.info
-          flags: unittests,integration,e2e
-          name: codecov-umbrella
-          fail_ci_if_error: true
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Update coverage history
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [ -f scripts/coverage/update-history.sh ]; then
-            bash scripts/coverage/update-history.sh
-          fi
-
-      - name: Download base coverage (from main branch)
-        if: github.event_name == 'pull_request'
-        id: download-base-coverage
-        run: |
-          # Try to download coverage from main branch (best effort, don't fail workflow)
-          set +e  # Don't exit on error for this optional step
-          gh run list --workflow=ci.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
-          if [ -s run-id.txt ] && [ "$(cat run-id.txt)" != "null" ]; then
-            RUN_ID=$(cat run-id.txt)
-            echo "Found run ID: $RUN_ID"
-            gh run download "$RUN_ID" --name coverage-unit --dir base-coverage 2>/dev/null
-            if [ -f base-coverage/coverage-summary.json ]; then
-              echo "base_coverage_exists=true" >> $GITHUB_OUTPUT
-            else
-              echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "No successful run found on main branch"
-            echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
-          fi
-          set -e  # Re-enable exit on error
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate coverage diff report
-        if: github.event_name == 'pull_request'
-        id: coverage-diff
-        run: |
-          # Generate coverage diff between base and current PR
-          node -e "
-          const fs = require('fs');
-
-          function loadCoverage(path) {
-            try {
-              return JSON.parse(fs.readFileSync(path, 'utf8'));
-            } catch (e) {
-              return null;
-            }
-          }
-
-          const currentCoverage = loadCoverage('coverage/coverage-summary.json');
-          const baseCoverage = loadCoverage('base-coverage/coverage-summary.json');
-
-          if (!currentCoverage) {
-            console.error('Current coverage not found');
-            process.exit(1);
-          }
-
-          const formatPct = (pct) => pct.toFixed(2);
-          const formatDiff = (current, base) => {
-            if (!base) return '(new)';
-            const diff = current - base;
-            const sign = diff >= 0 ? '+' : '';
-            const emoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
-            return \`\${sign}\${formatPct(diff)}% \${emoji}\`;
-          };
-
-          const c = currentCoverage.total;
-          const b = baseCoverage?.total;
-
-          let report = '## 📊 Coverage Report\\n\\n';
-
-          if (baseCoverage) {
-            report += '### Coverage Diff vs Base Branch\\n\\n';
-            report += '| Metric | Current | Base | Diff |\\n';
-            report += '|--------|---------|------|------|\\n';
-            report += \`| Lines | \${formatPct(c.lines.pct)}% | \${formatPct(b.lines.pct)}% | \${formatDiff(c.lines.pct, b.lines.pct)} |\\n\`;
-            report += \`| Statements | \${formatPct(c.statements.pct)}% | \${formatPct(b.statements.pct)}% | \${formatDiff(c.statements.pct, b.statements.pct)} |\\n\`;
-            report += \`| Functions | \${formatPct(c.functions.pct)}% | \${formatPct(b.functions.pct)}% | \${formatDiff(c.functions.pct, b.functions.pct)} |\\n\`;
-            report += \`| Branches | \${formatPct(c.branches.pct)}% | \${formatPct(b.branches.pct)}% | \${formatDiff(c.branches.pct, b.branches.pct)} |\\n\`;
-            report += '\\n';
-
-            // Overall status
-            const totalDiff = c.statements.pct - b.statements.pct;
-            if (totalDiff > 0) {
-              report += '✅ **Coverage improved!** Great work on adding tests.\\n';
-            } else if (totalDiff < -1) {
-              report += '⚠️ **Coverage decreased.** Consider adding tests for new code.\\n';
-            } else {
-              report += '✅ **Coverage maintained.** No significant change.\\n';
-            }
-          } else {
-            report += '### Current Coverage\\n\\n';
-            report += '| Metric | Coverage |\\n';
-            report += '|--------|----------|\\n';
-            report += \`| Lines | \${formatPct(c.lines.pct)}% |\\n\`;
-            report += \`| Statements | \${formatPct(c.statements.pct)}% |\\n\`;
-            report += \`| Functions | \${formatPct(c.functions.pct)}% |\\n\`;
-            report += \`| Branches | \${formatPct(c.branches.pct)}% |\\n\`;
-            report += '\\n';
-            report += '> Base coverage not available for comparison\\n';
-          }
-
-          report += '\\n### Thresholds\\n\\n';
-          report += '| Metric | Current | Threshold | Status |\\n';
-          report += '|--------|---------|-----------|--------|\\n';
-
-          const checkThreshold = (name, value, threshold) => {
-            const status = value >= threshold ? '✅ Pass' : '❌ Fail';
-            return \`| \${name} | \${formatPct(value)}% | \${threshold}% | \${status} |\\n\`;
-          };
-
-          report += checkThreshold('Lines', c.lines.pct, 80);
-          report += checkThreshold('Statements', c.statements.pct, 80);
-          report += checkThreshold('Functions', c.functions.pct, 50);
-          report += checkThreshold('Branches', c.branches.pct, 75);
-
-          report += '\\n---\\n';
-          report += '*Coverage collected from unit tests only. Integration and E2E tests run without coverage for faster CI.*\\n';
-
-          fs.writeFileSync('coverage-diff.md', report);
-          console.log(report);
-          "
-
-      - name: Comment coverage diff on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('coverage-diff.md', 'utf8');
-
-            // Find existing coverage comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-
-            const botComment = comments.data.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('📊 Coverage Report')
-            );
-
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: report
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: report
-              });
-            }
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js and dependencies
-        uses: ./.github/actions/setup-node-app
-        with:
-          install-dependencies: 'false'
-
-      - name: Run npm audit
-        run: npm audit --audit-level=critical
-
-      # Optional Secret: SNYK_TOKEN
-      # Purpose: Enable Snyk vulnerability scanning for dependencies
-      # Setup: Get token from https://snyk.io/ and run 'gh secret set SNYK_TOKEN'
-      # Note: Step is skipped if token is missing (graceful degradation)
-      - name: Run Snyk security scan
-        if: env.SNYK_TOKEN != ''
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
 
   build:
     name: Build
@@ -1141,43 +73,244 @@ jobs:
           path: dist/
           retention-days: 7
 
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+        with:
+          install-dependencies: 'false'
+
+      - name: Run npm audit
+        run: npm audit --audit-level=critical
+
+      - name: Run Snyk security scan
+        if: env.SNYK_TOKEN != ''
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+  # Coverage report - processes coverage from Unit Tests workflow
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and dependencies
+        uses: ./.github/actions/setup-node-app
+
+      - name: Validate Codecov Token
+        id: codecov-check
+        run: |
+          if [ -z "${{ secrets.CODECOV_TOKEN }}" ]; then
+            echo "::warning::CODECOV_TOKEN not configured. Coverage upload will be skipped."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "CODECOV_TOKEN is configured"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download coverage from Unit Tests
+        id: download-coverage
+        run: |
+          # Wait a bit for Unit Tests workflow to complete and upload coverage
+          sleep 30
+
+          # Try to download coverage artifact from the latest successful Unit Tests run
+          set +e
+          gh run list --workflow="Unit Tests" --branch="${{ github.head_ref || github.ref_name }}" --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
+
+          if [ -s run-id.txt ] && [ "$(cat run-id.txt)" != "null" ]; then
+            RUN_ID=$(cat run-id.txt)
+            echo "Found Unit Tests run ID: $RUN_ID"
+            gh run download "$RUN_ID" --name coverage-unit --dir coverage 2>/dev/null
+            if [ -f coverage/coverage-summary.json ]; then
+              echo "coverage_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "coverage_exists=false" >> $GITHUB_OUTPUT
+              echo "Coverage artifact not found"
+            fi
+          else
+            echo "No successful Unit Tests run found"
+            echo "coverage_exists=false" >> $GITHUB_OUTPUT
+          fi
+          set -e
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check coverage threshold
+        if: steps.download-coverage.outputs.coverage_exists == 'true'
+        run: bash scripts/coverage/check-thresholds.sh coverage/coverage-summary.json
+
+      - name: Upload to Codecov
+        if: steps.codecov-check.outputs.skip != 'true' && steps.download-coverage.outputs.coverage_exists == 'true'
+        uses: codecov/codecov-action@v4
+        with:
+          directory: ./coverage
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Download base coverage (from main branch)
+        if: github.event_name == 'pull_request' && steps.download-coverage.outputs.coverage_exists == 'true'
+        id: download-base-coverage
+        run: |
+          set +e
+          gh run list --workflow="Unit Tests" --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > run-id.txt 2>/dev/null
+          if [ -s run-id.txt ] && [ "$(cat run-id.txt)" != "null" ]; then
+            RUN_ID=$(cat run-id.txt)
+            echo "Found run ID: $RUN_ID"
+            gh run download "$RUN_ID" --name coverage-unit --dir base-coverage 2>/dev/null
+            if [ -f base-coverage/coverage-summary.json ]; then
+              echo "base_coverage_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "No successful run found on main branch"
+            echo "base_coverage_exists=false" >> $GITHUB_OUTPUT
+          fi
+          set -e
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate coverage diff report
+        if: github.event_name == 'pull_request' && steps.download-coverage.outputs.coverage_exists == 'true'
+        run: |
+          node -e "
+          const fs = require('fs');
+
+          function loadCoverage(path) {
+            try { return JSON.parse(fs.readFileSync(path, 'utf8')); }
+            catch (e) { return null; }
+          }
+
+          const currentCoverage = loadCoverage('coverage/coverage-summary.json');
+          const baseCoverage = loadCoverage('base-coverage/coverage-summary.json');
+
+          if (!currentCoverage) {
+            console.log('Current coverage not found');
+            process.exit(0);
+          }
+
+          const formatPct = (pct) => pct.toFixed(2);
+          const formatDiff = (current, base) => {
+            if (!base) return '(new)';
+            const diff = current - base;
+            const sign = diff >= 0 ? '+' : '';
+            const emoji = diff > 0 ? '📈' : diff < 0 ? '📉' : '➡️';
+            return \`\${sign}\${formatPct(diff)}% \${emoji}\`;
+          };
+
+          const c = currentCoverage.total;
+          const b = baseCoverage?.total;
+
+          let report = '## 📊 Coverage Report\\n\\n';
+
+          if (baseCoverage) {
+            report += '| Metric | Current | Base | Diff |\\n';
+            report += '|--------|---------|------|------|\\n';
+            report += \`| Lines | \${formatPct(c.lines.pct)}% | \${formatPct(b.lines.pct)}% | \${formatDiff(c.lines.pct, b.lines.pct)} |\\n\`;
+            report += \`| Statements | \${formatPct(c.statements.pct)}% | \${formatPct(b.statements.pct)}% | \${formatDiff(c.statements.pct, b.statements.pct)} |\\n\`;
+            report += \`| Functions | \${formatPct(c.functions.pct)}% | \${formatPct(b.functions.pct)}% | \${formatDiff(c.functions.pct, b.functions.pct)} |\\n\`;
+            report += \`| Branches | \${formatPct(c.branches.pct)}% | \${formatPct(b.branches.pct)}% | \${formatDiff(c.branches.pct, b.branches.pct)} |\\n\`;
+          } else {
+            report += '| Metric | Coverage |\\n';
+            report += '|--------|----------|\\n';
+            report += \`| Lines | \${formatPct(c.lines.pct)}% |\\n\`;
+            report += \`| Statements | \${formatPct(c.statements.pct)}% |\\n\`;
+            report += \`| Functions | \${formatPct(c.functions.pct)}% |\\n\`;
+            report += \`| Branches | \${formatPct(c.branches.pct)}% |\\n\`;
+            report += '\\n> Base coverage not available for comparison\\n';
+          }
+
+          fs.writeFileSync('coverage-diff.md', report);
+          console.log(report);
+          "
+
+      - name: Comment coverage diff on PR
+        if: github.event_name == 'pull_request' && steps.download-coverage.outputs.coverage_exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            try {
+              const report = fs.readFileSync('coverage-diff.md', 'utf8');
+
+              const comments = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+              });
+
+              const botComment = comments.data.find(comment =>
+                comment.user.type === 'Bot' &&
+                comment.body.includes('📊 Coverage Report')
+              );
+
+              if (botComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: botComment.id,
+                  body: report
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: report
+                });
+              }
+            } catch (e) {
+              console.log('Could not post coverage comment:', e.message);
+            }
+
+  # Summary check - verifies core checks passed
   all-checks-passed:
-    name: All Checks Passed
+    name: All Core Checks Passed
     needs:
       - lint-and-type-check
-      - unit-tests
-      - integration-tests
-      - e2e-tests
-      - chaos-tests
-      - mutation-testing
-      - performance-smoke-test
-      - performance-load-tests
-      - coverage-report
-      - security-scan
       - build
+      - security-scan
     runs-on: ubuntu-latest
     if: always()
 
     steps:
       - name: Check all jobs
         run: |
-          # Check core required jobs
           FAILED=""
           if [[ "${{ needs.lint-and-type-check.result }}" != "success" ]]; then FAILED="$FAILED lint-and-type-check"; fi
-          if [[ "${{ needs.unit-tests.result }}" != "success" ]]; then FAILED="$FAILED unit-tests"; fi
-          if [[ "${{ needs.integration-tests.result }}" != "success" ]]; then FAILED="$FAILED integration-tests"; fi
-          if [[ "${{ needs.e2e-tests.result }}" != "success" ]]; then FAILED="$FAILED e2e-tests"; fi
           if [[ "${{ needs.build.result }}" != "success" ]]; then FAILED="$FAILED build"; fi
-
-          # Check optional jobs (don't fail CI if these fail, but warn)
-          if [[ "${{ needs.chaos-tests.result }}" != "success" ]]; then echo "::warning::chaos-tests did not pass"; fi
-          if [[ "${{ needs.mutation-testing.result }}" != "success" ]]; then echo "::warning::mutation-testing did not pass"; fi
-          if [[ "${{ needs.performance-smoke-test.result }}" != "success" ]]; then echo "::warning::performance-smoke-test did not pass"; fi
-          if [[ "${{ needs.performance-load-tests.result }}" != "success" ]]; then echo "::warning::performance-load-tests did not pass"; fi
-          if [[ "${{ needs.coverage-report.result }}" != "success" ]]; then echo "::warning::coverage-report did not pass"; fi
+          if [[ "${{ needs.security-scan.result }}" != "success" ]]; then FAILED="$FAILED security-scan"; fi
 
           if [[ -n "$FAILED" ]]; then
-            echo "Required checks failed:$FAILED"
+            echo "::error::Core checks failed:$FAILED"
             exit 1
           fi
-          echo "All required checks passed!"
+          echo "All core checks passed!"
+          echo ""
+          echo "Note: Tests run in separate workflows:"
+          echo "  - Unit Tests (triggers all downstream tests)"
+          echo "  - Integration Tests"
+          echo "  - Chaos Tests"
+          echo "  - E2E Tests"
+          echo "  - Mutation Tests"
+          echo "  - Performance Smoke Tests"
+          echo "  - Performance Load Tests"

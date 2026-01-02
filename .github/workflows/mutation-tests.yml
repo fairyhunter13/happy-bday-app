@@ -1,13 +1,13 @@
 name: Mutation Tests
 
+# Triggered after Unit Tests workflow passes with sufficient coverage
+
 on:
-  pull_request:
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'stryker.conf.mjs'
-  push:
+  workflow_run:
+    workflows: ["Unit Tests"]
+    types: [completed]
     branches: [main, develop]
+  pull_request:
     paths:
       - 'src/**'
       - 'tests/**'
@@ -15,18 +15,54 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: mutation-${{ github.ref }}
+  group: mutation-tests-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: 'true'
+
 jobs:
+  check-trigger:
+    name: Check Trigger Conditions
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Check if should run
+        id: check
+        run: |
+          # Always run on workflow_dispatch
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # For workflow_run, only run if the triggering workflow succeeded
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+              echo "Skipping: Unit Tests workflow did not succeed"
+            fi
+            exit 0
+          fi
+
+          # For pull_request, always run
+          echo "should_run=true" >> $GITHUB_OUTPUT
+
   mutation-testing:
     name: Mutation Testing
+    needs: [check-trigger]
+    if: needs.check-trigger.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js and dependencies
         uses: ./.github/actions/setup-node-app
@@ -161,12 +197,31 @@ jobs:
 
           echo "Mutation score: $score%"
           if (( $(echo "$score >= 80" | bc -l) )); then
-            echo "✓ Excellent! Mutation score meets the high threshold (>=80%)."
+            echo "Excellent! Mutation score meets the high threshold (>=80%)."
           elif (( $(echo "$score >= 60" | bc -l) )); then
-            echo "✓ Good. Mutation score is acceptable but could be improved (>=60%)."
+            echo "Good. Mutation score is acceptable but could be improved (>=60%)."
           elif (( $(echo "$score >= 50" | bc -l) )); then
-            echo "⚠ Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
+            echo "Warning: Mutation score ($score%) is between low (60%) and break (50%) thresholds."
           else
-            echo "✗ Error: Mutation score ($score%) is below the break threshold (50%)"
+            echo "Error: Mutation score ($score%) is below the break threshold (50%)"
             exit 1
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Mutation Testing Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          score="${{ steps.mutation.outputs.mutation_score }}"
+          if [ -n "$score" ]; then
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| **Mutation Score** | ${score}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Killed | ${{ steps.mutation.outputs.killed }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Survived | ${{ steps.mutation.outputs.survived }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Timeout | ${{ steps.mutation.outputs.timeout }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| No Coverage | ${{ steps.mutation.outputs.no_coverage }} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Could not extract mutation score from output" >> $GITHUB_STEP_SUMMARY
           fi

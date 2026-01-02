@@ -1,4 +1,4 @@
-name: E2E Tests
+name: Chaos Tests
 
 # Triggered after Unit Tests workflow passes with sufficient coverage
 
@@ -10,11 +10,11 @@ on:
   pull_request:
     paths:
       - 'src/**'
-      - 'tests/e2e/**'
+      - 'tests/chaos/**'
   workflow_dispatch:
 
 concurrency:
-  group: e2e-tests-${{ github.ref }}
+  group: chaos-tests-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -50,25 +50,20 @@ jobs:
           # For pull_request, always run
           echo "should_run=true" >> $GITHUB_OUTPUT
 
-  e2e-tests:
-    name: E2E Tests (Shard ${{ matrix.shard }}/${{ matrix.total }})
+  chaos-tests:
+    name: Chaos Tests
     needs: [check-trigger]
     if: needs.check-trigger.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2]
-        total: [2]
 
     services:
       postgres:
         image: postgres:15-alpine
         env:
+          POSTGRES_DB: test_db
           POSTGRES_USER: test
           POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
           --health-interval 5s
@@ -90,16 +85,6 @@ jobs:
         ports:
           - 5672:5672
           - 15672:15672
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-          - 6379:6379
 
     steps:
       - name: Checkout code
@@ -123,7 +108,7 @@ jobs:
         with:
           postgres: 'true'
           rabbitmq: 'true'
-          redis: 'true'
+          redis: 'false'
         timeout-minutes: 3
 
       - name: Run database migrations
@@ -131,47 +116,26 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
-      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total }})
-        run: npm run test:e2e:optimized -- --shard=${{ matrix.shard }}/${{ matrix.total }}
+      - name: Run chaos tests
+        run: npm run test:chaos
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
-          REDIS_URL: redis://localhost:6379
-          API_URL: http://localhost:3000
           ENABLE_DB_METRICS: 'false'
           CI: 'true'
-          NODE_ENV: test
           TESTCONTAINERS_RYUK_DISABLED: 'true'
 
       - name: Cleanup decrypted secrets
         if: always()
         run: rm -f .env.test
 
-      - name: Upload test results
+      - name: Test Summary
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-results-shard-${{ matrix.shard }}
-          path: |
-            coverage/
-          retention-days: 7
-
-  e2e-summary:
-    name: E2E Summary
-    needs: [e2e-tests]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check results
         run: |
-          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Chaos Tests Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ needs.e2e-tests.result }}" = "success" ]; then
-            echo "All E2E tests passed!" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.e2e-tests.result }}" = "skipped" ]; then
-            echo "E2E tests were skipped (Unit Tests did not pass)" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "All chaos tests passed" >> $GITHUB_STEP_SUMMARY
           else
-            echo "E2E tests failed" >> $GITHUB_STEP_SUMMARY
-            exit 1
+            echo "Some chaos tests failed" >> $GITHUB_STEP_SUMMARY
           fi
