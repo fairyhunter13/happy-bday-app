@@ -280,14 +280,8 @@ jobs:
         if: always()
         run: rm -f .env.test
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-results-shard-${{ matrix.shard }}
-          path: |
-            coverage/
-          retention-days: 7
+      # Note: E2E tests don't generate coverage (only unit tests do)
+      # If test results are needed in the future, add them here
 
   chaos-tests:
     name: Chaos Tests
