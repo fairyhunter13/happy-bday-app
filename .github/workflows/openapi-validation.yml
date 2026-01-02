@@ -77,13 +77,28 @@ jobs:
           NODE_ENV: development
           PORT: 3000
           HOST: localhost
+          # Database configuration
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: testuser
+          DATABASE_PASSWORD: testpass
+          DATABASE_NAME: testdb
           DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          # RabbitMQ configuration
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
           RABBITMQ_URL: amqp://guest:guest@localhost:5672
+          # Redis configuration
           REDIS_URL: redis://localhost:6379
+          # Rate limiting
           RATE_LIMIT_MAX_REQUESTS: 100
           RATE_LIMIT_WINDOW_MS: 60000
+          # Application config
           LOG_LEVEL: info
           EMAIL_SERVICE_URL: http://localhost:9999
+          # Disable CRON jobs during validation
           CRON_DAILY_ENABLED: 'false'
           CRON_MINUTE_ENABLED: 'false'
           CRON_RECOVERY_ENABLED: 'false'
