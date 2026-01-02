@@ -2,6 +2,95 @@
 
 Complete documentation organized by topic and audience.
 
+## Quick Navigation
+
+| Category | Description | Key Files |
+|----------|-------------|-----------|
+| [Getting Started](#getting-started) | Setup, deployment, and quickstart guides | 4 files |
+| [Architecture](#architecture--design) | System design, flows, and technical decisions | 7 files |
+| [API Documentation](#api-documentation) | External API integration specifications | 3 files |
+| [Testing](#testing) | Test strategies, patterns, and validation | 11 files |
+| [Infrastructure](#infrastructure--operations) | Deployment, runbooks, and operational guides | 2 files |
+| [Queue System](#queue-system-documentation-new) | RabbitMQ-based async message processing | 10 files |
+| [Investigations](#investigation-reports) | Collective intelligence findings and reports | 14 files |
+| [CI/CD](#cicd--workflows) | Pipeline structure and troubleshooting | 7 files |
+| [Monitoring](#monitoring--metrics) | Metrics, dashboards, and observability | 2 files |
+
+---
+
+## Getting Started
+
+Essential guides for new developers and deployment.
+
+- **[DEVELOPER_SETUP.md](./DEVELOPER_SETUP.md)** - Local development environment setup
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Production deployment procedures
+- **[TESTING_QUICKSTART.md](./TESTING_QUICKSTART.md)** - Quick guide to running tests
+- **[LOCAL_READINESS.md](./LOCAL_READINESS.md)** - Pre-deployment verification checklist
+
+---
+
+## Architecture & Design
+
+System architecture, technical flows, and design decisions.
+
+- **[ARCHITECTURE_SCOPE.md](./ARCHITECTURE_SCOPE.md)** - Overall system architecture scope
+- **[CACHE_IMPLEMENTATION.md](./CACHE_IMPLEMENTATION.md)** - Caching strategy and implementation
+- **[HOOK_DATA_FLOWS.md](./HOOK_DATA_FLOWS.md)** (54K) - Claude hooks data flow diagrams
+- **[HOOK_QUEUE_REQUIREMENTS.md](./HOOK_QUEUE_REQUIREMENTS.md)** (34K) - Queue system requirements
+- **[QUEUE_HIVE_MIND_ARCHITECTURE.md](./QUEUE_HIVE_MIND_ARCHITECTURE.md)** (39K) - Hive mind queue architecture
+- **[CI_CD_DEPENDENCY_GRAPH.md](./CI_CD_DEPENDENCY_GRAPH.md)** (33K) - CI/CD workflow dependencies
+- **[AGENT_LIFECYCLE_VALIDATION_REPORT.md](./AGENT_LIFECYCLE_VALIDATION_REPORT.md)** - Agent lifecycle management validation
+
+---
+
+## API Documentation
+
+External API integration specifications and analysis.
+
+### Vendor Specifications
+
+Located in [vendor-specs/](./vendor-specs/):
+
+- **[API_ANALYSIS.md](./vendor-specs/API_ANALYSIS.md)** - External API endpoint analysis
+- **[EMAIL_SERVICE_INTEGRATION.md](./vendor-specs/EMAIL_SERVICE_INTEGRATION.md)** - Email service integration guide
+- **[SUMMARY.md](./vendor-specs/SUMMARY.md)** - Vendor API summary and requirements
+
+---
+
+## Testing
+
+Test strategies, patterns, resilient testing architecture, and validation results.
+
+### Test Strategies
+
+- **[TEST_PLAN.md](./TEST_PLAN.md)** - Comprehensive test plan and strategy
+- **[TEST_VALIDATION_RESULTS_COMPLETE.md](./TEST_VALIDATION_RESULTS_COMPLETE.md)** (19K) - Complete test validation results
+- **[E2E_TEST_RESULTS.md](./E2E_TEST_RESULTS.md)** - End-to-end test execution results
+- **[TEST_OPTIMIZATION_FINAL.md](./TEST_OPTIMIZATION_FINAL.md)** - Test performance optimization report
+- **[CHAOS_ENGINEERING_PLAN.md](./CHAOS_ENGINEERING_PLAN.md)** - Chaos testing strategy
+- **[QUALITY_GATES.md](./QUALITY_GATES.md)** - Quality gate definitions and thresholds
+- **[MUTATION_TESTING.md](./MUTATION_TESTING.md)** - Mutation testing with Stryker
+- **[MUTATION_TESTING_RESULTS.md](./MUTATION_TESTING_RESULTS.md)** - Mutation test results and analysis
+- **[STRYKER_OPTIMIZATION.md](./STRYKER_OPTIMIZATION.md)** - Stryker performance optimization
+
+### Test Patterns
+
+Located in [test-patterns/](./test-patterns/):
+
+- **[RESILIENT-API-TESTING-ARCHITECTURE.md](./test-patterns/RESILIENT-API-TESTING-ARCHITECTURE.md)** - Resilient API testing patterns
+- **[RESILIENT-API-TESTING-SUMMARY.md](./test-patterns/RESILIENT-API-TESTING-SUMMARY.md)** - API testing summary and results
+
+---
+
+## Infrastructure & Operations
+
+Deployment procedures, operational runbooks, and infrastructure guides.
+
+- **[RUNBOOK.md](./RUNBOOK.md)** (72K) - Comprehensive operational runbook
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Production deployment procedures
+
+---
+
 ## Queue System Documentation (NEW)
 
 Comprehensive documentation for the RabbitMQ-based asynchronous message queue system.
@@ -279,3 +368,91 @@ Refer to documentation by question type:
 - Source code: `/src/queue/`, `/src/workers/`, `/src/schedulers/`
 - Tests: `/test/` (check for integration test examples)
 - Configuration: Environment variables in `.env`
+
+---
+
+## Investigation Reports
+
+Collective intelligence findings from Queen Seraphina's Hive Mind and technical investigations.
+
+### Event Loop Investigations
+
+- **[AUTOCHECKPOINT_EVENT_LOOP_ANALYSIS.md](./AUTOCHECKPOINT_EVENT_LOOP_ANALYSIS.md)** (24K) - Event loop problem identification
+- **[TRUE_EVENT_LOOP_DESIGN.md](./TRUE_EVENT_LOOP_DESIGN.md)** (11K) - Event loop redesign proposal
+- **[EVENT_LOOP_IMPLEMENTATION_COMPLETE.md](./EVENT_LOOP_IMPLEMENTATION_COMPLETE.md)** (22K) - Event loop implementation results
+
+### Collective Intelligence Reports
+
+- **[COLLECTIVE_INVESTIGATION_SUMMARY.md](./COLLECTIVE_INVESTIGATION_SUMMARY.md)** (25K) - Queen's Hive Mind findings
+- **[INVESTIGATION_SUMMARY.md](./INVESTIGATION_SUMMARY.md)** (16K) - Focused investigation summary
+- **[INVESTIGATION_DOCUMENTATION_FRAMEWORK.md](./INVESTIGATION_DOCUMENTATION_FRAMEWORK.md)** (27K) - Investigation documentation guide
+- **[INVESTIGATION_MASTER_INDEX.md](./INVESTIGATION_MASTER_INDEX.md)** (15K) - Investigation index and navigation
+- **[IMPLEMENTATION_RECOMMENDATIONS.md](./IMPLEMENTATION_RECOMMENDATIONS.md)** (25K) - Prioritized 3-phase action plan
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Implementation progress summary
+- **[FINAL_STATUS.md](./FINAL_STATUS.md)** - Final status report
+
+### Sync & Analysis Reports
+
+- **[DOCS_SYNC_2026-01-02_COMPREHENSIVE.md](./DOCS_SYNC_2026-01-02_COMPREHENSIVE.md)** (23K) - Comprehensive docs sync report
+- **[GITHUB_PAGES_IMPLEMENTATION.md](./GITHUB_PAGES_IMPLEMENTATION.md)** - GitHub Pages setup and deployment
+- **[MONITORING_QUICKSTART.md](./MONITORING_QUICKSTART.md)** - Quick monitoring setup guide
+
+---
+
+## CI/CD & Workflows
+
+Continuous integration, deployment workflows, and pipeline troubleshooting.
+
+- **[CI_CD_STRUCTURE.md](./CI_CD_STRUCTURE.md)** (35K) - CI/CD pipeline structure and design
+- **[WORKFLOW_TROUBLESHOOTING_GUIDE.md](./WORKFLOW_TROUBLESHOOTING_GUIDE.md)** - GitHub Actions troubleshooting
+- **[GITHUB_ACTIONS_TEMPLATES.md](./GITHUB_ACTIONS_TEMPLATES.md)** - Reusable workflow templates
+- **[DEPENDENCY_MANAGEMENT.md](./DEPENDENCY_MANAGEMENT.md)** - Dependency update strategies
+- **[RELEASE_PROCESS.md](./RELEASE_PROCESS.md)** - Release and versioning process
+- **[DOCKER_BEST_PRACTICES.md](./DOCKER_BEST_PRACTICES.md)** - Docker containerization guidelines
+- **[PERFORMANCE_TESTING_CI.md](./PERFORMANCE_TESTING_CI.md)** - Performance testing in CI/CD
+
+---
+
+## Monitoring & Metrics
+
+Observability, metrics collection, dashboards, and monitoring setup.
+
+- **[METRICS.md](./METRICS.md)** (78K) - Comprehensive metrics documentation
+- **[MONITORING_QUICKSTART.md](./MONITORING_QUICKSTART.md)** - Quick monitoring setup guide
+
+---
+
+## Documentation Standards
+
+All documentation follows these standards:
+
+- **Clear title and purpose statement**
+- **Table of contents for files >200 lines**
+- **Cross-references to related documentation**
+- **Code examples where applicable**
+- **Last updated timestamp**
+
+### File Naming Conventions
+
+- **UPPERCASE.md** - Primary documentation (INDEX, README, ARCHITECTURE)
+- **kebab-case.md** - Specific topics (test-plan, deployment-guide)
+- **CATEGORY_TOPIC.md** - Scoped documentation (QUEUE_ARCHITECTURE, CI_CD_STRUCTURE)
+
+---
+
+## Additional Resources
+
+### Related Directories
+
+- **[plan/](../plan/)** - Project planning, roadmaps, and backlogs
+- **[src/](../src/)** - Source code with inline documentation
+- **[test/](../test/)** - Test suites and test utilities
+- **[.claude/](../.claude/)** - Claude Code hooks and automation
+- **[.github/workflows/](../.github/workflows/)** - GitHub Actions workflows
+
+### External Resources
+
+- **[GitHub Pages](https://fairyhunter13.github.io/happy-bday-app/)** - API docs and dashboards
+- **API Documentation** - Redoc/Swagger UI (when deployed)
+- **Coverage Trends** - Historical code coverage charts
+- **Performance Dashboards** - Grafana dashboards (when configured)
