@@ -311,6 +311,10 @@ describe('E2E: Complete Birthday Message Flow', () => {
       const birthdayDate = createTodayBirthdayUTC(1990);
 
       for (const timezone of timezones) {
+        // Clear cache before each iteration to ensure newly inserted user is found
+        // Without this, the cache from the previous iteration would be stale
+        await clearBirthdayCache();
+
         const user = await insertUser(pool, {
           firstName: 'User',
           lastName: timezone,
