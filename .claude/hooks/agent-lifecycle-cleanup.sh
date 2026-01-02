@@ -221,18 +221,14 @@ verify_permanent_agent_count() {
         return 1
     fi
 
-    # Count agents that are NOT marked as ephemeral in metadata
-    # Permanent agents either:
-    # 1. Have no lifecycle.type in metadata, OR
-    # 2. Have lifecycle.type != "ephemeral"
+    # Count permanent agents (queen and worker roles)
+    # Permanent agents are identified by role, not metadata
+    # This is the most reliable method
     permanent_count=$(db_read "
         SELECT COUNT(*) FROM agents
         WHERE swarm_id = '$swarm_id'
         AND status != 'deleted'
-        AND (
-            metadata NOT LIKE '%\"lifecycle\"%'
-            OR metadata NOT LIKE '%\"type\":\"ephemeral\"%'
-        );
+        AND role IN ('queen', 'worker');
     ")
 
     if [ -z "$permanent_count" ]; then
@@ -258,9 +254,15 @@ is_agent_protected() {
     local agent_id="$1"
     local metadata="$2"
 
-    # Check for protected flag in metadata
-    if echo "$metadata" | grep -q '"protected"[[:space:]]*:[[:space:]]*true'; then
+    # Check for protected flag in metadata (both true and 1)
+    if echo "$metadata" | grep -q '"protected"[[:space:]]*:[[:space:]]*\(true\|1\)'; then
         log_message "INFO" "Agent $agent_id is protected" "$VERBOSE"
+        return 0
+    fi
+
+    # Also check for "lifecycle":"permanent"
+    if echo "$metadata" | grep -q '"lifecycle"[[:space:]]*:[[:space:]]*"permanent"'; then
+        log_message "INFO" "Agent $agent_id has permanent lifecycle" "$VERBOSE"
         return 0
     fi
 
@@ -368,9 +370,10 @@ find_cleanup_candidates() {
         FROM agents
         WHERE swarm_id = '$swarm_id'
         AND status != 'deleted'
+        AND role = 'task-agent'
         AND (
-            metadata LIKE '%\"lifecycle\"%'
-            AND metadata LIKE '%\"type\":\"ephemeral\"%'
+            metadata LIKE '%\"lifecycle\":\"temporary\"%'
+            OR metadata NOT LIKE '%\"protected\":1%'
         )
         ORDER BY created_at ASC;
     " | while IFS='|' read -r agent_id metadata status last_active; do
@@ -490,17 +493,14 @@ print_summary() {
         SELECT COUNT(*) FROM agents
         WHERE swarm_id = '$swarm_id'
         AND status != 'deleted'
-        AND (
-            metadata NOT LIKE '%\"lifecycle\"%'
-            OR metadata NOT LIKE '%\"type\":\"ephemeral\"%'
-        );
+        AND role IN ('queen', 'worker');
     ")
 
     remaining_temp=$(db_read "
         SELECT COUNT(*) FROM agents
         WHERE swarm_id = '$swarm_id'
         AND status != 'deleted'
-        AND metadata LIKE '%\"type\":\"ephemeral\"%';
+        AND role = 'task-agent';
     ")
 
     echo "Permanent Agents:  $permanent_count (required: $REQUIRED_PERMANENT_COUNT)"
