@@ -143,6 +143,22 @@ if [ -n "$SESSION_ID" ]; then
         updated_at = datetime('now', 'localtime')
         WHERE id = '$SESSION_ID';" 2>/dev/null
 
+    # =============================================================================
+    # Session-End Cleanup
+    # =============================================================================
+
+    # Run cleanup before detaching instance
+    # This ensures stale data is cleaned up when the session ends
+    # Cleanup failure won't prevent detachment - errors are logged but ignored
+    if [ -f "$SCRIPT_DIR/agent-lifecycle-cleanup.sh" ]; then
+        # Run cleanup with logging enabled (not silent mode)
+        # Any errors will be visible but won't stop the detachment process
+        "$SCRIPT_DIR/agent-lifecycle-cleanup.sh" "session_end" "$SESSION_ID" 2>&1 || {
+            # Log cleanup failure but continue with detachment
+            echo "Warning: Cleanup script encountered errors (continuing with detachment)" >&2
+        }
+    fi
+
     # Mark instance as detached (not active)
     if type detach_instance &>/dev/null; then
         detach_instance "$INSTANCE_ID"
