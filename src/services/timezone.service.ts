@@ -27,18 +27,21 @@ export class TimezoneService {
    * const sendTime = calculateSendTime(new Date('1990-12-30'), 'America/New_York');
    * // Returns: 2025-12-30T14:00:00.000Z (9am EST = 2pm UTC)
    */
-  calculateSendTime(birthdayDate: Date, timezone: string): Date {
+  calculateSendTime(birthdayDate: Date | string, timezone: string): Date {
     if (!this.isValidTimezone(timezone)) {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
     const now = DateTime.now();
 
+    // Handle both Date objects and strings (from JSON cache serialization)
+    const bd = birthdayDate instanceof Date ? birthdayDate : new Date(birthdayDate);
+
     // PostgreSQL DATE columns are returned as midnight UTC
     // Extract month/day using UTC to get the stored date values correctly
     // This avoids timezone shift issues when the birthday date is interpreted
-    const birthdayMonth = birthdayDate.getUTCMonth() + 1; // JS months are 0-indexed
-    const birthdayDay = birthdayDate.getUTCDate();
+    const birthdayMonth = bd.getUTCMonth() + 1; // JS months are 0-indexed
+    const birthdayDay = bd.getUTCDate();
 
     // Create a DateTime for 9am today in the user's timezone
     const sendTime = DateTime.fromObject(
@@ -122,16 +125,20 @@ export class TimezoneService {
    * const birthday = new Date('1990-12-30');
    * const isBirthday = isBirthdayToday(birthday, 'America/New_York');
    */
-  isBirthdayToday(birthdayDate: Date, timezone: string): boolean {
+  isBirthdayToday(birthdayDate: Date | string, timezone: string): boolean {
     if (!this.isValidTimezone(timezone)) {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
+    // Handle both Date objects and strings (from JSON cache serialization)
+    // When users are cached in Redis, Date objects become ISO strings
+    const bd = birthdayDate instanceof Date ? birthdayDate : new Date(birthdayDate);
+
     // PostgreSQL DATE columns are returned as midnight UTC
     // Extract month/day using UTC to get the stored date values correctly
     // This avoids timezone shift issues when the birthday date is interpreted
-    const birthdayMonth = birthdayDate.getUTCMonth() + 1; // JS months are 0-indexed
-    const birthdayDay = birthdayDate.getUTCDate();
+    const birthdayMonth = bd.getUTCMonth() + 1; // JS months are 0-indexed
+    const birthdayDay = bd.getUTCDate();
 
     // Use UTC for today to match the findBirthdaysToday() query which also uses UTC
     // This ensures consistency between the DB query and the strategy check
@@ -182,7 +189,7 @@ export class TimezoneService {
    * console.log(dst.offset); // -240 (UTC-4)
    */
   handleDST(
-    date: Date,
+    date: Date | string,
     timezone: string
   ): {
     isDST: boolean;
@@ -194,7 +201,9 @@ export class TimezoneService {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
-    const dt = DateTime.fromJSDate(date).setZone(timezone);
+    // Handle both Date objects and strings (from JSON cache serialization)
+    const d = date instanceof Date ? date : new Date(date);
+    const dt = DateTime.fromJSDate(d).setZone(timezone);
 
     if (!dt.isValid) {
       logger.error({ timezone, date, reason: dt.invalidReason }, 'Invalid date for DST handling');
@@ -227,12 +236,14 @@ export class TimezoneService {
    * @param timezone - IANA timezone identifier
    * @returns UTC offset in minutes
    */
-  getUTCOffset(date: Date, timezone: string): number {
+  getUTCOffset(date: Date | string, timezone: string): number {
     if (!this.isValidTimezone(timezone)) {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
-    const dt = DateTime.fromJSDate(date).setZone(timezone);
+    // Handle both Date objects and strings (from JSON cache serialization)
+    const d = date instanceof Date ? date : new Date(date);
+    const dt = DateTime.fromJSDate(d).setZone(timezone);
     return dt.offset;
   }
 
@@ -244,7 +255,7 @@ export class TimezoneService {
    * @param toTimezone - Target timezone
    * @returns Converted DateTime
    */
-  convertTimezone(date: Date, fromTimezone: string, toTimezone: string): DateTime {
+  convertTimezone(date: Date | string, fromTimezone: string, toTimezone: string): DateTime {
     if (!this.isValidTimezone(fromTimezone)) {
       throw new ValidationError(`Invalid source timezone: ${fromTimezone}`);
     }
@@ -252,7 +263,9 @@ export class TimezoneService {
       throw new ValidationError(`Invalid target timezone: ${toTimezone}`);
     }
 
-    return DateTime.fromJSDate(date).setZone(fromTimezone).setZone(toTimezone);
+    // Handle both Date objects and strings (from JSON cache serialization)
+    const d = date instanceof Date ? date : new Date(date);
+    return DateTime.fromJSDate(d).setZone(fromTimezone).setZone(toTimezone);
   }
 
   /**
@@ -309,7 +322,7 @@ export class TimezoneService {
    * @returns Formatted date string
    */
   formatDateInTimezone(
-    date: Date,
+    date: Date | string,
     timezone: string,
     format: string = 'yyyy-MM-dd HH:mm:ss'
   ): string {
@@ -317,7 +330,9 @@ export class TimezoneService {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
-    return DateTime.fromJSDate(date).setZone(timezone).toFormat(format);
+    // Handle both Date objects and strings (from JSON cache serialization)
+    const d = date instanceof Date ? date : new Date(date);
+    return DateTime.fromJSDate(d).setZone(timezone).toFormat(format);
   }
 }
 
