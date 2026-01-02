@@ -42,6 +42,18 @@
 set -o pipefail
 
 # =============================================================================
+# Source Auto-Start Library (if available)
+# =============================================================================
+
+QUEUE_LIB_DIR="$(dirname "${BASH_SOURCE[0]}")"
+QUEUE_AUTOSTART_AVAILABLE=false
+
+if [ -f "$QUEUE_LIB_DIR/queue-autostart.sh" ]; then
+    # Source will be deferred until after QUEUE_BASE_DIR is set
+    QUEUE_AUTOSTART_AVAILABLE=true
+fi
+
+# =============================================================================
 # Configuration & Constants
 # =============================================================================
 
@@ -76,6 +88,14 @@ SQLITE_BUSY_TIMEOUT="${SQLITE_BUSY_TIMEOUT:-5000}"      # milliseconds
 
 # Feature flags
 USE_QUEUE="${USE_QUEUE:-true}"                          # Enable queue system
+
+# =============================================================================
+# Load Auto-Start Library (after config is set)
+# =============================================================================
+
+if [ "$QUEUE_AUTOSTART_AVAILABLE" = "true" ]; then
+    source "$QUEUE_LIB_DIR/queue-autostart.sh" 2>/dev/null || QUEUE_AUTOSTART_AVAILABLE=false
+fi
 
 # =============================================================================
 # Directory Initialization
@@ -320,8 +340,14 @@ queue_db_write() {
     # Update stats (non-blocking, fire-and-forget)
     queue_stats_increment "enqueued" &
 
-    # Ensure worker is running (non-blocking)
-    queue_ensure_worker &
+    # Ensure worker is running (uses cached health check for sub-ms overhead)
+    if [ "$QUEUE_AUTOSTART_AVAILABLE" = "true" ]; then
+        # Use new fast path with cached health check
+        queue_ensure_worker_fast
+    else
+        # Fallback to original background check
+        queue_ensure_worker &
+    fi
 
     return 0
 }
@@ -842,3 +868,6 @@ export -f queue_stats_increment queue_stats_get
 export -f queue_worker_is_running queue_ensure_worker queue_stop_worker
 export -f queue_log queue_cleanup_old queue_reset
 export -f queue_update_session queue_update_instance queue_insert_log
+
+# Export autostart availability (for conditional logic in other scripts)
+export QUEUE_AUTOSTART_AVAILABLE
