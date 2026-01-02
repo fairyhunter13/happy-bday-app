@@ -36,6 +36,7 @@ export async function internalRoutes(fastify: FastifyInstance) {
     '/internal/process-message',
     {
       schema: {
+        operationId: 'processInternalMessage',
         summary: 'Process message for performance testing',
         description:
           'Internal endpoint for load testing that bypasses authentication. Creates message logs directly for throughput testing. Blocked from external access via nginx.',
@@ -167,6 +168,7 @@ export async function internalRoutes(fastify: FastifyInstance) {
     '/internal/health',
     {
       schema: {
+        operationId: 'getInternalHealth',
         summary: 'Internal health check with detailed metrics',
         description:
           'Provides detailed system health information including uptime, memory usage, and version. For internal monitoring and debugging.',
