@@ -33,14 +33,19 @@ export class TimezoneService {
     }
 
     const now = DateTime.now();
-    const birthday = DateTime.fromJSDate(birthdayDate);
+
+    // PostgreSQL DATE columns are returned as midnight UTC
+    // Extract month/day using UTC to get the stored date values correctly
+    // This avoids timezone shift issues when the birthday date is interpreted
+    const birthdayMonth = birthdayDate.getUTCMonth() + 1; // JS months are 0-indexed
+    const birthdayDay = birthdayDate.getUTCDate();
 
     // Create a DateTime for 9am today in the user's timezone
     const sendTime = DateTime.fromObject(
       {
         year: now.year,
-        month: birthday.month,
-        day: birthday.day,
+        month: birthdayMonth,
+        day: birthdayDay,
         hour: 9,
         minute: 0,
         second: 0,
@@ -122,11 +127,17 @@ export class TimezoneService {
       throw new ValidationError(`Invalid timezone: ${timezone}`);
     }
 
-    const birthday = DateTime.fromJSDate(birthdayDate).setZone(timezone);
+    // PostgreSQL DATE columns are returned as midnight UTC
+    // Extract month/day using UTC to get the stored date values correctly
+    // This avoids timezone shift issues when the birthday date is interpreted
+    const birthdayMonth = birthdayDate.getUTCMonth() + 1; // JS months are 0-indexed
+    const birthdayDay = birthdayDate.getUTCDate();
+
+    // Get today's date in the user's timezone
     const today = DateTime.now().setZone(timezone);
 
     // Special handling for leap year birthdays (Feb 29)
-    if (birthday.month === 2 && birthday.day === 29) {
+    if (birthdayMonth === 2 && birthdayDay === 29) {
       // If it's not a leap year, celebrate on Feb 28
       if (!today.isInLeapYear && today.month === 2 && today.day === 28) {
         logger.info(
@@ -137,7 +148,7 @@ export class TimezoneService {
       }
     }
 
-    const isBirthday = birthday.month === today.month && birthday.day === today.day;
+    const isBirthday = birthdayMonth === today.month && birthdayDay === today.day;
 
     if (isBirthday) {
       logger.debug(
