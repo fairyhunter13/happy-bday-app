@@ -1,7 +1,6 @@
 # CI/CD Dependency Graph & Execution Flow
 
 **Generated**: January 2, 2026
-**Documenter**: Queen Collective - SPARC Documenter Agent
 
 ---
 

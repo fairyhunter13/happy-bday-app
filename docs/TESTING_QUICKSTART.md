@@ -215,7 +215,6 @@ npm run docker:test:down
 - `vitest.config.e2e-optimized.ts` - E2E tests (parallel, 90s timeout)
 - `vitest.config.integration-optimized.ts` - Integration (2-4 threads)
 - `vitest.config.performance.ts` - Performance tests
-- `vitest.config.cache.ts` - Test caching
 
 ### Original Configs
 

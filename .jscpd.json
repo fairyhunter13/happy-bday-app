@@ -27,8 +27,6 @@
     "**/prometheus/**",
     "**/*.gen.ts",
     "**/*.gen.js",
-    "**/.claude-flow/**",
-    "**/.hive-mind/**",
     "**/scripts/**"
   ],
   "absolute": true,

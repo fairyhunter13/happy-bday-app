@@ -35,11 +35,7 @@ System architecture, technical flows, and design decisions.
 
 - **[ARCHITECTURE_SCOPE.md](./ARCHITECTURE_SCOPE.md)** - Overall system architecture scope
 - **[CACHE_IMPLEMENTATION.md](./CACHE_IMPLEMENTATION.md)** - Caching strategy and implementation
-- **[HOOK_DATA_FLOWS.md](./HOOK_DATA_FLOWS.md)** (54K) - Claude hooks data flow diagrams
-- **[HOOK_QUEUE_REQUIREMENTS.md](./HOOK_QUEUE_REQUIREMENTS.md)** (34K) - Queue system requirements
-- **[QUEUE_HIVE_MIND_ARCHITECTURE.md](./QUEUE_HIVE_MIND_ARCHITECTURE.md)** (39K) - Hive mind queue architecture
 - **[CI_CD_DEPENDENCY_GRAPH.md](./CI_CD_DEPENDENCY_GRAPH.md)** (33K) - CI/CD workflow dependencies
-- **[AGENT_LIFECYCLE_VALIDATION_REPORT.md](./AGENT_LIFECYCLE_VALIDATION_REPORT.md)** - Agent lifecycle management validation
 
 ---
 

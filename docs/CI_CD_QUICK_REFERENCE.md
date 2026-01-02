@@ -1,7 +1,6 @@
 # CI/CD Quick Reference Guide
 
 **Generated**: January 2, 2026
-**Documenter**: Queen Collective - SPARC Documenter Agent
 
 ---
 

@@ -111,7 +111,7 @@ Task({
 ```
 
 ### ✅ Stop Hooks Simplified
-Removed `claude-flow session-end` hook that was reading polluted memory.db
+Removed session-end hook that was reading polluted memory.db
 
 ### ✅ Model Audit Trail Guidelines
 Added session summary table format to CLAUDE.md

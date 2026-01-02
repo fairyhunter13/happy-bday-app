@@ -1,7 +1,6 @@
 # CI/CD Workflow Structure Documentation
 
 **Generated**: January 2, 2026
-**Documenter**: Queen Collective - SPARC Documenter Agent
 
 ---
 
