@@ -387,12 +387,19 @@ export function formatDateForDb(date: Date): string {
 /**
  * Create a birthday date for today in UTC timezone
  *
- * This helper ensures the date is created with UTC timezone alignment,
- * which is critical for E2E tests where the scheduler uses UTC to find
- * users with birthdays today.
+ * This helper ensures the date is created with LOCAL date components that match
+ * today's UTC date. This is critical because the pg driver uses LOCAL date
+ * components (date.getDate(), date.getMonth()) when serializing JavaScript Date
+ * objects for PostgreSQL DATE columns.
+ *
+ * The scheduler uses UTC date to find users with birthdays today:
+ * - EXTRACT(MONTH FROM birthday_date) = <utcMonth>
+ * - EXTRACT(DAY FROM birthday_date) = <utcDay>
+ *
+ * So we create a Date where LOCAL month/day matches UTC month/day.
  *
  * @param year - Birth year (defaults to 1990)
- * @returns Date object representing today's date in UTC with the given year
+ * @returns Date object where local date components match today's UTC date
  *
  * @example
  * // Create birthday for today (born in 1990)
@@ -402,6 +409,13 @@ export function formatDateForDb(date: Date): string {
  * const birthdayDate = createTodayBirthdayUTC(1985);
  */
 export function createTodayBirthdayUTC(year: number = 1990): Date {
-  const todayInUTC = DateTime.now().setZone('UTC');
-  return todayInUTC.set({ year }).toJSDate();
+  const now = new Date();
+  // Get today's UTC month and day
+  const utcMonth = now.getUTCMonth();
+  const utcDay = now.getUTCDate();
+
+  // Create a date where the LOCAL date components match the UTC date we want
+  // Using noon local time to avoid any potential date boundary issues
+  // This ensures pg driver will serialize the correct date to PostgreSQL
+  return new Date(year, utcMonth, utcDay, 12, 0, 0, 0);
 }
