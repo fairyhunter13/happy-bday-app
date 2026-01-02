@@ -259,7 +259,6 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: perf
       RABBITMQ_DEFAULT_PASS: perf
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.8
       RABBITMQ_DEFAULT_VHOST: /
       RABBITMQ_ERLANG_COOKIE: perf_test_cookie
     ports:
