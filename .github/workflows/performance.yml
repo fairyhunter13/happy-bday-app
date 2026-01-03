@@ -117,6 +117,7 @@ jobs:
 
       - name: Create results directory
         run: |
+          rm -rf perf-results || true
           mkdir -p perf-results
           chmod 777 perf-results
 
@@ -294,6 +295,7 @@ jobs:
 
       - name: Create results directory
         run: |
+          rm -rf perf-results || true
           mkdir -p perf-results
           chmod 777 perf-results
 
@@ -447,6 +449,7 @@ jobs:
 
       - name: Create results directory
         run: |
+          rm -rf perf-results || true
           mkdir -p perf-results
           chmod 777 perf-results
 
