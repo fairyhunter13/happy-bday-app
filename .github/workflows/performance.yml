@@ -404,9 +404,15 @@ jobs:
 
       - name: Start API and worker services (${{ matrix.workers }} workers)
         run: |
-          # Start API services and scale workers
+          # Start API services and specific number of workers
           docker compose -f docker-compose.perf.yml up -d api-1 api-2 api-3 api-4 api-5 nginx
-          docker compose -f docker-compose.perf.yml up -d --scale worker=${{ matrix.workers }} worker-1
+          if [ "${{ matrix.workers }}" = "1" ]; then
+            docker compose -f docker-compose.perf.yml up -d worker-1
+          elif [ "${{ matrix.workers }}" = "5" ]; then
+            docker compose -f docker-compose.perf.yml up -d worker-1 worker-2 worker-3 worker-4 worker-5
+          elif [ "${{ matrix.workers }}" = "10" ]; then
+            docker compose -f docker-compose.perf.yml up -d worker-1 worker-2 worker-3 worker-4 worker-5 worker-6 worker-7 worker-8 worker-9 worker-10
+          fi
 
       - name: Verify containers are running
         run: |
