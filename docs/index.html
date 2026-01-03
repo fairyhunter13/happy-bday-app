@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday App - API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #4a9eff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            color: #4a9eff;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+        }
+
+        nav {
+            background-color: #252525;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #3a3a3a;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        nav a {
+            color: #4a9eff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        nav a:hover {
+            background-color: #3a3a3a;
+        }
+
+        nav a.active {
+            background-color: #4a9eff;
+            color: #1a1a1a;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background-color: #2d5016;
+            color: #7ed321;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-left: 1rem;
+        }
+
+        footer {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            color: #808080;
+            border-top: 1px solid #3a3a3a;
+            margin-top: 3rem;
+        }
+
+        footer a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        #redoc-container {
+            background-color: #1a1a1a;
+        }
+
+        .loading-message {
+            text-align: center;
+            padding: 3rem;
+            color: #b0b0b0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.4rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            nav {
+                padding: 0.5rem 1rem;
+            }
+
+            nav a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Happy Birthday App - API Documentation</h1>
+        <p>RESTful API for birthday management and email notifications</p>
+    </header>
+
+    <nav>
+        <a href="index.html" class="active">API Docs</a>
+        <a href="reports-summary.html">Reports Hub</a>
+        <a href="test-reports.html">Test Reports</a>
+        <a href="coverage-trends.html">Coverage Trends</a>
+        <a href="security-summary.html">Security Summary</a>
+    </nav>
+
+    <div id="redoc-container">
+        <div class="loading-message">
+            <h2>Loading API Documentation...</h2>
+            <p>Please wait while the OpenAPI specification is being loaded.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Happy Birthday App | <a href="https://github.com/fairyhunter13/happy-bday-app" target="_blank">View on GitHub</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Last updated: <span id="last-updated"></span></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
+    <script>
+        // Set last updated timestamp
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+        // Initialize Redoc with OpenAPI spec
+        const redocContainer = document.getElementById('redoc-container');
+
+        // Try to load the OpenAPI spec
+        fetch('./openapi.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('OpenAPI spec not found');
+                }
+                return response.json();
+            })
+            .then(spec => {
+                redocContainer.innerHTML = '';
+                Redoc.init(spec, {
+                    scrollYOffset: 50,
+                    theme: {
+                        colors: {
+                            primary: {
+                                main: '#4a9eff'
+                            },
+                            success: {
+                                main: '#7ed321'
+                            },
+                            warning: {
+                                main: '#f5a623'
+                            },
+                            error: {
+                                main: '#d0021b'
+                            },
+                            text: {
+                                primary: '#e0e0e0',
+                                secondary: '#b0b0b0'
+                            },
+                            background: {
+                                main: '#1a1a1a',
+                                paper: '#2d2d2d'
+                            }
+                        },
+                        typography: {
+                            fontSize: '14px',
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif',
+                            headings: {
+                                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif'
+                            }
+                        },
+                        sidebar: {
+                            backgroundColor: '#252525',
+                            textColor: '#e0e0e0'
+                        },
+                        rightPanel: {
+                            backgroundColor: '#1e1e1e'
+                        }
+                    }
+                }, redocContainer);
+            })
+            .catch(error => {
+                console.error('Error loading OpenAPI spec:', error);
+                redocContainer.innerHTML = `
+                    <div class="loading-message">
+                        <h2>API Documentation Not Yet Available</h2>
+                        <p>The OpenAPI specification will be generated automatically by the CI/CD pipeline.</p>
+                        <p style="margin-top: 1rem; color: #808080;">Expected location: <code style="background: #2d2d2d; padding: 0.2rem 0.5rem; border-radius: 3px;">./openapi.json</code></p>
+                        <p style="margin-top: 1rem;">
+                            <a href="https://github.com/fairyhunter13/happy-bday-app" target="_blank" style="color: #4a9eff; text-decoration: none;">
+                                View source code on GitHub &rarr;
+                            </a>
+                        </p>
+                    </div>
+                `;
+            });
+    </script>
+</body>
+</html>
