@@ -19,8 +19,27 @@ x-logging: &logging
 x-perf-env: &perf-env
   NODE_ENV: production
   DATABASE_URL: postgres://perf:perf@postgres-primary:5432/perf_db
+  DATABASE_HOST: postgres-primary
+  DATABASE_PORT: 5432
+  DATABASE_USER: perf
+  DATABASE_PASSWORD: perf
+  DATABASE_NAME: perf_db
+  DATABASE_POOL_MIN: 5
+  DATABASE_POOL_MAX: 20
+  DATABASE_SSL: false
   RABBITMQ_URL: amqp://perf:perf@rabbitmq:5672
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USER: perf
+  RABBITMQ_PASSWORD: perf
+  RABBITMQ_VHOST: /
+  RABBITMQ_QUEUE_NAME: birthday-messages
+  RABBITMQ_EXCHANGE_NAME: birthday-exchange
+  RABBITMQ_DLX_NAME: birthday-dlx
+  RABBITMQ_DLQ_NAME: birthday-dlq
   REDIS_URL: redis://redis:6379
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
 
 # API service template
 x-api-service: &api-service
