@@ -1,6 +1,25 @@
 import { z } from 'zod';
 
 /**
+ * Custom boolean coercion that properly handles string "false" and "0"
+ * Standard z.coerce.boolean() treats "false" as truthy (non-empty string)
+ */
+const booleanString = z
+  .string()
+  .transform((val) => {
+    const normalized = val.toLowerCase().trim();
+    if (normalized === 'false' || normalized === '0' || normalized === '') {
+      return false;
+    }
+    if (normalized === 'true' || normalized === '1') {
+      return true;
+    }
+    // For any other value, convert to boolean
+    return Boolean(val);
+  })
+  .pipe(z.boolean());
+
+/**
  * Environment configuration schema with strict validation
  * All environment variables are validated at startup
  */
@@ -20,7 +39,7 @@ const environmentSchema = z.object({
   DATABASE_NAME: z.string().min(1),
   DATABASE_POOL_MIN: z.coerce.number().int().nonnegative().default(5),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
-  DATABASE_SSL: z.coerce.boolean().default(false),
+  DATABASE_SSL: booleanString.default('false'),
 
   // RabbitMQ
   RABBITMQ_URL: z.string().url(),
@@ -66,7 +85,7 @@ const environmentSchema = z.object({
   CIRCUIT_BREAKER_VOLUME_THRESHOLD: z.coerce.number().int().positive().default(10),
 
   // Rate Limiting - Global defaults
-  RATE_LIMIT_ENABLED: z.coerce.boolean().default(true),
+  RATE_LIMIT_ENABLED: booleanString.default('true'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
 
@@ -77,7 +96,7 @@ const environmentSchema = z.object({
   RATE_LIMIT_DELETE_USER_MAX: z.coerce.number().int().positive().default(10),
 
   // Monitoring
-  ENABLE_METRICS: z.coerce.boolean().default(true),
+  ENABLE_METRICS: booleanString.default('true'),
   METRICS_PORT: z.coerce.number().int().positive().default(9090),
 });
 

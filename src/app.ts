@@ -61,7 +61,17 @@ export async function createApp(): Promise<FastifyInstance> {
 
   // Register rate limiting (conditionally enabled via RATE_LIMIT_ENABLED env var)
   // For performance testing, set RATE_LIMIT_ENABLED=false to disable rate limiting entirely
-  if (env.RATE_LIMIT_ENABLED) {
+  logger.info(
+    {
+      RATE_LIMIT_ENABLED: env.RATE_LIMIT_ENABLED,
+      RATE_LIMIT_ENABLED_TYPE: typeof env.RATE_LIMIT_ENABLED,
+      RATE_LIMIT_ENABLED_RAW: process.env.RATE_LIMIT_ENABLED,
+      willRegister: env.RATE_LIMIT_ENABLED === true,
+    },
+    'Rate limiting configuration check'
+  );
+
+  if (env.RATE_LIMIT_ENABLED === true) {
     await app.register(rateLimit, {
       max: env.RATE_LIMIT_MAX_REQUESTS,
       timeWindow: env.RATE_LIMIT_WINDOW_MS,
@@ -81,10 +91,16 @@ export async function createApp(): Promise<FastifyInstance> {
         maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
         windowMs: env.RATE_LIMIT_WINDOW_MS,
       },
-      'Rate limiting enabled'
+      'Rate limiting ENABLED'
     );
   } else {
-    logger.warn('Rate limiting is DISABLED - use only in performance testing environments');
+    logger.warn(
+      {
+        RATE_LIMIT_ENABLED: env.RATE_LIMIT_ENABLED,
+        reason: 'RATE_LIMIT_ENABLED is not true',
+      },
+      'Rate limiting is DISABLED - use only in performance testing environments'
+    );
   }
 
   // Register response compression (gzip/brotli)
