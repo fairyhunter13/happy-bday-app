@@ -1591,7 +1591,7 @@ jobs:
         run: npm run build
 
       - name: Run tests with coverage
-        run: npm run test:coverage || true
+        run: npm run test:coverage
 
       - name: Install jq and bc for coverage tracking
         run: sudo apt-get update && sudo apt-get install -y jq bc
@@ -1599,7 +1599,7 @@ jobs:
       - name: Update coverage history
         run: |
           chmod +x scripts/coverage/update-history.sh
-          ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json || true
+          ./scripts/coverage/update-history.sh coverage/coverage-summary.json docs/coverage-history.json docs/coverage-badge.json
 
       - name: Generate OpenAPI spec
         run: |
@@ -1637,11 +1637,12 @@ jobs:
 
           # Generate performance badges if not already generated
           if [ ! -f _site/performance-badge.json ]; then
-            chmod +x scripts/performance/generate-badges.sh 2>/dev/null || true
-            ./scripts/performance/generate-badges.sh perf-results docs 2>/dev/null || true
-            for badge_file in performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
-              [ -f "docs/$badge_file" ] && cp "docs/$badge_file" "_site/$badge_file"
-            done
+            if [ -x scripts/performance/generate-badges.sh ] && [ -d perf-results ]; then
+              ./scripts/performance/generate-badges.sh perf-results docs
+              for badge_file in performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json; do
+                [ -f "docs/$badge_file" ] && cp "docs/$badge_file" "_site/$badge_file"
+              done
+            fi
           fi
 
           # Copy Grafana dashboards and alerts
@@ -1670,7 +1671,7 @@ jobs:
             git config --local user.name "github-actions[bot]"
             git add docs/coverage-history.json docs/coverage-badge.json
             git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
-            git push || true
+            git push
           fi
 
       - name: Deploy to GitHub Pages
