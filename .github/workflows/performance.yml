@@ -98,10 +98,14 @@ jobs:
       - name: Install k6
         uses: ./.github/actions/install-k6
 
+      - name: Create results directory
+        run: mkdir -p perf-results
+
       - name: Run sustained load test (24h)
         run: k6 run tests/performance/sustained-load.js --out json=perf-results/sustained-load.json
         env:
           API_URL: http://localhost
+          CI: true
 
       - name: Generate performance report
         run: npm run perf:report
@@ -247,10 +251,14 @@ jobs:
       - name: Install k6
         uses: ./.github/actions/install-k6
 
+      - name: Create results directory
+        run: mkdir -p perf-results
+
       - name: Run peak load test
         run: k6 run tests/performance/peak-load.js --out json=perf-results/peak-load.json
         env:
           API_URL: http://localhost
+          CI: true
 
       - name: Generate performance report
         run: npm run perf:report
@@ -366,11 +374,15 @@ jobs:
       - name: Install k6
         uses: ./.github/actions/install-k6
 
+      - name: Create results directory
+        run: mkdir -p perf-results
+
       - name: Run worker scaling test
         run: k6 run tests/performance/worker-scaling.js --out json=perf-results/worker-scaling-${{ matrix.workers }}.json
         env:
           API_URL: http://localhost
           WORKERS: ${{ matrix.workers }}
+          CI: true
 
       - name: Upload results
         uses: actions/upload-artifact@v4
