@@ -64,7 +64,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Build API and worker Docker images
-        run: docker compose -f docker-compose.perf.yml build
+        run: docker compose -f docker-compose.perf.yml build --no-cache
 
       - name: Start API and worker services
         run: |
@@ -217,7 +217,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Build API and worker Docker images
-        run: docker compose -f docker-compose.perf.yml build
+        run: docker compose -f docker-compose.perf.yml build --no-cache
 
       - name: Start API and worker services
         run: |
@@ -339,7 +339,7 @@ jobs:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
       - name: Build API and worker Docker images
-        run: docker compose -f docker-compose.perf.yml build
+        run: docker compose -f docker-compose.perf.yml build --no-cache
 
       - name: Start API and worker services (${{ matrix.workers }} workers)
         run: |
