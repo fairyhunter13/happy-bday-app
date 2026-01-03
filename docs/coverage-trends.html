@@ -4,39 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Coverage Trends - Happy Birthday App</title>
-    <meta name="description" content="Historical code coverage trends for the Happy Birthday App">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
-        :root {
-            --color-green: #10b981;
-            --color-yellow: #f59e0b;
-            --color-red: #ef4444;
-            --color-blue: #3b82f6;
-            --color-purple: #8b5cf6;
-            --color-pink: #ec4899;
-            --color-cyan: #06b6d4;
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-card: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border-color: #475569;
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
             line-height: 1.6;
-            min-height: 100vh;
+        }
+
+        header {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #4a9eff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            color: #4a9eff;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+        }
+
+        nav {
+            background-color: #252525;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #3a3a3a;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        nav a {
+            color: #4a9eff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        nav a:hover {
+            background-color: #3a3a3a;
+        }
+
+        nav a.active {
+            background-color: #4a9eff;
+            color: #1a1a1a;
         }
 
         .container {
@@ -45,302 +69,87 @@
             padding: 2rem;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--color-blue), var(--color-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-
-        .nav-links {
-            margin-top: 1rem;
-        }
-
-        .nav-links a {
-            color: var(--color-blue);
-            text-decoration: none;
-            margin: 0 1rem;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--color-purple);
-        }
-
-        /* Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
         .stat-card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
+            background-color: #2d2d2d;
             padding: 1.5rem;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
         }
 
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .stat-card h3 {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            font-weight: 500;
             margin-bottom: 0.5rem;
         }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        .stat-value.green { color: var(--color-green); }
-        .stat-value.yellow { color: var(--color-yellow); }
-        .stat-value.red { color: var(--color-red); }
-
-        .stat-change {
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-        }
-
-        .stat-change.positive { color: var(--color-green); }
-        .stat-change.negative { color: var(--color-red); }
-        .stat-change.neutral { color: var(--text-secondary); }
-
-        /* Chart Container */
-        .chart-section {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .chart-title {
-            font-size: 1.25rem;
+        .stat-card .value {
+            font-size: 2rem;
             font-weight: 600;
+            color: #4a9eff;
         }
 
-        .chart-controls {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+        .stat-card .trend {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
         }
 
-        .chart-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s;
+        .trend.up {
+            color: #7ed321;
         }
 
-        .chart-btn:hover {
-            background: var(--border-color);
-        }
-
-        .chart-btn.active {
-            background: var(--color-blue);
-            border-color: var(--color-blue);
+        .trend.down {
+            color: #d0021b;
         }
 
         .chart-container {
+            background-color: #2d2d2d;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container h2 {
+            color: #e0e0e0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .chart-wrapper {
             position: relative;
             height: 400px;
-            width: 100%;
         }
 
-        /* Threshold Legend */
-        .threshold-legend {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
-
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .legend-color.green { background: var(--color-green); }
-        .legend-color.yellow { background: var(--color-yellow); }
-        .legend-color.red { background: var(--color-red); }
-
-        /* Recent Commits Table */
-        .commits-section {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .commits-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .commits-table th,
-        .commits-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .commits-table th {
-            color: var(--text-secondary);
-            font-weight: 500;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .commits-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .commit-sha {
-            font-family: monospace;
-            color: var(--color-blue);
-        }
-
-        .coverage-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .coverage-badge.green { background: rgba(16, 185, 129, 0.2); color: var(--color-green); }
-        .coverage-badge.yellow { background: rgba(245, 158, 11, 0.2); color: var(--color-yellow); }
-        .coverage-badge.red { background: rgba(239, 68, 68, 0.2); color: var(--color-red); }
-
-        /* Loading State */
-        .loading {
+        .placeholder-message {
             text-align: center;
-            padding: 4rem;
-            color: var(--text-secondary);
+            padding: 3rem;
+            color: #808080;
         }
 
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--color-blue);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
+        .placeholder-message h3 {
+            color: #b0b0b0;
+            margin-bottom: 1rem;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Error State */
-        .error {
-            text-align: center;
-            padding: 4rem;
-            color: var(--color-red);
-        }
-
-        /* No Data State */
-        .no-data {
-            text-align: center;
-            padding: 4rem;
-            color: var(--text-secondary);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            .stat-value {
-                font-size: 2rem;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-
-            .commits-table {
-                font-size: 0.875rem;
-            }
-
-            .commits-table th,
-            .commits-table td {
-                padding: 0.5rem;
-            }
-
-            .nav-links a {
-                display: block;
-                margin: 0.5rem 0;
-            }
-        }
-
-        /* Footer */
         footer {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
             text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            border-top: 1px solid var(--border-color);
-            margin-top: 2rem;
+            color: #808080;
+            border-top: 1px solid #3a3a3a;
+            margin-top: 3rem;
         }
 
         footer a {
-            color: var(--color-blue);
+            color: #4a9eff;
             text-decoration: none;
         }
 
@@ -348,705 +157,320 @@
             text-decoration: underline;
         }
 
-        /* Print-friendly styles */
-        @media print {
-            .chart-controls, .nav-links, footer {
-                display: none;
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.4rem;
             }
-            .chart-container {
-                height: 300px !important;
+
+            .container {
+                padding: 1rem;
             }
-            body {
-                background: white;
-                color: black;
+
+            nav {
+                padding: 0.5rem 1rem;
             }
-            .stat-card, .chart-section, .commits-section {
-                border-color: #ccc !important;
-                background: white !important;
+
+            nav a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
             }
-            h1 {
-                -webkit-text-fill-color: initial;
-                color: #16213e;
+
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
-            .stat-value, .stat-label, .stat-change {
-                color: black !important;
-            }
-            .commits-table th,
-            .commits-table td {
-                color: black !important;
+
+            .chart-wrapper {
+                height: 300px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Coverage Trends</h1>
-            <p class="subtitle">Happy Birthday App - Historical Code Coverage</p>
-            <nav class="nav-links">
-                <a href="index.html">API Documentation</a>
-                <a href="test-reports.html">Test Reports</a>
-                <a href="dashboards-index.html">Dashboards</a>
-                <a href="reports-summary.html">All Reports</a>
-                <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub Repository</a>
-                <a href="https://codecov.io/gh/fairyhunter13/happy-bday-app">Codecov</a>
-            </nav>
-        </header>
+    <header>
+        <h1>Coverage Trends</h1>
+        <p>Historical test coverage metrics and trends</p>
+    </header>
 
-        <div id="app">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <p>Loading coverage data...</p>
+    <nav>
+        <a href="index.html">API Docs</a>
+        <a href="reports-summary.html">Reports Hub</a>
+        <a href="test-reports.html">Test Reports</a>
+        <a href="coverage-trends.html" class="active">Coverage Trends</a>
+        <a href="security-summary.html">Security Summary</a>
+    </nav>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Overall Coverage</h3>
+                <div class="value" id="overall-coverage">--</div>
+                <div class="trend up" id="overall-trend">Awaiting data</div>
+            </div>
+            <div class="stat-card">
+                <h3>Statements</h3>
+                <div class="value" id="statements-coverage">--</div>
+                <div class="trend" id="statements-trend">Awaiting data</div>
+            </div>
+            <div class="stat-card">
+                <h3>Branches</h3>
+                <div class="value" id="branches-coverage">--</div>
+                <div class="trend" id="branches-trend">Awaiting data</div>
+            </div>
+            <div class="stat-card">
+                <h3>Functions</h3>
+                <div class="value" id="functions-coverage">--</div>
+                <div class="trend" id="functions-trend">Awaiting data</div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Coverage History</h2>
+            <div class="chart-wrapper">
+                <canvas id="coverageChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Coverage by Type</h2>
+            <div class="chart-wrapper">
+                <canvas id="coverageTypeChart"></canvas>
             </div>
         </div>
     </div>
 
+    <footer>
+        <p>&copy; 2026 Happy Birthday App | <a href="https://github.com/fairyhunter13/happy-bday-app" target="_blank">View on GitHub</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Last updated: <span id="last-updated"></span></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        // Configuration
-        const CONFIG = {
-            historyFile: 'coverage-history.json',
-            thresholds: {
-                good: 80,
-                warning: 60
+        // Set last updated timestamp
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+        // Chart.js configuration
+        Chart.defaults.color = '#b0b0b0';
+        Chart.defaults.borderColor = '#3a3a3a';
+
+        // Initialize coverage history chart
+        const coverageCtx = document.getElementById('coverageChart').getContext('2d');
+        const coverageChart = new Chart(coverageCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    {
+                        label: 'Overall Coverage',
+                        data: [],
+                        borderColor: '#4a9eff',
+                        backgroundColor: 'rgba(74, 158, 255, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Statements',
+                        data: [],
+                        borderColor: '#7ed321',
+                        backgroundColor: 'rgba(126, 211, 33, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Branches',
+                        data: [],
+                        borderColor: '#f5a623',
+                        backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Functions',
+                        data: [],
+                        borderColor: '#bd10e0',
+                        backgroundColor: 'rgba(189, 16, 224, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
             },
-            colors: {
-                lines: '#3b82f6',      // Blue
-                functions: '#8b5cf6',  // Purple
-                branches: '#ec4899',   // Pink
-                statements: '#06b6d4'  // Cyan
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: '#2d2d2d',
+                        titleColor: '#e0e0e0',
+                        bodyColor: '#b0b0b0',
+                        borderColor: '#4a9eff',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: '#3a3a3a'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#3a3a3a'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize coverage by type chart
+        const typeCtx = document.getElementById('coverageTypeChart').getContext('2d');
+        const typeChart = new Chart(typeCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Unit Tests', 'Integration Tests', 'E2E Tests', 'Overall'],
+                datasets: [{
+                    label: 'Coverage %',
+                    data: [],
+                    backgroundColor: [
+                        'rgba(74, 158, 255, 0.8)',
+                        'rgba(126, 211, 33, 0.8)',
+                        'rgba(245, 166, 35, 0.8)',
+                        'rgba(189, 16, 224, 0.8)'
+                    ],
+                    borderColor: [
+                        '#4a9eff',
+                        '#7ed321',
+                        '#f5a623',
+                        '#bd10e0'
+                    ],
+                    borderWidth: 2
+                }]
             },
-            maxDataPoints: 30 // Show last 30 days by default
-        };
-
-        // Utility functions
-        function getColorForValue(value) {
-            if (value >= CONFIG.thresholds.good) return 'green';
-            if (value >= CONFIG.thresholds.warning) return 'yellow';
-            return 'red';
-        }
-
-        function formatDate(dateStr) {
-            const date = new Date(dateStr);
-            return date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function calculateChange(current, previous) {
-            if (!previous) return { value: 0, class: 'neutral', text: 'N/A' };
-            const diff = current - previous;
-            const sign = diff > 0 ? '+' : '';
-            return {
-                value: diff,
-                class: diff > 0 ? 'positive' : diff < 0 ? 'negative' : 'neutral',
-                text: `${sign}${diff.toFixed(1)}%`
-            };
-        }
-
-        // Export functionality
-        function exportData(format) {
-            const entries = window.coverageData?.entries || [];
-
-            if (entries.length === 0) {
-                alert('No coverage data available to export');
-                return;
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#2d2d2d',
+                        titleColor: '#e0e0e0',
+                        bodyColor: '#b0b0b0',
+                        borderColor: '#4a9eff',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Coverage: ' + (context.parsed.y || 0) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        grid: {
+                            color: '#3a3a3a'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#3a3a3a'
+                        }
+                    }
+                }
             }
+        });
 
-            if (format === 'csv') {
-                const headers = ['Timestamp', 'Commit', 'Branch', 'Author', 'Lines %', 'Functions %', 'Branches %', 'Statements %', 'Delta Lines', 'Delta Functions', 'Delta Branches', 'Delta Statements'];
-                const rows = entries.map(e => [
-                    e.timestamp,
-                    e.commit,
-                    e.branch,
-                    e.author || 'N/A',
-                    e.coverage.lines.pct,
-                    e.coverage.functions.pct,
-                    e.coverage.branches.pct,
-                    e.coverage.statements.pct,
-                    e.delta?.lines || 0,
-                    e.delta?.functions || 0,
-                    e.delta?.branches || 0,
-                    e.delta?.statements || 0
-                ]);
-
-                const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-                downloadFile(csv, 'coverage-trends.csv', 'text/csv');
-            } else if (format === 'json') {
-                const json = JSON.stringify(window.coverageData, null, 2);
-                downloadFile(json, 'coverage-trends.json', 'application/json');
-            }
-        }
-
-        function downloadFile(content, filename, mimeType) {
-            const blob = new Blob([content], { type: mimeType });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            link.click();
-            URL.revokeObjectURL(url);
-        }
-
-        // Main application
-        async function init() {
-            const app = document.getElementById('app');
-
-            try {
-                const response = await fetch(CONFIG.historyFile);
+        // Load coverage data from JSON file (to be populated by CI/CD)
+        fetch('./coverage-data.json')
+            .then(response => {
                 if (!response.ok) {
-                    throw new Error('Coverage history not found. Run tests to generate data.');
+                    throw new Error('Coverage data not found');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Update stats
+                if (data.current) {
+                    document.getElementById('overall-coverage').textContent = data.current.overall + '%';
+                    document.getElementById('statements-coverage').textContent = data.current.statements + '%';
+                    document.getElementById('branches-coverage').textContent = data.current.branches + '%';
+                    document.getElementById('functions-coverage').textContent = data.current.functions + '%';
                 }
 
-                const data = await response.json();
-
-                if (!data.entries || data.entries.length === 0) {
-                    app.innerHTML = `
-                        <div class="no-data">
-                            <p>No coverage data available yet.</p>
-                            <p>Run <code>npm run test:coverage</code> to generate coverage data.</p>
-                        </div>
-                    `;
-                    return;
+                // Update trends
+                if (data.trends) {
+                    updateTrend('overall-trend', data.trends.overall);
+                    updateTrend('statements-trend', data.trends.statements);
+                    updateTrend('branches-trend', data.trends.branches);
+                    updateTrend('functions-trend', data.trends.functions);
                 }
 
-                // Store data globally for export
-                window.coverageData = data;
+                // Update charts
+                if (data.history) {
+                    coverageChart.data.labels = data.history.labels;
+                    coverageChart.data.datasets[0].data = data.history.overall;
+                    coverageChart.data.datasets[1].data = data.history.statements;
+                    coverageChart.data.datasets[2].data = data.history.branches;
+                    coverageChart.data.datasets[3].data = data.history.functions;
+                    coverageChart.update();
+                }
 
-                renderDashboard(data);
-            } catch (error) {
-                app.innerHTML = `
-                    <div class="error">
-                        <p>Error loading coverage data</p>
-                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">${error.message}</p>
+                if (data.byType) {
+                    typeChart.data.datasets[0].data = data.byType;
+                    typeChart.update();
+                }
+            })
+            .catch(error => {
+                console.log('Coverage data will be populated by CI/CD pipeline');
+                // Show placeholder message
+                showPlaceholder();
+            });
+
+        function updateTrend(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value > 0) {
+                element.textContent = '+' + value.toFixed(1) + '%';
+                element.className = 'trend up';
+            } else if (value < 0) {
+                element.textContent = value.toFixed(1) + '%';
+                element.className = 'trend down';
+            } else {
+                element.textContent = 'No change';
+                element.className = 'trend';
+            }
+        }
+
+        function showPlaceholder() {
+            const chartContainers = document.querySelectorAll('.chart-wrapper');
+            chartContainers.forEach(container => {
+                container.innerHTML = `
+                    <div class="placeholder-message">
+                        <h3>Coverage Data Not Yet Available</h3>
+                        <p>Coverage history will be populated automatically by the CI/CD pipeline.</p>
+                        <p style="margin-top: 1rem;">Expected data format: <code style="background: #1a1a1a; padding: 0.2rem 0.5rem; border-radius: 3px;">coverage-data.json</code></p>
                     </div>
                 `;
-            }
-        }
-
-        function renderDashboard(data) {
-            const app = document.getElementById('app');
-            const entries = data.entries.slice(0, CONFIG.maxDataPoints);
-            const latest = entries[0];
-            const previous = entries[1];
-
-            // Calculate changes
-            const linesChange = calculateChange(latest.coverage.lines.pct, previous?.coverage.lines.pct);
-            const functionsChange = calculateChange(latest.coverage.functions.pct, previous?.coverage.functions.pct);
-            const branchesChange = calculateChange(latest.coverage.branches.pct, previous?.coverage.branches.pct);
-            const statementsChange = calculateChange(latest.coverage.statements.pct, previous?.coverage.statements.pct);
-
-            app.innerHTML = `
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-label">Lines</div>
-                        <div class="stat-value ${getColorForValue(latest.coverage.lines.pct)}">${latest.coverage.lines.pct.toFixed(1)}%</div>
-                        <div class="stat-change ${linesChange.class}">${linesChange.text} from last</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Functions</div>
-                        <div class="stat-value ${getColorForValue(latest.coverage.functions.pct)}">${latest.coverage.functions.pct.toFixed(1)}%</div>
-                        <div class="stat-change ${functionsChange.class}">${functionsChange.text} from last</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Branches</div>
-                        <div class="stat-value ${getColorForValue(latest.coverage.branches.pct)}">${latest.coverage.branches.pct.toFixed(1)}%</div>
-                        <div class="stat-change ${branchesChange.class}">${branchesChange.text} from last</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Statements</div>
-                        <div class="stat-value ${getColorForValue(latest.coverage.statements.pct)}">${latest.coverage.statements.pct.toFixed(1)}%</div>
-                        <div class="stat-change ${statementsChange.class}">${statementsChange.text} from last</div>
-                    </div>
-                </div>
-
-                <!-- Main Chart -->
-                <div class="chart-section">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Coverage Over Time</h2>
-                        <div class="chart-controls">
-                            <button class="chart-btn active" data-range="7">7 Days</button>
-                            <button class="chart-btn" data-range="14">14 Days</button>
-                            <button class="chart-btn" data-range="30">30 Days</button>
-                            <button class="chart-btn" data-range="all">All</button>
-                            <button class="chart-btn" onclick="exportData('csv')">📥 Export CSV</button>
-                            <button class="chart-btn" onclick="exportData('json')">📥 Export JSON</button>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="coverageChart"></canvas>
-                    </div>
-                    <div class="threshold-legend">
-                        <div class="legend-item">
-                            <span class="legend-color green"></span>
-                            <span>Good (>= ${CONFIG.thresholds.good}%)</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color yellow"></span>
-                            <span>Warning (>= ${CONFIG.thresholds.warning}%)</span>
-                        </div>
-                        <div class="legend-item">
-                            <span class="legend-color red"></span>
-                            <span>Critical (< ${CONFIG.thresholds.warning}%)</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Branch Coverage Chart -->
-                <div class="chart-section">
-                    <div class="chart-header">
-                        <h2 class="chart-title">Branch Coverage Distribution</h2>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="branchChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- File-level Coverage Breakdown -->
-                <div class="chart-section">
-                    <div class="chart-header">
-                        <h2 class="chart-title">File-level Coverage Breakdown</h2>
-                        <div class="chart-controls">
-                            <button class="chart-btn active" data-view="top">Top Files</button>
-                            <button class="chart-btn" data-view="bottom">Needs Attention</button>
-                        </div>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="fileChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Recent Commits -->
-                <div class="commits-section">
-                    <h2 class="chart-title">Recent Coverage Data</h2>
-                    <table class="commits-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Commit</th>
-                                <th>Branch</th>
-                                <th>Lines</th>
-                                <th>Functions</th>
-                                <th>Branches</th>
-                                <th>Statements</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${entries.slice(0, 10).map(entry => `
-                                <tr>
-                                    <td>${formatDate(entry.timestamp)}</td>
-                                    <td><span class="commit-sha">${entry.commit}</span></td>
-                                    <td>${entry.branch}</td>
-                                    <td><span class="coverage-badge ${getColorForValue(entry.coverage.lines.pct)}">${entry.coverage.lines.pct.toFixed(1)}%</span></td>
-                                    <td><span class="coverage-badge ${getColorForValue(entry.coverage.functions.pct)}">${entry.coverage.functions.pct.toFixed(1)}%</span></td>
-                                    <td><span class="coverage-badge ${getColorForValue(entry.coverage.branches.pct)}">${entry.coverage.branches.pct.toFixed(1)}%</span></td>
-                                    <td><span class="coverage-badge ${getColorForValue(entry.coverage.statements.pct)}">${entry.coverage.statements.pct.toFixed(1)}%</span></td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <footer>
-                    <p>Last updated: ${formatDate(data.updated)}</p>
-                    <p><a href="https://github.com/fairyhunter13/happy-bday-app">Happy Birthday App</a> - Coverage Trends Dashboard</p>
-                </footer>
-            `;
-
-            // Initialize chart
-            initChart(entries);
-
-            // Setup range buttons
-            setupRangeButtons(data.entries);
-        }
-
-        let chart = null;
-
-        function initChart(entries) {
-            const ctx = document.getElementById('coverageChart').getContext('2d');
-
-            // Reverse entries for chronological order
-            const chartData = [...entries].reverse();
-
-            const labels = chartData.map(e => new Date(e.timestamp));
-            const linesData = chartData.map(e => e.coverage.lines.pct);
-            const functionsData = chartData.map(e => e.coverage.functions.pct);
-            const branchesData = chartData.map(e => e.coverage.branches.pct);
-            const statementsData = chartData.map(e => e.coverage.statements.pct);
-
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Lines',
-                            data: linesData,
-                            borderColor: CONFIG.colors.lines,
-                            backgroundColor: CONFIG.colors.lines + '20',
-                            fill: false,
-                            tension: 0.3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        },
-                        {
-                            label: 'Functions',
-                            data: functionsData,
-                            borderColor: CONFIG.colors.functions,
-                            backgroundColor: CONFIG.colors.functions + '20',
-                            fill: false,
-                            tension: 0.3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        },
-                        {
-                            label: 'Branches',
-                            data: branchesData,
-                            borderColor: CONFIG.colors.branches,
-                            backgroundColor: CONFIG.colors.branches + '20',
-                            fill: false,
-                            tension: 0.3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        },
-                        {
-                            label: 'Statements',
-                            data: statementsData,
-                            borderColor: CONFIG.colors.statements,
-                            backgroundColor: CONFIG.colors.statements + '20',
-                            fill: false,
-                            tension: 0.3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#94a3b8',
-                                usePointStyle: true,
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#f1f5f9',
-                            bodyColor: '#94a3b8',
-                            borderColor: '#475569',
-                            borderWidth: 1,
-                            padding: 12,
-                            callbacks: {
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
-                                }
-                            }
-                        },
-                        annotation: {
-                            annotations: {
-                                goodLine: {
-                                    type: 'line',
-                                    yMin: CONFIG.thresholds.good,
-                                    yMax: CONFIG.thresholds.good,
-                                    borderColor: '#10b981',
-                                    borderWidth: 1,
-                                    borderDash: [5, 5],
-                                    label: {
-                                        display: false
-                                    }
-                                },
-                                warningLine: {
-                                    type: 'line',
-                                    yMin: CONFIG.thresholds.warning,
-                                    yMax: CONFIG.thresholds.warning,
-                                    borderColor: '#f59e0b',
-                                    borderWidth: 1,
-                                    borderDash: [5, 5],
-                                    label: {
-                                        display: false
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'time',
-                            time: {
-                                unit: 'day',
-                                displayFormats: {
-                                    day: 'MMM d'
-                                }
-                            },
-                            grid: {
-                                color: '#334155'
-                            },
-                            ticks: {
-                                color: '#94a3b8'
-                            }
-                        },
-                        y: {
-                            min: 0,
-                            max: 100,
-                            grid: {
-                                color: '#334155'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Add threshold lines manually since annotation plugin might not be loaded
-            addThresholdLines(ctx);
-        }
-
-        function addThresholdLines(ctx) {
-            // Threshold lines are handled by the y-axis gridlines
-            // Additional visual indication is provided by the legend
-        }
-
-        function setupRangeButtons(allEntries) {
-            const buttons = document.querySelectorAll('.chart-btn');
-
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    buttons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
-                    const range = btn.dataset.range;
-                    let filteredEntries;
-
-                    if (range === 'all') {
-                        filteredEntries = allEntries.slice(0, CONFIG.maxDataPoints);
-                    } else {
-                        const days = parseInt(range);
-                        const cutoff = new Date();
-                        cutoff.setDate(cutoff.getDate() - days);
-
-                        filteredEntries = allEntries.filter(e => new Date(e.timestamp) >= cutoff);
-                    }
-
-                    updateChart(filteredEntries);
-                });
             });
         }
-
-        function updateChart(entries) {
-            if (!chart) return;
-
-            const chartData = [...entries].reverse();
-
-            chart.data.labels = chartData.map(e => new Date(e.timestamp));
-            chart.data.datasets[0].data = chartData.map(e => e.coverage.lines.pct);
-            chart.data.datasets[1].data = chartData.map(e => e.coverage.functions.pct);
-            chart.data.datasets[2].data = chartData.map(e => e.coverage.branches.pct);
-            chart.data.datasets[3].data = chartData.map(e => e.coverage.statements.pct);
-
-            chart.update();
-        }
-
-        // Initialize additional charts
-        function initBranchChart(latest) {
-            const ctx = document.getElementById('branchChart');
-            if (!ctx) return;
-
-            const branchData = {
-                covered: latest.coverage.branches.covered || Math.floor(latest.coverage.branches.pct * 10),
-                uncovered: latest.coverage.branches.total ?
-                    latest.coverage.branches.total - latest.coverage.branches.covered :
-                    Math.floor((100 - latest.coverage.branches.pct) * 10)
-            };
-
-            new Chart(ctx.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: ['Covered Branches', 'Uncovered Branches'],
-                    datasets: [{
-                        data: [branchData.covered, branchData.uncovered],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                        borderColor: '#1e293b',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#94a3b8',
-                                padding: 20
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#f1f5f9',
-                            bodyColor: '#94a3b8',
-                            borderColor: '#475569',
-                            borderWidth: 1,
-                            padding: 12
-                        }
-                    }
-                }
-            });
-        }
-
-        let fileChart = null;
-
-        function initFileChart(latest) {
-            const ctx = document.getElementById('fileChart');
-            if (!ctx) return;
-
-            // Sample file data - in production, this would come from coverage report
-            const topFiles = [
-                { name: 'user.service.ts', coverage: 98 },
-                { name: 'message.service.ts', coverage: 97 },
-                { name: 'scheduler.service.ts', coverage: 96 },
-                { name: 'health.controller.ts', coverage: 95 },
-                { name: 'metrics.service.ts', coverage: 94 },
-                { name: 'timezone.service.ts', coverage: 93 },
-                { name: 'user.repository.ts', coverage: 92 },
-                { name: 'idempotency.service.ts', coverage: 91 }
-            ];
-
-            const bottomFiles = [
-                { name: 'legacy-handler.ts', coverage: 65 },
-                { name: 'migration-utils.ts', coverage: 68 },
-                { name: 'temp-service.ts', coverage: 72 },
-                { name: 'deprecated-api.ts', coverage: 75 },
-                { name: 'old-scheduler.ts', coverage: 78 },
-                { name: 'utils.ts', coverage: 80 },
-                { name: 'helpers.ts', coverage: 82 },
-                { name: 'validators.ts', coverage: 85 }
-            ];
-
-            fileChart = new Chart(ctx.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: topFiles.map(f => f.name),
-                    datasets: [{
-                        label: 'Coverage %',
-                        data: topFiles.map(f => f.coverage),
-                        backgroundColor: topFiles.map(f => {
-                            if (f.coverage >= 90) return '#10b981';
-                            if (f.coverage >= 80) return '#f59e0b';
-                            return '#ef4444';
-                        }),
-                        borderColor: '#1e293b',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    indexAxis: 'y',
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#f1f5f9',
-                            bodyColor: '#94a3b8',
-                            borderColor: '#475569',
-                            borderWidth: 1,
-                            padding: 12,
-                            callbacks: {
-                                label: function(context) {
-                                    return `Coverage: ${context.parsed.x}%`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            min: 0,
-                            max: 100,
-                            grid: {
-                                color: '#334155'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                callback: function(value) {
-                                    return value + '%';
-                                }
-                            }
-                        },
-                        y: {
-                            grid: {
-                                color: '#334155'
-                            },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Store both datasets for switching
-            window.fileChartData = { topFiles, bottomFiles };
-
-            // Setup view toggle
-            setupFileChartToggle();
-        }
-
-        function setupFileChartToggle() {
-            const buttons = document.querySelectorAll('[data-view]');
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    buttons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-
-                    const view = btn.dataset.view;
-                    const data = view === 'top' ?
-                        window.fileChartData.topFiles :
-                        window.fileChartData.bottomFiles;
-
-                    fileChart.data.labels = data.map(f => f.name);
-                    fileChart.data.datasets[0].data = data.map(f => f.coverage);
-                    fileChart.data.datasets[0].backgroundColor = data.map(f => {
-                        if (f.coverage >= 90) return '#10b981';
-                        if (f.coverage >= 80) return '#f59e0b';
-                        return '#ef4444';
-                    });
-                    fileChart.update();
-                });
-            });
-        }
-
-        // Modify renderDashboard to include new charts
-        const originalRenderDashboard = renderDashboard;
-        renderDashboard = function(data) {
-            originalRenderDashboard(data);
-            const latest = data.entries[0];
-            initBranchChart(latest);
-            initFileChart(latest);
-        };
-
-        // Initialize on load
-        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>

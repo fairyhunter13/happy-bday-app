@@ -4,540 +4,490 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Security Summary - Happy Birthday App</title>
-    <meta name="description" content="Security scan results and vulnerability summary for the Birthday Message Scheduler">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
     <style>
-        :root {
-            --color-green: #10b981;
-            --color-yellow: #f59e0b;
-            --color-orange: #f97316;
-            --color-red: #ef4444;
-            --color-blue: #3b82f6;
-            --color-purple: #8b5cf6;
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-card: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --border-color: #475569;
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
             line-height: 1.6;
-            min-height: 100vh;
+        }
+
+        header {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
+            border-bottom: 2px solid #4a9eff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        header h1 {
+            color: #4a9eff;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+        }
+
+        nav {
+            background-color: #252525;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #3a3a3a;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        nav a {
+            color: #4a9eff;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        nav a:hover {
+            background-color: #3a3a3a;
+        }
+
+        nav a.active {
+            background-color: #4a9eff;
+            color: #1a1a1a;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--color-green), var(--color-blue));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .nav-links {
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .nav-links a {
-            color: var(--color-blue);
-            text-decoration: none;
-            transition: color 0.2s;
-            font-size: 0.95rem;
-        }
-
-        .nav-links a:hover {
-            color: var(--color-purple);
-        }
-
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(135deg, var(--color-green), var(--color-blue));
-            border-radius: 12px;
-            padding: 2rem;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .hero h2 {
-            font-size: 1.75rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .hero p {
-            opacity: 0.95;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
+        .vulnerability-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .stat-card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
+        .vuln-card {
+            background-color: #2d2d2d;
             padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
             text-align: center;
-            border: 1px solid var(--border-color);
         }
 
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.5rem;
+        .vuln-card h3 {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
         }
 
-        .stat-value {
+        .vuln-card .count {
             font-size: 2.5rem;
-            font-weight: 700;
-        }
-
-        .stat-value.critical { color: var(--color-red); }
-        .stat-value.high { color: var(--color-orange); }
-        .stat-value.medium { color: var(--color-yellow); }
-        .stat-value.low { color: var(--color-green); }
-        .stat-value.success { color: var(--color-green); }
-
-        /* Section */
-        .section {
-            margin-bottom: 2rem;
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .section-title {
-            font-size: 1.5rem;
             font-weight: 600;
         }
 
-        /* Scan Table */
+        .vuln-card.critical .count {
+            color: #d0021b;
+        }
+
+        .vuln-card.high .count {
+            color: #f5a623;
+        }
+
+        .vuln-card.medium .count {
+            color: #f8e71c;
+        }
+
+        .vuln-card.low .count {
+            color: #7ed321;
+        }
+
+        .section {
+            background-color: #2d2d2d;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            color: #e0e0e0;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
         .scan-table {
             width: 100%;
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
+            border-collapse: collapse;
+            margin-top: 1rem;
         }
 
         .scan-table th,
         .scan-table td {
             padding: 1rem;
             text-align: left;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid #3a3a3a;
         }
 
         .scan-table th {
-            background: var(--bg-card);
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
+            background-color: #252525;
+            color: #b0b0b0;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .scan-table td {
+            color: #e0e0e0;
         }
 
         .scan-table tr:last-child td {
             border-bottom: none;
         }
 
-        .scan-table tr:hover {
-            background: var(--bg-card);
-        }
-
         .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            display: inline-block;
             padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
             font-weight: 500;
         }
 
-        .status-badge.pass {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--color-green);
+        .status-badge.success {
+            background-color: #2d5016;
+            color: #7ed321;
         }
 
-        .status-badge.fail {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--color-red);
+        .status-badge.pending {
+            background-color: #4a3a00;
+            color: #f5a623;
         }
 
-        .status-badge.warn {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--color-yellow);
+        .status-badge.error {
+            background-color: #4a0e0e;
+            color: #d0021b;
         }
 
-        .status-badge.skip {
-            background: rgba(148, 163, 184, 0.2);
-            color: var(--text-secondary);
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
+        .info-box {
+            background-color: #252525;
             padding: 1.5rem;
-            border: 1px solid var(--border-color);
-            margin-bottom: 1rem;
+            border-radius: 6px;
+            border-left: 4px solid #4a9eff;
+            margin-top: 1.5rem;
         }
 
-        .card h3 {
-            margin-bottom: 1rem;
-            font-size: 1.25rem;
+        .info-box h3 {
+            color: #4a9eff;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
         }
 
-        .card ul {
-            list-style: none;
+        .info-box p {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
         }
 
-        .card li {
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .card li:last-child {
-            border-bottom: none;
-        }
-
-        .check-icon {
-            color: var(--color-green);
-        }
-
-        /* Links Section */
-        .links-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-        }
-
-        .link-card {
-            background: var(--bg-secondary);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid var(--border-color);
+        .info-box a {
+            color: #4a9eff;
             text-decoration: none;
-            color: var(--text-primary);
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
         }
 
-        .link-card:hover {
-            border-color: var(--color-blue);
-            transform: translateY(-2px);
+        .info-box a:hover {
+            text-decoration: underline;
         }
 
-        .link-card .icon {
-            font-size: 2rem;
-        }
-
-        .link-card .title {
-            font-weight: 600;
-        }
-
-        .link-card .description {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        /* Footer */
         footer {
+            background-color: #2d2d2d;
+            padding: 1.5rem 2rem;
             text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            border-top: 1px solid var(--border-color);
-            margin-top: 2rem;
+            color: #808080;
+            border-top: 1px solid #3a3a3a;
+            margin-top: 3rem;
         }
 
         footer a {
-            color: var(--color-blue);
+            color: #4a9eff;
             text-decoration: none;
         }
 
-        /* Responsive */
+        footer a:hover {
+            text-decoration: underline;
+        }
+
         @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.4rem;
+            }
+
             .container {
                 padding: 1rem;
             }
 
-            h1 {
-                font-size: 2rem;
+            nav {
+                padding: 0.5rem 1rem;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
+            nav a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem;
             }
 
-            .nav-links {
-                flex-direction: column;
-                gap: 0.5rem;
+            .vulnerability-grid {
+                grid-template-columns: 1fr 1fr;
             }
 
             .scan-table {
-                font-size: 0.875rem;
+                font-size: 0.85rem;
             }
 
             .scan-table th,
             .scan-table td {
-                padding: 0.75rem;
+                padding: 0.75rem 0.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🔒 Security Summary</h1>
-            <p class="subtitle">Vulnerability Scanning & Compliance Status</p>
-            <nav class="nav-links">
-                <a href="index.html">API Documentation</a>
-                <a href="test-reports.html">Test Reports</a>
-                <a href="coverage-trends.html">Coverage Trends</a>
-                <a href="reports-summary.html">Reports Summary</a>
-                <a href="https://github.com/fairyhunter13/happy-bday-app">GitHub Repository</a>
-            </nav>
-        </header>
+    <header>
+        <h1>Security Summary</h1>
+        <p>Comprehensive security scan results and vulnerability tracking</p>
+    </header>
 
-        <div class="hero">
-            <h2>Security Status: Secure</h2>
-            <p>All security scans passing • No critical vulnerabilities</p>
+    <nav>
+        <a href="index.html">API Docs</a>
+        <a href="reports-summary.html">Reports Hub</a>
+        <a href="test-reports.html">Test Reports</a>
+        <a href="coverage-trends.html">Coverage Trends</a>
+        <a href="security-summary.html" class="active">Security Summary</a>
+    </nav>
+
+    <div class="container">
+        <div class="vulnerability-grid">
+            <div class="vuln-card critical">
+                <h3>Critical</h3>
+                <div class="count" id="critical-count">0</div>
+            </div>
+            <div class="vuln-card high">
+                <h3>High</h3>
+                <div class="count" id="high-count">0</div>
+            </div>
+            <div class="vuln-card medium">
+                <h3>Medium</h3>
+                <div class="count" id="medium-count">0</div>
+            </div>
+            <div class="vuln-card low">
+                <h3>Low</h3>
+                <div class="count" id="low-count">0</div>
+            </div>
         </div>
 
-        <!-- Vulnerability Summary -->
-        <section class="section">
-            <div class="section-header">
-                <span style="font-size: 1.5rem;">🛡️</span>
-                <h2 class="section-title">Vulnerability Summary</h2>
-            </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Critical</div>
-                    <div class="stat-value success" id="critical-count">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">High</div>
-                    <div class="stat-value success" id="high-count">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Medium</div>
-                    <div class="stat-value success" id="medium-count">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Low</div>
-                    <div class="stat-value success" id="low-count">0</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Scan Results -->
-        <section class="section">
-            <div class="section-header">
-                <span style="font-size: 1.5rem;">📊</span>
-                <h2 class="section-title">Security Scan Results</h2>
-            </div>
+        <div class="section">
+            <h2>Security Scan Status</h2>
             <table class="scan-table">
                 <thead>
                     <tr>
                         <th>Scan Type</th>
                         <th>Status</th>
-                        <th>Findings</th>
                         <th>Last Run</th>
+                        <th>Issues Found</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>npm audit</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>0 vulnerabilities</td>
-                        <td>Daily (on push)</td>
+                        <td>Dependency Scan (npm audit)</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                        <td>Not yet run</td>
+                        <td>--</td>
                     </tr>
                     <tr>
-                        <td><strong>Snyk</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>0 high severity</td>
-                        <td>Daily (on push)</td>
+                        <td>Container Scan (Trivy)</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                        <td>Not yet run</td>
+                        <td>--</td>
                     </tr>
                     <tr>
-                        <td><strong>OWASP Dependency Check</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>No CVEs detected</td>
-                        <td>Daily (on push)</td>
+                        <td>SAST (Semgrep)</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                        <td>Not yet run</td>
+                        <td>--</td>
                     </tr>
                     <tr>
-                        <td><strong>Trivy Container</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>0 critical/high</td>
-                        <td>On Docker build</td>
+                        <td>Secret Scan (Gitleaks)</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                        <td>Not yet run</td>
+                        <td>--</td>
                     </tr>
                     <tr>
-                        <td><strong>Trivy Filesystem</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>0 secrets found</td>
-                        <td>Daily (on push)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>CodeQL Analysis</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>0 code issues</td>
-                        <td>Daily (on push)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>License Compliance</strong></td>
-                        <td><span class="status-badge pass">✅ Pass</span></td>
-                        <td>MIT compatible</td>
-                        <td>Daily (on push)</td>
+                        <td>License Compliance</td>
+                        <td><span class="status-badge pending">Pending</span></td>
+                        <td>Not yet run</td>
+                        <td>--</td>
                     </tr>
                 </tbody>
             </table>
-        </section>
+        </div>
 
-        <!-- Security Features -->
-        <section class="section">
-            <div class="section-header">
-                <span style="font-size: 1.5rem;">✨</span>
-                <h2 class="section-title">Security Features Implemented</h2>
-            </div>
-            <div class="links-grid">
-                <div class="card">
-                    <h3>🔐 Authentication & Authorization</h3>
-                    <ul>
-                        <li><span class="check-icon">✓</span> JWT token validation</li>
-                        <li><span class="check-icon">✓</span> Rate limiting per endpoint</li>
-                        <li><span class="check-icon">✓</span> Request validation (Zod schemas)</li>
-                        <li><span class="check-icon">✓</span> Input sanitization</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>🛡️ Security Headers</h3>
-                    <ul>
-                        <li><span class="check-icon">✓</span> Helmet middleware</li>
-                        <li><span class="check-icon">✓</span> CORS configuration</li>
-                        <li><span class="check-icon">✓</span> Content Security Policy</li>
-                        <li><span class="check-icon">✓</span> X-Frame-Options</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>🔑 Secret Management</h3>
-                    <ul>
-                        <li><span class="check-icon">✓</span> SOPS encryption</li>
-                        <li><span class="check-icon">✓</span> age key encryption</li>
-                        <li><span class="check-icon">✓</span> No secrets in code</li>
-                        <li><span class="check-icon">✓</span> Environment separation</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <h3>📋 Compliance</h3>
-                    <ul>
-                        <li><span class="check-icon">✓</span> MIT license compatible deps</li>
-                        <li><span class="check-icon">✓</span> No GPL/AGPL dependencies</li>
-                        <li><span class="check-icon">✓</span> OWASP Top 10 addressed</li>
-                        <li><span class="check-icon">✓</span> Secure coding practices</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+        <div class="section">
+            <h2>OWASP Top 10 Coverage</h2>
+            <table class="scan-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Protection Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>A01:2021 - Broken Access Control</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>JWT authentication, role-based access control</td>
+                    </tr>
+                    <tr>
+                        <td>A02:2021 - Cryptographic Failures</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>HTTPS enforced, secure password hashing</td>
+                    </tr>
+                    <tr>
+                        <td>A03:2021 - Injection</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>Input validation, parameterized queries</td>
+                    </tr>
+                    <tr>
+                        <td>A04:2021 - Insecure Design</td>
+                        <td><span class="status-badge pending">Review</span></td>
+                        <td>Architecture review recommended</td>
+                    </tr>
+                    <tr>
+                        <td>A05:2021 - Security Misconfiguration</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>Security headers, minimal permissions</td>
+                    </tr>
+                    <tr>
+                        <td>A06:2021 - Vulnerable Components</td>
+                        <td><span class="status-badge pending">Monitoring</span></td>
+                        <td>Automated dependency scanning enabled</td>
+                    </tr>
+                    <tr>
+                        <td>A07:2021 - Authentication Failures</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>Strong password policy, rate limiting</td>
+                    </tr>
+                    <tr>
+                        <td>A08:2021 - Data Integrity Failures</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>Digital signatures, integrity checks</td>
+                    </tr>
+                    <tr>
+                        <td>A09:2021 - Logging & Monitoring Failures</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>Comprehensive logging, alerting</td>
+                    </tr>
+                    <tr>
+                        <td>A10:2021 - Server-Side Request Forgery</td>
+                        <td><span class="status-badge success">Protected</span></td>
+                        <td>URL validation, allowlist filtering</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-        <!-- Quick Links -->
-        <section class="section">
-            <div class="section-header">
-                <span style="font-size: 1.5rem;">🔗</span>
-                <h2 class="section-title">Security Resources</h2>
-            </div>
-            <div class="links-grid">
-                <a href="https://github.com/fairyhunter13/happy-bday-app/security" class="link-card">
-                    <span class="icon">🔒</span>
-                    <span class="title">GitHub Security Tab</span>
-                    <span class="description">View security advisories and alerts</span>
-                </a>
-                <a href="https://github.com/fairyhunter13/happy-bday-app/actions/workflows/security.yml" class="link-card">
-                    <span class="icon">⚙️</span>
-                    <span class="title">Security Workflow</span>
-                    <span class="description">View security scan workflow runs</span>
-                </a>
-                <a href="https://github.com/fairyhunter13/happy-bday-app/security/dependabot" class="link-card">
-                    <span class="icon">🤖</span>
-                    <span class="title">Dependabot Alerts</span>
-                    <span class="description">View dependency vulnerability alerts</span>
-                </a>
-                <a href="https://github.com/fairyhunter13/happy-bday-app/security/code-scanning" class="link-card">
-                    <span class="icon">🔍</span>
-                    <span class="title">Code Scanning</span>
-                    <span class="description">View CodeQL analysis results</span>
-                </a>
-            </div>
-        </section>
+        <div class="info-box">
+            <h3>Additional Security Resources</h3>
+            <p>For detailed vulnerability information and security advisories, please visit:</p>
+            <p><a href="https://github.com/fairyhunter13/happy-bday-app/security" target="_blank">GitHub Security Tab &rarr;</a></p>
+            <p><a href="https://github.com/fairyhunter13/happy-bday-app/security/dependabot" target="_blank">Dependabot Alerts &rarr;</a></p>
+            <p><a href="https://github.com/fairyhunter13/happy-bday-app/security/code-scanning" target="_blank">Code Scanning Alerts &rarr;</a></p>
+        </div>
 
-        <footer>
-            <p>Last updated: <span id="lastUpdated"></span></p>
-            <p><a href="https://github.com/fairyhunter13/happy-bday-app">Happy Birthday App</a> - Security Summary</p>
-        </footer>
+        <div class="info-box" style="border-left-color: #7ed321; margin-top: 1rem;">
+            <h3>Security Best Practices</h3>
+            <p>This project follows industry-standard security practices:</p>
+            <p>- Automated dependency scanning with npm audit and Snyk</p>
+            <p>- Container image scanning with Trivy</p>
+            <p>- Static Application Security Testing (SAST) with Semgrep</p>
+            <p>- Secret detection with Gitleaks</p>
+            <p>- Regular security updates and patches</p>
+            <p>- Security headers and HTTPS enforcement</p>
+        </div>
     </div>
 
-    <script>
-        // Set last updated time
-        document.getElementById('lastUpdated').textContent = new Date().toLocaleString();
+    <footer>
+        <p>&copy; 2026 Happy Birthday App | <a href="https://github.com/fairyhunter13/happy-bday-app" target="_blank">View on GitHub</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Last updated: <span id="last-updated"></span></p>
+    </footer>
 
-        // Fetch security badge data if available
-        fetch('security-badge.json')
-            .then(response => response.json())
+    <script>
+        // Set last updated timestamp
+        document.getElementById('last-updated').textContent = new Date().toLocaleString();
+
+        // Load security data from JSON file (to be populated by CI/CD)
+        fetch('./security-data.json')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Security data not found');
+                }
+                return response.json();
+            })
             .then(data => {
-                // Update vulnerability counts if badge data is available
-                console.log('Security badge data:', data);
+                // Update vulnerability counts
+                if (data.vulnerabilities) {
+                    document.getElementById('critical-count').textContent = data.vulnerabilities.critical || 0;
+                    document.getElementById('high-count').textContent = data.vulnerabilities.high || 0;
+                    document.getElementById('medium-count').textContent = data.vulnerabilities.medium || 0;
+                    document.getElementById('low-count').textContent = data.vulnerabilities.low || 0;
+                }
+
+                // Update scan status table
+                if (data.scans) {
+                    updateScanStatus(data.scans);
+                }
             })
             .catch(error => {
-                // Badge data not available, using defaults
-                console.log('Using default security values');
+                console.log('Security data will be populated by CI/CD pipeline');
+                // Keep placeholder values
             });
+
+        function updateScanStatus(scans) {
+            const rows = document.querySelectorAll('.scan-table tbody tr');
+
+            scans.forEach((scan, index) => {
+                if (rows[index]) {
+                    const cells = rows[index].querySelectorAll('td');
+
+                    // Update status
+                    const statusCell = cells[1];
+                    const badge = statusCell.querySelector('.status-badge');
+                    if (scan.status === 'success') {
+                        badge.className = 'status-badge success';
+                        badge.textContent = 'Passed';
+                    } else if (scan.status === 'failed') {
+                        badge.className = 'status-badge error';
+                        badge.textContent = 'Failed';
+                    }
+
+                    // Update last run
+                    if (scan.lastRun) {
+                        cells[2].textContent = new Date(scan.lastRun).toLocaleString();
+                    }
+
+                    // Update issues found
+                    if (scan.issues !== undefined) {
+                        cells[3].textContent = scan.issues;
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>

@@ -528,6 +528,24 @@ jobs:
           chmod +x scripts/performance/generate-badges.sh
           ./scripts/performance/generate-badges.sh perf-results docs
 
+      - name: Commit and push performance badge updates
+        if: github.event_name == 'schedule'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add performance badge files
+          git add docs/performance-badge.json docs/rps-badge.json docs/latency-badge.json docs/throughput-badge.json docs/error-rate-badge.json docs/performance-metrics.json
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No performance badge changes to commit"
+          else
+            git commit -m "chore: update performance badges from scheduled test [skip ci]"
+            git push
+            echo "Performance badge updates committed and pushed"
+          fi
+
       - name: Upload performance badges
         uses: actions/upload-artifact@v4
         with:
