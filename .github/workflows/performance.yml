@@ -45,7 +45,7 @@ jobs:
       - name: Start infrastructure services
         run: |
           # Start only infrastructure services (postgres, rabbitmq, redis, prometheus, grafana)
-          docker compose -f docker-compose.perf.yml up -d postgres-primary postgres-replica rabbitmq redis prometheus grafana k6
+          docker compose -f docker-compose.perf.yml up -d postgres-primary postgres-replica rabbitmq redis prometheus grafana
 
       - name: Wait for database
         run: |
