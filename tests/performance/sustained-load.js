@@ -154,27 +154,6 @@ export function teardown(data) {
 export function handleSummary(data) {
   return {
     'perf-results/sustained-load-summary.json': JSON.stringify(data, null, 2),
-    stdout: textSummary(data, { indent: ' ', enableColors: true }),
+    stdout: JSON.stringify(data, null, 2),
   };
-}
-
-// Helper function for text summary
-function textSummary(data, options = {}) {
-  const indent = options.indent || '';
-  let summary = '\n';
-
-  summary += `${indent}Test Summary:\n`;
-  summary += `${indent}============\n\n`;
-
-  for (const [name, scenario] of Object.entries(data.metrics)) {
-    if (scenario.values) {
-      summary += `${indent}${name}:\n`;
-      for (const [key, value] of Object.entries(scenario.values)) {
-        summary += `${indent}  ${key}: ${value}\n`;
-      }
-      summary += '\n';
-    }
-  }
-
-  return summary;
 }
