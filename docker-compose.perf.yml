@@ -65,6 +65,14 @@ x-api-service: &api-service
     CIRCUIT_BREAKER_ERROR_THRESHOLD: 50
     CIRCUIT_BREAKER_RESET_TIMEOUT: 30000
     CIRCUIT_BREAKER_VOLUME_THRESHOLD: 10
+    # Rate Limiting - DISABLED for performance testing
+    RATE_LIMIT_ENABLED: false
+    RATE_LIMIT_WINDOW_MS: 60000
+    RATE_LIMIT_MAX_REQUESTS: 1000000
+    RATE_LIMIT_CREATE_USER_MAX: 1000000
+    RATE_LIMIT_READ_USER_MAX: 1000000
+    RATE_LIMIT_UPDATE_USER_MAX: 1000000
+    RATE_LIMIT_DELETE_USER_MAX: 1000000
     # Monitoring
     ENABLE_METRICS: true
     METRICS_PORT: 9091
@@ -158,6 +166,7 @@ services:
       <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-1
+      RATE_LIMIT_ENABLED: false
 
   api-2:
     <<: *api-service
@@ -166,6 +175,7 @@ services:
       <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-2
+      RATE_LIMIT_ENABLED: false
 
   api-3:
     <<: *api-service
@@ -174,6 +184,7 @@ services:
       <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-3
+      RATE_LIMIT_ENABLED: false
 
   api-4:
     <<: *api-service
@@ -182,6 +193,7 @@ services:
       <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-4
+      RATE_LIMIT_ENABLED: false
 
   api-5:
     <<: *api-service
@@ -190,6 +202,7 @@ services:
       <<: *perf-env
       PORT: 3000
       INSTANCE_ID: api-5
+      RATE_LIMIT_ENABLED: false
 
   # ----------------------------------------
   # Worker instances (10 replicas)
