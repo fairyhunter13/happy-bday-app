@@ -27,11 +27,28 @@ x-api-service: &api-service
   build:
     context: .
     dockerfile: Dockerfile
-  env_file:
-    - .env.test
   environment:
     <<: *perf-env
     PORT: 3000
+    HOST: 0.0.0.0
+    LOG_LEVEL: info
+    # Queue Configuration
+    QUEUE_CONCURRENCY: 10
+    QUEUE_MAX_RETRIES: 3
+    QUEUE_RETRY_DELAY: 1000
+    QUEUE_RETRY_BACKOFF: exponential
+    # CRON Schedules
+    CRON_DAILY_SCHEDULE: "0 0 * * *"
+    CRON_MINUTE_SCHEDULE: "* * * * *"
+    CRON_RECOVERY_SCHEDULE: "*/5 * * * *"
+    # Circuit Breaker
+    CIRCUIT_BREAKER_TIMEOUT: 10000
+    CIRCUIT_BREAKER_ERROR_THRESHOLD: 50
+    CIRCUIT_BREAKER_RESET_TIMEOUT: 30000
+    CIRCUIT_BREAKER_VOLUME_THRESHOLD: 10
+    # Monitoring
+    ENABLE_METRICS: true
+    METRICS_PORT: 9091
   depends_on:
     postgres-primary:
       condition: service_started
@@ -39,6 +56,12 @@ x-api-service: &api-service
       condition: service_healthy
     redis:
       condition: service_started
+  healthcheck:
+    test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/ready', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 40s
   logging:
     <<: *logging
   networks:
@@ -49,10 +72,19 @@ x-worker-service: &worker-service
   build:
     context: .
     dockerfile: Dockerfile
-  env_file:
-    - .env.test
   environment:
     <<: *perf-env
+    LOG_LEVEL: info
+    # Queue Configuration
+    QUEUE_CONCURRENCY: 10
+    QUEUE_MAX_RETRIES: 3
+    QUEUE_RETRY_DELAY: 1000
+    QUEUE_RETRY_BACKOFF: exponential
+    # Circuit Breaker
+    CIRCUIT_BREAKER_TIMEOUT: 10000
+    CIRCUIT_BREAKER_ERROR_THRESHOLD: 50
+    CIRCUIT_BREAKER_RESET_TIMEOUT: 30000
+    CIRCUIT_BREAKER_VOLUME_THRESHOLD: 10
   command: sh -c "sleep 10 && node dist/src/worker.js"
   restart: on-failure:5
   depends_on:
@@ -82,11 +114,16 @@ services:
     volumes:
       - ./nginx/nginx.perf.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - api-1
-      - api-2
-      - api-3
-      - api-4
-      - api-5
+      api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
+      api-3:
+        condition: service_healthy
+      api-4:
+        condition: service_healthy
+      api-5:
+        condition: service_healthy
     logging:
       <<: *logging
     networks:
