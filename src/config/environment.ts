@@ -66,6 +66,7 @@ const environmentSchema = z.object({
   CIRCUIT_BREAKER_VOLUME_THRESHOLD: z.coerce.number().int().positive().default(10),
 
   // Rate Limiting - Global defaults
+  RATE_LIMIT_ENABLED: z.coerce.boolean().default(true),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
 

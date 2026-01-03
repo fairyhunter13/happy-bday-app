@@ -59,20 +59,33 @@ export async function createApp(): Promise<FastifyInstance> {
     credentials: true,
   });
 
-  // Register rate limiting
-  await app.register(rateLimit, {
-    max: env.RATE_LIMIT_MAX_REQUESTS,
-    timeWindow: env.RATE_LIMIT_WINDOW_MS,
-    errorResponseBuilder: (_request, context) => {
-      return {
-        error: {
-          code: 'RATE_LIMIT_EXCEEDED',
-          message: `Rate limit exceeded, retry in ${context.after}`,
-        },
-        timestamp: new Date().toISOString(),
-      };
-    },
-  });
+  // Register rate limiting (conditionally enabled via RATE_LIMIT_ENABLED env var)
+  // For performance testing, set RATE_LIMIT_ENABLED=false to disable rate limiting entirely
+  if (env.RATE_LIMIT_ENABLED) {
+    await app.register(rateLimit, {
+      max: env.RATE_LIMIT_MAX_REQUESTS,
+      timeWindow: env.RATE_LIMIT_WINDOW_MS,
+      errorResponseBuilder: (_request, context) => {
+        return {
+          error: {
+            code: 'RATE_LIMIT_EXCEEDED',
+            message: `Rate limit exceeded, retry in ${context.after}`,
+          },
+          timestamp: new Date().toISOString(),
+        };
+      },
+    });
+    logger.info(
+      {
+        enabled: true,
+        maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
+        windowMs: env.RATE_LIMIT_WINDOW_MS,
+      },
+      'Rate limiting enabled'
+    );
+  } else {
+    logger.warn('Rate limiting is DISABLED - use only in performance testing environments');
+  }
 
   // Register response compression (gzip/brotli)
   // Performance optimization: 70-80% smaller responses
