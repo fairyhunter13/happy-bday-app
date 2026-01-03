@@ -71,6 +71,7 @@
 ### Documentation & Resources
 [![API Documentation](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
 [![Coverage Trends](https://img.shields.io/badge/Coverage-Trends-purple?logo=chartdotjs)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
+[![Documentation Health](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/health-badge.json&logo=markdown)](https://github.com/fairyhunter13/happy-bday-app)
 [![GitHub Pages](https://img.shields.io/badge/GitHub-Pages-blue?logo=github)](https://fairyhunter13.github.io/happy-bday-app/)
 
 ### Project Info
