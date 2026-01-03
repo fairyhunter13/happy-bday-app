@@ -62,6 +62,8 @@ export function logStartup() {
       env: env.NODE_ENV,
       port: env.PORT,
       host: env.HOST,
+      rateLimitEnabled: env.RATE_LIMIT_ENABLED,
+      rateLimitEnabledRaw: process.env.RATE_LIMIT_ENABLED,
     },
     'Application configuration loaded'
   );

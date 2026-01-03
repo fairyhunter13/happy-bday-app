@@ -162,47 +162,22 @@ services:
   api-1:
     <<: *api-service
     container_name: perf-api-1
-    environment:
-      <<: *perf-env
-      PORT: 3000
-      INSTANCE_ID: api-1
-      RATE_LIMIT_ENABLED: false
 
   api-2:
     <<: *api-service
     container_name: perf-api-2
-    environment:
-      <<: *perf-env
-      PORT: 3000
-      INSTANCE_ID: api-2
-      RATE_LIMIT_ENABLED: false
 
   api-3:
     <<: *api-service
     container_name: perf-api-3
-    environment:
-      <<: *perf-env
-      PORT: 3000
-      INSTANCE_ID: api-3
-      RATE_LIMIT_ENABLED: false
 
   api-4:
     <<: *api-service
     container_name: perf-api-4
-    environment:
-      <<: *perf-env
-      PORT: 3000
-      INSTANCE_ID: api-4
-      RATE_LIMIT_ENABLED: false
 
   api-5:
     <<: *api-service
     container_name: perf-api-5
-    environment:
-      <<: *perf-env
-      PORT: 3000
-      INSTANCE_ID: api-5
-      RATE_LIMIT_ENABLED: false
 
   # ----------------------------------------
   # Worker instances (10 replicas)
