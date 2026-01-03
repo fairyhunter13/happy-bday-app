@@ -61,7 +61,24 @@ jobs:
       - name: Seed performance test users
         run: npm run db:seed:perf
         env:
+          NODE_ENV: production
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: perf
+          DATABASE_PASSWORD: perf
+          DATABASE_NAME: perf_db
+          DATABASE_POOL_MIN: 5
+          DATABASE_POOL_MAX: 20
+          DATABASE_SSL: false
+          RABBITMQ_URL: amqp://perf:perf@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: perf
+          RABBITMQ_PASSWORD: perf
+          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
       - name: Build API and worker Docker images
         run: docker compose -f docker-compose.perf.yml build --no-cache
@@ -219,7 +236,24 @@ jobs:
       - name: Seed performance test users
         run: npm run db:seed:perf
         env:
+          NODE_ENV: production
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: perf
+          DATABASE_PASSWORD: perf
+          DATABASE_NAME: perf_db
+          DATABASE_POOL_MIN: 5
+          DATABASE_POOL_MAX: 20
+          DATABASE_SSL: false
+          RABBITMQ_URL: amqp://perf:perf@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: perf
+          RABBITMQ_PASSWORD: perf
+          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
       - name: Build API and worker Docker images
         run: docker compose -f docker-compose.perf.yml build --no-cache
@@ -346,7 +380,24 @@ jobs:
       - name: Seed performance test users
         run: npm run db:seed:perf
         env:
+          NODE_ENV: production
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          DATABASE_USER: perf
+          DATABASE_PASSWORD: perf
+          DATABASE_NAME: perf_db
+          DATABASE_POOL_MIN: 5
+          DATABASE_POOL_MAX: 20
+          DATABASE_SSL: false
+          RABBITMQ_URL: amqp://perf:perf@localhost:5672
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: perf
+          RABBITMQ_PASSWORD: perf
+          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
       - name: Build API and worker Docker images
         run: docker compose -f docker-compose.perf.yml build --no-cache
