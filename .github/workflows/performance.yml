@@ -132,6 +132,7 @@ jobs:
 
       - name: Download baseline results
         if: always()
+        continue-on-error: true
         uses: dawidd6/action-download-artifact@v3
         with:
           name: performance-baseline
