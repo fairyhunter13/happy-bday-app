@@ -102,9 +102,9 @@ USER appuser
 # Expose application port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+# Health check - use /ready to validate dependencies are initialized
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/ready', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # Default command - main API server (using dumb-init for proper signal handling)
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
