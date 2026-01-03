@@ -9,14 +9,22 @@ const messageProcessingTime = new Trend('message_processing_time');
 const messagesProcessed = new Counter('messages_processed');
 const messagesFailed = new Counter('messages_failed');
 
+// CI mode detection
+const isCI = __ENV.CI === 'true';
+
 /**
  * K6 Performance Test: Sustained Load (1M messages/day simulation)
  *
  * This test simulates:
  * - 1,000,000 messages per day = 11.5 messages/second sustained
- * - 24 hour duration
  * - Target: <500ms p95, <1s p99 latency
  * - Target: <1% error rate
+ *
+ * CI mode (~5 min total):
+ * - 5 minutes at 12 msg/sec (validates sustained load logic)
+ *
+ * Full mode (24h):
+ * - 24 hours at 12 msg/sec (full production simulation)
  */
 export const options = {
   scenarios: {
@@ -24,9 +32,9 @@ export const options = {
       executor: 'constant-arrival-rate',
       rate: 12, // 11.5 msg/sec rounded to 12
       timeUnit: '1s',
-      duration: '24h', // Full day test
-      preAllocatedVUs: 50,
-      maxVUs: 100,
+      duration: isCI ? '5m' : '24h', // CI: 5 min, Full: 24h
+      preAllocatedVUs: isCI ? 30 : 50,
+      maxVUs: isCI ? 60 : 100,
     },
   },
   thresholds: {
@@ -104,10 +112,16 @@ export default function () {
  * Setup function (runs once per VU at start)
  */
 export function setup() {
-  console.log('Starting sustained load test...');
+  console.log('=== Starting Sustained Load Test ===');
   console.log(`API URL: ${API_BASE_URL}`);
-  console.log('Target: 11.5 messages/second for 24 hours');
-  console.log('Expected total: ~1,000,000 messages');
+  console.log(`Mode: ${isCI ? 'CI (optimized for speed)' : 'Full (production simulation)'}`);
+  console.log('Target: 11.5 messages/second sustained');
+
+  if (isCI) {
+    console.log('CI mode: 5 minutes (~3,600 messages)');
+  } else {
+    console.log('Full mode: 24 hours (~1,000,000 messages)');
+  }
 
   // Warmup request
   const warmupRes = http.get(`${API_BASE_URL}/health`);
