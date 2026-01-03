@@ -1,6 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend, Counter } from 'k6/metrics';
+import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
 
 // Custom metrics
 const errorRate = new Rate('errors');
@@ -78,9 +79,12 @@ const MESSAGE_TYPES = ['BIRTHDAY', 'ANNIVERSARY'];
 
 /**
  * Generate random user ID
+ *
+ * Returns a valid UUIDv4 string required by the API validation schema.
+ * The /internal/process-message endpoint requires userId to be in UUID format.
  */
 function generateUserId() {
-  return `user-${Math.floor(Math.random() * 1000000)}`;
+  return uuidv4();
 }
 
 /**
