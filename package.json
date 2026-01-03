@@ -50,6 +50,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push",
+    "db:seed": "tsx src/db/seed.ts",
+    "db:seed:perf": "tsx src/db/seed-perf.ts",
     "docker:test": "docker-compose -f docker-compose.test.yml up -d",
     "docker:test:down": "docker-compose -f docker-compose.test.yml down -v",
     "docker:perf": "docker-compose -f docker-compose.perf.yml up -d",

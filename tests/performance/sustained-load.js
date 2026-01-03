@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend, Counter } from 'k6/metrics';
-import { uuidv4 } from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
+import { generatePerformanceUserId, PERF_CONFIG } from './utils.js';
 
 // Custom metrics
 const errorRate = new Rate('errors');
@@ -43,24 +43,14 @@ export const options = {
 
 // Configuration
 const API_BASE_URL = __ENV.API_URL || 'http://localhost:3000';
-const MESSAGE_TYPES = ['BIRTHDAY', 'ANNIVERSARY'];
-
-/**
- * Generate random user ID
- *
- * Returns a valid UUIDv4 string required by the API validation schema.
- * The /internal/process-message endpoint requires userId to be in UUID format.
- */
-function generateUserId() {
-  return uuidv4();
-}
+const MESSAGE_TYPES = PERF_CONFIG.MESSAGE_TYPES;
 
 /**
  * Generate random message payload
  */
 function generateMessagePayload() {
   const messageType = MESSAGE_TYPES[Math.floor(Math.random() * MESSAGE_TYPES.length)];
-  const userId = generateUserId();
+  const userId = generatePerformanceUserId();
   const scheduledTime = new Date();
   scheduledTime.setHours(9, 0, 0, 0); // 9am send time
 

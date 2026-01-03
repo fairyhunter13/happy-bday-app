@@ -58,7 +58,7 @@ jobs:
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
-      - name: Seed test data
+      - name: Seed performance test users
         run: npm run db:seed:perf
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
@@ -216,6 +216,11 @@ jobs:
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
+      - name: Seed performance test users
+        run: npm run db:seed:perf
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
       - name: Build API and worker Docker images
         run: docker compose -f docker-compose.perf.yml build --no-cache
 
@@ -335,6 +340,11 @@ jobs:
 
       - name: Run database migrations
         run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
+
+      - name: Seed performance test users
+        run: npm run db:seed:perf
         env:
           DATABASE_URL: postgres://perf:perf@localhost:5432/perf_db
 
