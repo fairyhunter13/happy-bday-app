@@ -89,8 +89,7 @@ export default function () {
   messageProcessingTime.add(processingTime);
 
   const success = check(res, {
-    'status is 200': (r) => r.status === 200,
-    'status is 201': (r) => r.status === 201,
+    'status is 200 or 201': (r) => r.status === 200 || r.status === 201,
     'processing time < 500ms': () => processingTime < 500,
     'processing time < 1000ms': () => processingTime < 1000,
     'response has body': (r) => r.body && r.body.length > 0,
