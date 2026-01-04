@@ -334,16 +334,16 @@ CREATE UNIQUE INDEX idx_idempotency
 
 **Objectives:**
 - Timezone conversion logic
-- BullMQ job queue setup
+- RabbitMQ job queue setup
 - Basic scheduler implementation
 - Integration tests
 
 **Tasks:**
-1. Install and configure Redis + BullMQ
+1. Install and configure RabbitMQ (Quorum Queues)
 2. Implement Luxon timezone conversion service
 3. Create daily CRON job (calculate birthdays for day)
 4. Create minute CRON job (enqueue messages)
-5. Implement BullMQ worker pool (5 workers)
+5. Implement RabbitMQ worker pool (10-30 workers)
 6. Write integration tests with Testcontainers
 7. Test timezone edge cases (DST, leap years)
 
@@ -511,8 +511,8 @@ CREATE UNIQUE INDEX idx_idempotency
 
 **Integration Tests (20+ scenarios):**
 1. Database transactions with Testcontainers
-2. BullMQ job processing
-3. Distributed lock acquisition/release
+2. RabbitMQ job processing and quorum queue behavior
+3. Database-level lock acquisition/release (idempotency)
 4. External API with MSW mocks
 5. Recovery job finding missed messages
 
@@ -789,10 +789,10 @@ jobs:
 ### 7.3 Scalability
 
 **✅ Design Patterns:**
-- BullMQ with Redis (distributed job processing)
+- RabbitMQ Quorum Queues (zero data loss distributed job processing)
 - Database connection pooling (max 20 per instance)
 - Indexed queries (birthday lookup < 100ms)
-- Horizontal scaling (multiple worker instances)
+- Horizontal scaling (10-30 worker instances)
 
 **Target Performance:**
 - 10,000 birthdays/day
@@ -825,10 +825,10 @@ jobs:
 | Risk | Impact | Probability | Mitigation |
 |------|--------|-------------|------------|
 | External API downtime | High | Medium | Circuit breaker + retry + DLQ |
-| Race conditions (duplicates) | High | Medium | Distributed locks + idempotency |
+| Race conditions (duplicates) | High | Medium | DB unique constraints + idempotency |
 | Timezone bugs (DST) | High | Low | Luxon + comprehensive tests |
-| Database performance | Medium | Low | Indexing + query optimization |
-| Redis/BullMQ failure | High | Low | Persistent jobs + recovery CRON |
+| Database performance | Medium | Low | Indexing + partitioning + query optimization |
+| RabbitMQ failure | High | Low | Quorum queues + recovery CRON + zero data loss |
 | Leap year edge cases | Low | Low | Unit tests cover Feb 29 |
 
 ### 8.2 Monitoring & Alerting
