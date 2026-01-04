@@ -1364,7 +1364,7 @@ jobs:
       - name: Generate coverage data JSON
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          # Generate coverage-data.json for reports-summary.html
+          # Generate coverage-data.json for reports-summary.html and coverage-trends.html
           if [ -f "coverage/coverage-summary.json" ]; then
             LINES_PCT=$(jq -r '.total.lines.pct' coverage/coverage-summary.json)
             STATEMENTS_PCT=$(jq -r '.total.statements.pct' coverage/coverage-summary.json)
@@ -1380,6 +1380,8 @@ jobs:
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           mkdir -p docs
+
+          # Generate base coverage-data.json
           cat > docs/coverage-data.json << EOF
           {
             "current": {
@@ -1394,12 +1396,57 @@ jobs:
               "overall": 0.0,
               "lines": 0.0,
               "functions": 0.0,
-              "branches": 0.0
-            }
+              "branches": 0.0,
+              "statements": 0.0
+            },
+            "history": {
+              "labels": [],
+              "overall": [],
+              "statements": [],
+              "branches": [],
+              "functions": []
+            },
+            "byType": [$LINES_PCT, 0, 0, $LINES_PCT]
           }
           EOF
 
-          echo "Generated coverage-data.json with coverage: $LINES_PCT%"
+          # Enhance with history data from coverage-history.json if it exists
+          if [ -f "docs/coverage-history.json" ]; then
+            node -e "
+              const fs = require('fs');
+              const coverageData = JSON.parse(fs.readFileSync('docs/coverage-data.json', 'utf8'));
+              const historyData = JSON.parse(fs.readFileSync('docs/coverage-history.json', 'utf8'));
+
+              // Take last 10 history entries
+              const recentHistory = historyData.history.slice(-10);
+
+              // Format timestamps
+              const labels = recentHistory.map(h => {
+                const date = new Date(h.timestamp);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+              });
+
+              // Extract values
+              coverageData.history.labels = labels;
+              coverageData.history.overall = recentHistory.map(h => h.lines);
+              coverageData.history.statements = recentHistory.map(h => h.statements);
+              coverageData.history.branches = recentHistory.map(h => h.branches);
+              coverageData.history.functions = recentHistory.map(h => h.functions);
+
+              // Calculate trends
+              if (historyData.history.length >= 2) {
+                const prev = historyData.history[historyData.history.length - 2];
+                coverageData.trends.overall = parseFloat((coverageData.current.overall - prev.lines).toFixed(2));
+                coverageData.trends.statements = parseFloat((coverageData.current.statements - prev.statements).toFixed(2));
+                coverageData.trends.branches = parseFloat((coverageData.current.branches - prev.branches).toFixed(2));
+                coverageData.trends.functions = parseFloat((coverageData.current.functions - prev.functions).toFixed(2));
+              }
+
+              fs.writeFileSync('docs/coverage-data.json', JSON.stringify(coverageData, null, 2));
+            " || echo "Failed to enhance with history, using base version"
+          fi
+
+          echo "Generated coverage-data.json with coverage: $LINES_PCT% and historical data"
 
       - name: Generate security data JSON
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
