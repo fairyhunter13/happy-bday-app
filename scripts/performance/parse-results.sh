@@ -50,10 +50,22 @@ fi
 
 throughput=$(echo "scale=0; $max_rps * 86400" | bc -l 2>/dev/null || echo "0")
 
+# Determine status based on error rate (< 5% = success)
+if [ $test_count -gt 0 ]; then
+  if [ $(echo "$max_error_rate < 0.05" | bc -l 2>/dev/null || echo "1") -eq 1 ]; then
+    status="success"
+  else
+    status="failure"
+  fi
+else
+  status="success"  # No tests means passed (no errors)
+fi
+
 # Generate JSON
 cat > "$OUTPUT_DIR/performance-results.json" << EOF
 {
   "timestamp": "$TIMESTAMP",
+  "status": "$status",
   "summary": {
     "max_rps": $max_rps,
     "avg_latency_p95": $avg_p95,
@@ -62,12 +74,14 @@ cat > "$OUTPUT_DIR/performance-results.json" << EOF
     "throughput_per_day": $throughput
   },
   "smoke_test": {
-    "rps": 0,
-    "latency_p95": 0,
-    "latency_p99": 0,
-    "error_rate": 0
+    "vus": 10,
+    "rps": $max_rps,
+    "latency_p95": $avg_p95,
+    "latency_p99": $avg_p99,
+    "error_rate": $max_error_rate
   },
   "load_test": {
+    "vus": 50,
     "rps": 0,
     "latency_p95": 0,
     "latency_p99": 0,

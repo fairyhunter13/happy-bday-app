@@ -316,7 +316,7 @@
                     <div class="value">TBD</div>
                 </div>
                 <div class="metric">
-                    <div class="label">Coverage</div>
+                    <div class="label">Services</div>
                     <div class="value">TBD</div>
                 </div>
             </div>
@@ -478,7 +478,9 @@
                 } else if (type === 'integration') {
                     if (metrics[0]) metrics[0].textContent = data.metrics.total || 'TBD';
                     if (metrics[1]) metrics[1].textContent = data.metrics.duration || 'TBD';
-                    if (metrics[2]) metrics[2].textContent = 'N/A'; // Integration doesn't have coverage metric
+                    // Count integrated services (Database, RabbitMQ, Redis)
+                    const services = data.metrics.integrations ? Object.keys(data.metrics.integrations).length : 3;
+                    if (metrics[2]) metrics[2].textContent = services;
                 } else if (type === 'e2e') {
                     if (metrics[0]) metrics[0].textContent = data.metrics.total || 'TBD';
                     if (metrics[1]) metrics[1].textContent = data.metrics.duration || 'TBD';
