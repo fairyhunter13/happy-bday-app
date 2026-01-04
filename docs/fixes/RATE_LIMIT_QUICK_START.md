@@ -122,10 +122,10 @@ Should see: `"RATE_LIMIT_ENABLED":false` and `"willRegister":false`
 
 ## Documentation
 
-- **Full details:** `docs/RATE_LIMITING_FIX.md`
-- **Quick reference:** `FIX_SUMMARY.md`  
-- **Complete changelog:** `CHANGES.md`
-- **This guide:** `QUICK_START.md`
+- **Full details:** [`docs/RATE_LIMITING_FIX.md`](../RATE_LIMITING_FIX.md)
+- **Quick reference:** [`FIX_SUMMARY.md`](./FIX_SUMMARY.md)
+- **Complete changelog:** [`CHANGES.md`](../../CHANGES.md)
+- **This guide:** [`RATE_LIMIT_QUICK_START.md`](./RATE_LIMIT_QUICK_START.md)
 
 ## Success Criteria
 

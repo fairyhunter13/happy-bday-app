@@ -30,6 +30,7 @@
 [![Cleanup](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/cleanup.yml?label=cleanup&logo=github-actions)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/cleanup.yml)
 
 ### Test Suite Status
+[![Tests](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/test-badge.json&logo=vitest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Unit Tests](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=unit%20tests&logo=vitest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Integration Tests](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=integration%20tests&logo=vitest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![E2E Tests](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=e2e%20tests&logo=docker)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
@@ -37,6 +38,7 @@
 [![Mutation Testing](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=mutation%20testing&logo=stryker)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
 ### Code Quality & Security
+[![Security](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/security-badge.json&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Code Quality](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=code%20quality&logo=eslint)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Security Scan](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=security%20scan&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![SonarCloud](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=sonarcloud&logo=sonarcloud)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
@@ -52,9 +54,10 @@
 
 ### Performance Metrics
 [![Performance](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/performance-badge.json&logo=prometheus)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
-[![RPS Capacity](https://img.shields.io/badge/RPS-100%2B%20msg%2Fsec-brightgreen?logo=graphql)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
-[![Throughput](https://img.shields.io/badge/Throughput-1M%2B%20msgs%2Fday-brightgreen?logo=apachekafka)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
-[![p95 Latency](https://img.shields.io/badge/p95%20Latency-%3C200ms-brightgreen?logo=speedtest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![RPS Capacity](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/rps-badge.json&logo=graphql)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![Throughput](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/throughput-badge.json&logo=apachekafka)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![p95 Latency](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/latency-badge.json&logo=speedtest)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
+[![Error Rate](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/error-rate-badge.json&logo=statuspage)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
 
 ### Tech Stack
 [![Node.js](https://img.shields.io/badge/Node.js-≥20.0.0-green?logo=node.js)](https://nodejs.org/)
@@ -531,9 +534,9 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 
 - **Changelog:** [`CHANGES.md`](./CHANGES.md) - Project evolution and major changes
 - **Fix Summaries:** Recent bug fixes and improvements
-  - [`FIX_SUMMARY.md`](./FIX_SUMMARY.md) - General fixes
-  - [`RATE_LIMIT_FIX_SUMMARY.md`](./RATE_LIMIT_FIX_SUMMARY.md) - Rate limiting improvements
-  - [`PERFORMANCE_TEST_FIX_SUMMARY.md`](./PERFORMANCE_TEST_FIX_SUMMARY.md) - Performance test enhancements
+  - [`FIX_SUMMARY.md`](./docs/fixes/FIX_SUMMARY.md) - General fixes
+  - [`RATE_LIMIT_FIX_SUMMARY.md`](./docs/fixes/RATE_LIMIT_FIX_SUMMARY.md) - Rate limiting improvements
+  - [`PERFORMANCE_TEST_FIX_SUMMARY.md`](./docs/fixes/PERFORMANCE_TEST_FIX_SUMMARY.md) - Performance test enhancements
 
 ---
 

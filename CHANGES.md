@@ -39,9 +39,9 @@ scripts/verify-rate-limit-disabled.sh        - Automated verification script (NE
 
 ### Documentation
 ```
-docs/RATE_LIMITING_FIX.md     - Updated with complete analysis
-FIX_SUMMARY.md                - Quick reference guide (NEW)
-CHANGES.md                    - This file (NEW)
+docs/RATE_LIMITING_FIX.md         - Updated with complete analysis
+docs/fixes/FIX_SUMMARY.md         - Quick reference guide (NEW)
+CHANGES.md                        - This file (NEW)
 ```
 
 ## Key Code Changes
@@ -240,7 +240,7 @@ Rate limiting is DISABLED - use only in performance testing environments {
 | tests/unit/config/boolean-parsing.test.ts | +194 | New | Demonstration tests |
 | scripts/verify-rate-limit-disabled.sh | +96 | New | Verification script |
 | docs/RATE_LIMITING_FIX.md | +250 | Modified | Complete documentation |
-| FIX_SUMMARY.md | +150 | New | Quick reference |
+| docs/fixes/FIX_SUMMARY.md | +150 | New | Quick reference |
 | CHANGES.md | +280 | New | This file |
 
 **Total:** ~1,205 lines added/modified across 10 files
@@ -254,6 +254,7 @@ Rate limiting is DISABLED - use only in performance testing environments {
 ## Contact
 
 For questions or issues related to this fix:
-1. Check `docs/RATE_LIMITING_FIX.md` for detailed documentation
-2. Review unit tests in `tests/unit/config/`
-3. Run verification script: `./scripts/verify-rate-limit-disabled.sh`
+1. Check [`docs/RATE_LIMITING_FIX.md`](./docs/RATE_LIMITING_FIX.md) for detailed documentation
+2. Check [`docs/fixes/FIX_SUMMARY.md`](./docs/fixes/FIX_SUMMARY.md) for quick reference
+3. Review unit tests in `tests/unit/config/`
+4. Run verification script: `./scripts/verify-rate-limit-disabled.sh`
