@@ -41,16 +41,25 @@
 [![Security](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/security-badge.json&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Code Quality](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=code%20quality&logo=eslint)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Security Scan](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=security%20scan&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
-[![SonarCloud](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=sonarcloud&logo=sonarcloud)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
-[![Quality Gate Status](https://img.shields.io/badge/SonarCloud-Quality%20Gate-brightgreen?logo=sonarcloud)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
 [![Snyk Security](https://img.shields.io/snyk/vulnerabilities/github/fairyhunter13/happy-bday-app?logo=snyk)](https://snyk.io/test/github/fairyhunter13/happy-bday-app)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot)](https://github.com/fairyhunter13/happy-bday-app/security/dependabot)
 [![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
+### SonarCloud Quality Metrics
+[![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=alert_status)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=coverage)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=bugs)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Code Smells](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=code_smells)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Maintainability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Reliability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Security](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=security_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Duplicated Lines](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_index)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+
 ### Coverage & Validation
 [![codecov](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
 [![Code Coverage](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/coverage-badge.json&logo=vitest)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
-[![OpenAPI Validation](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=openapi%20validation&logo=swagger)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
 ### Performance Metrics
 [![Performance](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/performance-badge.json&logo=prometheus)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
@@ -74,14 +83,26 @@
 ### Documentation & Resources
 [![API Documentation](https://img.shields.io/badge/API-Documentation-blue?logo=swagger)](https://fairyhunter13.github.io/happy-bday-app/)
 [![Coverage Trends](https://img.shields.io/badge/Coverage-Trends-purple?logo=chartdotjs)](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)
-[![Documentation Health](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/health-badge.json&logo=markdown)](https://github.com/fairyhunter13/happy-bday-app)
-[![GitHub Pages](https://img.shields.io/badge/GitHub-Pages-blue?logo=github)](https://fairyhunter13.github.io/happy-bday-app/)
+[![Documentation Health](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/health-badge.json&logo=markdown)](https://fairyhunter13.github.io/happy-bday-app/)
+[![GitHub Pages](https://img.shields.io/github/deployments/fairyhunter13/happy-bday-app/github-pages?label=GitHub%20Pages&logo=github)](https://fairyhunter13.github.io/happy-bday-app/)
+[![OpenAPI Validation](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=openapi%20validation&logo=swagger)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
+
+### Repository Statistics
+[![GitHub Stars](https://img.shields.io/github/stars/fairyhunter13/happy-bday-app?logo=github&style=social)](https://github.com/fairyhunter13/happy-bday-app/stargazers)
+[![GitHub Forks](https://img.shields.io/github/forks/fairyhunter13/happy-bday-app?logo=github&style=social)](https://github.com/fairyhunter13/happy-bday-app/network/members)
+[![GitHub Watchers](https://img.shields.io/github/watchers/fairyhunter13/happy-bday-app?logo=github&style=social)](https://github.com/fairyhunter13/happy-bday-app/watchers)
+[![GitHub Contributors](https://img.shields.io/github/contributors/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/graphs/contributors)
+[![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/commits/main)
+[![Top Language](https://img.shields.io/github/languages/top/fairyhunter13/happy-bday-app?logo=typescript)](https://github.com/fairyhunter13/happy-bday-app)
+[![GitHub Code Size](https://img.shields.io/github/languages/code-size/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app)
+[![GitHub Repo Size](https://img.shields.io/github/repo-size/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app)
+[![GitHub Issues](https://img.shields.io/github/issues/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/issues)
 
 ### Project Info
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub Issues](https://img.shields.io/github/issues/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/issues)
-[![Last Commit](https://img.shields.io/github/last-commit/fairyhunter13/happy-bday-app?logo=github)](https://github.com/fairyhunter13/happy-bday-app/commits/main)
+[![Maintenance](https://img.shields.io/badge/Maintenance-Actively%20Developed-brightgreen)](https://github.com/fairyhunter13/happy-bday-app/commits/main)
 
 ---
 
