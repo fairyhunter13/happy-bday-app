@@ -1301,6 +1301,13 @@ jobs:
 
           echo "Generated test badge with count: ${TEST_COUNT}"
 
+      - name: Upload merged coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-merged
+          path: coverage/
+          retention-days: 7
+
       - name: Commit and push badge updates
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
@@ -1568,7 +1575,7 @@ jobs:
 
   deploy-documentation:
     name: Deploy Documentation to GitHub Pages
-    needs: all-checks-passed
+    needs: [all-checks-passed, coverage-report]
     runs-on: ubuntu-latest
     # Only deploy on main branch when all checks passed
     if: github.ref == 'refs/heads/main' && needs.all-checks-passed.result == 'success'
@@ -1603,8 +1610,11 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Run tests with coverage
-        run: npm run test:coverage
+      - name: Download merged coverage from coverage-report job
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-merged
+          path: coverage/
 
       - name: Install jq and bc for coverage tracking
         run: sudo apt-get update && sudo apt-get install -y jq bc
