@@ -282,14 +282,18 @@ describe('Bulk Operations Edge Cases', () => {
       await messageLogRepo.create({
         userId: user1.id,
         messageType: 'BIRTHDAY',
-        scheduledFor: new Date('2026-01-15T09:00:00Z'),
+        messageContent: `Hey, ${user1.firstName} ${user1.lastName} it's your birthday`,
+        scheduledSendTime: new Date('2026-01-15T09:00:00Z'),
+        idempotencyKey: `birthday-${user1.id}-2026-01-15`,
         status: 'PENDING',
       });
 
       await messageLogRepo.create({
         userId: user2.id,
         messageType: 'BIRTHDAY',
-        scheduledFor: new Date('2026-02-20T09:00:00Z'),
+        messageContent: `Hey, ${user2.firstName} ${user2.lastName} it's your birthday`,
+        scheduledSendTime: new Date('2026-02-20T09:00:00Z'),
+        idempotencyKey: `birthday-${user2.id}-2026-02-20`,
         status: 'PENDING',
       });
 

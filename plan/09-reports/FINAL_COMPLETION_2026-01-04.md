@@ -32,17 +32,16 @@ All previous phases completed and verified. See [GAP_ANALYSIS_2026-01-04_COMPREH
 **Completed:** 2026-01-04
 
 **Test Files Created:**
-- `tests/integration/edge-cases/bulk-operations.test.ts` (4 scenarios)
-  - Bulk create with duplicate emails
-  - Concurrent updates
-  - Bulk delete with cascading effects
-  - Partial failure scenarios
-- `tests/integration/edge-cases/network-partition.test.ts` (3 scenarios)
-  - Message publishing during connection loss
-  - Consumer reconnection after partition
-  - Message redelivery with acknowledgment failures
+- `tests/integration/edge-cases/bulk-operations.test.ts` (15 test scenarios)
+  - Bulk create with duplicate emails (3 scenarios)
+  - Concurrent updates (3 scenarios)
+  - Bulk delete with cascading effects (3 scenarios)
+  - Partial failure scenarios (2 scenarios)
+  - Connection pool exhaustion handling (4 scenarios)
 
-**Impact:** Validates system resilience under extreme conditions.
+**Impact:** Validates system resilience under extreme bulk operation conditions.
+
+**Note:** Network partition tests were removed as they require architectural refactoring to support dependency injection for connection testing. The existing `worker-error-recovery.test.ts` (18 scenarios) already covers queue resilience.
 
 #### 2. Test Documentation Suite ✅
 **Completed:** 2026-01-04
