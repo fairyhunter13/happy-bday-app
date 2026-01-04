@@ -581,6 +581,58 @@ jobs:
           retention-days: 14
         if: always()
 
+      - name: Generate mutation results JSON
+        if: always()
+        run: |
+          MUTATION_SCORE="${{ steps.mutation.outputs.mutation_score }}"
+          KILLED="${{ steps.mutation.outputs.killed }}"
+          SURVIVED="${{ steps.mutation.outputs.survived }}"
+          TIMEOUT="${{ steps.mutation.outputs.timeout }}"
+          NO_COVERAGE="${{ steps.mutation.outputs.no_coverage }}"
+
+          TOTAL=$((${KILLED:-0} + ${SURVIVED:-0} + ${TIMEOUT:-0} + ${NO_COVERAGE:-0}))
+          STATUS=$([ "${MUTATION_SCORE:-0}" != "0" ] && [ $(echo "${MUTATION_SCORE:-0} >= 60" | bc -l 2>/dev/null || echo "0") -eq 1 ] && echo "passed" || echo "failed")
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          mkdir -p docs reports/mutation
+          cat > reports/mutation/mutation-results.json << EOF
+          {
+            "score": ${MUTATION_SCORE:-0},
+            "mutants": {
+              "total": $TOTAL,
+              "killed": ${KILLED:-0},
+              "survived": ${SURVIVED:-0},
+              "timeout": ${TIMEOUT:-0},
+              "no_coverage": ${NO_COVERAGE:-0}
+            },
+            "thresholds": { "break": 60, "low": 70, "high": 85 },
+            "status": "$STATUS",
+            "timestamp": "$TIMESTAMP"
+          }
+          EOF
+
+          # Update mutation badge with real score
+          COLOR="red"
+          if [ $(echo "${MUTATION_SCORE:-0} >= 85" | bc -l 2>/dev/null || echo "0") -eq 1 ]; then
+            COLOR="brightgreen"
+          elif [ $(echo "${MUTATION_SCORE:-0} >= 70" | bc -l 2>/dev/null || echo "0") -eq 1 ]; then
+            COLOR="green"
+          elif [ $(echo "${MUTATION_SCORE:-0} >= 60" | bc -l 2>/dev/null || echo "0") -eq 1 ]; then
+            COLOR="yellow"
+          fi
+
+          cat > docs/mutation-badge.json << EOF
+          {
+            "schemaVersion": 1,
+            "label": "mutation",
+            "message": "${MUTATION_SCORE:-0}%",
+            "color": "$COLOR",
+            "namedLogo": "stryker"
+          }
+          EOF
+
+          echo "✓ Generated mutation results JSON with score: ${MUTATION_SCORE:-0}%"
+
       - name: Comment mutation score on PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -1163,6 +1215,13 @@ jobs:
           pattern: coverage-*
           path: coverage-artifacts/
 
+      - name: Download mutation report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: mutation-report
+          path: mutation-artifacts/
+
       - name: Setup Node.js and dependencies
         uses: ./.github/actions/setup-node-app
 
@@ -1501,6 +1560,42 @@ jobs:
 
           echo "Generated coverage-data.json with coverage: $LINES_PCT% and historical data"
 
+      - name: Generate detailed test suite results
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          INTEGRATION_STATUS: ${{ needs.integration-tests.result }}
+          E2E_STATUS: ${{ needs.e2e-tests.result }}
+          CHAOS_STATUS: ${{ needs.chaos-tests.result }}
+        run: |
+          # Generate individual test suite JSON files for detailed metrics
+          # Creates: integration-results.json, e2e-results.json, chaos-results.json
+          tsx scripts/test/generate-test-results.ts ./docs
+
+          echo "Generated detailed test suite results:"
+          echo "  - integration-results.json"
+          echo "  - e2e-results.json"
+          echo "  - chaos-results.json"
+
+      - name: Copy mutation testing results
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Copy mutation-results.json from mutation artifacts to docs
+          if [ -f "mutation-artifacts/reports/mutation/mutation-results.json" ]; then
+            mkdir -p docs
+            cp mutation-artifacts/reports/mutation/mutation-results.json docs/mutation-results.json
+            echo "✓ Copied mutation-results.json to docs/"
+          else
+            echo "::warning::mutation-results.json not found in artifacts"
+          fi
+
+          # Copy mutation badge if it was generated
+          if [ -f "mutation-artifacts/docs/mutation-badge.json" ]; then
+            cp mutation-artifacts/docs/mutation-badge.json docs/mutation-badge.json
+            echo "✓ Copied mutation-badge.json to docs/"
+          else
+            echo "::warning::mutation-badge.json not found in artifacts"
+          fi
+
       - name: Generate security data JSON
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -1594,6 +1689,82 @@ jobs:
           echo "  Commit: ${{ github.sha }}"
           echo "  Workflow: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+      - name: Download performance test artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: performance-*-results
+          path: perf-artifacts/
+
+      - name: Generate performance results JSON
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Consolidate performance results from all artifacts
+          mkdir -p perf-results docs
+
+          # Copy all JSON files from downloaded artifacts to perf-results
+          if [ -d "perf-artifacts" ]; then
+            find perf-artifacts -name "*.json" -type f -exec cp {} perf-results/ \;
+            echo "Copied performance results from artifacts"
+            ls -la perf-results/ || echo "No performance results found"
+          fi
+
+          # Run performance results parser
+          if [ -x "scripts/performance/parse-results.sh" ]; then
+            bash scripts/performance/parse-results.sh perf-results docs
+            echo "Generated performance-results.json"
+          else
+            echo "Warning: scripts/performance/parse-results.sh not found or not executable"
+            # Create default performance-results.json
+            TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            cat > docs/performance-results.json << EOF
+          {
+            "timestamp": "$TIMESTAMP",
+            "summary": {
+              "max_rps": 0,
+              "avg_latency_p95": 0,
+              "avg_latency_p99": 0,
+              "max_error_rate": 0,
+              "throughput_per_day": 0
+            },
+            "smoke_test": {
+              "test": "smoke-test",
+              "rps": 0,
+              "latency_p50": 0,
+              "latency_p95": 0,
+              "latency_p99": 0,
+              "latency_avg": 0,
+              "error_rate": 0,
+              "throughput": 0,
+              "total_requests": 0,
+              "duration": "0s",
+              "vus": 0
+            },
+            "load_test": {
+              "test": "load-test",
+              "rps": 0,
+              "latency_p50": 0,
+              "latency_p95": 0,
+              "latency_p99": 0,
+              "latency_avg": 0,
+              "error_rate": 0,
+              "throughput": 0,
+              "total_requests": 0,
+              "duration": "0s",
+              "vus": 0
+            },
+            "all_tests": []
+          }
+          EOF
+          fi
+
+          # Display summary
+          if [ -f "docs/performance-results.json" ]; then
+            echo "Performance Results Summary:"
+            jq -r '.summary | "  Max RPS: \(.max_rps) req/sec\n  Avg p95: \(.avg_latency_p95)ms\n  Avg p99: \(.avg_latency_p99)ms\n  Error Rate: \(.max_error_rate)%"' docs/performance-results.json || echo "  (unable to parse)"
+          fi
+
       - name: Upload merged coverage artifact
         uses: actions/upload-artifact@v4
         with:
@@ -1610,7 +1781,9 @@ jobs:
           # Add badge files and report JSON files
           git add docs/coverage-badge.json docs/coverage-history.json docs/test-badge.json \
                   docs/test-results.json docs/coverage-data.json docs/security-data.json \
-                  docs/build-info.json
+                  docs/build-info.json docs/performance-results.json docs/mutation-results.json \
+                  docs/mutation-badge.json docs/integration-results.json docs/e2e-results.json \
+                  docs/chaos-results.json
 
           # Check if there are changes to commit
           if git diff --staged --quiet; then
@@ -1949,7 +2122,7 @@ jobs:
           done
 
           # Copy JSON files (badges and report data)
-          for json_file in coverage-history.json coverage-badge.json security-badge.json performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json health-badge.json health-summary.json test-badge.json mutation-badge.json build-duration-badge.json test-results.json coverage-data.json security-data.json build-info.json; do
+          for json_file in coverage-history.json coverage-badge.json security-badge.json performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json health-badge.json health-summary.json test-badge.json mutation-badge.json build-duration-badge.json test-results.json coverage-data.json security-data.json build-info.json performance-results.json mutation-results.json integration-results.json e2e-results.json chaos-results.json; do
             [ -f "docs/$json_file" ] && cp "docs/$json_file" "_site/$json_file"
           done
 
