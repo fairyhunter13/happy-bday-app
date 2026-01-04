@@ -298,8 +298,8 @@ describe('Bulk Operations Edge Cases', () => {
       });
 
       // Soft delete both users
-      await userRepo.softDelete(user1.id);
-      await userRepo.softDelete(user2.id);
+      await userRepo.delete(user1.id);
+      await userRepo.delete(user2.id);
 
       // Verify users are soft deleted
       const deletedUsers = await userRepo.findAll();
@@ -313,9 +313,8 @@ describe('Bulk Operations Edge Cases', () => {
     it('should handle delete of non-existent users gracefully', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
 
-      // Soft delete non-existent user should not throw
-      const result = await userRepo.softDelete(fakeId);
-      expect(result).toBeNull();
+      // Delete non-existent user should throw NotFoundError
+      await expect(userRepo.delete(fakeId)).rejects.toThrow('User with ID');
     });
 
     it('should handle concurrent deletes', async () => {
@@ -327,15 +326,15 @@ describe('Bulk Operations Edge Cases', () => {
       });
 
       // Attempt concurrent deletes
-      const delete1 = userRepo.softDelete(user.id);
-      const delete2 = userRepo.softDelete(user.id);
+      const delete1 = userRepo.delete(user.id);
+      const delete2 = userRepo.delete(user.id);
 
-      // Both should succeed (idempotent)
-      const [result1, result2] = await Promise.all([delete1, delete2]);
+      // First delete succeeds, second may fail due to race condition
+      const results = await Promise.allSettled([delete1, delete2]);
 
-      expect(result1).not.toBeNull();
-      // Second delete returns null (already deleted)
-      expect(result2).toBeNull();
+      // At least one should succeed
+      const succeeded = results.filter((r) => r.status === 'fulfilled');
+      expect(succeeded.length).toBeGreaterThanOrEqual(1);
 
       // Verify user is deleted
       const deleted = await userRepo.findById(user.id);
