@@ -98,9 +98,10 @@ DEBUG=chaos:* npm run test:chaos
 
 ### 4. Network Partition Tests
 
-- **File:** `network-partition.test.ts`
+- **File:** `network-partition.test.ts` _(Deferred)_
 - **Scenarios:** Network isolation, high latency, packet loss
 - **Recovery:** Timeout handling, retry logic, fallback mechanisms
+- **Status:** Deferred pending architectural refactoring to support dependency injection for connection testing. The existing `worker-error-recovery.test.ts` provides comprehensive queue resilience coverage.
 
 ### 5. External Service Failures
 
