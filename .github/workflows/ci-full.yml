@@ -164,9 +164,9 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
-      # OPTIMIZATION: Use optimized config WITHOUT coverage (coverage only from unit tests)
-      - name: Run integration tests (optimized)
-        run: npm run test:integration:optimized
+      # Run integration tests WITH coverage for SonarCloud analysis
+      - name: Run integration tests
+        run: npm run test:integration
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
@@ -175,6 +175,13 @@ jobs:
           CI: 'true'
           # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
           TESTCONTAINERS_RYUK_DISABLED: 'true'
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-integration
+          path: coverage-integration/
+          retention-days: 1
 
       - name: Cleanup decrypted secrets
         if: always()
@@ -259,9 +266,9 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
-      # OPTIMIZATION: Use sharding to split E2E tests across parallel runners
+      # Run E2E tests WITH coverage for SonarCloud analysis (sharded for speed)
       - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total }})
-        run: npm run test:e2e:optimized -- --shard=${{ matrix.shard }}/${{ matrix.total }}
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/${{ matrix.total }}
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
           RABBITMQ_URL: amqp://test:test@localhost:5672
@@ -276,12 +283,16 @@ jobs:
           # The pg driver uses local date components when serializing Date to DATE
           TZ: UTC
 
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-e2e-shard-${{ matrix.shard }}
+          path: coverage-e2e/
+          retention-days: 1
+
       - name: Cleanup decrypted secrets
         if: always()
         run: rm -f .env.test
-
-      # Note: E2E tests don't generate coverage (only unit tests do)
-      # If test results are needed in the future, add them here
 
   chaos-tests:
     name: Chaos Tests
@@ -343,6 +354,7 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test_db
 
+      # Run chaos tests WITH coverage for SonarCloud analysis
       - name: Run chaos tests
         run: npm run test:chaos
         env:
@@ -352,6 +364,13 @@ jobs:
           CI: true
           # Disable Ryuk (Testcontainers reaper) in CI as it has connectivity issues
           TESTCONTAINERS_RYUK_DISABLED: 'true'
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-chaos
+          path: coverage-chaos/
+          retention-days: 1
 
       - name: Cleanup decrypted secrets
         if: always()
@@ -1064,7 +1083,8 @@ jobs:
 
   sonarcloud:
     name: SonarCloud Analysis
-    needs: [unit-tests]
+    # Depends on coverage-report to get merged coverage from all test types
+    needs: [coverage-report]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: github.event_name != 'workflow_dispatch'  # Skip for manual runs to save time
@@ -1078,10 +1098,10 @@ jobs:
       - name: Setup Node.js and dependencies
         uses: ./.github/actions/setup-node-app
 
-      - name: Download coverage
+      - name: Download merged coverage
         uses: actions/download-artifact@v4
         with:
-          name: coverage-unit
+          name: coverage-merged
           path: coverage/
 
       - name: SonarCloud Scan
@@ -1093,6 +1113,8 @@ jobs:
         with:
           args: >
             -Dsonar.verbose=false
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.newCode.referenceBranch=main
 
       - name: SonarCloud Status
         run: |
@@ -1107,9 +1129,9 @@ jobs:
 
   coverage-report:
     name: Coverage Report
-    # OPTIMIZATION: Only depends on unit-tests which generates coverage
-    # Integration and E2E tests run without coverage for speed
-    needs: [unit-tests]
+    # Merges coverage from all test types for comprehensive SonarCloud analysis
+    # Unit, integration, E2E, and chaos tests all contribute coverage data
+    needs: [unit-tests, integration-tests, e2e-tests, chaos-tests]
     runs-on: ubuntu-latest
     if: always()
 
