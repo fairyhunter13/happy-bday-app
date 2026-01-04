@@ -47,16 +47,16 @@
 [![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
 ### SonarCloud Quality Metrics
-[![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=alert_status)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=coverage)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=bugs)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Code Smells](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=code_smells)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Maintainability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Reliability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Security](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=security_rating)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Duplicated Lines](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
-[![SonarCloud Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_index)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=alert_status&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Coverage](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=coverage&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Bugs](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=bugs&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Code Smells](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=code_smells&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Maintainability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_rating&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Reliability](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=reliability_rating&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Security](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=security_rating&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=vulnerabilities&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Duplicated Lines](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=duplicated_lines_density&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
+[![SonarCloud Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=fairyhunter13_happy-bday-app&metric=sqale_index&organization=fairyhunter13)](https://sonarcloud.io/dashboard?id=fairyhunter13_happy-bday-app)
 
 ### Coverage & Validation
 [![codecov](https://codecov.io/gh/fairyhunter13/happy-bday-app/branch/main/graph/badge.svg)](https://codecov.io/gh/fairyhunter13/happy-bday-app)
