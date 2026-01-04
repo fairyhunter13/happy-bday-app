@@ -303,7 +303,7 @@
                 <div class="stats">
                     <div class="stat">
                         <div class="stat-label">Endpoints</div>
-                        <div class="stat-value">TBD</div>
+                        <div class="stat-value" id="api-endpoints-stat">TBD</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">Version</div>
@@ -399,11 +399,11 @@
                 <div class="stats">
                     <div class="stat">
                         <div class="stat-label">Stars</div>
-                        <div class="stat-value">--</div>
+                        <div class="stat-value" id="github-stars-stat">--</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">Forks</div>
-                        <div class="stat-value">--</div>
+                        <div class="stat-value" id="github-forks-stat">--</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">Status</div>
@@ -462,8 +462,9 @@
             fetch('./test-results.json').then(r => r.ok ? r.json() : null).catch(() => null),
             fetch('./coverage-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
             fetch('./security-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('./build-info.json').then(r => r.ok ? r.json() : null).catch(() => null)
-        ]).then(([testData, coverageData, securityData, buildData]) => {
+            fetch('./build-info.json').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('./openapi.json').then(r => r.ok ? r.json() : null).catch(() => null)
+        ]).then(([testData, coverageData, securityData, buildData, openapiData]) => {
             // Update test stats
             if (testData && testData.summary) {
                 document.getElementById('total-tests-stat').textContent = testData.summary.total || 0;
@@ -502,6 +503,16 @@
                 });
                 document.getElementById('build-duration-stat').textContent = buildData.build.duration || '--';
             }
+
+            // Update API endpoint count from OpenAPI spec
+            if (openapiData && openapiData.paths) {
+                const endpointCount = Object.keys(openapiData.paths).length;
+                document.getElementById('api-endpoints-stat').textContent = endpointCount;
+            }
+
+            // Note: GitHub stars/forks would require GitHub API integration
+            // Currently left as "--" placeholders
+            // To implement: Use GitHub API with GITHUB_TOKEN to fetch repository stats
         });
     </script>
 </body>
