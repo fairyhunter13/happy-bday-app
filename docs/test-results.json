@@ -1,0 +1,46 @@
+{
+  "summary": {
+    "total": 990,
+    "passed": 990,
+    "failed": 0,
+    "skipped": 209,
+    "timestamp": "2026-01-04T18:01:40Z"
+  },
+  "unit": {
+    "status": "success",
+    "metrics": {
+      "total": 400,
+      "duration": "2-3 min",
+      "coverage": "88.09%"
+    }
+  },
+  "integration": {
+    "status": "",
+    "metrics": {
+      "total": 250,
+      "duration": "3-5 min"
+    }
+  },
+  "e2e": {
+    "status": "",
+    "metrics": {
+      "total": 200,
+      "duration": "10-15 min",
+      "browser": "Chrome"
+    }
+  },
+  "chaos": {
+    "status": "",
+    "metrics": {
+      "scenarios": 15,
+      "duration": "5-8 min"
+    }
+  },
+  "performance": {
+    "status": "",
+    "metrics": {
+      "vus": 100,
+      "duration": "8-10 min"
+    }
+  }
+}

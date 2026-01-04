@@ -1,0 +1,19 @@
+{
+  "vulnerabilities": {
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "dependencies": {
+    "total": 150,
+    "outdated": 0,
+    "vulnerable": 0
+  },
+  "scans": {
+    "npm_audit": "",
+    "docker": "",
+    "sonarcloud": "passed"
+  },
+  "timestamp": "2026-01-04T18:01:40Z"
+}
