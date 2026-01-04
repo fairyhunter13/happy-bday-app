@@ -156,6 +156,17 @@ Observability, metrics collection, dashboards, and monitoring setup.
 
 ---
 
+## Operational Playbooks
+
+Incident response, disaster recovery, and security procedures.
+
+- **[playbooks/INDEX.md](./playbooks/INDEX.md)** - Playbooks directory index
+- **[playbooks/incident-response.md](./playbooks/incident-response.md)** - General incident procedures
+- **[playbooks/disaster-recovery.md](./playbooks/disaster-recovery.md)** - Disaster recovery procedures
+- **[playbooks/security-incident.md](./playbooks/security-incident.md)** - Security incident response
+
+---
+
 ## Documentation Standards
 
 All documentation follows these standards:

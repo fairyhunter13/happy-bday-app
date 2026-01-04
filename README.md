@@ -527,6 +527,14 @@ CREATE TABLE message_logs_2025_01 PARTITION OF message_logs
 - **Local Readiness:** [`docs/LOCAL_READINESS.md`](./docs/LOCAL_READINESS.md) - Production-grade local testing
 - **Runbook:** [`docs/RUNBOOK.md`](./docs/RUNBOOK.md) - Operations guide
 
+### Project History & Changes
+
+- **Changelog:** [`CHANGES.md`](./CHANGES.md) - Project evolution and major changes
+- **Fix Summaries:** Recent bug fixes and improvements
+  - [`FIX_SUMMARY.md`](./FIX_SUMMARY.md) - General fixes
+  - [`RATE_LIMIT_FIX_SUMMARY.md`](./RATE_LIMIT_FIX_SUMMARY.md) - Rate limiting improvements
+  - [`PERFORMANCE_TEST_FIX_SUMMARY.md`](./PERFORMANCE_TEST_FIX_SUMMARY.md) - Performance test enhancements
+
 ---
 
 ## 🎓 Learning & Educational Use

@@ -54,8 +54,9 @@ Each phase report should include:
 
 ### Reports
 
-- **Gap Analysis (Latest):** [`../09-reports/GAP_ANALYSIS_2026-01-02.md`](../09-reports/GAP_ANALYSIS_2026-01-02.md)
-- **Gap Analysis (Previous):** [`../09-reports/GAP_ANALYSIS_2026-01-01.md`](../09-reports/GAP_ANALYSIS_2026-01-01.md)
+- **Gap Analysis (Latest):** [`../09-reports/GAP_ANALYSIS_2026-01-04_UPDATED.md`](../09-reports/GAP_ANALYSIS_2026-01-04_UPDATED.md)
+- **Gap Analysis (Comprehensive Baseline):** [`../09-reports/GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md`](../09-reports/GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md)
+- **Documentation Sync (Latest):** [`../09-reports/DOCS_SYNC_2026-01-04_COMPLETE.md`](../09-reports/DOCS_SYNC_2026-01-04_COMPLETE.md)
 
 ---
 

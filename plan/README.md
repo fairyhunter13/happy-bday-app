@@ -167,8 +167,9 @@ plan/
 | Document | Description | Status |
 |----------|-------------|--------|
 | [`INDEX.md`](./09-reports/INDEX.md) | Reports directory index | ✅ |
-| [`GAP_ANALYSIS_2026-01-01.md`](./09-reports/GAP_ANALYSIS_2026-01-01.md) | Latest gap analysis | ✅ Final |
-| [`DOCS_SYNC_2026-01-01.md`](./09-reports/DOCS_SYNC_2026-01-01.md) | Documentation sync report | ✅ Final |
+| [`GAP_ANALYSIS_2026-01-04_UPDATED.md`](./09-reports/GAP_ANALYSIS_2026-01-04_UPDATED.md) | Latest gap analysis (Current) | ✅ Final |
+| [`GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md`](./09-reports/GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md) | Comprehensive baseline analysis | ✅ Final |
+| [`DOCS_SYNC_2026-01-04_COMPLETE.md`](./09-reports/DOCS_SYNC_2026-01-04_COMPLETE.md) | Latest documentation sync report | ✅ Final |
 
 ---
 
