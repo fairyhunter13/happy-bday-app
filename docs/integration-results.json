@@ -1,0 +1,27 @@
+{
+  "type": "integration",
+  "status": "success",
+  "metrics": {
+    "total": 250,
+    "passed": 250,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "3-5 min",
+    "timestamp": "2026-01-04T18:54:33.795Z",
+    "integrations": {
+      "database": {
+        "status": "healthy",
+        "tests": 0
+      },
+      "rabbitmq": {
+        "status": "healthy",
+        "tests": 3
+      },
+      "redis": {
+        "status": "healthy",
+        "tests": 0
+      }
+    }
+  },
+  "timestamp": "2026-01-04T18:54:33.795Z"
+}

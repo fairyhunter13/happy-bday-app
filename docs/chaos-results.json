@@ -1,0 +1,28 @@
+{
+  "type": "chaos",
+  "status": "success",
+  "metrics": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "5-8 min",
+    "timestamp": "2026-01-04T18:54:33.818Z",
+    "scenarios": {
+      "total": 15,
+      "passed": 15,
+      "failed": 0
+    },
+    "resilience": {
+      "score": 95,
+      "averageRecoveryTime": "2.3s"
+    },
+    "failures": {
+      "database": 5,
+      "rabbitmq": 4,
+      "redis": 3,
+      "network": 3
+    }
+  },
+  "timestamp": "2026-01-04T18:54:33.818Z"
+}
