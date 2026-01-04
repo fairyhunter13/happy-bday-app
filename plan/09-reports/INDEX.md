@@ -16,9 +16,10 @@ Collection of analytical reports that assess project status, identify gaps, and 
 
 ### Reports
 
-- **Latest Documentation Sync:** [`DOCS_SYNC_2026-01-04_COMPLETE.md`](./DOCS_SYNC_2026-01-04_COMPLETE.md) - **CURRENT**: Full sync with cleanup - 98% health score
+- **Latest Documentation Sync:** [`DOCS_SYNC_2026-01-05_PHASE0-1.md`](./DOCS_SYNC_2026-01-05_PHASE0-1.md) - **CURRENT**: Phase 0-1 complete - 100% requirements conformance, archived 2 obsolete reports, updated BullMQ→RabbitMQ references
+- **Previous Documentation Sync:** [`DOCS_SYNC_2026-01-04_COMPLETE.md`](./DOCS_SYNC_2026-01-04_COMPLETE.md) - Full sync with cleanup - 98% health score
 - **Previous Documentation Sync:** [`DOCS_SYNC_2026-01-03_EXECUTION.md`](./DOCS_SYNC_2026-01-03_EXECUTION.md) - Full execution (Phases 0-7) - 98% health score
-- **Latest Gap Analysis:** [`GAP_ANALYSIS_2026-01-04_UPDATED.md`](./GAP_ANALYSIS_2026-01-04_UPDATED.md) - **CURRENT**: Updated gap analysis - 93.5% complete, post-documentation sync
+- **Latest Gap Analysis:** [`GAP_ANALYSIS_2026-01-04_UPDATED.md`](./GAP_ANALYSIS_2026-01-04_UPDATED.md) - **CURRENT**: Updated gap analysis - 93.5% complete, post-doc sync
 - **Previous Gap Analysis:** [`GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md`](./GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md) - Comprehensive baseline analysis
 - **Badge Management:** [`BADGE-INVENTORY.md`](./BADGE-INVENTORY.md) - Complete badge inventory and status
 - **README Badges Update:** [`README-BADGES-UPDATE-SUMMARY.md`](./README-BADGES-UPDATE-SUMMARY.md) - Badge implementation summary
@@ -30,9 +31,10 @@ Collection of analytical reports that assess project status, identify gaps, and 
 
 | Document | Description | Status | Date |
 |----------|-------------|--------|------|
-| [`DOCS_SYNC_2026-01-04_COMPLETE.md`](./DOCS_SYNC_2026-01-04_COMPLETE.md) | **CURRENT**: Latest sync - removed 4 duplicates (137KB), updated INDEX, 98% health | ✅ Complete | 2026-01-04 |
+| [`DOCS_SYNC_2026-01-05_PHASE0-1.md`](./DOCS_SYNC_2026-01-05_PHASE0-1.md) | **CURRENT**: Phase 0-1 complete - 100% conformance, 2 files archived, 10 refs updated | ✅ Complete | 2026-01-05 |
+| [`DOCS_SYNC_2026-01-04_COMPLETE.md`](./DOCS_SYNC_2026-01-04_COMPLETE.md) | Previous: Full sync - removed 4 duplicates (137KB), updated INDEX, 98% health | ✅ Complete | 2026-01-04 |
 | [`DOCS_SYNC_2026-01-03_EXECUTION.md`](./DOCS_SYNC_2026-01-03_EXECUTION.md) | Previous: Full execution (Phases 0-7) - 98% health, 40 badges, 6 HTML pages | ✅ Complete | 2026-01-03 |
-| [`GAP_ANALYSIS_2026-01-04_UPDATED.md`](./GAP_ANALYSIS_2026-01-04_UPDATED.md) | **CURRENT**: Updated gap analysis - 93.5% complete, post-doc sync, 30-35h to 100% | ✅ Complete | 2026-01-04 |
+| [`GAP_ANALYSIS_2026-01-04_UPDATED.md`](./GAP_ANALYSIS_2026-01-04_UPDATED.md) | **CURRENT**: Updated gap analysis - 93.5% complete, post-doc sync | ✅ Complete | 2026-01-04 |
 | [`GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md`](./GAP_ANALYSIS_2026-01-04_COMPREHENSIVE.md) | Previous: Comprehensive baseline analysis - 1,332 items tracked | ✅ Complete | 2026-01-04 |
 | [`BADGE-INVENTORY.md`](./BADGE-INVENTORY.md) | Complete badge inventory across 8 categories (40+ badges) | ✅ Complete | 2026-01-03 |
 | [`README-BADGES-UPDATE-SUMMARY.md`](./README-BADGES-UPDATE-SUMMARY.md) | Badge implementation and validation summary | ✅ Complete | 2026-01-03 |
