@@ -468,7 +468,10 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/api.pid ]; then
-            kill $(cat /tmp/api.pid) || true
+            PID=$(cat /tmp/api.pid)
+            if kill -0 "$PID" 2>/dev/null; then
+              kill "$PID"
+            fi
           fi
 
       - name: Upload performance results
@@ -826,7 +829,10 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/api.pid ]; then
-            kill $(cat /tmp/api.pid) || true
+            PID=$(cat /tmp/api.pid)
+            if kill -0 "$PID" 2>/dev/null; then
+              kill "$PID"
+            fi
           fi
 
       - name: Upload performance results
@@ -1049,7 +1055,10 @@ jobs:
         if: always()
         run: |
           if [ -f app.pid ]; then
-            kill $(cat app.pid) || true
+            PID=$(cat app.pid)
+            if kill -0 "$PID" 2>/dev/null; then
+              kill "$PID"
+            fi
             rm app.pid
           fi
 
@@ -1650,8 +1659,14 @@ jobs:
           fi
 
           # Copy Grafana dashboards and alerts
-          [ -d grafana/dashboards ] && mkdir -p _site/grafana/dashboards && cp -r grafana/dashboards/*.json _site/grafana/dashboards/ 2>/dev/null || true
-          [ -d grafana/alerts ] && mkdir -p _site/grafana/alerts && cp -r grafana/alerts/*.yml _site/grafana/alerts/ 2>/dev/null || true
+          if [ -d grafana/dashboards ] && ls grafana/dashboards/*.json >/dev/null 2>&1; then
+            mkdir -p _site/grafana/dashboards
+            cp -r grafana/dashboards/*.json _site/grafana/dashboards/
+          fi
+          if [ -d grafana/alerts ] && ls grafana/alerts/*.yml >/dev/null 2>&1; then
+            mkdir -p _site/grafana/alerts
+            cp -r grafana/alerts/*.yml _site/grafana/alerts/
+          fi
 
           # Copy documentation files
           for md_file in MUTATION_TESTING.md RUNBOOK.md METRICS.md DEPLOYMENT_GUIDE.md DEVELOPER_SETUP.md ARCHITECTURE_SCOPE.md README.md; do

@@ -100,9 +100,12 @@ jobs:
           # Check if any containers are unhealthy or restarting
           if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
             echo "ERROR: API containers are restarting. Checking logs..."
-            docker logs perf-api-1 2>&1 | tail -50 || true
-            docker logs perf-api-2 2>&1 | tail -50 || true
-            docker logs perf-api-3 2>&1 | tail -50 || true
+            for container in perf-api-1 perf-api-2 perf-api-3; do
+              if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+                echo "=== Logs for $container ==="
+                docker logs "$container" 2>&1 | tail -50
+              fi
+            done
             exit 1
           fi
 
@@ -117,7 +120,7 @@ jobs:
 
       - name: Create results directory
         run: |
-          rm -rf perf-results || true
+          rm -rf perf-results
           mkdir -p perf-results
           chmod 777 perf-results
 
@@ -132,13 +135,20 @@ jobs:
 
       - name: Download baseline results
         if: always()
-        continue-on-error: true
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          name: performance-baseline
-          path: baseline/
-          workflow: performance.yml
-          workflow_conclusion: success
+        run: |
+          # Check if baseline artifact exists and download it, skip if not found
+          if gh run list --workflow=performance.yml --status=success --limit=1 --json databaseId --jq '.[0].databaseId' > /dev/null 2>&1; then
+            LATEST_RUN=$(gh run list --workflow=performance.yml --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
+            if gh run download "$LATEST_RUN" --name performance-baseline --dir baseline/ 2>/dev/null; then
+              echo "Baseline downloaded successfully"
+            else
+              echo "No baseline artifact found, will skip comparison"
+            fi
+          else
+            echo "No previous successful runs found, will skip comparison"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Compare with baseline
         id: compare
@@ -176,21 +186,31 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          echo "=== RabbitMQ Logs ==="
-          docker logs perf-rabbitmq 2>&1 | tail -200 || true
-          echo "=== API Container Logs ==="
-          docker logs perf-api-1 2>&1 | tail -100 || true
-          docker logs perf-api-2 2>&1 | tail -100 || true
-          docker logs perf-api-3 2>&1 | tail -100 || true
-          docker logs perf-api-4 2>&1 | tail -100 || true
-          docker logs perf-api-5 2>&1 | tail -100 || true
-          echo "=== Worker Logs (sample) ==="
-          docker logs perf-worker-1 2>&1 | tail -50 || true
-          docker logs perf-worker-2 2>&1 | tail -50 || true
-          echo "=== Nginx Logs ==="
-          docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="
           docker ps -a
+          echo ""
+
+          # Helper function to get logs if container exists
+          get_logs() {
+            local container=$1
+            local lines=$2
+            if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+              echo "=== Logs for $container ==="
+              docker logs "$container" 2>&1 | tail -"$lines"
+              echo ""
+            fi
+          }
+
+          echo "=== Collecting Container Logs ==="
+          get_logs "perf-rabbitmq" 200
+          get_logs "perf-api-1" 100
+          get_logs "perf-api-2" 100
+          get_logs "perf-api-3" 100
+          get_logs "perf-api-4" 100
+          get_logs "perf-api-5" 100
+          get_logs "perf-worker-1" 50
+          get_logs "perf-worker-2" 50
+          get_logs "perf-nginx" 100
 
       - name: Cleanup
         if: always()
@@ -279,9 +299,12 @@ jobs:
           # Check if any containers are unhealthy or restarting
           if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
             echo "ERROR: API containers are restarting. Checking logs..."
-            docker logs perf-api-1 2>&1 | tail -50 || true
-            docker logs perf-api-2 2>&1 | tail -50 || true
-            docker logs perf-api-3 2>&1 | tail -50 || true
+            for container in perf-api-1 perf-api-2 perf-api-3; do
+              if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+                echo "=== Logs for $container ==="
+                docker logs "$container" 2>&1 | tail -50
+              fi
+            done
             exit 1
           fi
 
@@ -296,7 +319,7 @@ jobs:
 
       - name: Create results directory
         run: |
-          rm -rf perf-results || true
+          rm -rf perf-results
           mkdir -p perf-results
           chmod 777 perf-results
 
@@ -319,21 +342,31 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          echo "=== RabbitMQ Logs ==="
-          docker logs perf-rabbitmq 2>&1 | tail -200 || true
-          echo "=== API Container Logs ==="
-          docker logs perf-api-1 2>&1 | tail -100 || true
-          docker logs perf-api-2 2>&1 | tail -100 || true
-          docker logs perf-api-3 2>&1 | tail -100 || true
-          docker logs perf-api-4 2>&1 | tail -100 || true
-          docker logs perf-api-5 2>&1 | tail -100 || true
-          echo "=== Worker Logs (sample) ==="
-          docker logs perf-worker-1 2>&1 | tail -50 || true
-          docker logs perf-worker-2 2>&1 | tail -50 || true
-          echo "=== Nginx Logs ==="
-          docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="
           docker ps -a
+          echo ""
+
+          # Helper function to get logs if container exists
+          get_logs() {
+            local container=$1
+            local lines=$2
+            if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+              echo "=== Logs for $container ==="
+              docker logs "$container" 2>&1 | tail -"$lines"
+              echo ""
+            fi
+          }
+
+          echo "=== Collecting Container Logs ==="
+          get_logs "perf-rabbitmq" 200
+          get_logs "perf-api-1" 100
+          get_logs "perf-api-2" 100
+          get_logs "perf-api-3" 100
+          get_logs "perf-api-4" 100
+          get_logs "perf-api-5" 100
+          get_logs "perf-worker-1" 50
+          get_logs "perf-worker-2" 50
+          get_logs "perf-nginx" 100
 
       - name: Cleanup
         if: always()
@@ -433,9 +466,12 @@ jobs:
           # Check if any containers are unhealthy or restarting
           if docker ps --filter "name=perf-api" --filter "status=restarting" | grep -q perf-api; then
             echo "ERROR: API containers are restarting. Checking logs..."
-            docker logs perf-api-1 2>&1 | tail -50 || true
-            docker logs perf-api-2 2>&1 | tail -50 || true
-            docker logs perf-api-3 2>&1 | tail -50 || true
+            for container in perf-api-1 perf-api-2 perf-api-3; do
+              if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+                echo "=== Logs for $container ==="
+                docker logs "$container" 2>&1 | tail -50
+              fi
+            done
             exit 1
           fi
 
@@ -450,7 +486,7 @@ jobs:
 
       - name: Create results directory
         run: |
-          rm -rf perf-results || true
+          rm -rf perf-results
           mkdir -p perf-results
           chmod 777 perf-results
 
@@ -471,21 +507,31 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
-          echo "=== RabbitMQ Logs ==="
-          docker logs perf-rabbitmq 2>&1 | tail -200 || true
-          echo "=== API Container Logs ==="
-          docker logs perf-api-1 2>&1 | tail -100 || true
-          docker logs perf-api-2 2>&1 | tail -100 || true
-          docker logs perf-api-3 2>&1 | tail -100 || true
-          docker logs perf-api-4 2>&1 | tail -100 || true
-          docker logs perf-api-5 2>&1 | tail -100 || true
-          echo "=== Worker Logs (sample) ==="
-          docker logs perf-worker-1 2>&1 | tail -50 || true
-          docker logs perf-worker-2 2>&1 | tail -50 || true
-          echo "=== Nginx Logs ==="
-          docker logs perf-nginx 2>&1 | tail -100 || true
           echo "=== Docker Container Status ==="
           docker ps -a
+          echo ""
+
+          # Helper function to get logs if container exists
+          get_logs() {
+            local container=$1
+            local lines=$2
+            if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+              echo "=== Logs for $container ==="
+              docker logs "$container" 2>&1 | tail -"$lines"
+              echo ""
+            fi
+          }
+
+          echo "=== Collecting Container Logs ==="
+          get_logs "perf-rabbitmq" 200
+          get_logs "perf-api-1" 100
+          get_logs "perf-api-2" 100
+          get_logs "perf-api-3" 100
+          get_logs "perf-api-4" 100
+          get_logs "perf-api-5" 100
+          get_logs "perf-worker-1" 50
+          get_logs "perf-worker-2" 50
+          get_logs "perf-nginx" 100
 
       - name: Cleanup
         if: always()
