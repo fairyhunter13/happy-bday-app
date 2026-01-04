@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "label": "build time",
+  "message": "5m",
+  "color": "blue",
+  "namedLogo": "githubactions"
+}

@@ -1654,7 +1654,7 @@ jobs:
           done
 
           # Copy JSON files
-          for json_file in coverage-history.json coverage-badge.json security-badge.json performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json health-badge.json health-summary.json test-badge.json; do
+          for json_file in coverage-history.json coverage-badge.json security-badge.json performance-badge.json rps-badge.json latency-badge.json throughput-badge.json error-rate-badge.json performance-metrics.json health-badge.json health-summary.json test-badge.json mutation-badge.json build-duration-badge.json; do
             [ -f "docs/$json_file" ] && cp "docs/$json_file" "_site/$json_file"
           done
 
