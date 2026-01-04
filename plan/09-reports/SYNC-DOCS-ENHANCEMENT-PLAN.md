@@ -45,7 +45,7 @@
   - `09-reports/` (12 files)
 
 **Other Documentation Directories:**
-- `.github/README.md` - GitHub Actions documentation
+- `.github/GITHUB_CONFIG.md` - GitHub Actions documentation
 - `grafana/dashboards/README.md` - Grafana dashboard docs
 - `grafana/provisioning/README.md` - Grafana provisioning docs
 - `prometheus/README.md` - Prometheus configuration docs
@@ -275,7 +275,7 @@ sed -i "s/Total Files: .*/Total Files: $FILE_COUNT/" docs/INDEX.md
 
 4. **Update .github/ Documentation:**
    - List all workflows
-   - Update .github/README.md with workflow list
+   - Update .github/GITHUB_CONFIG.md with workflow list
    - Include trigger information
 
 5. **Update grafana/ Documentation:**
