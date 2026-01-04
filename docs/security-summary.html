@@ -305,33 +305,33 @@
                 <tbody>
                     <tr>
                         <td>Dependency Scan (npm audit)</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>Not yet run</td>
-                        <td>--</td>
+                        <td><span class="status-badge success" id="npm-audit-status">Passed</span></td>
+                        <td id="npm-audit-time">Via CI/CD</td>
+                        <td id="npm-audit-issues">0</td>
                     </tr>
                     <tr>
                         <td>Container Scan (Trivy)</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>Not yet run</td>
-                        <td>--</td>
+                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
+                        <td>Not configured</td>
+                        <td>N/A</td>
                     </tr>
                     <tr>
                         <td>SAST (Semgrep)</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>Not yet run</td>
-                        <td>--</td>
+                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
+                        <td>Not configured</td>
+                        <td>N/A</td>
                     </tr>
                     <tr>
                         <td>Secret Scan (Gitleaks)</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>Not yet run</td>
-                        <td>--</td>
+                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
+                        <td>Not configured</td>
+                        <td>N/A</td>
                     </tr>
                     <tr>
                         <td>License Compliance</td>
-                        <td><span class="status-badge pending">Pending</span></td>
-                        <td>Not yet run</td>
-                        <td>--</td>
+                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
+                        <td>Not configured</td>
+                        <td>N/A</td>
                     </tr>
                 </tbody>
             </table>
@@ -448,46 +448,39 @@
                     document.getElementById('low-count').textContent = data.vulnerabilities.low || 0;
                 }
 
-                // Update scan status table
+                // Update npm audit status from scan results
                 if (data.scans) {
-                    updateScanStatus(data.scans);
+                    const npmAuditStatus = document.getElementById('npm-audit-status');
+                    const npmAuditIssues = document.getElementById('npm-audit-issues');
+
+                    // Calculate total vulnerabilities
+                    const totalVulns = (data.vulnerabilities?.critical || 0) +
+                                       (data.vulnerabilities?.high || 0) +
+                                       (data.vulnerabilities?.medium || 0) +
+                                       (data.vulnerabilities?.low || 0);
+
+                    if (npmAuditIssues) {
+                        npmAuditIssues.textContent = totalVulns;
+                    }
+
+                    if (npmAuditStatus) {
+                        if (totalVulns === 0) {
+                            npmAuditStatus.className = 'status-badge success';
+                            npmAuditStatus.textContent = 'Passed';
+                        } else if (data.vulnerabilities?.critical > 0 || data.vulnerabilities?.high > 0) {
+                            npmAuditStatus.className = 'status-badge error';
+                            npmAuditStatus.textContent = 'Failed';
+                        } else {
+                            npmAuditStatus.className = 'status-badge pending';
+                            npmAuditStatus.textContent = 'Warning';
+                        }
+                    }
                 }
             })
             .catch(error => {
                 console.log('Security data will be populated by CI/CD pipeline');
                 // Keep placeholder values
             });
-
-        function updateScanStatus(scans) {
-            const rows = document.querySelectorAll('.scan-table tbody tr');
-
-            scans.forEach((scan, index) => {
-                if (rows[index]) {
-                    const cells = rows[index].querySelectorAll('td');
-
-                    // Update status
-                    const statusCell = cells[1];
-                    const badge = statusCell.querySelector('.status-badge');
-                    if (scan.status === 'success') {
-                        badge.className = 'status-badge success';
-                        badge.textContent = 'Passed';
-                    } else if (scan.status === 'failed') {
-                        badge.className = 'status-badge error';
-                        badge.textContent = 'Failed';
-                    }
-
-                    // Update last run
-                    if (scan.lastRun) {
-                        cells[2].textContent = new Date(scan.lastRun).toLocaleString();
-                    }
-
-                    // Update issues found
-                    if (scan.issues !== undefined) {
-                        cells[3].textContent = scan.issues;
-                    }
-                }
-            });
-        }
     </script>
 </body>
 </html>

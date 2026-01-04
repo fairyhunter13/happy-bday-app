@@ -231,7 +231,7 @@
         </div>
 
         <div class="chart-container">
-            <h2>Coverage by Type</h2>
+            <h2>Coverage by Metric Type</h2>
             <div class="chart-wrapper">
                 <canvas id="coverageTypeChart"></canvas>
             </div>
@@ -338,7 +338,7 @@
         const typeChart = new Chart(typeCtx, {
             type: 'bar',
             data: {
-                labels: ['Unit Tests', 'Integration Tests', 'E2E Tests', 'Overall'],
+                labels: ['Statements', 'Branches', 'Functions', 'Lines'],
                 datasets: [{
                     label: 'Coverage %',
                     data: [],
@@ -434,7 +434,16 @@
                     coverageChart.update();
                 }
 
-                if (data.byType) {
+                // Update coverage by metric type chart using current coverage values
+                if (data.current) {
+                    typeChart.data.datasets[0].data = [
+                        data.current.statements || 0,
+                        data.current.branches || 0,
+                        data.current.functions || 0,
+                        data.current.lines || data.current.overall || 0
+                    ];
+                    typeChart.update();
+                } else if (data.byType) {
                     typeChart.data.datasets[0].data = data.byType;
                     typeChart.update();
                 }
