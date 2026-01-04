@@ -461,8 +461,9 @@
         Promise.all([
             fetch('./test-results.json').then(r => r.ok ? r.json() : null).catch(() => null),
             fetch('./coverage-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('./security-data.json').then(r => r.ok ? r.json() : null).catch(() => null)
-        ]).then(([testData, coverageData, securityData]) => {
+            fetch('./security-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('./build-info.json').then(r => r.ok ? r.json() : null).catch(() => null)
+        ]).then(([testData, coverageData, securityData, buildData]) => {
             // Update test stats
             if (testData && testData.summary) {
                 document.getElementById('total-tests-stat').textContent = testData.summary.total || 0;
@@ -488,6 +489,18 @@
             if (securityData && securityData.vulnerabilities) {
                 document.getElementById('critical-stat').textContent = securityData.vulnerabilities.critical || 0;
                 document.getElementById('high-stat').textContent = securityData.vulnerabilities.high || 0;
+            }
+
+            // Update build stats
+            if (buildData && buildData.build) {
+                const buildTime = new Date(buildData.build.timestamp);
+                document.getElementById('last-build-stat').textContent = buildTime.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                document.getElementById('build-duration-stat').textContent = buildData.build.duration || '--';
             }
         });
     </script>
