@@ -1699,8 +1699,15 @@ jobs:
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git add docs/coverage-history.json docs/coverage-badge.json
-            git diff --staged --quiet || git commit -m "chore: update coverage history and badge [skip ci]"
-            git push
+
+            # Only commit and push if there are changes
+            if ! git diff --staged --quiet; then
+              git commit -m "chore: update coverage history and badge [skip ci]"
+
+              # Pull with rebase to handle concurrent badge updates
+              git pull --rebase origin main
+              git push
+            fi
           fi
 
       - name: Deploy to GitHub Pages
