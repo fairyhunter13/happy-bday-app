@@ -10,59 +10,16 @@
  * - Error handling
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { describe, it, expect } from 'vitest';
 import { UserRepository } from '../../../src/repositories/user.repository.js';
 import { DatabaseError, NotFoundError, UniqueConstraintError } from '../../../src/utils/errors.js';
-import { PostgresTestContainer, cleanDatabase, isCI } from '../../helpers/testcontainers.js';
+import { setupDatabaseTest } from '../../helpers/database-test-setup.js';
 import type { CreateUserDto, UpdateUserDto } from '../../../src/types/dto.js';
 import { DateTime } from 'luxon';
 
 describe('UserRepository', () => {
-  let testContainer: PostgresTestContainer;
-  let queryClient: ReturnType<typeof postgres>;
-  let db: ReturnType<typeof drizzle>;
-  let repository: UserRepository;
-
-  beforeAll(async () => {
-    // Start PostgreSQL container
-    testContainer = new PostgresTestContainer();
-    const result = await testContainer.start();
-
-    // Run migrations
-    await testContainer.runMigrations('./drizzle');
-
-    // Create Drizzle instance
-    // In CI mode, use connection string from environment
-    // In local mode, use testcontainer connection string
-    const connectionString = isCI()
-      ? process.env.DATABASE_URL || result.connectionString
-      : result.connectionString;
-
-    // Use limited connection pool in CI to prevent exhaustion
-    queryClient = postgres(connectionString, {
-      max: isCI() ? 2 : 10,
-      idle_timeout: 10,
-      connect_timeout: 10,
-    });
-    db = drizzle(queryClient);
-    repository = new UserRepository(db);
-  });
-
-  afterAll(async () => {
-    if (queryClient) {
-      await queryClient.end();
-    }
-    if (testContainer) {
-      await testContainer.stop();
-    }
-  });
-
-  beforeEach(async () => {
-    // Clean database before each test
-    await cleanDatabase(testContainer.getPool());
-  });
+  // Use shared database test setup (replaces 38 lines of boilerplate)
+  const dbTest = setupDatabaseTest((db) => new UserRepository(db));
 
   describe('findById', () => {
     it('should find user by ID', async () => {
@@ -74,10 +31,10 @@ describe('UserRepository', () => {
         timezone: 'America/New_York',
         birthdayDate: new Date('1990-05-15'),
       };
-      const created = await repository.create(userData);
+      const created = await dbTest.repository!.create(userData);
 
       // Find by ID
-      const found = await repository.findById(created.id);
+      const found = await dbTest.repository!.findById(created.id);
 
       expect(found).not.toBeNull();
       expect(found?.id).toBe(created.id);
@@ -86,7 +43,7 @@ describe('UserRepository', () => {
     });
 
     it('should return null for non-existent user', async () => {
-      const found = await repository.findById('00000000-0000-0000-0000-000000000000');
+      const found = await dbTest.repository!.findById('00000000-0000-0000-0000-000000000000');
       expect(found).toBeNull();
     });
 
@@ -98,11 +55,11 @@ describe('UserRepository', () => {
         email: 'jane.doe@example.com',
         timezone: 'Europe/London',
       };
-      const created = await repository.create(userData);
-      await repository.delete(created.id);
+      const created = await dbTest.repository!.create(userData);
+      await dbTest.repository!.delete(created.id);
 
       // Try to find deleted user
-      const found = await repository.findById(created.id);
+      const found = await dbTest.repository!.findById(created.id);
       expect(found).toBeNull();
     });
   });
@@ -115,16 +72,16 @@ describe('UserRepository', () => {
         email: 'alice.smith@example.com',
         timezone: 'Asia/Tokyo',
       };
-      await repository.create(userData);
+      await dbTest.repository!.create(userData);
 
-      const found = await repository.findByEmail(userData.email);
+      const found = await dbTest.repository!.findByEmail(userData.email);
 
       expect(found).not.toBeNull();
       expect(found?.email).toBe(userData.email);
     });
 
     it('should return null for non-existent email', async () => {
-      const found = await repository.findByEmail('nonexistent@example.com');
+      const found = await dbTest.repository!.findByEmail('nonexistent@example.com');
       expect(found).toBeNull();
     });
 
@@ -135,10 +92,10 @@ describe('UserRepository', () => {
         email: 'bob.johnson@example.com',
         timezone: 'America/Los_Angeles',
       };
-      const created = await repository.create(userData);
-      await repository.delete(created.id);
+      const created = await dbTest.repository!.create(userData);
+      await dbTest.repository!.delete(created.id);
 
-      const found = await repository.findByEmail(userData.email);
+      const found = await dbTest.repository!.findByEmail(userData.email);
       expect(found).toBeNull();
     });
   });
@@ -162,10 +119,10 @@ describe('UserRepository', () => {
       ];
 
       for (const user of users) {
-        await repository.create(user);
+        await dbTest.repository!.create(user);
       }
 
-      const found = await repository.findAll();
+      const found = await dbTest.repository!.findAll();
 
       expect(found).toHaveLength(2);
     });
@@ -177,9 +134,9 @@ describe('UserRepository', () => {
         email: 'filter@example.com',
         timezone: 'UTC',
       };
-      await repository.create(userData);
+      await dbTest.repository!.create(userData);
 
-      const found = await repository.findAll({ email: 'filter@example.com' });
+      const found = await dbTest.repository!.findAll({ email: 'filter@example.com' });
 
       expect(found).toHaveLength(1);
       expect(found[0]?.email).toBe(userData.email);
@@ -202,10 +159,10 @@ describe('UserRepository', () => {
       ];
 
       for (const user of users) {
-        await repository.create(user);
+        await dbTest.repository!.create(user);
       }
 
-      const found = await repository.findAll({ timezone: 'America/New_York' });
+      const found = await dbTest.repository!.findAll({ timezone: 'America/New_York' });
 
       expect(found).toHaveLength(1);
       expect(found[0]?.timezone).toBe('America/New_York');
@@ -229,10 +186,10 @@ describe('UserRepository', () => {
       ];
 
       for (const user of users) {
-        await repository.create(user);
+        await dbTest.repository!.create(user);
       }
 
-      const found = await repository.findAll({ hasBirthday: true });
+      const found = await dbTest.repository!.findAll({ hasBirthday: true });
 
       expect(found).toHaveLength(1);
       expect(found[0]?.firstName).toBe('WithBday');
@@ -241,7 +198,7 @@ describe('UserRepository', () => {
     it('should respect limit and offset', async () => {
       // Create 5 users
       for (let i = 0; i < 5; i++) {
-        await repository.create({
+        await dbTest.repository!.create({
           firstName: `User${i}`,
           lastName: 'Test',
           email: `user${i}@example.com`,
@@ -249,8 +206,8 @@ describe('UserRepository', () => {
         });
       }
 
-      const page1 = await repository.findAll({ limit: 2, offset: 0 });
-      const page2 = await repository.findAll({ limit: 2, offset: 2 });
+      const page1 = await dbTest.repository!.findAll({ limit: 2, offset: 0 });
+      const page2 = await dbTest.repository!.findAll({ limit: 2, offset: 2 });
 
       expect(page1).toHaveLength(2);
       expect(page2).toHaveLength(2);
@@ -271,7 +228,7 @@ describe('UserRepository', () => {
         locationCountry: 'USA',
       };
 
-      const created = await repository.create(userData);
+      const created = await dbTest.repository!.create(userData);
 
       expect(created.id).toBeDefined();
       expect(created.firstName).toBe(userData.firstName);
@@ -291,9 +248,9 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      await repository.create(userData);
+      await dbTest.repository!.create(userData);
 
-      await expect(repository.create(userData)).rejects.toThrow(UniqueConstraintError);
+      await expect(dbTest.repository!.create(userData)).rejects.toThrow(UniqueConstraintError);
     });
 
     it('should allow email reuse after soft delete', async () => {
@@ -304,11 +261,11 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      const first = await repository.create(userData);
-      await repository.delete(first.id);
+      const first = await dbTest.repository!.create(userData);
+      await dbTest.repository!.delete(first.id);
 
       // Should succeed - email can be reused after soft delete
-      const second = await repository.create(userData);
+      const second = await dbTest.repository!.create(userData);
       expect(second.id).toBeDefined();
       expect(second.id).not.toBe(first.id);
     });
@@ -323,7 +280,7 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      const created = await repository.create(userData);
+      const created = await dbTest.repository!.create(userData);
 
       const updates: UpdateUserDto = {
         firstName: 'Updated',
@@ -331,7 +288,7 @@ describe('UserRepository', () => {
         locationCity: 'New City',
       };
 
-      const updated = await repository.update(created.id, updates);
+      const updated = await dbTest.repository!.update(created.id, updates);
 
       expect(updated.firstName).toBe('Updated');
       expect(updated.lastName).toBe('Name2');
@@ -347,9 +304,9 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      const created = await repository.create(userData);
+      const created = await dbTest.repository!.create(userData);
 
-      const updated = await repository.update(created.id, {
+      const updated = await dbTest.repository!.update(created.id, {
         email: 'new@example.com',
       });
 
@@ -371,17 +328,17 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      await repository.create(user1);
-      const created2 = await repository.create(user2);
+      await dbTest.repository!.create(user1);
+      const created2 = await dbTest.repository!.create(user2);
 
-      await expect(repository.update(created2.id, { email: 'user1@example.com' })).rejects.toThrow(
-        UniqueConstraintError
-      );
+      await expect(
+        dbTest.repository!.update(created2.id, { email: 'user1@example.com' })
+      ).rejects.toThrow(UniqueConstraintError);
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
       await expect(
-        repository.update('00000000-0000-0000-0000-000000000000', {
+        dbTest.repository!.update('00000000-0000-0000-0000-000000000000', {
           firstName: 'Updated',
         })
       ).rejects.toThrow(NotFoundError);
@@ -397,20 +354,20 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      const created = await repository.create(userData);
-      const deleted = await repository.delete(created.id);
+      const created = await dbTest.repository!.create(userData);
+      const deleted = await dbTest.repository!.delete(created.id);
 
       expect(deleted.deletedAt).toBeInstanceOf(Date);
 
       // Verify user is not findable
-      const found = await repository.findById(created.id);
+      const found = await dbTest.repository!.findById(created.id);
       expect(found).toBeNull();
     });
 
     it('should throw NotFoundError for non-existent user', async () => {
-      await expect(repository.delete('00000000-0000-0000-0000-000000000000')).rejects.toThrow(
-        NotFoundError
-      );
+      await expect(
+        dbTest.repository!.delete('00000000-0000-0000-0000-000000000000')
+      ).rejects.toThrow(NotFoundError);
     });
 
     it('should throw NotFoundError when deleting already deleted user', async () => {
@@ -421,10 +378,10 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      const created = await repository.create(userData);
-      await repository.delete(created.id);
+      const created = await dbTest.repository!.create(userData);
+      await dbTest.repository!.delete(created.id);
 
-      await expect(repository.delete(created.id)).rejects.toThrow(NotFoundError);
+      await expect(dbTest.repository!.delete(created.id)).rejects.toThrow(NotFoundError);
     });
   });
 
@@ -449,10 +406,10 @@ describe('UserRepository', () => {
         birthdayDate: new Date(Date.UTC(1990, 6, 15)),
       };
 
-      await repository.create(userWithBdayToday);
-      await repository.create(userWithDifferentBday);
+      await dbTest.repository!.create(userWithBdayToday);
+      await dbTest.repository!.create(userWithDifferentBday);
 
-      const found = await repository.findBirthdaysToday();
+      const found = await dbTest.repository!.findBirthdaysToday();
 
       expect(found).toHaveLength(1);
       expect(found[0]?.email).toBe('bday@example.com');
@@ -479,10 +436,10 @@ describe('UserRepository', () => {
       ];
 
       for (const user of users) {
-        await repository.create(user);
+        await dbTest.repository!.create(user);
       }
 
-      const found = await repository.findBirthdaysToday('America/New_York');
+      const found = await dbTest.repository!.findBirthdaysToday('America/New_York');
 
       expect(found).toHaveLength(1);
       expect(found[0]?.email).toBe('ny@example.com');
@@ -506,10 +463,10 @@ describe('UserRepository', () => {
         timezone: 'UTC',
       };
 
-      await repository.create(userWithBday);
-      await repository.create(userWithoutBday);
+      await dbTest.repository!.create(userWithBday);
+      await dbTest.repository!.create(userWithoutBday);
 
-      const found = await repository.findBirthdaysToday();
+      const found = await dbTest.repository!.findBirthdaysToday();
 
       expect(found).toHaveLength(1);
       expect(found[0]?.email).toBe('has@example.com');
@@ -537,10 +494,10 @@ describe('UserRepository', () => {
         anniversaryDate: new Date(Date.UTC(2015, 6, 15)),
       };
 
-      await repository.create(userWithAnnivToday);
-      await repository.create(userWithDifferentAnniv);
+      await dbTest.repository!.create(userWithAnnivToday);
+      await dbTest.repository!.create(userWithDifferentAnniv);
 
-      const found = await repository.findAnniversariesToday();
+      const found = await dbTest.repository!.findAnniversariesToday();
 
       expect(found).toHaveLength(1);
       expect(found[0]?.email).toBe('anniv@example.com');
@@ -549,7 +506,7 @@ describe('UserRepository', () => {
 
   describe('transaction', () => {
     it('should commit transaction on success', async () => {
-      const result = await repository.transaction(async (tx) => {
+      const result = await dbTest.repository!.transaction(async (tx) => {
         const user1: CreateUserDto = {
           firstName: 'Transaction',
           lastName: 'User1',
@@ -564,8 +521,8 @@ describe('UserRepository', () => {
           timezone: 'UTC',
         };
 
-        await repository.create(user1, tx);
-        await repository.create(user2, tx);
+        await dbTest.repository!.create(user1, tx);
+        await dbTest.repository!.create(user2, tx);
 
         return 'success';
       });
@@ -573,8 +530,8 @@ describe('UserRepository', () => {
       expect(result).toBe('success');
 
       // Verify both users were created
-      const user1 = await repository.findByEmail('tx1@example.com');
-      const user2 = await repository.findByEmail('tx2@example.com');
+      const user1 = await dbTest.repository!.findByEmail('tx1@example.com');
+      const user2 = await dbTest.repository!.findByEmail('tx2@example.com');
 
       expect(user1).not.toBeNull();
       expect(user2).not.toBeNull();
@@ -582,7 +539,7 @@ describe('UserRepository', () => {
 
     it('should rollback transaction on error', async () => {
       await expect(
-        repository.transaction(async (tx) => {
+        dbTest.repository!.transaction(async (tx) => {
           const user: CreateUserDto = {
             firstName: 'Rollback',
             lastName: 'Test',
@@ -590,7 +547,7 @@ describe('UserRepository', () => {
             timezone: 'UTC',
           };
 
-          await repository.create(user, tx);
+          await dbTest.repository!.create(user, tx);
 
           // Force error
           throw new Error('Transaction failed');
@@ -598,7 +555,7 @@ describe('UserRepository', () => {
       ).rejects.toThrow('Transaction failed');
 
       // Verify user was not created
-      const found = await repository.findByEmail('rollback@example.com');
+      const found = await dbTest.repository!.findByEmail('rollback@example.com');
       expect(found).toBeNull();
     });
   });
