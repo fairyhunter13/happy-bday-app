@@ -1104,6 +1104,10 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
 
+    # Permissions required to push badge updates
+    permissions:
+      contents: write # Required to push coverage badge updates
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
