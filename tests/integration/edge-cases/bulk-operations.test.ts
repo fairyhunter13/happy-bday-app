@@ -391,33 +391,37 @@ describe('Bulk Operations Edge Cases', () => {
       expect(allUsers).toHaveLength(3);
     });
 
-    // Skipped: Too environment-dependent for CI (pool size varies)
-    it.skip('should handle batch operations exceeding connection pool', async () => {
-      // Create batch that tests chunked processing
-      // Reduced from 50 to 20 for CI resource limits
-      const largeBatch = Array.from({ length: 20 }, (_, i) => ({
-        firstName: `User`,
-        lastName: `${i}`,
-        email: uniqueEmail(`batch-${i}`),
-        timezone: 'America/New_York',
-      }));
+    // Re-enabled: Test has proper chunking to avoid pool exhaustion
+    it(
+      'should handle batch operations exceeding connection pool',
+      async () => {
+        // Create batch that tests chunked processing
+        // Reduced from 50 to 20 for CI resource limits
+        const largeBatch = Array.from({ length: 20 }, (_, i) => ({
+          firstName: `User`,
+          lastName: `${i}`,
+          email: uniqueEmail(`batch-${i}`),
+          timezone: 'America/New_York',
+        }));
 
-      // Process in chunks to avoid pool exhaustion
-      const chunkSize = 5;
-      const chunks = [];
-      for (let i = 0; i < largeBatch.length; i += chunkSize) {
-        chunks.push(largeBatch.slice(i, i + chunkSize));
-      }
+        // Process in chunks to avoid pool exhaustion
+        const chunkSize = 5;
+        const chunks = [];
+        for (let i = 0; i < largeBatch.length; i += chunkSize) {
+          chunks.push(largeBatch.slice(i, i + chunkSize));
+        }
 
-      // Process each chunk sequentially
-      for (const chunk of chunks) {
-        await Promise.all(chunk.map((userData) => userRepo.create(userData)));
-      }
+        // Process each chunk sequentially
+        for (const chunk of chunks) {
+          await Promise.all(chunk.map((userData) => userRepo.create(userData)));
+        }
 
-      // Verify all users created
-      const allUsers = await userRepo.findAll();
-      expect(allUsers).toHaveLength(20);
-    });
+        // Verify all users created
+        const allUsers = await userRepo.findAll();
+        expect(allUsers).toHaveLength(20);
+      },
+      { timeout: 30000 }
+    ); // 30s timeout for chunk processing
 
     it('should handle database connection failures during bulk operations', async () => {
       // Create a user
