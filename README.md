@@ -25,6 +25,7 @@
 
 ### CI/CD Pipeline Status
 [![CI (Full)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
+[![Build Duration](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/build-duration-badge.json&logo=githubactions)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Docker Build](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/docker-build.yml)
 [![Performance Tests](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml/badge.svg)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/performance.yml)
 [![Cleanup](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/cleanup.yml?label=cleanup&logo=github-actions)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/cleanup.yml)
@@ -36,6 +37,7 @@
 [![E2E Tests](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=e2e%20tests&logo=docker)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Chaos Tests](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=chaos%20tests&logo=chaos)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Mutation Testing](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=mutation%20testing&logo=stryker)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
+[![Mutation Score](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/mutation-badge.json&logo=stryker)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
 ### Code Quality & Security
 [![Security](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/security-badge.json&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
@@ -76,6 +78,8 @@
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-orange?logo=rabbitmq)](https://www.rabbitmq.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.x-red?logo=redis)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
+[![Docker Image Size](https://img.shields.io/docker/image-size/fairyhunter13/happy-bday-app/latest?logo=docker&label=image%20size)](https://github.com/fairyhunter13/happy-bday-app/pkgs/container/happy-bday-app)
+[![Docker Image Layers](https://img.shields.io/docker/layers/fairyhunter13/happy-bday-app/latest?logo=docker&label=layers)](https://github.com/fairyhunter13/happy-bday-app/pkgs/container/happy-bday-app)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-orange?logo=prometheus)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Grafana-Dashboards-orange?logo=grafana)](https://grafana.com/)
 [![k6](https://img.shields.io/badge/k6-Load%20Testing-7d64ff?logo=k6)](https://k6.io/)
