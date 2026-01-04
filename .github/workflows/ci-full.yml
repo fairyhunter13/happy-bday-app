@@ -1693,31 +1693,8 @@ jobs:
         with:
           path: '_site'
 
-      - name: Commit coverage history and badge
-        run: |
-          if [ -f docs/coverage-history.json ] || [ -f docs/coverage-badge.json ]; then
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add docs/coverage-history.json docs/coverage-badge.json
-
-            # Only commit and push if there are changes
-            if ! git diff --staged --quiet; then
-              git commit -m "chore: update coverage history and badge [skip ci]"
-
-              # Stash any other unstaged changes before rebase
-              git stash --include-untracked --keep-index || true
-
-              # Pull with rebase to handle concurrent badge updates
-              git fetch origin main
-              git rebase origin/main
-
-              # Push the rebased commit
-              git push origin HEAD:main
-
-              # Restore stashed changes (if any)
-              git stash pop || true
-            fi
-          fi
+      # Note: Coverage badges are committed by the coverage-report job
+      # No need to commit again here to avoid merge conflicts
 
       - name: Deploy to GitHub Pages
         id: deployment
