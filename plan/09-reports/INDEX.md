@@ -46,6 +46,8 @@ Collection of analytical reports that assess project status, identify gaps, and 
 | [`TIMEZONE_TESTS_COMPLETION_REPORT.md`](./TIMEZONE_TESTS_COMPLETION_REPORT.md) | Timezone tests completion | ✅ Complete | 2025-12-31 |
 | [`MODEL_USAGE_AUDIT_REPORT.md`](./MODEL_USAGE_AUDIT_REPORT.md) | Model usage audit | ✅ Complete | 2025-12-31 |
 | [`IMPLEMENTATION_PLAN_2025-12-31.md`](./IMPLEMENTATION_PLAN_2025-12-31.md) | Implementation plan report | ✅ Complete | 2025-12-31 |
+| [`TEST_SUITE_JSON_IMPLEMENTATION.md`](./TEST_SUITE_JSON_IMPLEMENTATION.md) | Test suite JSON file generation implementation | ✅ Complete | 2026-01-05 |
+| [`PERFORMANCE_PARSING_IMPLEMENTATION.md`](./PERFORMANCE_PARSING_IMPLEMENTATION.md) | k6 performance results parsing implementation | ✅ Complete | 2026-01-05 |
 
 ---
 

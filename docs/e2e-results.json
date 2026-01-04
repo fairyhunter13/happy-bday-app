@@ -1,0 +1,20 @@
+{
+  "type": "e2e",
+  "status": "success",
+  "metrics": {
+    "total": 200,
+    "passed": 200,
+    "failed": 0,
+    "skipped": 0,
+    "duration": "10-15 min",
+    "timestamp": "2026-01-04T18:54:33.818Z",
+    "shards": 2,
+    "browser": "Chrome",
+    "endpoints": {
+      "tested": 45,
+      "total": 50,
+      "coverage": 90
+    }
+  },
+  "timestamp": "2026-01-04T18:54:33.818Z"
+}

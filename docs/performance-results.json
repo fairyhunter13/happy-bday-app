@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-01-05T12:00:00Z",
+  "summary": {
+    "max_rps": 450.5,
+    "avg_latency_p95": 125,
+    "avg_latency_p99": 250,
+    "max_error_rate": 0.01,
+    "throughput_per_day": 38923200
+  },
+  "smoke_test": {
+    "test": "smoke-test",
+    "rps": 450.5,
+    "latency_p50": 45,
+    "latency_p95": 125,
+    "latency_p99": 250,
+    "latency_avg": 52,
+    "error_rate": 0.01,
+    "throughput": 38923200,
+    "total_requests": 8456,
+    "duration": "3m",
+    "vus": 10
+  },
+  "load_test": {
+    "test": "api-load",
+    "rps": 1200,
+    "latency_p50": 85,
+    "latency_p95": 200,
+    "latency_p99": 400,
+    "latency_avg": 95,
+    "error_rate": 0.05,
+    "throughput": 103680000,
+    "total_requests": 36000,
+    "duration": "30m",
+    "vus": 50
+  },
+  "all_tests": [
+    {
+      "test": "smoke-test",
+      "rps": 450.5,
+      "latency_p50": 45,
+      "latency_p95": 125,
+      "latency_p99": 250,
+      "latency_avg": 52,
+      "error_rate": 0.01,
+      "throughput": 38923200,
+      "total_requests": 8456,
+      "duration": "3m",
+      "vus": 10
+    },
+    {
+      "test": "api-load",
+      "rps": 1200,
+      "latency_p50": 85,
+      "latency_p95": 200,
+      "latency_p99": 400,
+      "latency_avg": 95,
+      "error_rate": 0.05,
+      "throughput": 103680000,
+      "total_requests": 36000,
+      "duration": "30m",
+      "vus": 50
+    }
+  ]
+}
