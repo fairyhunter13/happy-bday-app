@@ -43,7 +43,6 @@
 [![Security](https://img.shields.io/endpoint?url=https://fairyhunter13.github.io/happy-bday-app/security-badge.json&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Code Quality](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=code%20quality&logo=eslint)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 [![Security Scan](https://img.shields.io/github/actions/workflow/status/fairyhunter13/happy-bday-app/ci-full.yml?label=security%20scan&logo=snyk)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
-[![Snyk Security](https://img.shields.io/snyk/vulnerabilities/github/fairyhunter13/happy-bday-app?logo=snyk)](https://snyk.io/test/github/fairyhunter13/happy-bday-app)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-blue?logo=dependabot)](https://github.com/fairyhunter13/happy-bday-app/security/dependabot)
 [![Code Duplication](https://img.shields.io/badge/Code%20Duplication-%3C5%25-brightgreen?logo=codacy)](https://github.com/fairyhunter13/happy-bday-app/actions/workflows/ci-full.yml)
 
@@ -78,8 +77,6 @@
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.x-orange?logo=rabbitmq)](https://www.rabbitmq.com/)
 [![Redis](https://img.shields.io/badge/Redis-7.x-red?logo=redis)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)](https://docs.docker.com/compose/)
-[![Docker Image Size](https://img.shields.io/docker/image-size/fairyhunter13/happy-bday-app/latest?logo=docker&label=image%20size)](https://github.com/fairyhunter13/happy-bday-app/pkgs/container/happy-bday-app)
-[![Docker Image Layers](https://img.shields.io/docker/layers/fairyhunter13/happy-bday-app/latest?logo=docker&label=layers)](https://github.com/fairyhunter13/happy-bday-app/pkgs/container/happy-bday-app)
 [![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-orange?logo=prometheus)](https://prometheus.io/)
 [![Grafana](https://img.shields.io/badge/Grafana-Dashboards-orange?logo=grafana)](https://grafana.com/)
 [![k6](https://img.shields.io/badge/k6-Load%20Testing-7d64ff?logo=k6)](https://k6.io/)
@@ -138,9 +135,16 @@ A timezone-aware birthday message scheduler built with TypeScript, PostgreSQL, a
 
 ### Interactive Reports
 
-- **[API Documentation](https://fairyhunter13.github.io/happy-bday-app/)** - Interactive Swagger/OpenAPI docs
-- **[Coverage Trends](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)** - Historical coverage analysis
-- **[Test Reports](https://github.com/fairyhunter13/happy-bday-app/actions)** - CI/CD test results
+> **GitHub Pages**: https://fairyhunter13.github.io/happy-bday-app/
+
+Live documentation and dashboards hosted on GitHub Pages:
+
+- **[API Documentation](https://fairyhunter13.github.io/happy-bday-app/)** - Interactive Swagger/OpenAPI 3.1 documentation
+- **[Test Reports](https://fairyhunter13.github.io/happy-bday-app/test-reports.html)** - Comprehensive test execution results and metrics
+- **[Coverage Trends](https://fairyhunter13.github.io/happy-bday-app/coverage-trends.html)** - Historical coverage visualization with Chart.js
+- **[Reports Summary](https://fairyhunter13.github.io/happy-bday-app/reports-summary.html)** - Centralized hub for all CI/CD reports
+- **[Security Summary](https://fairyhunter13.github.io/happy-bday-app/security-summary.html)** - Security scan results and vulnerability reports
+- **[Dashboards Index](https://fairyhunter13.github.io/happy-bday-app/dashboards-index.html)** - Grafana monitoring dashboards overview
 
 ---
 
