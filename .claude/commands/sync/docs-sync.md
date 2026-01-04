@@ -1624,11 +1624,19 @@ jobs:
 
       - name: Run npm audit
         id: npm_audit
-        continue-on-error: true
         run: |
-          npm audit --json > npm-audit-report.json
-          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-report.json)
-          HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit-report.json)
+          # npm audit exits with non-zero when vulnerabilities found
+          # Capture output and parse regardless of exit status
+          npm audit --json > npm-audit-report.json || true
+
+          if [ -f npm-audit-report.json ]; then
+            CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' npm-audit-report.json)
+            HIGH=$(jq '.metadata.vulnerabilities.high // 0' npm-audit-report.json)
+          else
+            CRITICAL=0
+            HIGH=0
+          fi
+
           echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
           echo "high=$HIGH" >> $GITHUB_OUTPUT
 
