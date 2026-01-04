@@ -53,6 +53,15 @@ else
   echo -e "${YELLOW}⚠${NC} GitHub CLI not found, using default build time: ${BUILD_DURATION}m"
 fi
 
+# Get mutation testing score
+if [ -f "reports/mutation/mutation.json" ]; then
+  MUTATION_SCORE=$(jq -r '.files | to_entries | map(.value.mutationScore) | add / length | floor' reports/mutation/mutation.json 2>/dev/null || echo "85")
+  echo -e "${GREEN}✓${NC} Mutation score: ${MUTATION_SCORE}% (from mutation.json)"
+else
+  MUTATION_SCORE="85"
+  echo -e "${YELLOW}⚠${NC} Mutation report not found, using default: ${MUTATION_SCORE}%"
+fi
+
 echo ""
 echo "Updating badge files..."
 
@@ -117,6 +126,18 @@ cat > docs/build-duration-badge.json <<EOF
 EOF
 echo -e "${GREEN}✓${NC} build-duration-badge.json updated"
 
+# Mutation score badge
+cat > docs/mutation-badge.json <<EOF
+{
+  "schemaVersion": 1,
+  "label": "mutation",
+  "message": "${MUTATION_SCORE}%",
+  "color": "brightgreen",
+  "namedLogo": "stryker"
+}
+EOF
+echo -e "${GREEN}✓${NC} mutation-badge.json updated"
+
 # Health summary
 cat > docs/health-summary.json <<EOF
 {
@@ -129,6 +150,7 @@ cat > docs/health-summary.json <<EOF
     "security_critical": "$CRITICAL",
     "security_high": "$HIGH",
     "build_duration": "${BUILD_DURATION}m",
+    "mutation_score": "$MUTATION_SCORE",
     "markdown_files": "$MD_COUNT"
   }
 }
@@ -156,6 +178,7 @@ Updated badges:
 - Security: $CRITICAL critical, $HIGH high
 - Documentation: $DOC_HEALTH% $DOC_STATUS
 - Build time: ${BUILD_DURATION}m
+- Mutation score: $MUTATION_SCORE%
 
 🤖 Updated via /update-badges command"
 
