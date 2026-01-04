@@ -13,6 +13,7 @@ Complete documentation organized by topic and audience.
 | [Infrastructure](#infrastructure--operations) | Deployment, runbooks, and operational guides | 2 files |
 | [Queue System](#queue-system-documentation-new) | RabbitMQ-based async message processing | 1 file |
 | [Investigations](#investigation-reports) | Technical analysis and findings | 1 file |
+| [Bug Fixes](#bug-fixes--improvements) | Recent bug fixes and improvements | 4 files |
 | [CI/CD](#cicd--workflows) | Pipeline structure and troubleshooting | 7 files |
 | [Monitoring](#monitoring--metrics) | Metrics, dashboards, and observability | 2 files |
 
@@ -125,6 +126,27 @@ Technical analysis and findings.
 - **[GITHUB_PAGES_ENHANCEMENT.md](./GITHUB_PAGES_ENHANCEMENT.md)** - GitHub Pages enhancement plan
 - **[IMPLEMENTATION_RECOMMENDATIONS.md](./IMPLEMENTATION_RECOMMENDATIONS.md)** - Implementation recommendations and best practices
 - **[DRY_BEST_PRACTICES.md](./DRY_BEST_PRACTICES.md)** - DRY principle lessons learned (NEW)
+
+---
+
+## Bug Fixes & Improvements
+
+Recent bug fixes, performance improvements, and quick-start guides.
+
+### Fix Summaries & Quick Starts
+
+Located in [fixes/](./fixes/):
+
+- **[INDEX.md](./fixes/INDEX.md)** - Bug fixes directory index and overview
+- **[FIX_SUMMARY.md](./fixes/FIX_SUMMARY.md)** - General bug fixes quick reference
+- **[RATE_LIMIT_FIX_SUMMARY.md](./fixes/RATE_LIMIT_FIX_SUMMARY.md)** - Rate limiting bug fix summary
+- **[RATE_LIMIT_QUICK_START.md](./fixes/RATE_LIMIT_QUICK_START.md)** - Rate limiting fix quick start guide
+- **[PERFORMANCE_TEST_FIX_SUMMARY.md](./fixes/PERFORMANCE_TEST_FIX_SUMMARY.md)** - Performance test improvements
+
+### Related Documentation
+
+- **[RATE_LIMITING_FIX.md](./RATE_LIMITING_FIX.md)** - Detailed rate limiting fix analysis
+- **[../../CHANGES.md](../CHANGES.md)** - Complete project changelog
 
 ---
 
