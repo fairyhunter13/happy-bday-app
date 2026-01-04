@@ -51,11 +51,19 @@ export default mergeConfig(
       // Serialize file execution in CI to prevent race conditions
       ...(isCI ? { fileParallelism: false } : {}),
 
-      // Coverage - DISABLED for chaos tests
-      // Only unit tests collect coverage (faster CI, clearer metrics)
-      // Chaos tests focus on resilience, not coverage
+      // Coverage - ENABLED for chaos tests
+      // Coverage from all test types is merged for SonarCloud analysis
+      // Chaos tests provide coverage for error handling and recovery paths
       coverage: {
-        enabled: false,
+        enabled: true,
+        reportsDirectory: './coverage-chaos',
+        // No thresholds - thresholds are checked on merged coverage
+        thresholds: {
+          lines: 0,
+          functions: 0,
+          branches: 0,
+          statements: 0,
+        },
       },
     },
   })

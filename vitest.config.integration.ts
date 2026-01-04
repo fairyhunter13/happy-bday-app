@@ -41,11 +41,19 @@ export default mergeConfig(
       // Serialize file execution in CI to prevent race conditions
       ...(isCI ? { fileParallelism: false } : {}),
 
-      // Coverage - DISABLED for integration tests
-      // Only unit tests collect coverage (faster CI, clearer metrics)
-      // Integration tests focus on logic correctness, not coverage
+      // Coverage - ENABLED for integration tests
+      // Coverage from all test types is merged for SonarCloud analysis
+      // Integration tests provide coverage for controllers, repositories, workers
       coverage: {
-        enabled: false,
+        enabled: true,
+        reportsDirectory: './coverage-integration',
+        // No thresholds - thresholds are checked on merged coverage
+        thresholds: {
+          lines: 0,
+          functions: 0,
+          branches: 0,
+          statements: 0,
+        },
       },
     },
   })

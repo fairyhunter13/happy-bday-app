@@ -38,11 +38,19 @@ export default mergeConfig(
         },
       },
 
-      // Coverage - DISABLED for E2E tests
-      // Only unit tests collect coverage (faster CI, clearer metrics)
-      // E2E tests focus on flow validity, not coverage
+      // Coverage - ENABLED for E2E tests
+      // Coverage from all test types is merged for SonarCloud analysis
+      // E2E tests provide coverage for full request/response flows
       coverage: {
-        enabled: false,
+        enabled: true,
+        reportsDirectory: './coverage-e2e',
+        // No thresholds - thresholds are checked on merged coverage
+        thresholds: {
+          lines: 0,
+          functions: 0,
+          branches: 0,
+          statements: 0,
+        },
       },
     },
   })
