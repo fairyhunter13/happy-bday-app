@@ -1704,9 +1704,18 @@ jobs:
             if ! git diff --staged --quiet; then
               git commit -m "chore: update coverage history and badge [skip ci]"
 
+              # Stash any other unstaged changes before rebase
+              git stash --include-untracked --keep-index || true
+
               # Pull with rebase to handle concurrent badge updates
-              git pull --rebase origin main
-              git push
+              git fetch origin main
+              git rebase origin/main
+
+              # Push the rebased commit
+              git push origin HEAD:main
+
+              # Restore stashed changes (if any)
+              git stash pop || true
             fi
           fi
 
