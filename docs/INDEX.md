@@ -78,6 +78,14 @@ Located in [test-patterns/](./test-patterns/):
 - **[RESILIENT-API-TESTING-SUMMARY.md](./test-patterns/RESILIENT-API-TESTING-SUMMARY.md)** - API testing summary and results
 - **[TESTING-PROBABILISTIC-APIS.md](./TESTING-PROBABILISTIC-APIS.md)** - Non-deterministic API testing guide
 
+### Test Writing & Best Practices (NEW)
+
+- **[TEST_WRITING_GUIDE.md](./TEST_WRITING_GUIDE.md)** - Comprehensive guide for new contributors
+- **[PERFORMANCE_TEST_INTERPRETATION.md](./PERFORMANCE_TEST_INTERPRETATION.md)** - Reading and interpreting performance results
+- **[CHAOS_TESTING_BEST_PRACTICES.md](./CHAOS_TESTING_BEST_PRACTICES.md)** - Chaos engineering guidelines
+- **[TEST_DATA_MANAGEMENT.md](./TEST_DATA_MANAGEMENT.md)** - Test data factory patterns and cleanup
+- **[CICD_TEST_TROUBLESHOOTING.md](./CICD_TEST_TROUBLESHOOTING.md)** - Debugging CI/CD test failures
+
 ### Performance Testing
 
 - **[PERFORMANCE_TEST_OPTIMIZATION.md](./PERFORMANCE_TEST_OPTIMIZATION.md)** - Performance test configuration and optimization
@@ -116,6 +124,7 @@ Technical analysis and findings.
 - **[FINAL_STATUS.md](./FINAL_STATUS.md)** - Final implementation status report
 - **[GITHUB_PAGES_ENHANCEMENT.md](./GITHUB_PAGES_ENHANCEMENT.md)** - GitHub Pages enhancement plan
 - **[IMPLEMENTATION_RECOMMENDATIONS.md](./IMPLEMENTATION_RECOMMENDATIONS.md)** - Implementation recommendations and best practices
+- **[DRY_BEST_PRACTICES.md](./DRY_BEST_PRACTICES.md)** - DRY principle lessons learned (NEW)
 
 ---
 
