@@ -47,7 +47,6 @@ This directory contains documentation for resilient testing patterns designed to
 ## Related Documentation
 
 - **[../TESTING_QUICKSTART.md](../TESTING_QUICKSTART.md)** - Quick guide to running tests
-- **[../TEST_PLAN.md](../TEST_PLAN.md)** - Comprehensive test plan and strategy
 - **[../TEST_VALIDATION_RESULTS_COMPLETE.md](../TEST_VALIDATION_RESULTS_COMPLETE.md)** - Complete test validation results
 - **[../vendor-specs/EMAIL_SERVICE_INTEGRATION.md](../vendor-specs/EMAIL_SERVICE_INTEGRATION.md)** - Email service integration specifications
 
