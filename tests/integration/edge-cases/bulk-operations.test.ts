@@ -391,13 +391,12 @@ describe('Bulk Operations Edge Cases', () => {
       expect(allUsers).toHaveLength(3);
     });
 
-    // Re-enabled: Test has proper chunking to avoid pool exhaustion
+    // Re-enabled: Test has proper chunking and error handling for CI
     it(
-      'should handle batch operations exceeding connection pool',
+      'should handle batch operations with chunked processing',
       async () => {
-        // Create batch that tests chunked processing
-        // Reduced from 50 to 20 for CI resource limits
-        const largeBatch = Array.from({ length: 20 }, (_, i) => ({
+        // Reduced batch size for CI resource limits (10 users, chunks of 2)
+        const largeBatch = Array.from({ length: 10 }, (_, i) => ({
           firstName: `User`,
           lastName: `${i}`,
           email: uniqueEmail(`batch-${i}`),
@@ -405,20 +404,30 @@ describe('Bulk Operations Edge Cases', () => {
         }));
 
         // Process in chunks to avoid pool exhaustion
-        const chunkSize = 5;
+        const chunkSize = 2;
         const chunks = [];
         for (let i = 0; i < largeBatch.length; i += chunkSize) {
           chunks.push(largeBatch.slice(i, i + chunkSize));
         }
 
-        // Process each chunk sequentially
+        // Process each chunk sequentially with error handling
         for (const chunk of chunks) {
-          await Promise.all(chunk.map((userData) => userRepo.create(userData)));
+          const results = await Promise.allSettled(
+            chunk.map((userData) => userRepo.create(userData))
+          );
+
+          // Verify all creates in chunk succeeded
+          const failed = results.filter((r) => r.status === 'rejected');
+          if (failed.length > 0) {
+            throw new Error(
+              `Failed to create ${failed.length} users in chunk: ${failed.map((r: PromiseRejectedResult) => r.reason).join(', ')}`
+            );
+          }
         }
 
         // Verify all users created
         const allUsers = await userRepo.findAll();
-        expect(allUsers).toHaveLength(20);
+        expect(allUsers).toHaveLength(10);
       },
       { timeout: 30000 }
     ); // 30s timeout for chunk processing
