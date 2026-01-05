@@ -1376,10 +1376,25 @@ jobs:
           console.log('Coverage:', summary.total.statements.pct + '% statements,', summary.total.functions.pct + '% functions,', summary.total.branches.pct + '% branches');
 
           // Generate lcov.info from merged Istanbul coverage
+          // Convert absolute paths to relative paths for SonarCloud
+          const cwd = process.cwd();
+          const toRelativePath = (absPath) => {
+            // Handle various absolute path formats
+            if (absPath.startsWith(cwd)) {
+              return absPath.substring(cwd.length + 1);
+            }
+            // Handle paths from different CI/local environments
+            const srcMatch = absPath.match(/[/\\](src[/\\].*)$/);
+            if (srcMatch) return srcMatch[1].replace(/\\\\/g, '/');
+            // Fallback: just use the path as-is
+            return absPath;
+          };
+
           let lcovContent = '';
           for (const [filePath, data] of Object.entries(merged)) {
+            const relativePath = toRelativePath(filePath);
             lcovContent += 'TN:\n';
-            lcovContent += 'SF:' + filePath + '\n';
+            lcovContent += 'SF:' + relativePath + '\n';
 
             // Function coverage
             if (data.fnMap && data.f) {
