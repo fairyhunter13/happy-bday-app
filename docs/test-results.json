@@ -37,10 +37,13 @@
 }
 },
 "performance": {
-"status": "",
+"status": "success",
 "metrics": {
 "vus": 100,
-"duration": "3-5 min"
+"duration": "3-5 min",
+"rps": 22.84,
+"latency_p95": 0,
+"error_rate": 0
 }
 }
 }

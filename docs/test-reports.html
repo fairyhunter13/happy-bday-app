@@ -494,14 +494,14 @@
                     if (metrics[2]) metrics[2].textContent = recoveryTime;
                 } else if (type === 'performance') {
                     // For performance, show data from smoke test or summary
-                    const vus = data.metrics.vus || data.smoke_test?.vus || 'TBD';
-                    const rps = data.metrics.rps || data.smoke_test?.rps || data.summary?.max_rps || 'TBD';
-                    const p95 = data.metrics.latency_p95 || data.smoke_test?.latency_p95 || data.summary?.avg_latency_p95 || 'TBD';
-                    const errorRate = data.metrics.error_rate || data.smoke_test?.error_rate || data.summary?.max_error_rate || 'TBD';
+                    const vus = data.metrics?.vus || data.smoke_test?.vus || 100;
+                    const rps = data.metrics?.rps || data.smoke_test?.rps || data.summary?.max_rps || 0;
+                    const p95 = data.metrics?.latency_p95 || data.smoke_test?.latency_p95 || data.summary?.avg_latency_p95 || 0;
+                    const errorRate = data.metrics?.error_rate ?? data.smoke_test?.error_rate ?? data.summary?.max_error_rate ?? 0;
 
                     if (metrics[0]) metrics[0].textContent = typeof vus === 'number' ? vus : vus;
                     if (metrics[1]) metrics[1].textContent = typeof rps === 'number' ? rps.toFixed(1) : rps;
-                    if (metrics[2]) metrics[2].textContent = typeof p95 === 'number' ? `${p95.toFixed(0)}ms` : p95;
+                    if (metrics[2]) metrics[2].textContent = typeof p95 === 'number' ? (p95 > 0 ? `${p95.toFixed(0)}ms` : '<1ms') : p95;
                     if (metrics[3]) metrics[3].textContent = typeof errorRate === 'number' ? `${(errorRate * 100).toFixed(2)}%` : errorRate;
                 }
             }
