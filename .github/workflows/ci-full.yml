@@ -1274,27 +1274,57 @@ jobs:
               // Merge coverage data, preferring higher coverage counts
               for (const [filePath, data] of Object.entries(coverage)) {
                 if (!merged[filePath]) {
-                  merged[filePath] = data;
+                  // Deep clone the data to avoid reference issues
+                  merged[filePath] = JSON.parse(JSON.stringify(data));
                 } else {
                   // Merge statement, function, and branch counts
                   const existing = merged[filePath];
+
+                  // Merge statements
                   if (data.s) {
+                    if (!existing.s) existing.s = {};
                     for (const key of Object.keys(data.s)) {
                       existing.s[key] = Math.max(existing.s[key] || 0, data.s[key] || 0);
                     }
                   }
+
+                  // Merge functions
                   if (data.f) {
+                    if (!existing.f) existing.f = {};
                     for (const key of Object.keys(data.f)) {
                       existing.f[key] = Math.max(existing.f[key] || 0, data.f[key] || 0);
                     }
                   }
+
+                  // Merge branches (arrays)
                   if (data.b) {
+                    if (!existing.b) existing.b = {};
                     for (const key of Object.keys(data.b)) {
-                      existing.b[key] = existing.b[key].map((v, i) => Math.max(v, data.b[key][i] || 0));
+                      if (!existing.b[key]) {
+                        // If branch doesn't exist in existing, copy from data
+                        existing.b[key] = [...data.b[key]];
+                      } else {
+                        // Merge branch arrays, taking max of each position
+                        existing.b[key] = existing.b[key].map((v, i) =>
+                          Math.max(v || 0, (data.b[key] && data.b[key][i]) || 0)
+                        );
+                        // Handle case where data.b[key] has more elements
+                        if (data.b[key].length > existing.b[key].length) {
+                          for (let i = existing.b[key].length; i < data.b[key].length; i++) {
+                            existing.b[key].push(data.b[key][i] || 0);
+                          }
+                        }
+                      }
                     }
                   }
+
+                  // Merge statementMap, fnMap, branchMap if present
+                  if (data.statementMap && !existing.statementMap) existing.statementMap = data.statementMap;
+                  if (data.fnMap && !existing.fnMap) existing.fnMap = data.fnMap;
+                  if (data.branchMap && !existing.branchMap) existing.branchMap = data.branchMap;
                 }
               }
+              console.log('Processed:', file);
             } catch (e) {
               console.error('Error processing', file, e.message);
             }
