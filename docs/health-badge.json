@@ -2,6 +2,5 @@
   "schemaVersion": 1,
   "label": "docs health",
   "message": "100% Excellent",
-  "color": "brightgreen",
-  "namedLogo": "readme"
+  "color": "brightgreen"
 }
