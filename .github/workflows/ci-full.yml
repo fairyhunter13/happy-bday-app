@@ -1776,75 +1776,63 @@ jobs:
           fi
 
           mkdir -p docs
-          cat > docs/security-data.json << 'SECURITY_EOF'
-{
-  "vulnerabilities": {
-    "critical": CRITICAL_VAL,
-    "high": HIGH_VAL,
-    "medium": MEDIUM_VAL,
-    "low": LOW_VAL
-  },
-  "dependencies": {
-    "total": TOTAL_DEPS_VAL,
-    "outdated": OUTDATED_VAL,
-    "vulnerable": VULN_VAL
-  },
-  "scans": {
-    "npm_audit": {
-      "status": "NPM_STATUS_VAL",
-      "name": "Dependency Scan (npm audit)",
-      "lastRun": "Via CI/CD",
-      "issues": ISSUES_VAL
-    },
-    "snyk": {
-      "status": "SNYK_STATUS_VAL",
-      "name": "Snyk Security Scan",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "trivy": {
-      "status": "TRIVY_STATUS_VAL",
-      "name": "Container Scan (Trivy)",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "sonarcloud": {
-      "status": "SONAR_STATUS_VAL",
-      "name": "SonarCloud SAST",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "gitleaks": {
-      "status": "not_configured",
-      "name": "Secret Scan (Gitleaks)",
-      "lastRun": "Not configured",
-      "issues": 0
-    },
-    "license": {
-      "status": "not_configured",
-      "name": "License Compliance",
-      "lastRun": "Not configured",
-      "issues": 0
-    }
-  },
-  "timestamp": "TIMESTAMP_VAL"
-}
-SECURITY_EOF
-
-          # Replace placeholders with actual values
-          sed -i "s/CRITICAL_VAL/$CRITICAL/g" docs/security-data.json
-          sed -i "s/HIGH_VAL/$HIGH/g" docs/security-data.json
-          sed -i "s/MEDIUM_VAL/$MEDIUM/g" docs/security-data.json
-          sed -i "s/LOW_VAL/$LOW/g" docs/security-data.json
-          sed -i "s/TOTAL_DEPS_VAL/$TOTAL_DEPS/g" docs/security-data.json
-          sed -i "s/OUTDATED_VAL/$OUTDATED/g" docs/security-data.json
-          sed -i "s/VULN_VAL/$((CRITICAL + HIGH + MEDIUM + LOW))/g" docs/security-data.json
-          sed -i "s/NPM_STATUS_VAL/$NPM_STATUS/g" docs/security-data.json
-          sed -i "s/SNYK_STATUS_VAL/$SNYK_STATUS/g" docs/security-data.json
-          sed -i "s/TRIVY_STATUS_VAL/$TRIVY_STATUS/g" docs/security-data.json
-          sed -i "s/SONAR_STATUS_VAL/$SONAR_SCAN_STATUS/g" docs/security-data.json
-          sed -i "s/ISSUES_VAL/$((CRITICAL + HIGH + MEDIUM + LOW))/g" docs/security-data.json
-          sed -i "s/TIMESTAMP_VAL/$TIMESTAMP/g" docs/security-data.json
+          TOTAL_VULNS=$((CRITICAL + HIGH + MEDIUM + LOW))
+          cat > docs/security-data.json << EOF
+          {
+            "vulnerabilities": {
+              "critical": $CRITICAL,
+              "high": $HIGH,
+              "medium": $MEDIUM,
+              "low": $LOW
+            },
+            "dependencies": {
+              "total": $TOTAL_DEPS,
+              "outdated": $OUTDATED,
+              "vulnerable": $TOTAL_VULNS
+            },
+            "scans": {
+              "npm_audit": {
+                "status": "$NPM_STATUS",
+                "name": "Dependency Scan (npm audit)",
+                "lastRun": "Via CI/CD",
+                "issues": $TOTAL_VULNS
+              },
+              "snyk": {
+                "status": "$SNYK_STATUS",
+                "name": "Snyk Security Scan",
+                "lastRun": "Via CI/CD",
+                "issues": 0
+              },
+              "trivy": {
+                "status": "$TRIVY_STATUS",
+                "name": "Container Scan (Trivy)",
+                "lastRun": "Via CI/CD",
+                "issues": 0
+              },
+              "sonarcloud": {
+                "status": "$SONAR_SCAN_STATUS",
+                "name": "SonarCloud SAST",
+                "lastRun": "Via CI/CD",
+                "issues": 0
+              },
+              "gitleaks": {
+                "status": "not_configured",
+                "name": "Secret Scan (Gitleaks)",
+                "lastRun": "Not configured",
+                "issues": 0
+              },
+              "license": {
+                "status": "not_configured",
+                "name": "License Compliance",
+                "lastRun": "Not configured",
+                "issues": 0
+              }
+            },
+            "timestamp": "$TIMESTAMP"
+          }
+          EOF
+          # Remove leading whitespace from JSON
+          sed -i 's/^[[:space:]]*//' docs/security-data.json
 
           echo "Generated security-data.json with real scan results"
           echo "  npm audit: $NPM_STATUS (vulnerabilities: $CRITICAL critical, $HIGH high)"
