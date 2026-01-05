@@ -1,16 +1,16 @@
 {
-  "timestamp": "2026-01-05T05:32:07Z",
+  "timestamp": "2026-01-05T05:41:48Z",
   "status": "success",
   "summary": {
-    "max_rps": 0,
+    "max_rps": 22.844791142738597,
     "avg_latency_p95": 0,
     "avg_latency_p99": 0,
     "max_error_rate": 0,
-    "throughput_per_day": 0
+    "throughput_per_day": 1973789.954732614780800
   },
   "smoke_test": {
     "vus": 10,
-    "rps": 0,
+    "rps": 22.844791142738597,
     "latency_p95": 0,
     "latency_p99": 0,
     "error_rate": 0
@@ -22,5 +22,5 @@
     "latency_p99": 0,
     "error_rate": 0
   },
-  "all_tests": []
+  "all_tests": [{"test":"smoke-test-summary","rps":22.844791142738597,"latency_p50":0,"latency_p95":0,"latency_p99":0,"error_rate":0}]
 }
