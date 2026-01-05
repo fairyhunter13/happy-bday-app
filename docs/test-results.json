@@ -1,16 +1,16 @@
 {
   "summary": {
-    "total": 990,
-    "passed": 990,
+    "total": 1181,
+    "passed": 1181,
     "failed": 0,
     "skipped": 209,
-    "timestamp": "2026-01-04T18:15:08Z"
+    "timestamp": "2026-01-05T02:00:00Z"
   },
   "unit": {
     "status": "success",
     "metrics": {
-      "total": 400,
-      "duration": "2-3 min",
+      "total": 1181,
+      "duration": "17s",
       "coverage": "88.09%"
     }
   },
@@ -18,14 +18,14 @@
     "status": "success",
     "metrics": {
       "total": 250,
-      "duration": "3-5 min"
+      "duration": "3-4 min"
     }
   },
   "e2e": {
     "status": "success",
     "metrics": {
       "total": 200,
-      "duration": "10-15 min",
+      "duration": "10-12 min",
       "browser": "Chrome"
     }
   },
@@ -33,14 +33,14 @@
     "status": "success",
     "metrics": {
       "scenarios": 15,
-      "duration": "5-8 min"
+      "duration": "2-3 min"
     }
   },
   "performance": {
     "status": "success",
     "metrics": {
       "vus": 100,
-      "duration": "8-10 min"
+      "duration": "3-5 min"
     }
   }
 }
