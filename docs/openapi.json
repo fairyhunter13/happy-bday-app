@@ -2,11 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Birthday Message Scheduler API",
-    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: Create, read, update, and delete users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)\n- **Health Monitoring**: System health and readiness endpoints\n- **Metrics**: Prometheus-formatted metrics for monitoring\n- **Caching**: Redis-based caching for improved performance\n\n## Architecture\n- **Database**: PostgreSQL with Drizzle ORM\n- **Queue**: RabbitMQ for message processing\n- **Cache**: Redis for high-performance caching\n- **Scheduler**: CRON-based scheduling with timezone awareness\n\n## Caching Strategy\nThis API uses Redis caching to improve performance and reduce database load:\n\n### Cached Data\n| Data | TTL | Key Pattern |\n|------|-----|-------------|\n| User by ID | 1 hour | `user:v1:{id}` |\n| User by Email | 1 hour | `user:email:v1:{email}` |\n| Birthdays Today | Until midnight | `birthdays:today:v1` |\n| Anniversaries Today | Until midnight | `anniversaries:today:v1` |\n\n### Cache Behavior\n- **GET requests**: Served from cache when available (eventual consistency)\n- **POST requests**: Warm cache after creation\n- **PUT/DELETE requests**: Invalidate cache after modification\n- **Graceful degradation**: API works without Redis (cache is optional)\n\n### Consistency Models\n- **Strong consistency**: Write operations always hit the database\n- **Eventual consistency**: Read operations may return cached data (up to 1 hour stale)\n- **Weak consistency**: Daily lists (birthdays/anniversaries) refresh at midnight UTC\n\n## API Endpoints\nThis API provides the following endpoint groups:\n- `/health`, `/ready`, `/live` - Health check endpoints\n- `/metrics` - Prometheus metrics\n- `/api/v1/users` - User CRUD operations",
+    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: CRUD operations for users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)\n- **Health Monitoring**: System health and readiness endpoints\n- **Prometheus Metrics**: Production-ready observability and monitoring\n- **Redis Caching**: High-performance caching for improved response times\n\n## Architecture\n\n| Component | Technology | Purpose |\n|-----------|------------|---------|\n| **Database** | PostgreSQL + Drizzle ORM | Persistent data storage |\n| **Queue** | RabbitMQ | Message processing and delivery |\n| **Cache** | Redis | High-performance caching |\n| **Scheduler** | CRON-based | Timezone-aware scheduling |\n\n## Caching Strategy\n\nThis API uses Redis caching to improve performance and reduce database load:\n\n### Cached Data\n\n| Data | TTL | Key Pattern |\n|------|-----|-------------|\n| User by ID | 1 hour | `user:v1:{id}` |\n| User by Email | 1 hour | `user:email:v1:{email}` |\n| Birthdays Today | Until midnight | `birthdays:today:v1` |\n| Anniversaries Today | Until midnight | `anniversaries:today:v1` |\n\n### Cache Behavior\n\n- **GET requests**: Served from cache when available (eventual consistency)\n- **POST requests**: Cache warmed after creation for faster subsequent reads\n- **PUT/DELETE requests**: Cache invalidated after modification to ensure consistency\n- **Graceful degradation**: API works without Redis (cache is optional)\n\n### Consistency Models\n\n- **Strong consistency**: Write operations always hit the database\n- **Eventual consistency**: Read operations may return cached data (up to 1 hour stale)\n- **Weak consistency**: Daily lists (birthdays/anniversaries) refresh at midnight UTC",
     "version": "1.0.0",
     "contact": {
       "name": "API Support",
-      "email": "support@birthday-scheduler.example.com"
+      "email": "support@example.com"
     },
     "license": {
       "name": "MIT",
@@ -15,67 +15,57 @@
   },
   "components": {
     "schemas": {
-      "User": {
+      "def-0": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid",
-            "description": "Unique user identifier"
+            "format": "uuid"
           },
           "firstName": {
-            "type": "string",
-            "description": "User's first name"
+            "type": "string"
           },
           "lastName": {
-            "type": "string",
-            "description": "User's last name"
+            "type": "string"
           },
           "email": {
             "type": "string",
-            "format": "email",
-            "description": "User's email address"
+            "format": "email"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York",
-            "description": "User's timezone (IANA format)"
+            "example": "America/New_York"
           },
           "birthdayDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true,
-            "description": "User's birthday date"
+            "nullable": true
           },
           "anniversaryDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true,
-            "description": "User's anniversary date"
+            "nullable": true
           },
           "locationCity": {
             "type": "string",
-            "nullable": true,
-            "description": "User's city"
+            "nullable": true
           },
           "locationCountry": {
             "type": "string",
-            "nullable": true,
-            "description": "User's country"
+            "nullable": true
           },
           "createdAt": {
             "type": "string",
-            "format": "date-time",
-            "description": "Record creation timestamp"
+            "format": "date-time"
           },
           "updatedAt": {
             "type": "string",
-            "format": "date-time",
-            "description": "Record last update timestamp"
+            "format": "date-time"
           }
-        }
+        },
+        "title": "User"
       },
-      "CreateUserRequest": {
+      "def-1": {
         "type": "object",
         "required": [
           "firstName",
@@ -87,100 +77,85 @@
           "firstName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
-            "description": "User's first name"
+            "maxLength": 100
           },
           "lastName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
-            "description": "User's last name"
+            "maxLength": 100
           },
           "email": {
             "type": "string",
-            "format": "email",
-            "description": "User's email address (must be unique)"
+            "format": "email"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York",
-            "description": "User's timezone in IANA format (e.g., America/New_York, Europe/London)"
+            "example": "America/New_York"
           },
           "birthdayDate": {
             "type": "string",
-            "format": "date-time",
-            "description": "User's birthday date (for birthday message scheduling)"
+            "format": "date-time"
           },
           "anniversaryDate": {
             "type": "string",
-            "format": "date-time",
-            "description": "User's anniversary date (for anniversary message scheduling)"
+            "format": "date-time"
           },
           "locationCity": {
             "type": "string",
-            "maxLength": 100,
-            "description": "User's city (optional)"
+            "maxLength": 100
           },
           "locationCountry": {
             "type": "string",
-            "maxLength": 100,
-            "description": "User's country (optional)"
+            "maxLength": 100
           }
-        }
+        },
+        "title": "CreateUserRequest"
       },
-      "UpdateUserRequest": {
+      "def-2": {
         "type": "object",
         "properties": {
           "firstName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
-            "description": "User's first name"
+            "maxLength": 100
           },
           "lastName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
-            "description": "User's last name"
+            "maxLength": 100
           },
           "email": {
             "type": "string",
-            "format": "email",
-            "description": "User's email address"
+            "format": "email"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York",
-            "description": "User's timezone in IANA format"
+            "example": "America/New_York"
           },
           "birthdayDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true,
-            "description": "User's birthday date"
+            "nullable": true
           },
           "anniversaryDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true,
-            "description": "User's anniversary date"
+            "nullable": true
           },
           "locationCity": {
             "type": "string",
             "maxLength": 100,
-            "nullable": true,
-            "description": "User's city"
+            "nullable": true
           },
           "locationCountry": {
             "type": "string",
             "maxLength": 100,
-            "nullable": true,
-            "description": "User's country"
+            "nullable": true
           }
         },
-        "description": "All fields are optional - only provided fields will be updated"
+        "title": "UpdateUserRequest"
       },
-      "HealthResponse": {
+      "def-3": {
         "type": "object",
         "properties": {
           "status": {
@@ -188,25 +163,22 @@
             "enum": [
               "healthy",
               "unhealthy"
-            ],
-            "description": "Overall health status"
+            ]
           },
           "timestamp": {
             "type": "string",
-            "format": "date-time",
-            "description": "Health check timestamp"
+            "format": "date-time"
           },
           "uptime": {
-            "type": "number",
-            "description": "Service uptime in seconds"
+            "type": "number"
           },
           "version": {
-            "type": "string",
-            "description": "Application version"
+            "type": "string"
           }
-        }
+        },
+        "title": "HealthResponse"
       },
-      "ErrorResponse": {
+      "def-4": {
         "type": "object",
         "properties": {
           "success": {
@@ -217,22 +189,20 @@
             "type": "object",
             "properties": {
               "code": {
-                "type": "string",
-                "description": "Error code (e.g., VALIDATION_ERROR, NOT_FOUND)"
+                "type": "string"
               },
               "message": {
-                "type": "string",
-                "description": "Human-readable error message"
+                "type": "string"
               },
               "details": {
-                "type": "object",
-                "description": "Additional error details"
+                "type": "object"
               }
             }
           }
-        }
+        },
+        "title": "ErrorResponse"
       },
-      "SuccessResponse": {
+      "def-5": {
         "type": "object",
         "properties": {
           "success": {
@@ -240,8 +210,7 @@
             "example": true
           },
           "data": {
-            "type": "object",
-            "description": "Response data (structure varies by endpoint)"
+            "type": "object"
           },
           "meta": {
             "type": "object",
@@ -255,26 +224,26 @@
               }
             }
           }
-        }
+        },
+        "title": "SuccessResponse"
       }
     }
   },
   "paths": {
     "/health": {
       "get": {
-        "operationId": "getHealth",
         "summary": "Health check",
         "tags": [
           "health"
         ],
-        "description": "Basic health check endpoint. Returns 200 if the service is running.",
+        "description": "Check if the service is running",
         "responses": {
           "200": {
-            "description": "Service is healthy",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/def-3"
                 }
               }
             }
@@ -284,29 +253,28 @@
     },
     "/ready": {
       "get": {
-        "operationId": "getReady",
         "summary": "Readiness check",
         "tags": [
           "health"
         ],
-        "description": "Kubernetes readiness probe. Checks if the service is ready to accept requests (database, queue, etc. are connected).",
+        "description": "Check if the service is ready to accept requests",
         "responses": {
           "200": {
-            "description": "Service is ready",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/def-3"
                 }
               }
             }
           },
           "503": {
-            "description": "Service is not ready (dependencies unavailable)",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
@@ -316,19 +284,18 @@
     },
     "/live": {
       "get": {
-        "operationId": "getLive",
         "summary": "Liveness check",
         "tags": [
           "health"
         ],
-        "description": "Kubernetes liveness probe. Checks if the service process is alive and should not be restarted.",
+        "description": "Kubernetes liveness probe - checks if the service is alive",
         "responses": {
           "200": {
-            "description": "Service is alive",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
+                  "$ref": "#/components/schemas/def-3"
                 }
               }
             }
@@ -338,19 +305,18 @@
     },
     "/health/schedulers": {
       "get": {
-        "operationId": "getSchedulerHealth",
         "summary": "Scheduler health check",
         "tags": [
           "health"
         ],
-        "description": "Check the health status of all CRON schedulers (daily precalculation, minute enqueue, recovery).",
+        "description": "Check the health status of all CRON schedulers",
         "responses": {
           "200": {
-            "description": "Scheduler health information",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
@@ -360,17 +326,16 @@
     },
     "/metrics": {
       "get": {
-        "operationId": "getMetrics",
         "summary": "Prometheus metrics",
         "tags": [
           "metrics"
         ],
-        "description": "Get Prometheus-formatted metrics for monitoring. Includes HTTP request metrics, message processing metrics, and system metrics.",
+        "description": "Get Prometheus-formatted metrics for monitoring",
         "responses": {
           "200": {
             "description": "Prometheus text format metrics",
             "content": {
-              "text/plain": {
+              "application/json": {
                 "schema": {
                   "type": "string",
                   "description": "Prometheus text format metrics"
@@ -383,19 +348,18 @@
     },
     "/metrics/summary": {
       "get": {
-        "operationId": "getMetricsSummary",
         "summary": "Metrics summary",
         "tags": [
           "metrics"
         ],
-        "description": "Get a JSON summary of all metrics for debugging and dashboard integration.",
+        "description": "Get a JSON summary of all metrics for debugging",
         "responses": {
           "200": {
-            "description": "Metrics summary in JSON format",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
@@ -405,68 +369,47 @@
     },
     "/api/v1/users": {
       "post": {
-        "operationId": "createUser",
         "summary": "Create a new user",
         "tags": [
           "users"
         ],
         "description": "Create a new user with timezone support. The system will automatically schedule birthday and anniversary messages at 9am in the user's local timezone. Cache is warmed after successful creation for faster subsequent reads.",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateUserRequest"
-              },
-              "example": {
-                "firstName": "John",
-                "lastName": "Doe",
-                "email": "john.doe@example.com",
-                "timezone": "America/New_York",
-                "birthdayDate": "1990-05-15T00:00:00.000Z",
-                "locationCity": "New York",
-                "locationCountry": "USA"
+                "$ref": "#/components/schemas/def-1"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "User created successfully",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
           },
           "400": {
-            "description": "Validation error (invalid input data)",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
           },
           "409": {
-            "description": "Conflict (email already exists)",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
@@ -476,7 +419,6 @@
     },
     "/api/v1/users/{id}": {
       "get": {
-        "operationId": "getUserById",
         "summary": "Get user by ID",
         "tags": [
           "users"
@@ -484,43 +426,32 @@
         "description": "Retrieve a specific user by their UUID. Results may be served from cache (up to 1 hour stale).",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "User UUID",
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
           }
         ],
         "responses": {
           "200": {
-            "description": "User found",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
           },
           "404": {
-            "description": "User not found",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
@@ -528,85 +459,68 @@
         }
       },
       "put": {
-        "operationId": "updateUser",
         "summary": "Update user",
         "tags": [
           "users"
         ],
         "description": "Update an existing user. If birthday or anniversary date is changed, the system will automatically reschedule the corresponding messages. Cache is invalidated after update to ensure consistency.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "User UUID",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserRequest"
-              },
-              "example": {
-                "firstName": "Jane",
-                "timezone": "Europe/London"
+                "$ref": "#/components/schemas/def-2"
               }
             }
           }
         },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
-            "description": "User updated successfully",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
           },
           "400": {
-            "description": "Validation error",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
           },
           "404": {
-            "description": "User not found",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
           },
           "409": {
-            "description": "Conflict (email already in use by another user)",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
@@ -614,7 +528,6 @@
         }
       },
       "delete": {
-        "operationId": "deleteUser",
         "summary": "Delete user",
         "tags": [
           "users"
@@ -622,43 +535,32 @@
         "description": "Soft delete a user. The user record is marked as deleted but retained in the database. Any pending messages for this user will be cancelled. Cache is invalidated after deletion.",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "description": "User UUID",
             "schema": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
           }
         ],
         "responses": {
           "200": {
-            "description": "User deleted successfully",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse"
+                  "$ref": "#/components/schemas/def-5"
                 }
               }
             }
           },
           "404": {
-            "description": "User not found",
+            "description": "Default Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+                  "$ref": "#/components/schemas/def-4"
                 }
               }
             }
@@ -670,13 +572,17 @@
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Local development server"
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.example.com",
+      "description": "Production server"
     }
   ],
   "tags": [
     {
       "name": "health",
-      "description": "Health check endpoints for monitoring and Kubernetes orchestration"
+      "description": "Health check endpoints for monitoring and orchestration"
     },
     {
       "name": "metrics",

@@ -58,23 +58,6 @@ const schemas = {
       locationCountry: { type: 'string', maxLength: 100, nullable: true },
     },
   },
-  MessageLog: {
-    $id: 'MessageLog',
-    type: 'object',
-    properties: {
-      id: { type: 'string', format: 'uuid' },
-      userId: { type: 'string', format: 'uuid' },
-      messageType: { type: 'string', enum: ['BIRTHDAY', 'ANNIVERSARY'] },
-      status: { type: 'string', enum: ['PENDING', 'QUEUED', 'SENT', 'FAILED'] },
-      scheduledSendTime: { type: 'string', format: 'date-time' },
-      sentAt: { type: 'string', format: 'date-time', nullable: true },
-      messageContent: { type: 'string', nullable: true },
-      retryCount: { type: 'integer' },
-      errorMessage: { type: 'string', nullable: true },
-      createdAt: { type: 'string', format: 'date-time' },
-      updatedAt: { type: 'string', format: 'date-time' },
-    },
-  },
   HealthResponse: {
     $id: 'HealthResponse',
     type: 'object',
@@ -115,23 +98,6 @@ const schemas = {
       },
     },
   },
-  PaginatedResponse: {
-    $id: 'PaginatedResponse',
-    type: 'object',
-    properties: {
-      success: { type: 'boolean', examples: [true] },
-      data: { type: 'array', items: { type: 'object' } },
-      meta: {
-        type: 'object',
-        properties: {
-          total: { type: 'integer' },
-          page: { type: 'integer' },
-          limit: { type: 'integer' },
-          totalPages: { type: 'integer' },
-        },
-      },
-    },
-  },
 };
 
 async function generateOpenAPISpec() {
@@ -149,14 +115,45 @@ Production-ready API for scheduling birthday and anniversary messages with timez
 
 ## Features
 - **User Management**: CRUD operations for users with timezone support
-- **Message Scheduling**: Automatic message scheduling based on user timezone
-- **Message Logs**: Track all scheduled and sent messages
+- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)
 - **Health Monitoring**: System health and readiness endpoints
+- **Prometheus Metrics**: Production-ready observability and monitoring
+- **Redis Caching**: High-performance caching for improved response times
 
 ## Architecture
-- **Database**: PostgreSQL with Drizzle ORM
-- **Queue**: RabbitMQ for message processing
-- **Scheduler**: CRON-based scheduling with timezone awareness
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Database** | PostgreSQL + Drizzle ORM | Persistent data storage |
+| **Queue** | RabbitMQ | Message processing and delivery |
+| **Cache** | Redis | High-performance caching |
+| **Scheduler** | CRON-based | Timezone-aware scheduling |
+
+## Caching Strategy
+
+This API uses Redis caching to improve performance and reduce database load:
+
+### Cached Data
+
+| Data | TTL | Key Pattern |
+|------|-----|-------------|
+| User by ID | 1 hour | \`user:v1:{id}\` |
+| User by Email | 1 hour | \`user:email:v1:{email}\` |
+| Birthdays Today | Until midnight | \`birthdays:today:v1\` |
+| Anniversaries Today | Until midnight | \`anniversaries:today:v1\` |
+
+### Cache Behavior
+
+- **GET requests**: Served from cache when available (eventual consistency)
+- **POST requests**: Cache warmed after creation for faster subsequent reads
+- **PUT/DELETE requests**: Cache invalidated after modification to ensure consistency
+- **Graceful degradation**: API works without Redis (cache is optional)
+
+### Consistency Models
+
+- **Strong consistency**: Write operations always hit the database
+- **Eventual consistency**: Read operations may return cached data (up to 1 hour stale)
+- **Weak consistency**: Daily lists (birthdays/anniversaries) refresh at midnight UTC
         `.trim(),
         version: '1.0.0',
         contact: {
@@ -181,9 +178,7 @@ Production-ready API for scheduling birthday and anniversary messages with timez
       tags: [
         { name: 'health', description: 'Health check endpoints for monitoring and orchestration' },
         { name: 'metrics', description: 'Prometheus metrics endpoints for observability' },
-        { name: 'users', description: 'User management operations' },
-        { name: 'messages', description: 'Message log operations' },
-        { name: 'scheduler', description: 'Scheduler operations' },
+        { name: 'users', description: 'User management operations (CRUD)' },
       ],
     },
   });
@@ -276,7 +271,8 @@ Production-ready API for scheduling birthday and anniversary messages with timez
     schema: {
       tags: ['users'],
       summary: 'Create a new user',
-      description: 'Create a new user with timezone support',
+      description:
+        "Create a new user with timezone support. The system will automatically schedule birthday and anniversary messages at 9am in the user's local timezone. Cache is warmed after successful creation for faster subsequent reads.",
       body: { $ref: 'CreateUserRequest#' },
       response: {
         201: { $ref: 'SuccessResponse#' },
@@ -287,31 +283,12 @@ Production-ready API for scheduling birthday and anniversary messages with timez
     handler: async () => ({}),
   });
 
-  app.get('/api/v1/users', {
-    schema: {
-      tags: ['users'],
-      summary: 'List all users',
-      description: 'Get a paginated list of users',
-      querystring: {
-        type: 'object',
-        properties: {
-          page: { type: 'integer', minimum: 1, default: 1 },
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
-          timezone: { type: 'string' },
-        },
-      },
-      response: {
-        200: { $ref: 'PaginatedResponse#' },
-      },
-    },
-    handler: async () => ({}),
-  });
-
   app.get('/api/v1/users/:id', {
     schema: {
       tags: ['users'],
       summary: 'Get user by ID',
-      description: 'Retrieve a specific user by their ID',
+      description:
+        'Retrieve a specific user by their UUID. Results may be served from cache (up to 1 hour stale).',
       params: {
         type: 'object',
         properties: {
@@ -331,7 +308,8 @@ Production-ready API for scheduling birthday and anniversary messages with timez
     schema: {
       tags: ['users'],
       summary: 'Update user',
-      description: 'Update an existing user',
+      description:
+        'Update an existing user. If birthday or anniversary date is changed, the system will automatically reschedule the corresponding messages. Cache is invalidated after update to ensure consistency.',
       params: {
         type: 'object',
         properties: {
@@ -354,7 +332,8 @@ Production-ready API for scheduling birthday and anniversary messages with timez
     schema: {
       tags: ['users'],
       summary: 'Delete user',
-      description: 'Soft delete a user',
+      description:
+        'Soft delete a user. The user record is marked as deleted but retained in the database. Any pending messages for this user will be cancelled. Cache is invalidated after deletion.',
       params: {
         type: 'object',
         properties: {
@@ -365,81 +344,6 @@ Production-ready API for scheduling birthday and anniversary messages with timez
       response: {
         200: { $ref: 'SuccessResponse#' },
         404: { $ref: 'ErrorResponse#' },
-      },
-    },
-    handler: async () => ({}),
-  });
-
-  // Message log routes
-  app.get('/api/v1/messages', {
-    schema: {
-      tags: ['messages'],
-      summary: 'List message logs',
-      description: 'Get a paginated list of message logs',
-      querystring: {
-        type: 'object',
-        properties: {
-          page: { type: 'integer', minimum: 1, default: 1 },
-          limit: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
-          status: { type: 'string', enum: ['PENDING', 'QUEUED', 'SENT', 'FAILED'] },
-          userId: { type: 'string', format: 'uuid' },
-          messageType: { type: 'string', enum: ['BIRTHDAY', 'ANNIVERSARY'] },
-        },
-      },
-      response: {
-        200: { $ref: 'PaginatedResponse#' },
-      },
-    },
-    handler: async () => ({}),
-  });
-
-  app.get('/api/v1/messages/:id', {
-    schema: {
-      tags: ['messages'],
-      summary: 'Get message log by ID',
-      description: 'Retrieve a specific message log by its ID',
-      params: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-        },
-        required: ['id'],
-      },
-      response: {
-        200: { $ref: 'SuccessResponse#' },
-        404: { $ref: 'ErrorResponse#' },
-      },
-    },
-    handler: async () => ({}),
-  });
-
-  // Scheduler routes
-  app.get('/api/v1/scheduler/status', {
-    schema: {
-      tags: ['scheduler'],
-      summary: 'Get scheduler status',
-      description: 'Check the status of all schedulers',
-      response: {
-        200: { $ref: 'SuccessResponse#' },
-      },
-    },
-    handler: async () => ({}),
-  });
-
-  app.post('/api/v1/scheduler/trigger', {
-    schema: {
-      tags: ['scheduler'],
-      summary: 'Trigger scheduler manually',
-      description: 'Manually trigger the message scheduler',
-      body: {
-        type: 'object',
-        properties: {
-          type: { type: 'string', enum: ['minute', 'daily'] },
-        },
-      },
-      response: {
-        200: { $ref: 'SuccessResponse#' },
-        400: { $ref: 'ErrorResponse#' },
       },
     },
     handler: async () => ({}),
