@@ -291,6 +291,25 @@
             </div>
         </div>
 
+        <div class="vulnerability-grid" style="margin-bottom: 2rem;">
+            <div class="vuln-card" style="border: 1px solid #4a9eff;">
+                <h3>Total Dependencies</h3>
+                <div class="count" id="total-deps" style="color: #4a9eff;">--</div>
+            </div>
+            <div class="vuln-card" style="border: 1px solid #f5a623;">
+                <h3>Outdated</h3>
+                <div class="count" id="outdated-deps" style="color: #f5a623;">--</div>
+            </div>
+            <div class="vuln-card" style="border: 1px solid #7ed321;">
+                <h3>Vulnerable</h3>
+                <div class="count" id="vulnerable-deps" style="color: #7ed321;">--</div>
+            </div>
+            <div class="vuln-card" style="border: 1px solid #4a9eff;">
+                <h3>Scans Passed</h3>
+                <div class="count" id="scans-passed" style="color: #7ed321;">--</div>
+            </div>
+        </div>
+
         <div class="section">
             <h2>Security Scan Status</h2>
             <table class="scan-table">
@@ -423,6 +442,20 @@
                     document.getElementById('high-count').textContent = data.vulnerabilities.high || 0;
                     document.getElementById('medium-count').textContent = data.vulnerabilities.medium || 0;
                     document.getElementById('low-count').textContent = data.vulnerabilities.low || 0;
+                }
+
+                // Update dependencies info
+                if (data.dependencies) {
+                    document.getElementById('total-deps').textContent = data.dependencies.total || 0;
+                    document.getElementById('outdated-deps').textContent = data.dependencies.outdated || 0;
+                    document.getElementById('vulnerable-deps').textContent = data.dependencies.vulnerable || 0;
+                }
+
+                // Update scans passed count
+                if (data.scans) {
+                    const passedScans = Object.values(data.scans).filter(s => s.status === 'success').length;
+                    const totalConfigured = Object.values(data.scans).filter(s => s.status !== 'not_configured').length;
+                    document.getElementById('scans-passed').textContent = `${passedScans}/${totalConfigured}`;
                 }
 
                 // Update scan status table dynamically
