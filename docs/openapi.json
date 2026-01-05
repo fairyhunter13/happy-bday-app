@@ -2,11 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Birthday Message Scheduler API",
-    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: CRUD operations for users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone\n- **Message Logs**: Track all scheduled and sent messages\n- **Health Monitoring**: System health and readiness endpoints\n\n## Architecture\n- **Database**: PostgreSQL with Drizzle ORM\n- **Queue**: RabbitMQ for message processing\n- **Scheduler**: CRON-based scheduling with timezone awareness",
+    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: Create, read, update, and delete users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)\n- **Health Monitoring**: System health and readiness endpoints\n- **Metrics**: Prometheus-formatted metrics for monitoring\n\n## Architecture\n- **Database**: PostgreSQL with Drizzle ORM\n- **Queue**: RabbitMQ for message processing\n- **Scheduler**: CRON-based scheduling with timezone awareness\n\n## API Endpoints\nThis API provides the following endpoint groups:\n- `/health`, `/ready`, `/live` - Health check endpoints\n- `/metrics` - Prometheus metrics\n- `/api/v1/users` - User CRUD operations",
     "version": "1.0.0",
     "contact": {
       "name": "API Support",
-      "email": "support@example.com"
+      "email": "support@birthday-scheduler.example.com"
     },
     "license": {
       "name": "MIT",
@@ -15,57 +15,67 @@
   },
   "components": {
     "schemas": {
-      "def-0": {
+      "User": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "description": "Unique user identifier"
           },
           "firstName": {
-            "type": "string"
+            "type": "string",
+            "description": "User's first name"
           },
           "lastName": {
-            "type": "string"
+            "type": "string",
+            "description": "User's last name"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "description": "User's email address"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York"
+            "example": "America/New_York",
+            "description": "User's timezone (IANA format)"
           },
           "birthdayDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "User's birthday date"
           },
           "anniversaryDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "User's anniversary date"
           },
           "locationCity": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "User's city"
           },
           "locationCountry": {
             "type": "string",
-            "nullable": true
+            "nullable": true,
+            "description": "User's country"
           },
           "createdAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Record creation timestamp"
           },
           "updatedAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Record last update timestamp"
           }
-        },
-        "title": "User"
+        }
       },
-      "def-1": {
+      "CreateUserRequest": {
         "type": "object",
         "required": [
           "firstName",
@@ -77,143 +87,100 @@
           "firstName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's first name"
           },
           "lastName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's last name"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "description": "User's email address (must be unique)"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York"
+            "example": "America/New_York",
+            "description": "User's timezone in IANA format (e.g., America/New_York, Europe/London)"
           },
           "birthdayDate": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "User's birthday date (for birthday message scheduling)"
           },
           "anniversaryDate": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "User's anniversary date (for anniversary message scheduling)"
           },
           "locationCity": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's city (optional)"
           },
           "locationCountry": {
             "type": "string",
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's country (optional)"
           }
-        },
-        "title": "CreateUserRequest"
+        }
       },
-      "def-2": {
+      "UpdateUserRequest": {
         "type": "object",
         "properties": {
           "firstName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's first name"
           },
           "lastName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100
+            "maxLength": 100,
+            "description": "User's last name"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "description": "User's email address"
           },
           "timezone": {
             "type": "string",
-            "example": "America/New_York"
+            "example": "America/New_York",
+            "description": "User's timezone in IANA format"
           },
           "birthdayDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "User's birthday date"
           },
           "anniversaryDate": {
             "type": "string",
             "format": "date-time",
-            "nullable": true
+            "nullable": true,
+            "description": "User's anniversary date"
           },
           "locationCity": {
             "type": "string",
             "maxLength": 100,
-            "nullable": true
+            "nullable": true,
+            "description": "User's city"
           },
           "locationCountry": {
             "type": "string",
             "maxLength": 100,
-            "nullable": true
+            "nullable": true,
+            "description": "User's country"
           }
         },
-        "title": "UpdateUserRequest"
+        "description": "All fields are optional - only provided fields will be updated"
       },
-      "def-3": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "messageType": {
-            "type": "string",
-            "enum": [
-              "BIRTHDAY",
-              "ANNIVERSARY"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "PENDING",
-              "QUEUED",
-              "SENT",
-              "FAILED"
-            ]
-          },
-          "scheduledSendTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "sentAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "messageContent": {
-            "type": "string",
-            "nullable": true
-          },
-          "retryCount": {
-            "type": "integer"
-          },
-          "errorMessage": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "title": "MessageLog"
-      },
-      "def-4": {
+      "HealthResponse": {
         "type": "object",
         "properties": {
           "status": {
@@ -221,22 +188,25 @@
             "enum": [
               "healthy",
               "unhealthy"
-            ]
+            ],
+            "description": "Overall health status"
           },
           "timestamp": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Health check timestamp"
           },
           "uptime": {
-            "type": "number"
+            "type": "number",
+            "description": "Service uptime in seconds"
           },
           "version": {
-            "type": "string"
+            "type": "string",
+            "description": "Application version"
           }
-        },
-        "title": "HealthResponse"
+        }
       },
-      "def-5": {
+      "ErrorResponse": {
         "type": "object",
         "properties": {
           "success": {
@@ -247,20 +217,22 @@
             "type": "object",
             "properties": {
               "code": {
-                "type": "string"
+                "type": "string",
+                "description": "Error code (e.g., VALIDATION_ERROR, NOT_FOUND)"
               },
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "Human-readable error message"
               },
               "details": {
-                "type": "object"
+                "type": "object",
+                "description": "Additional error details"
               }
             }
           }
-        },
-        "title": "ErrorResponse"
+        }
       },
-      "def-6": {
+      "SuccessResponse": {
         "type": "object",
         "properties": {
           "success": {
@@ -268,7 +240,8 @@
             "example": true
           },
           "data": {
-            "type": "object"
+            "type": "object",
+            "description": "Response data (structure varies by endpoint)"
           },
           "meta": {
             "type": "object",
@@ -282,59 +255,26 @@
               }
             }
           }
-        },
-        "title": "SuccessResponse"
-      },
-      "def-7": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "meta": {
-            "type": "object",
-            "properties": {
-              "total": {
-                "type": "integer"
-              },
-              "page": {
-                "type": "integer"
-              },
-              "limit": {
-                "type": "integer"
-              },
-              "totalPages": {
-                "type": "integer"
-              }
-            }
-          }
-        },
-        "title": "PaginatedResponse"
+        }
       }
     }
   },
   "paths": {
     "/health": {
       "get": {
+        "operationId": "getHealth",
         "summary": "Health check",
         "tags": [
           "health"
         ],
-        "description": "Check if the service is running",
+        "description": "Basic health check endpoint. Returns 200 if the service is running.",
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "Service is healthy",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-4"
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
@@ -344,28 +284,29 @@
     },
     "/ready": {
       "get": {
+        "operationId": "getReady",
         "summary": "Readiness check",
         "tags": [
           "health"
         ],
-        "description": "Check if the service is ready to accept requests",
+        "description": "Kubernetes readiness probe. Checks if the service is ready to accept requests (database, queue, etc. are connected).",
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "Service is ready",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-4"
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
           },
           "503": {
-            "description": "Default Response",
+            "description": "Service is not ready (dependencies unavailable)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -375,18 +316,19 @@
     },
     "/live": {
       "get": {
+        "operationId": "getLive",
         "summary": "Liveness check",
         "tags": [
           "health"
         ],
-        "description": "Kubernetes liveness probe - checks if the service is alive",
+        "description": "Kubernetes liveness probe. Checks if the service process is alive and should not be restarted.",
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "Service is alive",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-4"
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
               }
             }
@@ -396,18 +338,19 @@
     },
     "/health/schedulers": {
       "get": {
+        "operationId": "getSchedulerHealth",
         "summary": "Scheduler health check",
         "tags": [
           "health"
         ],
-        "description": "Check the health status of all CRON schedulers",
+        "description": "Check the health status of all CRON schedulers (daily precalculation, minute enqueue, recovery).",
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "Scheduler health information",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
@@ -417,16 +360,17 @@
     },
     "/metrics": {
       "get": {
+        "operationId": "getMetrics",
         "summary": "Prometheus metrics",
         "tags": [
           "metrics"
         ],
-        "description": "Get Prometheus-formatted metrics for monitoring",
+        "description": "Get Prometheus-formatted metrics for monitoring. Includes HTTP request metrics, message processing metrics, and system metrics.",
         "responses": {
           "200": {
             "description": "Prometheus text format metrics",
             "content": {
-              "application/json": {
+              "text/plain": {
                 "schema": {
                   "type": "string",
                   "description": "Prometheus text format metrics"
@@ -439,18 +383,19 @@
     },
     "/metrics/summary": {
       "get": {
+        "operationId": "getMetricsSummary",
         "summary": "Metrics summary",
         "tags": [
           "metrics"
         ],
-        "description": "Get a JSON summary of all metrics for debugging",
+        "description": "Get a JSON summary of all metrics for debugging and dashboard integration.",
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "Metrics summary in JSON format",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
@@ -460,97 +405,68 @@
     },
     "/api/v1/users": {
       "post": {
+        "operationId": "createUser",
         "summary": "Create a new user",
         "tags": [
           "users"
         ],
-        "description": "Create a new user with timezone support",
+        "description": "Create a new user with timezone support. The system will automatically schedule birthday and anniversary messages at 9am in the user's local timezone.",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/def-1"
+                "$ref": "#/components/schemas/CreateUserRequest"
+              },
+              "example": {
+                "firstName": "John",
+                "lastName": "Doe",
+                "email": "john.doe@example.com",
+                "timezone": "America/New_York",
+                "birthdayDate": "1990-05-15T00:00:00.000Z",
+                "locationCity": "New York",
+                "locationCountry": "USA"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "Default Response",
+            "description": "User created successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Default Response",
+            "description": "Validation error (invalid input data)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
           "409": {
-            "description": "Default Response",
+            "description": "Conflict (email already exists)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
-          }
-        }
-      },
-      "get": {
-        "summary": "List all users",
-        "tags": [
-          "users"
-        ],
-        "description": "Get a paginated list of users",
-        "parameters": [
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            },
-            "in": "query",
-            "name": "page",
-            "required": false
           },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "name": "timezone",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
+          "429": {
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-7"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -560,39 +476,51 @@
     },
     "/api/v1/users/{id}": {
       "get": {
+        "operationId": "getUserById",
         "summary": "Get user by ID",
         "tags": [
           "users"
         ],
-        "description": "Retrieve a specific user by their ID",
+        "description": "Retrieve a specific user by their UUID.",
         "parameters": [
           {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "User UUID",
             "schema": {
               "type": "string",
               "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "User found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
           },
           "404": {
-            "description": "Default Response",
+            "description": "User not found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -600,68 +528,85 @@
         }
       },
       "put": {
+        "operationId": "updateUser",
         "summary": "Update user",
         "tags": [
           "users"
         ],
-        "description": "Update an existing user",
+        "description": "Update an existing user. If birthday or anniversary date is changed, the system will automatically reschedule the corresponding messages.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "User UUID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/def-2"
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              },
+              "example": {
+                "firstName": "Jane",
+                "timezone": "Europe/London"
               }
             }
           }
         },
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "User updated successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
           },
           "400": {
-            "description": "Default Response",
+            "description": "Validation error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
           "404": {
-            "description": "Default Response",
+            "description": "User not found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
           "409": {
-            "description": "Default Response",
+            "description": "Conflict (email already in use by another user)",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -669,230 +614,51 @@
         }
       },
       "delete": {
+        "operationId": "deleteUser",
         "summary": "Delete user",
         "tags": [
           "users"
         ],
-        "description": "Soft delete a user",
+        "description": "Soft delete a user. The user record is marked as deleted but retained in the database. Any pending messages for this user will be cancelled.",
         "parameters": [
           {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "User UUID",
             "schema": {
               "type": "string",
               "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Default Response",
+            "description": "User deleted successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/SuccessResponse"
                 }
               }
             }
           },
           "404": {
-            "description": "Default Response",
+            "description": "User not found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/messages": {
-      "get": {
-        "summary": "List message logs",
-        "tags": [
-          "messages"
-        ],
-        "description": "Get a paginated list of message logs",
-        "parameters": [
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1
-            },
-            "in": "query",
-            "name": "page",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20
-            },
-            "in": "query",
-            "name": "limit",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "PENDING",
-                "QUEUED",
-                "SENT",
-                "FAILED"
-              ]
-            },
-            "in": "query",
-            "name": "status",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "query",
-            "name": "userId",
-            "required": false
-          },
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "BIRTHDAY",
-                "ANNIVERSARY"
-              ]
-            },
-            "in": "query",
-            "name": "messageType",
-            "required": false
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/def-7"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/messages/{id}": {
-      "get": {
-        "summary": "Get message log by ID",
-        "tags": [
-          "messages"
-        ],
-        "description": "Retrieve a specific message log by its ID",
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            },
-            "in": "path",
-            "name": "id",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/def-6"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "404": {
-            "description": "Default Response",
+          "429": {
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/def-5"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/scheduler/status": {
-      "get": {
-        "summary": "Get scheduler status",
-        "tags": [
-          "scheduler"
-        ],
-        "description": "Check the status of all schedulers",
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/def-6"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/scheduler/trigger": {
-      "post": {
-        "summary": "Trigger scheduler manually",
-        "tags": [
-          "scheduler"
-        ],
-        "description": "Manually trigger the message scheduler",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "minute",
-                      "daily"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/def-6"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Default Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/def-5"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -904,17 +670,13 @@
   "servers": [
     {
       "url": "http://localhost:3000",
-      "description": "Development server"
-    },
-    {
-      "url": "https://api.example.com",
-      "description": "Production server"
+      "description": "Local development server"
     }
   ],
   "tags": [
     {
       "name": "health",
-      "description": "Health check endpoints for monitoring and orchestration"
+      "description": "Health check endpoints for monitoring and Kubernetes orchestration"
     },
     {
       "name": "metrics",
@@ -922,15 +684,7 @@
     },
     {
       "name": "users",
-      "description": "User management operations"
-    },
-    {
-      "name": "messages",
-      "description": "Message log operations"
-    },
-    {
-      "name": "scheduler",
-      "description": "Scheduler operations"
+      "description": "User management operations (CRUD)"
     }
   ]
 }
