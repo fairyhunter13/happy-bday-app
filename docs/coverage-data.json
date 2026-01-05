@@ -1,22 +1,21 @@
 {
   "current": {
-    "overall": 88.09,
-    "lines": 88.09,
-    "statements": 88.09,
-    "functions": 50.36,
-    "branches": 87.5,
-    "timestamp": "2026-01-04T18:15:08Z"
+    "overall": 90.12,
+    "lines": 90.12,
+    "statements": 90.12,
+    "functions": 57.86,
+    "branches": 89.31,
+    "timestamp": "2026-01-05T03:55:07Z"
   },
   "trends": {
-    "overall": 0,
+    "overall": 2.03,
     "lines": 0,
-    "functions": 0,
-    "branches": 0,
-    "statements": 0
+    "functions": 7.5,
+    "branches": 1.81,
+    "statements": 2.03
   },
   "history": {
     "labels": [
-      "Jan 4, 07:35 AM",
       "Jan 4, 08:18 AM",
       "Jan 4, 08:54 AM",
       "Jan 4, 04:41 PM",
@@ -25,7 +24,8 @@
       "Jan 4, 05:34 PM",
       "Jan 4, 05:39 PM",
       "Jan 4, 06:01 PM",
-      "Jan 4, 06:15 PM"
+      "Jan 4, 06:15 PM",
+      "Jan 5, 03:55 AM"
     ],
     "overall": [
       88.09,
@@ -37,7 +37,7 @@
       88.09,
       88.09,
       88.09,
-      88.09
+      90.12
     ],
     "statements": [
       88.09,
@@ -49,7 +49,7 @@
       88.09,
       88.09,
       88.09,
-      88.09
+      90.12
     ],
     "branches": [
       87.5,
@@ -61,7 +61,7 @@
       87.5,
       87.5,
       87.5,
-      87.5
+      89.31
     ],
     "functions": [
       50.36,
@@ -73,13 +73,13 @@
       50.36,
       50.36,
       50.36,
-      50.36
+      57.86
     ]
   },
   "byType": [
-    88.09,
+    90.12,
     0,
     0,
-    88.09
+    90.12
   ]
 }

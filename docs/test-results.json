@@ -1,46 +1,46 @@
 {
-  "summary": {
-    "total": 1181,
-    "passed": 1181,
-    "failed": 0,
-    "skipped": 209,
-    "timestamp": "2026-01-05T02:00:00Z"
-  },
-  "unit": {
-    "status": "success",
-    "metrics": {
-      "total": 1181,
-      "duration": "17s",
-      "coverage": "88.09%"
-    }
-  },
-  "integration": {
-    "status": "success",
-    "metrics": {
-      "total": 250,
-      "duration": "3-4 min"
-    }
-  },
-  "e2e": {
-    "status": "success",
-    "metrics": {
-      "total": 200,
-      "duration": "10-12 min",
-      "browser": "Chrome"
-    }
-  },
-  "chaos": {
-    "status": "success",
-    "metrics": {
-      "scenarios": 15,
-      "duration": "2-3 min"
-    }
-  },
-  "performance": {
-    "status": "success",
-    "metrics": {
-      "vus": 100,
-      "duration": "3-5 min"
-    }
-  }
+"summary": {
+"total": 2,
+"passed": 2,
+"failed": 0,
+"skipped": 209,
+"timestamp": "2026-01-05T03:55:07Z"
+},
+"unit": {
+"status": "success",
+"metrics": {
+"total": 1181,
+"duration": "17s",
+"coverage": "90.12%"
+}
+},
+"integration": {
+"status": "success",
+"metrics": {
+"total": 250,
+"duration": "3-4 min"
+}
+},
+"e2e": {
+"status": "success",
+"metrics": {
+"total": 200,
+"duration": "10-12 min",
+"browser": "Chrome"
+}
+},
+"chaos": {
+"status": "success",
+"metrics": {
+"scenarios": 15,
+"duration": "2-3 min"
+}
+},
+"performance": {
+"status": "",
+"metrics": {
+"vus": 100,
+"duration": "3-5 min"
+}
+}
 }
