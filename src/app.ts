@@ -139,6 +139,42 @@ Timezone-aware birthday and anniversary message scheduler with exactly-once deli
 - **Comprehensive health checks** - Kubernetes-ready liveness and readiness probes
 - **Prometheus metrics** - Production-ready observability and monitoring
 - **Rate limiting** - Configurable rate limits per endpoint
+- **Redis caching** - High-performance caching for improved response times
+
+## Architecture
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Database** | PostgreSQL + Drizzle ORM | Persistent data storage |
+| **Queue** | RabbitMQ | Message processing and delivery |
+| **Cache** | Redis | High-performance caching |
+| **Scheduler** | CRON-based | Timezone-aware scheduling |
+
+## Caching Strategy
+
+This API uses Redis caching to improve performance and reduce database load:
+
+### Cached Data
+
+| Data | TTL | Key Pattern |
+|------|-----|-------------|
+| User by ID | 1 hour | \`user:v1:{id}\` |
+| User by Email | 1 hour | \`user:email:v1:{email}\` |
+| Birthdays Today | Until midnight | \`birthdays:today:v1\` |
+| Anniversaries Today | Until midnight | \`anniversaries:today:v1\` |
+
+### Cache Behavior
+
+- **GET requests**: Served from cache when available (eventual consistency)
+- **POST requests**: Cache warmed after creation for faster subsequent reads
+- **PUT/DELETE requests**: Cache invalidated after modification to ensure consistency
+- **Graceful degradation**: API works without Redis (cache is optional)
+
+### Consistency Models
+
+- **Strong consistency**: Write operations always hit the database
+- **Eventual consistency**: Read operations may return cached data (up to 1 hour stale)
+- **Weak consistency**: Daily lists (birthdays/anniversaries) refresh at midnight UTC
 
 ## Message Scheduling
 
