@@ -1419,66 +1419,56 @@ jobs:
           SKIPPED=209  # Known skipped tests count
 
           mkdir -p docs
-          cat > docs/test-results.json << 'TESTJSON'
-{
-  "summary": {
-    "total": TOTAL_TESTS_PLACEHOLDER,
-    "passed": PASSED_PLACEHOLDER,
-    "failed": FAILED_PLACEHOLDER,
-    "skipped": SKIPPED_PLACEHOLDER,
-    "timestamp": "TIMESTAMP_PLACEHOLDER"
-  },
-  "unit": {
-    "status": "UNIT_STATUS_PLACEHOLDER",
-    "metrics": {
-      "total": 1181,
-      "duration": "17s",
-      "coverage": "COVERAGE_PCT_PLACEHOLDER%"
-    }
-  },
-  "integration": {
-    "status": "INTEGRATION_STATUS_PLACEHOLDER",
-    "metrics": {
-      "total": 250,
-      "duration": "3-4 min"
-    }
-  },
-  "e2e": {
-    "status": "E2E_STATUS_PLACEHOLDER",
-    "metrics": {
-      "total": 200,
-      "duration": "10-12 min",
-      "browser": "Chrome"
-    }
-  },
-  "chaos": {
-    "status": "CHAOS_STATUS_PLACEHOLDER",
-    "metrics": {
-      "scenarios": 15,
-      "duration": "2-3 min"
-    }
-  },
-  "performance": {
-    "status": "PERF_STATUS_PLACEHOLDER",
-    "metrics": {
-      "vus": 100,
-      "duration": "3-5 min"
-    }
-  }
-}
-TESTJSON
-          # Replace placeholders with actual values
-          sed -i "s/TOTAL_TESTS_PLACEHOLDER/$TOTAL_TESTS/g" docs/test-results.json
-          sed -i "s/PASSED_PLACEHOLDER/$PASSED/g" docs/test-results.json
-          sed -i "s/FAILED_PLACEHOLDER/$FAILED/g" docs/test-results.json
-          sed -i "s/SKIPPED_PLACEHOLDER/$SKIPPED/g" docs/test-results.json
-          sed -i "s/TIMESTAMP_PLACEHOLDER/$TIMESTAMP/g" docs/test-results.json
-          sed -i "s/UNIT_STATUS_PLACEHOLDER/$UNIT_STATUS/g" docs/test-results.json
-          sed -i "s/INTEGRATION_STATUS_PLACEHOLDER/$INTEGRATION_STATUS/g" docs/test-results.json
-          sed -i "s/E2E_STATUS_PLACEHOLDER/$E2E_STATUS/g" docs/test-results.json
-          sed -i "s/CHAOS_STATUS_PLACEHOLDER/$CHAOS_STATUS/g" docs/test-results.json
-          sed -i "s/PERF_STATUS_PLACEHOLDER/$PERF_STATUS/g" docs/test-results.json
-          sed -i "s/COVERAGE_PCT_PLACEHOLDER/$COVERAGE_PCT/g" docs/test-results.json
+          cat > docs/test-results.json << EOF
+          {
+            "summary": {
+              "total": $TOTAL_TESTS,
+              "passed": $PASSED,
+              "failed": $FAILED,
+              "skipped": $SKIPPED,
+              "timestamp": "$TIMESTAMP"
+            },
+            "unit": {
+              "status": "$UNIT_STATUS",
+              "metrics": {
+                "total": 1181,
+                "duration": "17s",
+                "coverage": "${COVERAGE_PCT}%"
+              }
+            },
+            "integration": {
+              "status": "$INTEGRATION_STATUS",
+              "metrics": {
+                "total": 250,
+                "duration": "3-4 min"
+              }
+            },
+            "e2e": {
+              "status": "$E2E_STATUS",
+              "metrics": {
+                "total": 200,
+                "duration": "10-12 min",
+                "browser": "Chrome"
+              }
+            },
+            "chaos": {
+              "status": "$CHAOS_STATUS",
+              "metrics": {
+                "scenarios": 15,
+                "duration": "2-3 min"
+              }
+            },
+            "performance": {
+              "status": "$PERF_STATUS",
+              "metrics": {
+                "vus": 100,
+                "duration": "3-5 min"
+              }
+            }
+          }
+          EOF
+          # Remove leading whitespace from JSON (from YAML indentation)
+          sed -i 's/^[[:space:]]*//' docs/test-results.json
 
           echo "Generated test-results.json with real job statuses"
           echo "  Unit: $UNIT_STATUS"
