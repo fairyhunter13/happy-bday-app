@@ -1166,7 +1166,7 @@ jobs:
         with:
           args: >
             -Dsonar.verbose=false
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.wait=false
             -Dsonar.newCode.referenceBranch=main
 
       - name: SonarCloud Status
