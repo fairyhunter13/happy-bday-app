@@ -1203,13 +1203,16 @@ describe('Worker Error Recovery Integration Tests', () => {
     it('should handle concurrent errors correctly', async () => {
       const user = await createTestUser();
       const errorMessages: Array<{ messageId: string; error: string }> = [];
+      let messageCount = 0;
 
       consumer = new MessageConsumer({
         prefetch: 5,
         onMessage: async (job: MessageJob) => {
-          // Random failures
-          if (Math.random() < 0.5) {
-            throw new Error(`Random error for message ${job.messageId}`);
+          // Deterministic failures: every other message fails
+          // This ensures we always have errors to verify
+          messageCount++;
+          if (messageCount % 2 === 0) {
+            throw new Error(`Deterministic error for message ${job.messageId}`);
           }
 
           await testDb
@@ -1254,7 +1257,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // Some errors should have been caught
+      // Errors should have been caught (deterministic: 2 out of 5 messages fail)
       expect(errorMessages.length).toBeGreaterThan(0);
     }, 10000);
 
@@ -1262,10 +1265,23 @@ describe('Worker Error Recovery Integration Tests', () => {
       const user = await createTestUser();
       const processedOrder: string[] = [];
 
+      // Create message IDs upfront so we can track only our messages
+      const messages = [];
+      for (let i = 0; i < 3; i++) {
+        const msg = await createTestMessageLog(user.id, {
+          idempotencyKey: `${user.id}:BIRTHDAY:${new Date().toISOString().split('T')[0]}-${Date.now()}-${i}`,
+        });
+        messages.push(msg);
+      }
+      const expectedMessageIds = new Set(messages.map((m) => m.id));
+
       consumer = new MessageConsumer({
         prefetch: 1,
         onMessage: async (job: MessageJob) => {
-          processedOrder.push(job.messageId);
+          // Only track messages from this test (ignore any leftover messages from previous tests)
+          if (expectedMessageIds.has(job.messageId)) {
+            processedOrder.push(job.messageId);
+          }
 
           await testDb
             .update(messageLogs)
@@ -1279,15 +1295,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await consumer.startConsuming();
 
-      // Publish messages in order
-      const messages = [];
-      for (let i = 0; i < 3; i++) {
-        const msg = await createTestMessageLog(user.id, {
-          idempotencyKey: `${user.id}:BIRTHDAY:${new Date().toISOString().split('T')[0]}-${Date.now()}-${i}`,
-        });
-        messages.push(msg);
-      }
-
+      // Publish our messages
       for (const msg of messages) {
         await publisher.publishMessage({
           messageId: msg.id,
@@ -1301,6 +1309,7 @@ describe('Worker Error Recovery Integration Tests', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
+      // Should have processed exactly our 3 messages
       expect(processedOrder.length).toBe(3);
       // With prefetch=1, messages are generally processed in order, but not guaranteed
       // due to RabbitMQ's internal queueing and network timing

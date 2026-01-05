@@ -1216,9 +1216,22 @@ jobs:
           pattern: coverage-*
           path: coverage-artifacts/
 
+      - name: Check if mutation report exists
+        id: check-mutation-artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            const mutationArtifact = artifacts.data.artifacts.find(a => a.name === 'mutation-report');
+            core.setOutput('exists', mutationArtifact ? 'true' : 'false');
+
       - name: Download mutation report
+        if: steps.check-mutation-artifact.outputs.exists == 'true'
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           name: mutation-report
           path: mutation-artifacts/
@@ -1575,7 +1588,7 @@ jobs:
         run: |
           # Generate individual test suite JSON files for detailed metrics
           # Creates: integration-results.json, e2e-results.json, chaos-results.json
-          tsx scripts/test/generate-test-results.ts ./docs
+          npx tsx scripts/test/generate-test-results.ts ./docs
 
           echo "Generated detailed test suite results:"
           echo "  - integration-results.json"
@@ -1700,10 +1713,24 @@ jobs:
           echo "  Commit: ${{ github.sha }}"
           echo "  Workflow: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: Download performance test artifacts
+      - name: Check if performance artifacts exist
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: check-perf-artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+            const perfArtifacts = artifacts.data.artifacts.filter(a => a.name.startsWith('performance-') && a.name.endsWith('-results'));
+            core.setOutput('exists', perfArtifacts.length > 0 ? 'true' : 'false');
+            core.setOutput('count', perfArtifacts.length.toString());
+
+      - name: Download performance test artifacts
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check-perf-artifacts.outputs.exists == 'true'
         uses: actions/download-artifact@v4
-        continue-on-error: true
         with:
           pattern: performance-*-results
           path: perf-artifacts/
