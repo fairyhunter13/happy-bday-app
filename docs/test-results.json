@@ -1,10 +1,10 @@
 {
 "summary": {
-"total": 1661,
-"passed": 1661,
+"total": 1503,
+"passed": 1503,
 "failed": 0,
 "skipped": 0,
-"timestamp": "2026-01-05T09:37:42Z"
+"timestamp": "2026-01-05T09:48:44Z"
 },
 "unit": {
 "status": "success",
@@ -17,14 +17,14 @@
 "integration": {
 "status": "success",
 "metrics": {
-"total": 250,
+"total": 205,
 "duration": "3-4 min"
 }
 },
 "e2e": {
 "status": "success",
 "metrics": {
-"total": 200,
+"total": 87,
 "duration": "10-12 min",
 "browser": "Chrome"
 }
@@ -32,7 +32,7 @@
 "chaos": {
 "status": "success",
 "metrics": {
-"scenarios": 15,
+"scenarios": 31,
 "duration": "2-3 min"
 }
 },
