@@ -4,7 +4,7 @@
 "passed": 1661,
 "failed": 0,
 "skipped": 209,
-"timestamp": "2026-01-05T07:47:48Z"
+"timestamp": "2026-01-05T08:25:24Z"
 },
 "unit": {
 "status": "success",
@@ -37,7 +37,7 @@
 }
 },
 "performance": {
-"status": "success",
+"status": "",
 "metrics": {
 "vus": 100,
 "duration": "3-5 min",
