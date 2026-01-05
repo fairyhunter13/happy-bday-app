@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Birthday Message Scheduler API",
-    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: Create, read, update, and delete users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)\n- **Health Monitoring**: System health and readiness endpoints\n- **Metrics**: Prometheus-formatted metrics for monitoring\n\n## Architecture\n- **Database**: PostgreSQL with Drizzle ORM\n- **Queue**: RabbitMQ for message processing\n- **Scheduler**: CRON-based scheduling with timezone awareness\n\n## API Endpoints\nThis API provides the following endpoint groups:\n- `/health`, `/ready`, `/live` - Health check endpoints\n- `/metrics` - Prometheus metrics\n- `/api/v1/users` - User CRUD operations",
+    "description": "## Overview\nProduction-ready API for scheduling birthday and anniversary messages with timezone support.\n\n## Features\n- **User Management**: Create, read, update, and delete users with timezone support\n- **Message Scheduling**: Automatic message scheduling based on user timezone (at 9am local time)\n- **Health Monitoring**: System health and readiness endpoints\n- **Metrics**: Prometheus-formatted metrics for monitoring\n- **Caching**: Redis-based caching for improved performance\n\n## Architecture\n- **Database**: PostgreSQL with Drizzle ORM\n- **Queue**: RabbitMQ for message processing\n- **Cache**: Redis for high-performance caching\n- **Scheduler**: CRON-based scheduling with timezone awareness\n\n## Caching Strategy\nThis API uses Redis caching to improve performance and reduce database load:\n\n### Cached Data\n| Data | TTL | Key Pattern |\n|------|-----|-------------|\n| User by ID | 1 hour | `user:v1:{id}` |\n| User by Email | 1 hour | `user:email:v1:{email}` |\n| Birthdays Today | Until midnight | `birthdays:today:v1` |\n| Anniversaries Today | Until midnight | `anniversaries:today:v1` |\n\n### Cache Behavior\n- **GET requests**: Served from cache when available (eventual consistency)\n- **POST requests**: Warm cache after creation\n- **PUT/DELETE requests**: Invalidate cache after modification\n- **Graceful degradation**: API works without Redis (cache is optional)\n\n### Consistency Models\n- **Strong consistency**: Write operations always hit the database\n- **Eventual consistency**: Read operations may return cached data (up to 1 hour stale)\n- **Weak consistency**: Daily lists (birthdays/anniversaries) refresh at midnight UTC\n\n## API Endpoints\nThis API provides the following endpoint groups:\n- `/health`, `/ready`, `/live` - Health check endpoints\n- `/metrics` - Prometheus metrics\n- `/api/v1/users` - User CRUD operations",
     "version": "1.0.0",
     "contact": {
       "name": "API Support",
@@ -410,7 +410,7 @@
         "tags": [
           "users"
         ],
-        "description": "Create a new user with timezone support. The system will automatically schedule birthday and anniversary messages at 9am in the user's local timezone.",
+        "description": "Create a new user with timezone support. The system will automatically schedule birthday and anniversary messages at 9am in the user's local timezone. Cache is warmed after successful creation for faster subsequent reads.",
         "requestBody": {
           "required": true,
           "content": {
@@ -481,7 +481,7 @@
         "tags": [
           "users"
         ],
-        "description": "Retrieve a specific user by their UUID.",
+        "description": "Retrieve a specific user by their UUID. Results may be served from cache (up to 1 hour stale).",
         "parameters": [
           {
             "name": "id",
@@ -533,7 +533,7 @@
         "tags": [
           "users"
         ],
-        "description": "Update an existing user. If birthday or anniversary date is changed, the system will automatically reschedule the corresponding messages.",
+        "description": "Update an existing user. If birthday or anniversary date is changed, the system will automatically reschedule the corresponding messages. Cache is invalidated after update to ensure consistency.",
         "parameters": [
           {
             "name": "id",
@@ -619,7 +619,7 @@
         "tags": [
           "users"
         ],
-        "description": "Soft delete a user. The user record is marked as deleted but retained in the database. Any pending messages for this user will be cancelled.",
+        "description": "Soft delete a user. The user record is marked as deleted but retained in the database. Any pending messages for this user will be cancelled. Cache is invalidated after deletion.",
         "parameters": [
           {
             "name": "id",
