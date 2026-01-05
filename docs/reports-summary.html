@@ -382,9 +382,13 @@
                         <div class="stat-value" id="high-stat">0</div>
                     </div>
                     <div class="stat">
+                        <div class="stat-label">Scans</div>
+                        <div class="stat-value" id="scans-passed-stat">--</div>
+                    </div>
+                    <div class="stat">
                         <div class="stat-label">Status</div>
                         <div class="stat-value">
-                            <span class="status-indicator success"></span>
+                            <span class="status-indicator" id="security-status-indicator"></span>
                         </div>
                     </div>
                 </div>
@@ -489,8 +493,34 @@
 
             // Update security stats
             if (securityData && securityData.vulnerabilities) {
-                document.getElementById('critical-stat').textContent = securityData.vulnerabilities.critical || 0;
-                document.getElementById('high-stat').textContent = securityData.vulnerabilities.high || 0;
+                const critical = securityData.vulnerabilities.critical || 0;
+                const high = securityData.vulnerabilities.high || 0;
+                document.getElementById('critical-stat').textContent = critical;
+                document.getElementById('high-stat').textContent = high;
+
+                // Count passed scans
+                if (securityData.scans) {
+                    const scanKeys = Object.keys(securityData.scans);
+                    const passedScans = scanKeys.filter(key =>
+                        securityData.scans[key].status === 'success'
+                    ).length;
+                    const totalConfiguredScans = scanKeys.filter(key =>
+                        securityData.scans[key].status !== 'not_configured'
+                    ).length;
+                    document.getElementById('scans-passed-stat').textContent = `${passedScans}/${totalConfiguredScans}`;
+                }
+
+                // Set status indicator
+                const statusIndicator = document.getElementById('security-status-indicator');
+                if (statusIndicator) {
+                    if (critical > 0) {
+                        statusIndicator.className = 'status-indicator error';
+                    } else if (high > 0) {
+                        statusIndicator.className = 'status-indicator warning';
+                    } else {
+                        statusIndicator.className = 'status-indicator success';
+                    }
+                }
             }
 
             // Update build stats
