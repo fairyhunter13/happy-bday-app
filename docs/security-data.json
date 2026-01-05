@@ -1,52 +1,52 @@
 {
-  "vulnerabilities": {
-    "critical": 0,
-    "high": 0,
-    "medium": 0,
-    "low": 0
-  },
-  "dependencies": {
-    "total": 22,
-    "outdated": 23,
-    "vulnerable": 0
-  },
-  "scans": {
-    "npm_audit": {
-      "status": "success",
-      "name": "Dependency Scan (npm audit)",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "snyk": {
-      "status": "success",
-      "name": "Snyk Security Scan",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "trivy": {
-      "status": "success",
-      "name": "Container Scan (Trivy)",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "sonarcloud": {
-      "status": "success",
-      "name": "SonarCloud SAST",
-      "lastRun": "Via CI/CD",
-      "issues": 0
-    },
-    "gitleaks": {
-      "status": "not_configured",
-      "name": "Secret Scan (Gitleaks)",
-      "lastRun": "Not configured",
-      "issues": 0
-    },
-    "license": {
-      "status": "not_configured",
-      "name": "License Compliance",
-      "lastRun": "Not configured",
-      "issues": 0
-    }
-  },
-  "timestamp": "2026-01-05T07:47:49Z"
+"vulnerabilities": {
+"critical": 0,
+"high": 0,
+"medium": 0,
+"low": 0
+},
+"dependencies": {
+"total": 22,
+"outdated": 23,
+"vulnerable": 0
+},
+"scans": {
+"npm_audit": {
+"status": "success",
+"name": "Dependency Scan (npm audit)",
+"lastRun": "Via CI/CD",
+"issues": 0
+},
+"snyk": {
+"status": "success",
+"name": "Snyk Security Scan",
+"lastRun": "Via CI/CD",
+"issues": 0
+},
+"trivy": {
+"status": "success",
+"name": "Container Scan (Trivy)",
+"lastRun": "Via CI/CD",
+"issues": 0
+},
+"sonarcloud": {
+"status": "success",
+"name": "SonarCloud SAST",
+"lastRun": "Via CI/CD",
+"issues": 0
+},
+"gitleaks": {
+"status": "not_configured",
+"name": "Secret Scan (Gitleaks)",
+"lastRun": "Not configured",
+"issues": 0
+},
+"license": {
+"status": "not_configured",
+"name": "License Compliance",
+"lastRun": "Not configured",
+"issues": 0
+}
+},
+"timestamp": "2026-01-05T08:25:26Z"
 }
