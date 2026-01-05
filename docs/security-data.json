@@ -7,7 +7,7 @@
 },
 "dependencies": {
 "total": 22,
-"outdated": 23,
+"outdated": 24,
 "vulnerable": 0
 },
 "scans": {
@@ -48,5 +48,5 @@
 "issues": 0
 }
 },
-"timestamp": "2026-01-05T12:50:48Z"
+"timestamp": "2026-01-05T16:30:29Z"
 }
