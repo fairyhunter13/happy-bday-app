@@ -1,0 +1,13 @@
+{
+  "score": 99,
+  "mutants": {
+    "total": 959,
+    "killed": 701,
+    "survived": 254,
+    "timeout": 4,
+    "no_coverage": 0
+  },
+  "thresholds": { "break": 60, "low": 70, "high": 85 },
+  "status": "passed",
+  "timestamp": "2026-01-05T05:41:25Z"
+}
