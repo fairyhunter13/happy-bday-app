@@ -355,18 +355,51 @@ docker scan happy-bday-app:latest
 
 ## Recommendations for Future
 
-### 1. Never Use continue-on-error Without Justification
+### 1. Never Use continue-on-error
 
-**Acceptable Use Cases:**
-- Non-critical informational steps (e.g., upload optional artifacts)
-- Known external service flakiness with retry logic
-- Temporary workaround with JIRA ticket and expiration date
+**Policy:** `continue-on-error: true` is **BANNED** from all workflows.
 
-**Unacceptable Use Cases:**
-- Masking test failures
-- Hiding security vulnerabilities
-- Ignoring linting errors
-- Bypassing quality gates
+**Why:**
+- Masks real failures that need attention
+- Creates false confidence in CI status
+- Hides security vulnerabilities
+- Delays root cause discovery
+
+**Alternative Patterns for Optional Steps:**
+
+1. **For optional artifact downloads:**
+   ```yaml
+   - name: Check if artifact exists
+     id: check-artifact
+     uses: actions/github-script@v7
+     with:
+       script: |
+         const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+           owner: context.repo.owner,
+           repo: context.repo.repo,
+           run_id: context.runId,
+         });
+         const found = artifacts.data.artifacts.find(a => a.name === 'my-artifact');
+         core.setOutput('exists', found ? 'true' : 'false');
+
+   - name: Download artifact
+     if: steps.check-artifact.outputs.exists == 'true'
+     uses: actions/download-artifact@v4
+     with:
+       name: my-artifact
+   ```
+
+2. **For steps with fallback values:**
+   ```yaml
+   - name: Get metric with fallback
+     run: |
+       set +e  # Don't exit on error
+       RESULT=$(some-command 2>/dev/null)
+       if [ -z "$RESULT" ]; then
+         RESULT="default-value"
+       fi
+       echo "result=$RESULT" >> $GITHUB_OUTPUT
+   ```
 
 ### 2. Implement Proper Error Handling
 

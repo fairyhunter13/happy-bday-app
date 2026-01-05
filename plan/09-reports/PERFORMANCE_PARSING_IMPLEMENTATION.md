@@ -53,11 +53,26 @@ export function handleSummary(data) {
 
 **Changes Made**:
 
-1. **Download Performance Artifacts** (coverage-report job):
+1. **Check and Download Performance Artifacts** (coverage-report job):
    ```yaml
+   - name: Check if performance artifacts exist
+     id: check-perf-artifacts
+     uses: actions/github-script@v7
+     with:
+       script: |
+         const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+           owner: context.repo.owner,
+           repo: context.repo.repo,
+           run_id: context.runId,
+         });
+         const perfArtifacts = artifacts.data.artifacts.filter(a =>
+           a.name.startsWith('performance-') && a.name.endsWith('-results')
+         );
+         core.setOutput('exists', perfArtifacts.length > 0 ? 'true' : 'false');
+
    - name: Download performance test artifacts
+     if: steps.check-perf-artifacts.outputs.exists == 'true'
      uses: actions/download-artifact@v4
-     continue-on-error: true
      with:
        pattern: performance-*-results
        path: perf-artifacts/
