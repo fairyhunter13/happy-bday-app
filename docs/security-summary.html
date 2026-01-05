@@ -302,36 +302,13 @@
                         <th>Issues Found</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="scans-table-body">
+                    <!-- Scan rows will be populated dynamically from security-data.json -->
                     <tr>
                         <td>Dependency Scan (npm audit)</td>
                         <td><span class="status-badge success" id="npm-audit-status">Passed</span></td>
                         <td id="npm-audit-time">Via CI/CD</td>
                         <td id="npm-audit-issues">0</td>
-                    </tr>
-                    <tr>
-                        <td>Container Scan (Trivy)</td>
-                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
-                        <td>Not configured</td>
-                        <td>N/A</td>
-                    </tr>
-                    <tr>
-                        <td>SAST (Semgrep)</td>
-                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
-                        <td>Not configured</td>
-                        <td>N/A</td>
-                    </tr>
-                    <tr>
-                        <td>Secret Scan (Gitleaks)</td>
-                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
-                        <td>Not configured</td>
-                        <td>N/A</td>
-                    </tr>
-                    <tr>
-                        <td>License Compliance</td>
-                        <td><span class="status-badge" style="background-color: #3a3a3a; color: #888;">Not tracked</span></td>
-                        <td>Not configured</td>
-                        <td>N/A</td>
                     </tr>
                 </tbody>
             </table>
@@ -448,33 +425,51 @@
                     document.getElementById('low-count').textContent = data.vulnerabilities.low || 0;
                 }
 
-                // Update npm audit status from scan results
+                // Update scan status table dynamically
                 if (data.scans) {
-                    const npmAuditStatus = document.getElementById('npm-audit-status');
-                    const npmAuditIssues = document.getElementById('npm-audit-issues');
+                    const tableBody = document.getElementById('scans-table-body');
+                    tableBody.innerHTML = ''; // Clear existing rows
 
-                    // Calculate total vulnerabilities
-                    const totalVulns = (data.vulnerabilities?.critical || 0) +
-                                       (data.vulnerabilities?.high || 0) +
-                                       (data.vulnerabilities?.medium || 0) +
-                                       (data.vulnerabilities?.low || 0);
+                    // Define scan order for display
+                    const scanOrder = ['npm_audit', 'snyk', 'trivy', 'sonarcloud', 'gitleaks', 'license'];
 
-                    if (npmAuditIssues) {
-                        npmAuditIssues.textContent = totalVulns;
-                    }
+                    scanOrder.forEach(scanKey => {
+                        const scan = data.scans[scanKey];
+                        if (!scan) return;
 
-                    if (npmAuditStatus) {
-                        if (totalVulns === 0) {
-                            npmAuditStatus.className = 'status-badge success';
-                            npmAuditStatus.textContent = 'Passed';
-                        } else if (data.vulnerabilities?.critical > 0 || data.vulnerabilities?.high > 0) {
-                            npmAuditStatus.className = 'status-badge error';
-                            npmAuditStatus.textContent = 'Failed';
+                        const row = document.createElement('tr');
+
+                        // Determine status badge styling
+                        let statusClass = '';
+                        let statusText = '';
+                        let statusStyle = '';
+
+                        if (scan.status === 'success') {
+                            statusClass = 'status-badge success';
+                            statusText = 'Passed';
+                        } else if (scan.status === 'failed' || scan.status === 'error') {
+                            statusClass = 'status-badge error';
+                            statusText = 'Failed';
+                        } else if (scan.status === 'warning') {
+                            statusClass = 'status-badge pending';
+                            statusText = 'Warning';
                         } else {
-                            npmAuditStatus.className = 'status-badge pending';
-                            npmAuditStatus.textContent = 'Warning';
+                            statusClass = 'status-badge';
+                            statusStyle = 'background-color: #3a3a3a; color: #888;';
+                            statusText = 'Not configured';
                         }
-                    }
+
+                        const issues = scan.status === 'not_configured' ? 'N/A' : (scan.issues || 0);
+
+                        row.innerHTML = `
+                            <td>${scan.name || scanKey}</td>
+                            <td><span class="${statusClass}" style="${statusStyle}">${statusText}</span></td>
+                            <td>${scan.lastRun || 'Not configured'}</td>
+                            <td>${issues}</td>
+                        `;
+
+                        tableBody.appendChild(row);
+                    });
                 }
             })
             .catch(error => {
