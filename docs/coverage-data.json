@@ -5,18 +5,17 @@
     "statements": 90.12,
     "functions": 57.86,
     "branches": 89.31,
-    "timestamp": "2026-01-05T03:55:07Z"
+    "timestamp": "2026-01-05T04:18:34Z"
   },
   "trends": {
-    "overall": 2.03,
+    "overall": 0,
     "lines": 0,
-    "functions": 7.5,
-    "branches": 1.81,
-    "statements": 2.03
+    "functions": 0,
+    "branches": 0,
+    "statements": 0
   },
   "history": {
     "labels": [
-      "Jan 4, 08:18 AM",
       "Jan 4, 08:54 AM",
       "Jan 4, 04:41 PM",
       "Jan 4, 04:57 PM",
@@ -25,7 +24,8 @@
       "Jan 4, 05:39 PM",
       "Jan 4, 06:01 PM",
       "Jan 4, 06:15 PM",
-      "Jan 5, 03:55 AM"
+      "Jan 5, 03:55 AM",
+      "Jan 5, 04:18 AM"
     ],
     "overall": [
       88.09,
@@ -36,7 +36,7 @@
       88.09,
       88.09,
       88.09,
-      88.09,
+      90.12,
       90.12
     ],
     "statements": [
@@ -48,7 +48,7 @@
       88.09,
       88.09,
       88.09,
-      88.09,
+      90.12,
       90.12
     ],
     "branches": [
@@ -60,7 +60,7 @@
       87.5,
       87.5,
       87.5,
-      87.5,
+      89.31,
       89.31
     ],
     "functions": [
@@ -72,7 +72,7 @@
       50.36,
       50.36,
       50.36,
-      50.36,
+      57.86,
       57.86
     ]
   },
