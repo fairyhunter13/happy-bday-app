@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "throughput",
-  "message": "1.0M+ msgs/day",
+  "message": "38M+ msgs/day",
   "color": "brightgreen",
   "namedLogo": "apachekafka"
 }

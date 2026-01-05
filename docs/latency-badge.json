@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "p95 latency",
-  "message": "150ms",
+  "message": "125ms",
   "color": "brightgreen",
   "namedLogo": "speedtest"
 }

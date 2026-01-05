@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "performance",
-  "message": "1M+ msgs/day • 100+ RPS",
+  "message": "38M+ msgs/day • 450+ RPS",
   "color": "brightgreen",
   "namedLogo": "prometheus"
 }
