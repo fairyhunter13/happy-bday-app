@@ -1183,7 +1183,8 @@ jobs:
     name: Coverage Report
     # Merges coverage from all test types for comprehensive SonarCloud analysis
     # Unit, integration, E2E, and chaos tests all contribute coverage data
-    needs: [unit-tests, integration-tests, e2e-tests, chaos-tests]
+    # Also depends on lint, security-scan, and build for accurate status reporting
+    needs: [lint-and-type-check, unit-tests, integration-tests, e2e-tests, chaos-tests, security-scan, build]
     runs-on: ubuntu-latest
     if: always()
 
@@ -1615,11 +1616,11 @@ TESTJSON
         # Generate on all runs to keep dashboards updated
         if: always()
         env:
-          # Note: security-scan, build, sonarcloud jobs are not in coverage-report needs
-          # Use integration-tests result as proxy for overall success
-          SECURITY_SCAN_STATUS: ${{ needs.integration-tests.result }}
-          BUILD_STATUS: ${{ needs.unit-tests.result }}
-          SONAR_STATUS: ${{ needs.integration-tests.result }}
+          # Now using actual job results since they are in the needs array
+          SECURITY_SCAN_STATUS: ${{ needs.security-scan.result }}
+          BUILD_STATUS: ${{ needs.build.result }}
+          # Note: sonarcloud depends on coverage-report (circular), use success for now
+          SONAR_STATUS: success
         run: |
           # Generate security-data.json for security-summary.html
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -1670,9 +1671,9 @@ TESTJSON
         # Generate on all runs to keep dashboards updated
         if: always()
         env:
-          # Note: build job is not in coverage-report needs, use unit-tests as proxy for build status
-          BUILD_STATUS: ${{ needs.unit-tests.result }}
-          LINT_STATUS: success
+          # Now using actual job results since they are in the needs array
+          BUILD_STATUS: ${{ needs.build.result }}
+          LINT_STATUS: ${{ needs.lint-and-type-check.result }}
         run: |
           # Generate build-info.json for reports-summary.html CI/CD card
           BUILD_TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
