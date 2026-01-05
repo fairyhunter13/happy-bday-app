@@ -1384,8 +1384,11 @@ jobs:
               return absPath.substring(cwd.length + 1);
             }
             // Handle paths from different CI/local environments
-            const srcMatch = absPath.match(/[/\\](src[/\\].*)$/);
-            if (srcMatch) return srcMatch[1].replace(/\\\\/g, '/');
+            // Find the last occurrence of /src/ or \\src\\
+            const srcIndex = Math.max(absPath.lastIndexOf('/src/'), absPath.lastIndexOf('\\\\src\\\\'));
+            if (srcIndex !== -1) {
+              return absPath.substring(srcIndex + 1).replace(/\\\\/g, '/');
+            }
             // Fallback: just use the path as-is
             return absPath;
           };
