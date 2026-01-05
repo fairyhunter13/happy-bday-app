@@ -2,6 +2,5 @@
   "schemaVersion": 1,
   "label": "security",
   "message": "0 critical, 0 high",
-  "color": "brightgreen",
-  "namedLogo": "snyk"
+  "color": "brightgreen"
 }

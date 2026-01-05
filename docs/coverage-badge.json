@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "label": "coverage",
-  "message": "90.12%",
-  "color": "brightgreen"
+  "message": "88.09%",
+  "color": "brightgreen",
+  "namedLogo": "vitest"
 }

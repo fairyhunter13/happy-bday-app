@@ -1,18 +1,13 @@
 {
-  "timestamp": "2026-01-04T07:44:19Z",
+  "timestamp": "2026-01-05T05:08:17Z",
   "score": 100,
   "status": "Excellent",
   "metrics": {
-    "total_files": 131,
-    "orphaned_files": 0,
-    "broken_links": 0,
-    "missing_indices": 0,
-    "duplicate_files": 0
-  },
-  "penalties": {
-    "orphaned": 0,
-    "broken_links": 0,
-    "missing_indices": 0,
-    "duplicates": 0
+    "test_count": "1008+",
+    "coverage_pct": "88.09",
+    "security_critical": "0",
+    "security_high": "0",
+    "build_duration": "0m",
+    "mutation_score": "85"
   }
 }
