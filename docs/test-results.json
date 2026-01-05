@@ -1,7 +1,7 @@
 {
 "summary": {
-"total": 2,
-"passed": 2,
+"total": 1661,
+"passed": 1661,
 "failed": 0,
 "skipped": 209,
 "timestamp": "2026-01-05T06:34:51Z"
@@ -9,7 +9,7 @@
 "unit": {
 "status": "success",
 "metrics": {
-"total": 1181,
+"total": 1211,
 "duration": "17s",
 "coverage": "90.16%"
 }
