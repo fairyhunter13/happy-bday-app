@@ -571,16 +571,6 @@ jobs:
 
           exit $exit_code
 
-      - name: Upload mutation report
-        uses: actions/upload-artifact@v4
-        with:
-          name: mutation-report
-          path: |
-            reports/mutation/
-            mutation-output.txt
-          retention-days: 14
-        if: always()
-
       - name: Generate mutation results JSON
         if: always()
         run: |
@@ -632,6 +622,17 @@ jobs:
           EOF
 
           echo "✓ Generated mutation results JSON with score: ${MUTATION_SCORE:-0}%"
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: |
+            reports/mutation/
+            docs/mutation-badge.json
+            mutation-output.txt
+          retention-days: 14
+        if: always()
 
       - name: Comment mutation score on PR
         if: github.event_name == 'pull_request'
@@ -1846,12 +1847,29 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Add badge files and report JSON files
-          git add docs/coverage-badge.json docs/coverage-history.json docs/test-badge.json \
-                  docs/test-results.json docs/coverage-data.json docs/security-data.json \
-                  docs/build-info.json docs/performance-results.json docs/mutation-results.json \
-                  docs/mutation-badge.json docs/integration-results.json docs/e2e-results.json \
-                  docs/chaos-results.json
+          # Add badge files and report JSON files (only if they exist)
+          # Use a loop to handle files that may not exist gracefully
+          for file in \
+            docs/coverage-badge.json \
+            docs/coverage-history.json \
+            docs/test-badge.json \
+            docs/test-results.json \
+            docs/coverage-data.json \
+            docs/security-data.json \
+            docs/build-info.json \
+            docs/performance-results.json \
+            docs/mutation-results.json \
+            docs/mutation-badge.json \
+            docs/integration-results.json \
+            docs/e2e-results.json \
+            docs/chaos-results.json; do
+            if [ -f "$file" ]; then
+              git add "$file"
+              echo "✓ Added $file"
+            else
+              echo "⚠ Skipped $file (not found)"
+            fi
+          done
 
           # Check if there are changes to commit
           if git diff --staged --quiet; then
