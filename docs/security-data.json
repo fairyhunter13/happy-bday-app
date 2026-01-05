@@ -11,9 +11,9 @@
     "vulnerable": 0
   },
   "scans": {
-    "npm_audit": "",
-    "docker": "",
+    "npm_audit": "passed",
+    "docker": "passed",
     "sonarcloud": "passed"
   },
-  "timestamp": "2026-01-04T18:15:08Z"
+  "timestamp": "2026-01-05T00:00:00Z"
 }
