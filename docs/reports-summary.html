@@ -463,8 +463,9 @@
             fetch('./coverage-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
             fetch('./security-data.json').then(r => r.ok ? r.json() : null).catch(() => null),
             fetch('./build-info.json').then(r => r.ok ? r.json() : null).catch(() => null),
-            fetch('./openapi.json').then(r => r.ok ? r.json() : null).catch(() => null)
-        ]).then(([testData, coverageData, securityData, buildData, openapiData]) => {
+            fetch('./openapi.json').then(r => r.ok ? r.json() : null).catch(() => null),
+            fetch('./github-data.json').then(r => r.ok ? r.json() : null).catch(() => null)
+        ]).then(([testData, coverageData, securityData, buildData, openapiData, githubData]) => {
             // Update test stats
             if (testData && testData.summary) {
                 document.getElementById('total-tests-stat').textContent = testData.summary.total || 0;
@@ -479,10 +480,10 @@
                 document.getElementById('coverage-stat').textContent = coverageData.current.overall + '%';
                 document.getElementById('coverage-value-stat').textContent = coverageData.current.overall + '%';
 
-                if (coverageData.trends && coverageData.trends.overall) {
+                if (coverageData.trends && coverageData.trends.overall !== null && coverageData.trends.overall !== undefined) {
                     const trend = coverageData.trends.overall;
-                    document.getElementById('coverage-trend-stat').textContent =
-                        trend > 0 ? '+' + trend.toFixed(1) + '%' : trend.toFixed(1) + '%';
+                    const trendText = trend === 0 ? '0%' : (trend > 0 ? '+' + trend.toFixed(1) + '%' : trend.toFixed(1) + '%');
+                    document.getElementById('coverage-trend-stat').textContent = trendText;
                 }
             }
 
@@ -510,9 +511,22 @@
                 document.getElementById('api-endpoints-stat').textContent = endpointCount;
             }
 
-            // Note: GitHub stars/forks would require GitHub API integration
-            // Currently left as "--" placeholders
-            // To implement: Use GitHub API with GITHUB_TOKEN to fetch repository stats
+            // Update GitHub repository stats
+            if (githubData && githubData.repository) {
+                const starsEl = document.getElementById('github-stars-stat');
+                const forksEl = document.getElementById('github-forks-stat');
+
+                if (starsEl) {
+                    starsEl.textContent = githubData.repository.stars || 0;
+                    starsEl.style.fontSize = '1.1rem';
+                    starsEl.style.color = '#e0e0e0';
+                }
+                if (forksEl) {
+                    forksEl.textContent = githubData.repository.forks || 0;
+                    forksEl.style.fontSize = '1.1rem';
+                    forksEl.style.color = '#e0e0e0';
+                }
+            }
         });
     </script>
 </body>
