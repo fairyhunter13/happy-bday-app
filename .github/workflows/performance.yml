@@ -20,6 +20,10 @@ on:
           - peak
           - worker-scaling
 
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   performance-sustained:
     name: Sustained Load Test (1M/day)

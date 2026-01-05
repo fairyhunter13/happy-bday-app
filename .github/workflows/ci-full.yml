@@ -1374,6 +1374,75 @@ jobs:
 
           fs.writeFileSync('coverage/coverage-summary.json', JSON.stringify(summary, null, 2));
           console.log('Coverage:', summary.total.statements.pct + '% statements,', summary.total.functions.pct + '% functions,', summary.total.branches.pct + '% branches');
+
+          // Generate lcov.info from merged Istanbul coverage
+          let lcovContent = '';
+          for (const [filePath, data] of Object.entries(merged)) {
+            lcovContent += 'TN:\n';
+            lcovContent += 'SF:' + filePath + '\n';
+
+            // Function coverage
+            if (data.fnMap && data.f) {
+              for (const [key, fn] of Object.entries(data.fnMap)) {
+                const name = fn.name || 'anonymous_' + key;
+                const line = fn.decl ? fn.decl.start.line : (fn.loc ? fn.loc.start.line : 1);
+                lcovContent += 'FN:' + line + ',' + name + '\n';
+              }
+              for (const [key, count] of Object.entries(data.f)) {
+                const fn = data.fnMap[key];
+                const name = fn ? (fn.name || 'anonymous_' + key) : 'anonymous_' + key;
+                lcovContent += 'FNDA:' + count + ',' + name + '\n';
+              }
+              const fnTotal = Object.keys(data.f).length;
+              const fnHit = Object.values(data.f).filter(c => c > 0).length;
+              lcovContent += 'FNF:' + fnTotal + '\n';
+              lcovContent += 'FNH:' + fnHit + '\n';
+            }
+
+            // Line coverage (using statement map)
+            if (data.statementMap && data.s) {
+              const lineHits = {};
+              for (const [key, stmt] of Object.entries(data.statementMap)) {
+                const line = stmt.start ? stmt.start.line : 1;
+                const count = data.s[key] || 0;
+                lineHits[line] = Math.max(lineHits[line] || 0, count);
+              }
+              for (const [line, count] of Object.entries(lineHits)) {
+                lcovContent += 'DA:' + line + ',' + count + '\n';
+              }
+              const lfTotal = Object.keys(lineHits).length;
+              const lhHit = Object.values(lineHits).filter(c => c > 0).length;
+              lcovContent += 'LF:' + lfTotal + '\n';
+              lcovContent += 'LH:' + lhHit + '\n';
+            }
+
+            // Branch coverage
+            if (data.branchMap && data.b) {
+              let branchId = 0;
+              for (const [key, branch] of Object.entries(data.branchMap)) {
+                const line = branch.loc ? branch.loc.start.line : 1;
+                const counts = data.b[key] || [];
+                for (let i = 0; i < counts.length; i++) {
+                  lcovContent += 'BRDA:' + line + ',' + branchId + ',' + i + ',' + (counts[i] || 0) + '\n';
+                }
+                branchId++;
+              }
+              let brfTotal = 0, brhHit = 0;
+              for (const counts of Object.values(data.b)) {
+                for (const count of counts) {
+                  brfTotal++;
+                  if (count > 0) brhHit++;
+                }
+              }
+              lcovContent += 'BRF:' + brfTotal + '\n';
+              lcovContent += 'BRH:' + brhHit + '\n';
+            }
+
+            lcovContent += 'end_of_record\n';
+          }
+
+          fs.writeFileSync('coverage/lcov.info', lcovContent);
+          console.log('Generated lcov.info with', Object.keys(merged).length, 'files');
           "
 
       # CRITICAL: Coverage Enforcement
