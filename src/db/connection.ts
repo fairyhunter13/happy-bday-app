@@ -5,6 +5,7 @@ import {
   databaseMetricsInterceptor,
   startConnectionPoolMetrics,
 } from './interceptors/metrics-interceptor.js';
+import { getDatabaseUrl } from './utils/database-url.js';
 
 /**
  * Database connection configuration
@@ -16,28 +17,6 @@ import {
  * - Idle timeout (30s)
  * - Prometheus metrics tracking
  */
-
-// Database URL from environment
-// In production, DATABASE_URL must be set via environment variable
-// For local development only, a fallback is provided
-const getDatabaseUrl = (): string => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
-  }
-
-  // Development fallback - only used when DATABASE_URL is not set
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('DATABASE_URL environment variable is required in production');
-  }
-
-  // Local development default (not a real password, only for local dev containers)
-  const devHost = process.env.DATABASE_HOST || 'localhost';
-  const devPort = process.env.DATABASE_PORT || '5432';
-  const devUser = process.env.DATABASE_USER || 'postgres';
-  const devPass = process.env.DATABASE_PASSWORD || 'postgres';
-  const devDb = process.env.DATABASE_NAME || 'birthday_app';
-  return `postgres://${devUser}:${devPass}@${devHost}:${devPort}/${devDb}`;
-};
 
 const DATABASE_URL = getDatabaseUrl();
 

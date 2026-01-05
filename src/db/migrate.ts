@@ -16,27 +16,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
-
-// Database URL from environment
-// In production, DATABASE_URL must be set via environment variable
-const getDatabaseUrl = (): string => {
-  if (process.env.DATABASE_URL) {
-    return process.env.DATABASE_URL;
-  }
-
-  // Development fallback - only used when DATABASE_URL is not set
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('DATABASE_URL environment variable is required in production');
-  }
-
-  // Local development default (not a real password, only for local dev containers)
-  const devHost = process.env.DATABASE_HOST || 'localhost';
-  const devPort = process.env.DATABASE_PORT || '5432';
-  const devUser = process.env.DATABASE_USER || 'postgres';
-  const devPass = process.env.DATABASE_PASSWORD || 'postgres';
-  const devDb = process.env.DATABASE_NAME || 'birthday_app';
-  return `postgres://${devUser}:${devPass}@${devHost}:${devPort}/${devDb}`;
-};
+import { getDatabaseUrl } from './utils/database-url.js';
 
 const DATABASE_URL = getDatabaseUrl();
 
