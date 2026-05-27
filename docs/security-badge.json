@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "label": "security",
-  "message": "3 critical, 15 high",
+  "message": "3 critical, 20 high",
   "color": "brightgreen"
 }
