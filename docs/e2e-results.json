@@ -1,13 +1,13 @@
 {
   "type": "e2e",
-  "status": "success",
+  "status": "skipped",
   "metrics": {
     "total": 200,
-    "passed": 200,
+    "passed": 0,
     "failed": 0,
     "skipped": 0,
     "duration": "10-15 min",
-    "timestamp": "2026-01-05T16:30:29.454Z",
+    "timestamp": "2026-10-01T13:41:23.312Z",
     "shards": 2,
     "browser": "Chrome",
     "endpoints": {

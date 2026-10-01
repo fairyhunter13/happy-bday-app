@@ -1,24 +1,28 @@
 {
 "vulnerabilities": {
-"critical": 0,
-"high": 0,
-"medium": 0,
-"low": 0
+"critical": 6
+0,
+"high": 33
+0,
+"medium": 28
+0,
+"low": 2
+0
 },
 "dependencies": {
 "total": 22,
-"outdated": 24,
-"vulnerable": 0
+"outdated": 44,
+"vulnerable": 
 },
 "scans": {
 "npm_audit": {
-"status": "success",
+"status": "failure",
 "name": "Dependency Scan (npm audit)",
 "lastRun": "Via CI/CD",
-"issues": 0
+"issues": 
 },
 "snyk": {
-"status": "success",
+"status": "failure",
 "name": "Snyk Security Scan",
 "lastRun": "Via CI/CD",
 "issues": 0
@@ -48,5 +52,5 @@
 "issues": 0
 }
 },
-"timestamp": "2026-01-05T16:30:29Z"
+"timestamp": "2026-10-01T13:41:23Z"
 }
