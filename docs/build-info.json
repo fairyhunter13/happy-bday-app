@@ -1,17 +1,17 @@
 {
   "build": {
-    "status": "success",
-    "timestamp": "2026-10-01T13:41:31Z",
+    "status": "failure",
+    "timestamp": "2026-10-01T22:28:30Z",
     "duration": "8-10 min",
-    "commit": "dfb10a9cc1c350aa5e63ce29d82326199f8813c7",
+    "commit": "aceb4d5bfc30648b4db82a61e140bc2eb3c7915f",
     "branch": "main"
   },
   "workflow": {
     "name": "CI (Full)",
-    "run_id": "36870325102",
-    "run_number": "110",
-    "started_at": "2026-10-01T13:31:31Z",
-    "url": "https://github.com/fairyhunter13/happy-bday-app/actions/runs/36870325102"
+    "run_id": "36935160599",
+    "run_number": "111",
+    "started_at": "2026-10-01T22:18:30Z",
+    "url": "https://github.com/fairyhunter13/happy-bday-app/actions/runs/36935160599"
   },
   "repository": {
     "name": "fairyhunter13/happy-bday-app",
