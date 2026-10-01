@@ -131,10 +131,10 @@ gh secret list | grep -q "^SECRET_NAME"
 **Expected Format**:
 ```
 
-# created: 2025-09-27T11:06:50+07:00
-# public key: age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+# created: <timestamp>
+# public key: age1<public-key>
 
-***REMOVED***
+AGE-SECRET-KEY-1<redacted>
 ```
 
 **Validation Rules**:

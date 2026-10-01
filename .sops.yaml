@@ -13,25 +13,25 @@ creation_rules:
   # Development environment secrets
   - path_regex: \.env\.development(\.enc)?$
     age: >-
-      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
     encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
 
   # Test environment secrets
   - path_regex: \.env\.test(\.enc)?$
     age: >-
-      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
     encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
 
   # Production environment secrets
   - path_regex: \.env\.production(\.enc)?$
     age: >-
-      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
     encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
 
   # Generic .env files (fallback)
   - path_regex: \.env(\.enc)?$
     age: >-
-      age1mxkhk7p4ngsl7yagkp0m2xa5ggzl2ppfgrfuadadsxdus8jcpugqsn9x5u
+      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
     encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
 
 # ========================================
