@@ -10,47 +10,18 @@
 # ========================================
 
 creation_rules:
-  # Development environment secrets
-  - path_regex: \.env\.development(\.enc)?$
+  # The second recipient is the CI-only key held in the SOPS_AGE_KEY Actions secret.
+  - path_regex: \.env(\.(development|test|production))?(\.enc)?$
     age: >-
-      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
-    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
-
-  # Test environment secrets
-  - path_regex: \.env\.test(\.enc)?$
-    age: >-
-      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
-    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
-
-  # Production environment secrets
-  - path_regex: \.env\.production(\.enc)?$
-    age: >-
-      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
-    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
-
-  # Generic .env files (fallback)
-  - path_regex: \.env(\.enc)?$
-    age: >-
-      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq
-    encrypted_regex: ^(DATABASE_.*PASSWORD|RABBITMQ_.*PASSWORD|REDIS_.*PASSWORD|.*_SECRET|.*_KEY|.*_TOKEN|.*API_KEY)$
+      age19txs0a7xl89m2f0983fn0k3szj78n3tcjv8gddkvzk72r3fwsa3ssw0clq,
+      age10kxw94vp0kwe0ps678fs5wqlm3x3gtj7pn05lj4peu35vn3cqaxsvt40vk
 
 # ========================================
 # Encryption Strategy
 # ========================================
 #
-# Only sensitive values are encrypted (not the entire file).
-# This allows for:
-# - Easy diff tracking in Git
-# - Clear visibility of non-sensitive configuration
-# - Faster encryption/decryption operations
-#
-# Encrypted patterns include:
-# - DATABASE_*PASSWORD
-# - RABBITMQ_*PASSWORD
-# - REDIS_*PASSWORD
-# - *_SECRET (e.g., JWT_SECRET)
-# - *_KEY (e.g., API_KEY, ENCRYPTION_KEY)
-# - *_TOKEN (e.g., ACCESS_TOKEN)
-# - *API_KEY (e.g., SENDGRID_API_KEY)
+# A `.env.*.enc` file is a sops binary file: the whole dotenv text is encrypted as one value.
+# An `encrypted_regex` cannot apply here, because the only key of a binary file is `data`;
+# the old per-key regex matched nothing and left every value in plaintext.
 #
 # ========================================
