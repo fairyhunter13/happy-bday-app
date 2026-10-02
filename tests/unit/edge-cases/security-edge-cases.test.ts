@@ -429,7 +429,7 @@ describe('Security Edge Cases', () => {
       };
 
       // Valid JWT structure
-      expect(isValidJWTStructure('***REMOVED***')).toBe(true);
+      expect(isValidJWTStructure('header.payload.signature')).toBe(true);
 
       // Invalid - not enough parts
       expect(isValidJWTStructure('not.a.jwt')).toBe(true); // Structure is valid, content may not be
