@@ -118,7 +118,9 @@ describe('getDatabaseUrl', () => {
       process.env.DATABASE_PASSWORD = 'mysecret';
 
       const url = getDatabaseUrl();
-      expect(url).toBe('postgres://postgres:***REMOVED***@localhost:5432/birthday_app');
+      expect(url).toBe(
+        `postgres://postgres:${process.env.DATABASE_PASSWORD}@localhost:5432/birthday_app`
+      );
     });
 
     it('should use custom DATABASE_NAME when provided', () => {
@@ -136,7 +138,9 @@ describe('getDatabaseUrl', () => {
       process.env.DATABASE_NAME = 'custom-db';
 
       const url = getDatabaseUrl();
-      expect(url).toBe('postgres://custom-user:***REMOVED***@custom-host:5434/custom-db');
+      expect(url).toBe(
+        `postgres://custom-user:${process.env.DATABASE_PASSWORD}@custom-host:5434/custom-db`
+      );
     });
 
     it('should work without NODE_ENV set (defaults to development behavior)', () => {
