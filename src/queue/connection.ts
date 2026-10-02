@@ -282,7 +282,9 @@ export class RabbitMQConnection {
  */
 export async function initializeRabbitMQ(): Promise<RabbitMQConnection> {
   const config: RabbitMQConfig = {
-    url: process.env.RABBITMQ_URL || `amqp://rabbitmq:${process.env.RABBITMQ_PASSWORD ?? 'rabbitmq_dev_password'}@localhost:5672`,
+    url:
+      process.env.RABBITMQ_URL ||
+      `amqp://rabbitmq:${process.env.RABBITMQ_PASSWORD ?? 'rabbitmq_dev_password'}@localhost:5672`,
     heartbeat: parseInt(process.env.RABBITMQ_HEARTBEAT || '60', 10),
     reconnectTimeout: parseInt(process.env.RABBITMQ_RECONNECT_TIMEOUT || '5000', 10),
   };
