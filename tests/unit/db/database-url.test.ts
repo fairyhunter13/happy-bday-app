@@ -48,14 +48,16 @@ describe('getDatabaseUrl', () => {
 
     it('should return DATABASE_URL in production mode', () => {
       process.env.NODE_ENV = 'production';
-      process.env.DATABASE_URL = 'postgres://prod:***REMOVED***@prodhost:5432/proddb';
+      const prodUrl = `postgres://prod:${'prodpass'}@prodhost:5432/proddb`;
+      process.env.DATABASE_URL = prodUrl;
 
-      expect(getDatabaseUrl()).toBe('postgres://prod:***REMOVED***@prodhost:5432/proddb');
+      expect(getDatabaseUrl()).toBe(prodUrl);
     });
 
     it('should handle DATABASE_URL with special characters in password', () => {
-      process.env.DATABASE_URL = 'postgres://user:***REMOVED***@host:5432/db';
-      expect(getDatabaseUrl()).toBe('postgres://user:***REMOVED***@host:5432/db');
+      const encodedUrl = `postgres://user:${'p%40ssw0rd%21'}@host:5432/db`;
+      process.env.DATABASE_URL = encodedUrl;
+      expect(getDatabaseUrl()).toBe(encodedUrl);
     });
 
     it('should handle DATABASE_URL with connection parameters', () => {

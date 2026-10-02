@@ -16,7 +16,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { sql } from 'drizzle-orm';
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:***REMOVED***@localhost:5432/birthday_app';
+const DATABASE_URL = process.env.DATABASE_URL || `postgres://postgres:${process.env.DATABASE_PASSWORD ?? 'postgres_dev_password'}@localhost:5432/birthday_app`;
 
 async function dropOldPartitions(monthsToKeep: number = 6) {
   console.log(`🗑️  Dropping partitions older than ${monthsToKeep} months...\n`);

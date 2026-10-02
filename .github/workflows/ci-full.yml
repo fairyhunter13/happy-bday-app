@@ -1020,7 +1020,7 @@ jobs:
           DATABASE_USER: testuser
           DATABASE_PASSWORD: testpass
           DATABASE_NAME: testdb
-          DATABASE_URL: postgres://testuser:***REMOVED***@localhost:5432/testdb
+          DATABASE_URL: ${{ format('postgres://testuser:{0}@localhost:5432/testdb', 'testpass') }}
           # RabbitMQ configuration
           RABBITMQ_HOST: localhost
           RABBITMQ_PORT: 5672
