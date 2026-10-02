@@ -28,7 +28,7 @@
 "issues": 0
 },
 "trivy": {
-"status": "failure",
+"status": "success",
 "name": "Container Scan (Trivy)",
 "lastRun": "Via CI/CD",
 "issues": 0
@@ -52,5 +52,5 @@
 "issues": 0
 }
 },
-"timestamp": "2026-10-01T22:28:22Z"
+"timestamp": "2026-10-02T01:07:07Z"
 }

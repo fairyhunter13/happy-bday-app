@@ -4,10 +4,10 @@
 "passed": 1661,
 "failed": 0,
 "skipped": 0,
-"timestamp": "2026-10-01T22:28:21Z"
+"timestamp": "2026-10-02T01:07:06Z"
 },
 "unit": {
-"status": "skipped",
+"status": "failure",
 "metrics": {
 "total": 1211,
 "duration": "17s",
